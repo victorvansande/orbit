@@ -304,7 +304,7 @@ const composerSubmit = $('composer-submit');
 const composerOrb = $('composer-orb');
 let composerLevel = DEFAULT_LEVEL, closeTimer = 0;
 
-// Mini-orbit in het venster: een taps bolletje rond een kern van streepjes, in kleur en tempo van het moment
+// Mini-orbit in het venster: een taps bolletje rond een kleine kern, in kleur en tempo van het moment
 let orbRaf = 0;
 function drawComposerOrbit(now) {
   const lv = LEVEL_BY_ID.get(composerLevel);
@@ -314,17 +314,11 @@ function drawComposerOrbit(now) {
   const period = Math.min(lv.period, 6);
   const a = reducedMotion.matches ? -Math.PI / 2 : (now / 1000) / period * TAU;
   g.clearRect(0, 0, size, size);
-  // kern
-  g.lineCap = 'round';
-  g.lineWidth = size * 0.009;
-  g.strokeStyle = 'rgba(27, 27, 34, .22)';
-  for (let i = 0; i < 12; i++) {
-    const t = i / 12 * TAU;
-    g.beginPath();
-    g.moveTo(C + Math.cos(t) * size * 0.075, C + Math.sin(t) * size * 0.075);
-    g.lineTo(C + Math.cos(t) * size * 0.105, C + Math.sin(t) * size * 0.105);
-    g.stroke();
-  }
+  // kern: kleine stip, zoals het baken in de scène
+  g.fillStyle = 'rgba(27, 27, 34, .2)';
+  g.beginPath();
+  g.arc(C, C, size * 0.02, 0, TAU);
+  g.fill();
   // baan
   g.lineWidth = size * 0.003;
   g.strokeStyle = 'rgba(27, 27, 34, .12)';

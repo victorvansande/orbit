@@ -14,7 +14,7 @@ const INK = [24, 24, 32];
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
-const CORE_R = 9, CORE_DASHES = 12;
+const CORE_R = 4.5, WAVE_R = 32, WAVES = 3;   // kern en lichtgolven (stage-eenheden)
 const MERIDIANS = 8, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.12;
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
@@ -70,13 +70,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const waves = [];
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
-  let nowCount = 0, nowGlow = 0;
+  // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
+  let nowCount = 0, todayCount = 0, urgency = 0, beat = 0;
+  const coreColor = [...CALM];
+  const waveOn = [0, 0, 0];
   let introStart = performance.now(), last = performance.now();
   let pointer = { x: -1, y: -1, inside: false };
 
   /* ---- Kleuren ---- */
   const colors = new Map(LEVELS.map(l => [l.id, rgbOf(l.color)]));
   const URGENT_RGB = colors.get(URGENT_LEVEL);
+  const TODAY_RGB = colors.get(URGENT_LEVEL + 1);
 
   /* ---- Vaste geometrie ---- */
   const rings = LEVELS.map(lv => {
@@ -206,6 +210,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     layoutOffsets();
     for (const o of orbs.values()) if (o.fresh) { o.offset = o.targetOffset; o.fresh = false; }
     nowCount = list.filter(t => t.level === URGENT_LEVEL).length;
+    todayCount = list.filter(t => t.level === URGENT_LEVEL + 1).length;
   }
 
   function complete(id) {
@@ -288,7 +293,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     for (let i = waves.length - 1; i >= 0; i--) { waves[i].age += dt; if (waves[i].age > 0.8) waves.splice(i, 1); }
 
-    nowGlow = smooth(nowGlow, nowCount > 0 ? 1 : 0, 3, dt);
+    // kern: urgentie, kleur, tempo en aantal golven glijden mee met de taken
+    const target = nowCount > 0 ? 1 + Math.min(nowCount - 1, 3) / 3 : todayCount > 0 ? 0.5 : 0;
+    urgency = smooth(urgency, target, 2.5, dt);
+    const goal = nowCount > 0 ? URGENT_RGB : todayCount > 0 ? TODAY_RGB : CALM;
+    for (let i = 0; i < 3; i++) coreColor[i] = smooth(coreColor[i], goal[i], 3, dt);
+    const waveCount = nowCount > 0 ? Math.min(WAVES, 1 + Math.floor((nowCount - 1) / 1.5)) : todayCount > 0 ? 1 : 0;
+    for (let i = 0; i < WAVES; i++) waveOn[i] = smooth(waveOn[i], i < waveCount ? 1 : 0, 3, dt);
+    if (motion && urgency > 0.01) beat += dt / beatPeriod();
   }
 
   /* ---- Tekenen ---- */
@@ -401,29 +413,38 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return [INK[0] + (c[0] - INK[0]) * t, INK[1] + (c[1] - INK[1]) * t, INK[2] + (c[2] - INK[2]) * t];
   }
 
-  /* Kern: ring van streepjes die rondom oplichten, rood en sneller met meer Nu-taken, grijs en stil zonder */
+  /* Kern: een baken. Effen stip die klopt en effen lichtgolven uitzendt; sneller, sterker en meer golven bij meer urgentie */
+  function beatPeriod() {
+    return urgency >= 1 ? 1.9 / (1 + 0.9 * (urgency - 1)) : 3.4;
+  }
+
   function drawCore(now) {
     if (!project(0, 0, TIP_Z * cam.depth, false)) return;
     const intro = introAlpha(now, 0, 1.1);
     if (intro <= 0) return;
     const { x, y, f } = pt;
-    const R = CORE_R * cam.s * f;
-    const n = Math.min(nowCount, 4);
-    const period = 2.4 / (1 + 0.3 * Math.max(0, n - 1));
-    const head = reducedMotion.matches ? 0 : ((now / 1000) / (period * 1.2)) % 1;
-    const lit = nowGlow > 0.01;
-    ctx.lineCap = 'round';
-    ctx.lineWidth = clamp(1.8 * cam.du * f, 1.4, 3.4);
-    for (let i = 0; i < CORE_DASHES; i++) {
-      const ang = i / CORE_DASHES * TAU;
-      const p = ((i / CORE_DASHES - head) % 1 + 1) % 1;
-      const a = lit ? 0.18 + 0.82 * Math.pow(1 - p, 3) * nowGlow : 0.3;
-      ctx.strokeStyle = rgba(lit ? URGENT_RGB : CALM, a * intro);
-      ctx.beginPath();
-      ctx.moveTo(x + Math.cos(ang) * R * 0.78, y + Math.sin(ang) * R * 0.78);
-      ctx.lineTo(x + Math.cos(ang) * R * 1.08, y + Math.sin(ang) * R * 1.08);
-      ctx.stroke();
+    const u = cam.s * f;
+    const strength = Math.min(1, urgency / 2) * 0.6 + Math.min(1, urgency) * 0.4;   // 0..1
+    const still = reducedMotion.matches;
+    // golven: vlakke schijven die uitdijen en vervagen
+    if (!still) {
+      for (let i = 0; i < WAVES; i++) {
+        if (waveOn[i] < 0.01) continue;
+        const p = ((beat + i / WAVES) % 1 + 1) % 1;
+        const r = (CORE_R + p * (WAVE_R * (0.7 + 0.3 * strength) - CORE_R)) * u;
+        ctx.fillStyle = rgba(coreColor, (0.12 + 0.26 * strength) * Math.pow(1 - p, 1.5) * waveOn[i] * intro);
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, TAU);
+        ctx.fill();
+      }
     }
+    // stip: klopt bij elke slag
+    const p0 = ((beat % 1) + 1) % 1;
+    const thump = still ? 0 : Math.exp(-p0 * 7) * strength;
+    ctx.fillStyle = rgba(coreColor, intro);
+    ctx.beginPath();
+    ctx.arc(x, y, CORE_R * u * (0.8 + 0.2 * Math.min(1, urgency) + 0.28 * thump), 0, TAU);
+    ctx.fill();
   }
 
   const isHot = o => hover.orb === o.id || external.task === o.id || pinned === o.id;

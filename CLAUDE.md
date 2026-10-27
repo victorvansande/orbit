@@ -15,7 +15,7 @@ Live: https://victorvansande.github.io/orbit/ (GitHub Pages, bron `main` / root)
 ## Ontwerp
 
 Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurbollen) en een gebogen wiel als kiezer (referentie: verticale boog met pillen en labels). Bewust één licht thema.
-- Bollen: stijl Taps (gekozen door Victor uit vier stijlen en vier varianten). Effen kleur, geen verloop, geen gloed: een ronde kop die taps uitloopt langs de baan, lengte volgt de snelheid. Bij stilstand (hover, slepen) blijft alleen de ronde kop over. Kern: een ring van 12 streepjes die rondom oplichten, rood en sneller met meer Nu-taken, grijs en stil zonder. Verloop, glans en dikke bollen oogden gedateerd; niet terugbrengen.
+- Bollen: stijl Taps (gekozen door Victor uit vier stijlen en vier varianten). Effen kleur, geen verloop, geen gloed: een ronde kop die taps uitloopt langs de baan, lengte volgt de snelheid. Bij stilstand (hover, slepen) blijft alleen de ronde kop over. Kern: een pulserend baken dat de urgentie weerspiegelt (zie Scène). Verloop, glans en dikke bollen oogden gedateerd; niet terugbrengen.
 
 - Papier #F1F1EF met lichte korrel (`.grain`, SVG-ruis, opacity 0,14). Inkt #1B1B22, secundair #5E5E68, tertiair #9A9AA3.
 - Typografie: Geist (UI) en Geist Mono (kapitaaltjes in de hoeken, tellers), via Google Fonts, met systeemfont als terugval.
@@ -53,7 +53,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 - Bol (`drawOrb`): `tracePath` volgt de baan achter de kop, `taper` vult er een effen, taps vlak langs (breedte 2r aan de kop, 0,35r aan het eind). Lengte = (staart + 1) × 7 × `TAIL_LENGTH` × snelheid.
 - Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader), de bol krijgt een dun ringetje. Hover op een rij in de lijst doet hetzelfde voor die ene taak.
 - Slepen op een bol: bol volgt de cursor, dichtstbijzijnde ring licht op ("Naar …"), loslaten verplaatst de taak (`onReassign`). Slepen op lege ruimte: horizontaal draaien, verticaal kantelen; loslaten klikt naar het dichtste aanzicht.
-- Kern (`drawCore`): `CORE_DASHES` streepjes op straal `CORE_R`, de oplichtende kop draait sneller bij meer Nu-taken. Ligt op de diepte van de tip.
+- Kern (`drawCore`): een baken. Effen stip die klopt en effen lichtgolven uitzendt (vlakke schijven die uitdijen en vervagen, geen verloop). `urgency` glijdt naar 0 (geen Nu/Vandaag: grijs, stil), 0,5 (alleen Vandaag: oranje, traag, één golf) of 1 tot 2 (Nu: rood, tempo en aantal golven stijgen per Nu-taak, max. 3). Tempo via een opgetelde fase (`beat`), zodat een tempowissel niet springt. Ligt op de diepte van de tip.
 - Intro: raster, wijzerplaat en ringen (van binnen naar buiten) faden in, bollen spiralen gestaffeld binnen. Nieuwe taken spiralen ook binnen; afvinken laat de bol uiteenspatten (deeltjes + ring).
 - Tijdgebaseerd (dt), dus even snel op 60 en 120 Hz.
 
@@ -73,7 +73,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 - Lijst gegroepeerd per moment. Afvinken: cirkel kleurt als bol, rij schuift weg, bol spat uiteen, toast met "Ongedaan maken" (5 s, ook `Z` of Ctrl/Cmd+Z).
 - Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten.
-- Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kern van streepjes) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), "Voeg toe" pas actief met een titel.
+- Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), "Voeg toe" pas actief met een titel.
 - Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `Z` ongedaan, `Esc` sluit.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand.
 
