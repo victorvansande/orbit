@@ -115,13 +115,16 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 
 - Zelfde aanpak als streep en Operatie-Erfpacht: MQTT over WSS naar publieke brokers (HiveMQ `wss://broker.hivemq.com:8884/mqtt`, na twee mislukte pogingen EMQX `wss://broker.emqx.io:8084/mqtt`), één bewaarde (retained) snapshot per kanaal, qos 1. Geen server, geen account, geen secrets.
 - Verschil met streep: Orbit is een openbare site met persoonlijke taken. Een synccode van 16 tekens (`XXXX-XXXX-XXXX-XXXX`, zonder 0/O/1/I/L) bepaalt het kanaal (`orbit/v1/` + SHA-256) en de sleutel (PBKDF2 150k, AES-GCM 256). Alles wordt in de browser versleuteld; de broker ziet enkel ruis. Wie de code niet heeft, vindt het kanaal niet en kan niets lezen.
-- Koppelen met een QR-code (gekozen door Victor: geen account, geen code om te onthouden). Knop rechtsboven heet "Koppelen" zolang er niets gekoppeld is, daarna de status ("Verbinden", "Verbonden", "Gesynchroniseerd", "Offline").
-  - Venster "Toestellen koppelen": **Toon QR-code** (maakt een code en toont de QR met de koppellink `…#sync=CODE`) of **Scan QR-code** (camera in Orbit zelf: BarcodeDetector waar die bestaat, anders jsQR, nodig voor Safari). "Code typen" zit weggestopt als terugval; zonder cameratoegang gaat het venster daar vanzelf naartoe.
-  - Gekoppeld: QR-code (altijd donker op licht, ook in het donkere thema, tokens `--qr-bg`, `--qr-ink`) om nog een toestel te koppelen, status, "Kopieer link", "Toon code", "Ontkoppel dit toestel".
-  - Een geopende link (ook via de gewone gsm-camera) vraagt één tik "Koppel dit toestel". Bewust niet automatisch: anders kan iemand je met een link aan zijn eigen lijst hangen. De hash wordt meteen gewist.
-  - Een app op het iOS-beginscherm heeft een eigen opslag, los van Safari: daar scannen via "Scan QR-code" in de app zelf (staat in de uitleg onder de QR).
-  - Camera stopt altijd bij annuleren, koppelen of sluiten van het venster. Aanraakschermen starten met `data-input="pointer"`, zodat er geen focuskader verschijnt.
-  - Getest met een nep-camera in Chromium (`--use-file-for-fake-video-capture` met een mjpeg van de QR): scannen via jsQR, koppelen, link met bevestiging, code typen, ontkoppelen.
+- Koppelen met een QR-code, **in één richting** (Victor: "degene die scant ontvangt, degene die gescand wordt stuurt enkel door"). Knop rechtsboven heet "Koppelen" zolang er niets gekoppeld is, daarna de status.
+  - Startscherm: twee keuzes. **Verstuur van dit toestel** (toont de QR met de koppellink `…#sync=CODE`, de lijst hier blijft) of **Ontvang op dit toestel** (camera in Orbit: BarcodeDetector, anders jsQR voor Safari; de lijst hier wordt vervangen). "Code typen om te ontvangen" als terugval; zonder camera gaat het venster daar vanzelf naartoe.
+  - Rollen in `sync.js`: `send` (publiceert zijn lijst als bewaarde snapshot, luistert op `<kanaal>/ack`), `receive` (publiceert niets tot er een lijst binnen is, neemt die over via `onReceive` na een momentopname "Voor ontvangen", stuurt dan een versleutelde bevestiging met toestelnaam en aantal), daarna `normal` (samenvoegen per taak, beide richtingen).
+  - Verzender ziet "Dit toestel → Toestel dat scant", de QR en een statusregel: verbinden, "Klaar om te versturen: n taken", "Verstuurd naar iPhone: n taken". Een gekoppeld toestel opent het venster altijd als verzender (`sync.send()`); sluiten zet het terug op `normal` (`endSend`).
+  - Ontvanger ziet vier stappen (code ontvangen, verbinden, wachten op de lijst, taken overgenomen). Na 20 s zonder lijst: uitleg en "Opnieuw proberen"; na 4 mislukte verbindingen: server onbereikbaar, met de tip mobiele data te proberen (sommige wifi blokkeert poort 8884/8084).
+  - Een geopende link (ook via de gewone gsm-camera) vraagt één tik "Ontvang taken", met de waarschuwing dat de lijst vervangen wordt. Bewust niet automatisch.
+  - `deviceName()` in `pair.js` (iPhone, iPad, Android-gsm, Mac, Windows-pc, ...) voor de bevestiging.
+  - Mislukte verbindingen telt de app via het `close`-event (MQTT.js geeft daar geen `error`).
+  - Een app op het iOS-beginscherm heeft een eigen opslag, los van Safari: daar ontvangen via de scanner in de app zelf.
+  - Getest met een nep-camera in Chromium (`--use-file-for-fake-video-capture` met een mjpeg van de QR): pc verstuurt, gsm met eigen taak ontvangt (lijst vervangen, momentopname bewaard), bevestiging bij de verzender, daarna gelijk in beide richtingen, link met bevestiging, time-out, server onbereikbaar.
 - Code in localStorage `priority-orbit.sync.v1`; bij het laden verbindt de app meteen opnieuw. Ook opnieuw bij `visibilitychange` (gsm uit de achtergrond) en `online`.
 - Samenvoegen (`mergeStates`): per taak wint de recentste `updatedAt`; een taak in `gone` blijft weg tenzij ze nadien opnieuw gewijzigd is (ongedaan maken). Na samenvoegen publiceert een toestel enkel als het iets had wat de snapshot nog niet had. Wijzigingen worden 400 ms gebundeld.
 - Voorbeeldtaken gaan nooit mee (`getState` geeft `realTasks()`); er wordt bij het koppelen niets meer weggefilterd.
@@ -157,5 +160,5 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 ## Open vragen
 
 - Statistiek op basis van het archief (hoeveel afgevinkt per week)?
-- Sync is enkel getest met een lokale broker; de publieke brokers waren niet bereikbaar vanuit de cloudomgeving. Eerste echte test op twee toestellen nog doen.
+- Sync is enkel getest met een lokale broker; de publieke brokers waren niet bereikbaar vanuit de cloudomgeving. Victor meldde dat de eerste QR-versie "niet werkte" (details onbekend); de versie met versturen/ontvangen toont nu elke stap en de reden als iets faalt. Vraag bij problemen welke stap of melding hij ziet.
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.

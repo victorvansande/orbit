@@ -153,48 +153,76 @@
 
 <dialog class="sync" id="sync" aria-labelledby="sync-title">
   <div class="sync-card">
-    <div class="composer-meta"><span id="sync-title">Toestellen koppelen</span><span>Eenmalig</span></div>
+    <div class="composer-meta"><span id="sync-title">Toestellen koppelen</span><span id="sync-kicker">Eenmalig</span></div>
+
     <div class="sync-view" id="sync-off">
-      <p class="sync-text">Koppel je toestellen één keer. Daarna blijven je taken overal vanzelf gelijk, zonder account of code om te onthouden.</p>
-      <div class="sync-row">
-        <button type="button" class="btn-solid" id="sync-new">Toon QR-code</button>
-        <button type="button" class="btn-ghost" id="sync-scan">Scan QR-code</button>
+      <p class="sync-text">Kies op welk toestel je taken nu staan. Dat toestel verstuurt, het andere ontvangt. Daarna blijven ze vanzelf gelijk.</p>
+      <div class="sync-choices">
+        <button type="button" class="sync-choice" id="sync-new">
+          <span class="sync-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+          <span class="sync-choice-text"><span class="sync-choice-title">Verstuur van dit toestel</span><span class="sync-choice-sub">Toont een QR-code. Je lijst hier blijft zoals ze is.</span></span>
+        </button>
+        <button type="button" class="sync-choice" id="sync-scan">
+          <span class="sync-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
+          <span class="sync-choice-text"><span class="sync-choice-title">Ontvang op dit toestel</span><span class="sync-choice-sub">Scan de QR-code van je andere toestel. Je lijst hier wordt vervangen.</span></span>
+        </button>
       </div>
-      <p class="sync-text sync-note">Toon de QR-code op het toestel waar je taken al staan en scan hem met het andere.</p>
       <details class="sync-manual" id="sync-manual">
-        <summary>Code typen</summary>
+        <summary>Code typen om te ontvangen</summary>
         <form class="sync-join" id="sync-join-form" novalidate>
           <div class="sync-row">
             <input class="sync-input" id="sync-input" aria-label="Code" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24">
-            <button type="submit" class="btn-ghost" id="sync-join">Koppel</button>
+            <button type="submit" class="btn-ghost" id="sync-join">Ontvang</button>
           </div>
           <p class="sync-error" id="sync-error" role="alert" hidden></p>
         </form>
       </details>
     </div>
+
     <div class="sync-view" id="sync-confirm" hidden>
-      <p class="sync-text">Dit toestel koppelen aan je andere toestellen? Je taken worden samengevoegd, er verdwijnt niets.</p>
+      <p class="sync-text">Taken ontvangen van je andere toestel?</p>
+      <p class="sync-warn">De lijst op dit toestel wordt vervangen door die van het andere toestel. Orbit bewaart eerst een momentopname, terug te vinden in Archief.</p>
       <div class="sync-row sync-end">
         <button type="button" class="btn-ghost" id="sync-confirm-no">Niet nu</button>
-        <button type="button" class="btn-solid" id="sync-confirm-yes">Koppel dit toestel</button>
+        <button type="button" class="btn-solid" id="sync-confirm-yes">Ontvang taken</button>
       </div>
     </div>
+
     <div class="sync-view" id="sync-scanner" hidden>
+      <p class="sync-warn">De lijst op dit toestel wordt vervangen door die van het andere toestel. Orbit bewaart eerst een momentopname.</p>
       <div class="sync-video"><video id="sync-video" playsinline muted></video><span class="sync-frame" aria-hidden="true"></span></div>
-      <p class="sync-text sync-note" id="sync-scan-msg" role="status">Richt de camera op de QR-code van je andere toestel.</p>
+      <p class="sync-text sync-note" id="sync-scan-msg" role="status">Richt de camera op de QR-code van het toestel dat verstuurt.</p>
       <div class="sync-row sync-end">
         <button type="button" class="btn-ghost" id="sync-scan-cancel">Annuleren</button>
       </div>
     </div>
+
+    <div class="sync-view" id="sync-recv" hidden>
+      <ol class="sync-steps" id="sync-recv-steps">
+        <li data-step="scan">Code ontvangen</li>
+        <li data-step="connect">Verbinden met de server</li>
+        <li data-step="wait">Wachten op de lijst van het andere toestel</li>
+        <li data-step="done">Taken overgenomen</li>
+      </ol>
+      <p class="sync-text sync-note" id="sync-recv-msg" role="status"></p>
+      <div class="sync-row sync-end">
+        <button type="button" class="btn-ghost" id="sync-recv-cancel">Annuleren</button>
+        <button type="button" class="btn-ghost" id="sync-recv-retry" hidden>Opnieuw proberen</button>
+        <button type="button" class="btn-solid" id="sync-recv-done" hidden>Klaar</button>
+      </div>
+    </div>
+
     <div class="sync-view" id="sync-on" hidden>
-      <div class="sync-qr" id="sync-qr" role="img" aria-label="QR-code om een toestel te koppelen"></div>
-      <p class="sync-meta" id="sync-meta"></p>
-      <p class="sync-text sync-note">Scan met de camera van je andere toestel. Staat Orbit als app op je beginscherm, tik daar dan op "Scan QR-code".</p>
+      <p class="sync-dir"><span>Dit toestel</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M2 6h34M31 1l5 5-5 5"/></svg><span>Toestel dat scant</span></p>
+      <div class="sync-qr" id="sync-qr" role="img" aria-label="QR-code om taken naar een ander toestel te versturen"></div>
+      <p class="sync-status" id="sync-send-status" role="status"><span class="sync-dot" aria-hidden="true"></span><span id="sync-send-text"></span></p>
+      <p class="sync-text sync-note">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Staat Orbit daar als app op het beginscherm, scan dan vanuit de app.</p>
       <div class="sync-row">
         <button type="button" class="btn-ghost" id="sync-copy-link">Kopieer link</button>
         <button type="button" class="btn-ghost" id="sync-show-code" aria-expanded="false">Toon code</button>
       </div>
       <p class="sync-code" id="sync-code" hidden></p>
+      <p class="sync-meta" id="sync-meta"></p>
       <div class="sync-row sync-end">
         <button type="button" class="btn-ghost" id="sync-stop">Ontkoppel dit toestel</button>
         <button type="button" class="btn-solid" id="sync-close">Klaar</button>

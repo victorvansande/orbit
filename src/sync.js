@@ -103,33 +103,48 @@ function loadMqtt() {
 }
 
 /* ---- Verbinding ---- */
-// getState(): huidige lokale toestand; applyState(state): toestand overnemen; onStatus({status, lastSync, code})
-export function createSync({ getState, applyState, onStatus = () => {} }) {
-  let code = null, key = null, topic = null, client = null;
-  let brokerIdx = 0, failures = 0, status = 'off', lastSync = null;
-  let publishTimer = 0, firstTimer = 0, dirty = false, generation = 0;
+// Rollen bij het koppelen, bewust in één richting:
+//   'send'    dit toestel toont de QR-code en verstuurt zijn lijst (bewaarde snapshot op het kanaal)
+//   'receive' dit toestel heeft gescand: het stuurt niets, wacht op de lijst van de verzender en neemt die over
+//   'normal'  daarna houden alle gekoppelde toestellen elkaar gelijk (samenvoegen per taak)
+// getState(): lokale toestand; applyState(state): samengevoegde toestand overnemen; onReceive(state): ontvangen lijst
+// overnemen (vervangt de lokale); onStatus({status, lastSync, code}); onPair({role, step, ...}) voor de stappen.
+const RECEIVE_TIMEOUT = 20000;
+
+export function createSync({ getState, applyState, onReceive = applyState, onStatus = () => {}, onPair = () => {}, deviceName = '' }) {
+  let code = null, key = null, topic = null, client = null, mode = 'normal';
+  let brokerIdx = 0, failures = 0, attempts = 0, status = 'off', lastSync = null;
+  let publishTimer = 0, firstTimer = 0, waitTimer = 0, dirty = false, generation = 0;
 
   const brokers = () => {
     try { const o = localStorage.getItem(BROKER_OVERRIDE_KEY); if (o) return [o]; } catch { /* geen opslag */ }
     return BROKERS;
   };
+  const brokerName = url => (/hivemq/.test(url) ? 'HiveMQ' : /emqx/.test(url) ? 'EMQX' : new URL(url).host);
 
   function setStatus(next) {
     status = next;
     onStatus({ status, lastSync, code });
   }
 
-  async function start(newCodeValue) {
-    stop({ keepCode: false });
+  // role: 'send', 'receive' of 'normal' (gewoon opnieuw verbinden met een bewaarde code)
+  async function start(newCodeValue, { role = 'normal' } = {}) {
+    stop({ keepCode: false, quiet: true });
     code = normalizeCode(newCodeValue);
     if (!code) throw new Error('ongeldige code');
     try { localStorage.setItem(CODE_KEY, code); } catch { /* geen opslag */ }
+    mode = role;
     const gen = ++generation;
+    attempts = 0;
     setStatus('connecting');
+    onPair({ role: mode, step: 'connecting' });
     [key, topic] = await Promise.all([deriveKey(code), topicFor(code)]);
-    try { await loadMqtt(); } catch { if (gen === generation) setStatus('offline'); return; }
+    try { await loadMqtt(); } catch {
+      if (gen === generation) { setStatus('offline'); onPair({ role: mode, step: 'error', reason: 'lib' }); }
+      return;
+    }
     if (gen !== generation) return;
-    dirty = true;
+    dirty = mode !== 'receive';      // een ontvanger stuurt niets voor hij iets ontvangen heeft
     connect(gen);
   }
 
@@ -145,27 +160,45 @@ export function createSync({ getState, applyState, onStatus = () => {} }) {
       if (gen !== generation) return;
       failures = 0;
       setStatus('online');
-      c.subscribe(topic, { qos: 1 }, () => {
-        // Komt er geen bewaarde snapshot binnen, dan zijn wij de eerste: publiceer de eigen stand
+      c.subscribe([topic, topic + '/ack'], { qos: 1 }, err => {
+        if (gen !== generation) return;
+        if (err) { onPair({ role: mode, step: 'error', reason: 'subscribe', server: brokerName(url) }); return; }
+        if (mode === 'receive') {
+          onPair({ role: 'receive', step: 'waiting', server: brokerName(url) });
+          clearTimeout(waitTimer);
+          waitTimer = setTimeout(() => { if (mode === 'receive') onPair({ role: 'receive', step: 'timeout' }); }, RECEIVE_TIMEOUT);
+          return;
+        }
+        // Verzender: even wachten op een bewaarde stand van eerder gekoppelde toestellen, die samenvoegen, dan versturen
         clearTimeout(firstTimer);
-        firstTimer = setTimeout(() => { if (dirty) publish(); }, FIRST_SNAPSHOT_WAIT);
+        firstTimer = setTimeout(() => { if (dirty || mode === 'send') publish(); }, mode === 'send' ? 800 : FIRST_SNAPSHOT_WAIT);
       });
     });
-    c.on('message', (_t, payload) => { if (gen === generation) receive(payload.toString()); });
-    const fail = () => {
+    c.on('message', (t, payload) => {
       if (gen !== generation) return;
+      if (t === topic + '/ack') receiveAck(payload.toString());
+      else receive(payload.toString());
+    });
+    const fail = () => {
+      if (gen !== generation || c.dead) return;
+      attempts++;
       setStatus(navigator.onLine === false ? 'offline' : 'connecting');
+      onPair({ role: mode, step: 'retrying', attempts, server: brokerName(url), offline: navigator.onLine === false });
       if (++failures >= 2 && brokers().length > 1) {
         // na twee mislukte pogingen naar de reservebroker
         failures = 0;
         brokerIdx++;
+        c.dead = true;
         try { c.end(true); } catch { /* al dicht */ }
         connect(gen);
       }
     };
-    c.on('error', fail);
-    c.on('offline', fail);
-    c.on('close', () => { if (gen === generation && status === 'online') setStatus('connecting'); });
+    // MQTT.js meldt elke mislukte (her)verbinding als 'close'; een verbroken verbinding ook
+    c.on('close', () => {
+      if (gen !== generation || c.dead) return;
+      if (status === 'online') setStatus('connecting');
+      else fail();
+    });
   }
 
   async function receive(text) {
@@ -173,60 +206,99 @@ export function createSync({ getState, applyState, onStatus = () => {} }) {
     try { remote = await open(key, text); } catch { return; }        // niet van ons of beschadigd
     if (!remote || !Array.isArray(remote.tasks)) return;
     clearTimeout(firstTimer);
+    lastSync = Date.now();
+    if (mode === 'receive') {
+      // Eerste lijst van de verzender: overnemen, bevestigen, en vanaf nu gewoon gelijk houden
+      mode = 'normal';
+      clearTimeout(waitTimer);
+      onReceive(remote);
+      dirty = false;
+      setStatus('online');
+      onPair({ role: 'receive', step: 'done', count: remote.tasks.length, from: remote.from || '' });
+      sendAck(remote.tasks.length);
+      return;
+    }
     const local = getState();
     const merged = mergeStates(local, remote);
     if (!sameState(merged, local)) applyState(merged);
-    // Had dit toestel iets wat de snapshot nog niet had, dan sturen we de samengevoegde stand terug
+    // Had dit toestel iets wat de snapshot nog niet had, dan de samengevoegde stand terugsturen
     if (!sameState(merged, remote)) changed(); else dirty = false;
-    lastSync = Date.now();
     setStatus('online');
   }
 
+  async function sendAck(count) {
+    if (!client?.connected) return;
+    const payload = await seal(key, { ack: true, from: deviceName, count, at: Date.now() });
+    client.publish(topic + '/ack', payload, { qos: 1 });
+  }
+
+  async function receiveAck(text) {
+    let info;
+    try { info = await open(key, text); } catch { return; }
+    if (info?.ack) onPair({ role: 'send', step: 'received', count: info.count, by: info.from || '' });
+  }
+
   function changed() {
-    if (!code) return;
+    if (!code || mode === 'receive') return;
     dirty = true;
     clearTimeout(publishTimer);
     publishTimer = setTimeout(publish, PUBLISH_DELAY);
   }
 
   async function publish() {
+    if (mode === 'receive') return;
     if (!client || !client.connected) { dirty = true; return; }
-    const payload = await seal(key, getState());
+    const state = getState();
+    const payload = await seal(key, { ...state, from: deviceName });
     client.publish(topic, payload, { qos: 1, retain: true }, err => {
-      if (err) return;
+      if (err) { if (mode === 'send') onPair({ role: 'send', step: 'error', reason: 'publish' }); return; }
       dirty = false;
       lastSync = Date.now();
       setStatus('online');
+      if (mode === 'send') onPair({ role: 'send', step: 'ready', count: state.tasks.length });
     });
   }
 
-  function stop({ keepCode = false } = {}) {
+  // QR-code tonen op een toestel: verzender worden (nieuwe code, of de bestaande als het al gekoppeld is)
+  function send(fresh) {
+    if (!code) return start(fresh, { role: 'send' });
+    mode = 'send';
+    if (client?.connected) { onPair({ role: 'send', step: 'connecting' }); publish(); }
+    else start(code, { role: 'send' });
+  }
+
+  // Venster dicht: geen verzender meer, gewoon gelijk houden
+  function endSend() { if (mode === 'send') mode = 'normal'; }
+
+  function stop({ keepCode = false, quiet = false } = {}) {
     generation++;
-    clearTimeout(publishTimer); clearTimeout(firstTimer);
+    clearTimeout(publishTimer); clearTimeout(firstTimer); clearTimeout(waitTimer);
     if (client) { try { client.end(true); } catch { /* al dicht */ } client = null; }
     if (!keepCode) {
       code = null;
       try { localStorage.removeItem(CODE_KEY); } catch { /* geen opslag */ }
     }
     key = topic = null;
-    setStatus('off');
+    mode = 'normal';
+    if (!quiet) setStatus('off');
   }
 
   // Na een tijd in de achtergrond (gsm) meteen opnieuw verbinden en de laatste stand ophalen
   document.addEventListener('visibilitychange', () => {
     if (document.hidden || !code) return;
-    if (!client || !client.connected) { const c = code; start(c); }
+    if (!client || !client.connected) start(code, { role: mode });
   });
   window.addEventListener('online', () => {
     if (!code) return;
     if (client && client.connected) { setStatus('online'); if (dirty) changed(); }
-    else start(code);
+    else start(code, { role: mode });
   });
   window.addEventListener('offline', () => { if (code) setStatus('offline'); });
 
   return {
-    start, stop, changed,
+    start, stop, changed, send, endSend,
     get code() { return code; },
+    get mode() { return mode; },
     get status() { return status; },
     get lastSync() { return lastSync; },
   };

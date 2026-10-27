@@ -115,3 +115,16 @@ export function createScanner(video, { onCode, onMessage }) {
 
   return { start, stop, get running() { return running; } };
 }
+
+// Korte naam van dit toestel, zodat de verzender ziet wie ontving ("Verstuurd naar iPhone")
+export function deviceName() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone/.test(ua)) return 'iPhone';
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? 'Android-gsm' : 'Android-tablet';
+  if (/Macintosh/.test(ua)) return 'Mac';
+  if (/Windows/.test(ua)) return 'Windows-pc';
+  if (/CrOS/.test(ua)) return 'Chromebook';
+  if (/Linux/.test(ua)) return 'Linux-pc';
+  return 'ander toestel';
+}

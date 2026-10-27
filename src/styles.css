@@ -482,6 +482,43 @@ body.is-idle .controls { opacity: 0; }
 .sync-video video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .sync-frame { position: absolute; inset: 16%; border: 2px solid var(--qr-bg); border-radius: 16px; opacity: .85; }
 #sync-scan-msg.is-error { color: var(--late); }
+/* Keuze: versturen of ontvangen */
+.sync-choices { display: flex; flex-direction: column; gap: 8px; }
+.sync-choice {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; text-align: left;
+  border: 1px solid var(--line); border-radius: 18px; background: var(--chip); color: var(--ink);
+  transition: border-color .2s var(--ease), background .2s var(--ease);
+}
+.sync-choice:hover { border-color: var(--dash-2); background: var(--fill); }
+.sync-choice-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: var(--on-ink); }
+.sync-choice-icon svg, .sync-dir svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sync-choice-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sync-choice-title { font-size: 15px; font-weight: 500; }
+.sync-choice-sub { font-size: 12.5px; line-height: 1.4; color: var(--ink-3); }
+.sync-warn { font-size: 13px; line-height: 1.45; color: var(--ink-2); padding: 10px 12px; border-radius: 12px; background: var(--fill); }
+/* Richting bij versturen: dit toestel -> toestel dat scant */
+.sync-dir { display: flex; align-items: center; justify-content: center; gap: 10px; font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.sync-dir svg { stroke-width: 1.5; color: var(--ink-3); }
+.sync-status { display: flex; align-items: flex-start; justify-content: center; gap: 8px; font-size: 13.5px; line-height: 1.45; text-align: center; color: var(--ink-2); }
+.sync-status .sync-dot { flex: none; margin-top: 6px; }
+.sync-status[data-state="busy"] .sync-dot { animation: sync-blink 1.2s ease-in-out infinite; }
+.sync-status[data-state="ready"] .sync-dot, .sync-status[data-state="done"] .sync-dot { background: currentColor; }
+.sync-status[data-state="done"] { color: var(--ink); }
+.sync-status[data-state="error"] { color: var(--late); }
+/* Stappen bij ontvangen */
+.sync-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: step; }
+.sync-steps li { position: relative; padding-left: 30px; font-size: 14px; color: var(--ink-3); counter-increment: step; }
+.sync-steps li::before {
+  content: counter(step); position: absolute; left: 0; top: -1px; width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center; font: 500 11px/1 var(--mono); border: 1.5px solid currentColor;
+}
+.sync-steps li[data-state="active"] { color: var(--ink); }
+.sync-steps li[data-state="active"]::before { animation: sync-blink 1.2s ease-in-out infinite; }
+.sync-steps li[data-state="done"] { color: var(--ink); }
+.sync-steps li[data-state="done"]::before { content: "\2713"; background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.sync-steps li[data-state="fail"] { color: var(--late); }
+.sync-steps li[data-state="fail"]::before { content: "!"; }
+#sync-recv-msg.is-error { color: var(--late); }
 .sync-manual summary { width: max-content; min-height: 32px; display: flex; align-items: center; cursor: pointer; list-style: none; font-size: 13px; color: var(--ink-2); }
 .sync-manual summary::-webkit-details-marker { display: none; }
 .sync-manual summary:hover { color: var(--ink); }
