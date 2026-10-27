@@ -3,7 +3,7 @@
 // het moment: Nu het hoogst, Ooit het laagst, telkens een noot uit dezelfde pentatonische toonladder.
 
 const SOUND_KEY = 'priority-orbit.sound.v1';   // 'on' of 'off'
-export const SOUND_STYLE = 'glas';             // gekozen klank, zie SOUNDS
+export const SOUND_STYLE = 'baken';            // gekozen door Victor, zie SOUNDS
 const NOTES = [0, 1318.5, 1046.5, 880, 784, 659.3];   // per moment (1 = Nu): E6, C6, A5, G5, E5
 const MELODY = [0, 2, 4, 7, 9, 7, 4, 2, 4, 9, 12, 9];   // halve tonen boven C6, voor 'melodie'
 
