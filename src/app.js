@@ -4,6 +4,7 @@ import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode } from './sync.js';
 import { setMatrix } from './matrix.js';
+import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
 import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
 
@@ -649,8 +650,10 @@ applyTheme();
 
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
+const weather = createWeather($('focus-weather'));
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
+  if (on) weather.start(); else weather.stop();
   $('focus-btn').setAttribute('aria-pressed', String(on));
   if (on) {
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -677,6 +680,7 @@ window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraaks
 /* ---- Toetsenbord ---- */
 document.addEventListener('keydown', e => {
   if (composer.open || archiveDialog.open || syncDialog.open) return;
+  if (e.repeat) return;                 // ingedrukt houden herhaalt niets (anders flitst D tussen licht en donker)
   if (e.target.closest?.('input, textarea, [contenteditable]')) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
