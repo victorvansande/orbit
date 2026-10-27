@@ -521,7 +521,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return trailPts.length / 2;
   }
 
-  // Taps vlak langs trailPts: volle breedte aan de kop, dun aan het eind, effen kleur
+  // Taps vlak langs trailPts: volle breedte aan de kop, dun aan het eind (kleur of verloop: fillStyle van de aanroeper)
   function taper(wHead, wTail) {
     const n = trailPts.length / 2;
     if (n < 2) return;
@@ -542,7 +542,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.fill();
   }
 
-  // Bol: ronde kop die taps uitloopt langs de werkelijke baan (ook tijdens binnenvliegen of van ring wisselen).
+  // Bol ("Komeet", gekozen door Victor): volle ronde kop, de staart dooft uit naar doorzichtig langs de werkelijke
+  // baan (ook tijdens binnenvliegen of van ring wisselen). Effen staarten oogden te speels.
   // Lengte volgt de snelheid: op kruissnelheid de gewone staart, sneller (binnenvliegen) tot 2,5 keer zo lang.
   function drawOrb(o, it, lv, sp, moving) {
     ctx.globalAlpha = o.alpha;
@@ -554,8 +555,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const cruise = lv.orbit * TAU / lv.period;
       const length = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * Math.min(2.5, v / cruise);
       if (v > 0.01 && length > 0.5) {
-        tracePath(o, it, it.a, omega, vr, length / v, TRAIL_STEPS);
-        taper(it.r * 2, it.r * 0.35);
+        const n = tracePath(o, it, it.a, omega, vr, length / v, TRAIL_STEPS);
+        if (n > 1) {
+          const c = colors.get(o.level);
+          const fade = ctx.createLinearGradient(trailPts[0], trailPts[1], trailPts[2 * n - 2], trailPts[2 * n - 1]);
+          fade.addColorStop(0, rgba(c, 0.95));
+          fade.addColorStop(1, rgba(c, 0));
+          ctx.fillStyle = fade;
+          taper(it.r * 2, it.r * 0.35);
+          ctx.fillStyle = rgba(c, 1);
+        }
       }
     }
     ctx.beginPath();

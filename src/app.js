@@ -704,8 +704,8 @@ function drawComposerOrbit(now) {
   g.beginPath();
   g.arc(C, C, R, 0, TAU);
   g.stroke();
-  // taps bolletje
-  g.fillStyle = resolvedTheme() === 'dark' ? lv.dark : lv.color;
+  // komeet: volle kop, de staart dooft langs de boog uit (conische gradient rond het midden)
+  const tone = resolvedTheme() === 'dark' ? lv.dark : lv.color;
   const steps = 24, left = [], right = [];
   for (let k = 0; k <= steps; k++) {
     const p = k / steps, t = a - p * span;
@@ -713,12 +713,20 @@ function drawComposerOrbit(now) {
     left.push(C + Math.cos(t) * (R + w), C + Math.sin(t) * (R + w));
     right.push(C + Math.cos(t) * (R - w), C + Math.sin(t) * (R - w));
   }
+  if (g.createConicGradient) {
+    const fade = g.createConicGradient(a - span, C, C);
+    fade.addColorStop(0, `${tone}00`);
+    fade.addColorStop(span / TAU, `${tone}f2`);
+    fade.addColorStop(Math.min(1, span / TAU + 0.001), `${tone}00`);
+    g.fillStyle = fade;
+  } else g.fillStyle = `${tone}80`;
   g.beginPath();
   g.moveTo(left[0], left[1]);
   for (let k = 1; k <= steps; k++) g.lineTo(left[2 * k], left[2 * k + 1]);
   for (let k = steps; k >= 0; k--) g.lineTo(right[2 * k], right[2 * k + 1]);
   g.closePath();
   g.fill();
+  g.fillStyle = tone;
   g.beginPath();
   g.arc(C + Math.cos(a) * R, C + Math.sin(a) * R, head, 0, TAU);
   g.fill();
