@@ -5,7 +5,7 @@ import { LEVELS, iconSvg, toneNode } from './config.js';
 // Horizontaal (gsm): boog onder de scène, middelpunt onder het wiel.
 const GEOM = {
   vertical:   { R: 560, arc: 70, out: 66, spacing: 96 },
-  horizontal: { R: 620, arc: 28, out: 86, spacing: 92 },
+  horizontal: { R: 620, arc: 22, out: 50, spacing: 92 },
 };
 const PILL = { w: 62, h: 48, selW: 76, selH: 54 };
 
