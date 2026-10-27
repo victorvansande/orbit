@@ -36,6 +36,14 @@
     <button type="button" role="radio" aria-checked="false" data-view="side">Zijkant</button>
   </div>
   <button type="button" class="focus-btn" id="focus-btn" aria-pressed="false">Focus <kbd>F</kbd></button>
+  <div class="views tempo" role="radiogroup" aria-label="Tempo">
+    <span class="tempo-label">Tempo <kbd>T</kbd></span>
+    <button type="button" role="radio" aria-checked="true" data-tempo="normaal">Normaal</button>
+    <span class="slash" aria-hidden="true">/</span>
+    <button type="button" role="radio" aria-checked="false" data-tempo="zen">Zen</button>
+    <span class="slash" aria-hidden="true">/</span>
+    <button type="button" role="radio" aria-checked="false" data-tempo="stil">Stil</button>
+  </div>
 </div>
 
 <nav class="wheel" id="wheel" aria-label="Nieuwe taak">
@@ -51,7 +59,7 @@
     <span id="tracks-count"></span>
   </div>
   <div class="groups" id="groups"></div>
-  <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan</p>
+  <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo</p>
 </section>
 
 <div class="focus-info" aria-hidden="true">

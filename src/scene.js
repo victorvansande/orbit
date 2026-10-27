@@ -8,6 +8,14 @@ const PERSP_Y = (0.38 - 0.5) * 390;     // perspective-origin op 38 %
 const VIEW = { top: { tilt: 0, zoom: 0.92, shift: 0 }, side: { tilt: 58, zoom: 0.96, shift: -66 } };
 const VIEW_MS = 900;
 const SPIN_PERIOD = 160;
+// Tempo: normaal, zen (alles trager maar de volgorde blijft: Nu het snelst) of stil
+const ZEN_BASE = 8;                     // omlooptijd van Nu in zen (s)
+const zenFactor = lv => lv.period / (ZEN_BASE * Math.pow(lv.period / LEVELS[0].period, 0.55));
+const TEMPO = {
+  normaal: { orbit: () => 1, spin: 1, beat: 1, waves: 1 },
+  zen:     { orbit: zenFactor, spin: 0.35, beat: 0.5, waves: 1 },
+  stil:    { orbit: () => 0, spin: 0, beat: 0, waves: 0 },
+};
 const FIT = 440;                        // zoveel stage-eenheden passen in min(breedte, hoogte)
 
 const INK = [24, 24, 32];
@@ -75,6 +83,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const coreColor = [...CALM];
   const waveOn = [0, 0, 0];
   let introStart = performance.now(), last = performance.now();
+  let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
   let pointer = { x: -1, y: -1, inside: false };
 
   /* ---- Kleuren ---- */
@@ -261,13 +270,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     center.x = motion ? smooth(center.x, centerTarget.x, 6, dt) : centerTarget.x;
     center.y = motion ? smooth(center.y, centerTarget.y, 6, dt) : centerTarget.y;
-    if (motion) spin += dt * TAU / SPIN_PERIOD;
+    spinScale = smooth(spinScale, tempo.spin, 2, dt);
+    beatScale = smooth(beatScale, tempo.beat, 2, dt);
+    waveVis = smooth(waveVis, tempo.waves, 2, dt);
+    if (motion) spin += dt * TAU / SPIN_PERIOD * spinScale;
     yaw = motion ? smooth(yaw, yawTarget, 3, dt) : 0;
     pitch = motion ? smooth(pitch, pitchTarget, 3, dt) : 0;
 
     const hot = hotLevel();
     for (const lv of LEVELS) {
-      speed.set(lv.id, smooth(speed.get(lv.id), hot === lv.id ? 0 : 1, 5, dt));
+      speed.set(lv.id, smooth(speed.get(lv.id), hot === lv.id ? 0 : tempo.orbit(lv), hot === lv.id ? 5 : 2.5, dt));
       if (motion) phase.set(lv.id, phase.get(lv.id) + dt * TAU / lv.period * speed.get(lv.id));
       const dragging = drag?.type === 'orb' && drag.active;
       const lit = dragging ? dropLevel === lv.id : hot === lv.id;
@@ -300,7 +312,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (let i = 0; i < 3; i++) coreColor[i] = smooth(coreColor[i], goal[i], 3, dt);
     const waveCount = nowCount > 0 ? Math.min(WAVES, 1 + Math.floor((nowCount - 1) / 1.5)) : todayCount > 0 ? 1 : 0;
     for (let i = 0; i < WAVES; i++) waveOn[i] = smooth(waveOn[i], i < waveCount ? 1 : 0, 3, dt);
-    if (motion && urgency > 0.01) beat += dt / beatPeriod();
+    if (motion && urgency > 0.01) beat += dt / beatPeriod() * beatScale;
   }
 
   /* ---- Tekenen ---- */
@@ -425,14 +437,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const { x, y, f } = pt;
     const u = cam.s * f;
     const strength = Math.min(1, urgency / 2) * 0.6 + Math.min(1, urgency) * 0.4;   // 0..1
-    const still = reducedMotion.matches;
+    const still = reducedMotion.matches || waveVis < 0.01;
     // golven: vlakke schijven die uitdijen en vervagen
     if (!still) {
       for (let i = 0; i < WAVES; i++) {
         if (waveOn[i] < 0.01) continue;
         const p = ((beat + i / WAVES) % 1 + 1) % 1;
         const r = (CORE_R + p * (WAVE_R * (0.7 + 0.3 * strength) - CORE_R)) * u;
-        ctx.fillStyle = rgba(coreColor, (0.12 + 0.26 * strength) * Math.pow(1 - p, 1.5) * waveOn[i] * intro);
+        ctx.fillStyle = rgba(coreColor, (0.12 + 0.26 * strength) * Math.pow(1 - p, 1.5) * waveOn[i] * waveVis * intro);
         ctx.beginPath();
         ctx.arc(x, y, r, 0, TAU);
         ctx.fill();
@@ -440,7 +452,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     // stip: klopt bij elke slag
     const p0 = ((beat % 1) + 1) % 1;
-    const thump = still ? 0 : Math.exp(-p0 * 7) * strength;
+    const thump = still ? 0 : Math.exp(-p0 * 7) * strength * beatScale;
     ctx.fillStyle = rgba(coreColor, intro);
     ctx.beginPath();
     ctx.arc(x, y, CORE_R * u * (0.8 + 0.2 * Math.min(1, urgency) + 0.28 * thump), 0, TAU);
@@ -766,5 +778,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   return {
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
+    setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
   };
 }

@@ -428,6 +428,21 @@ function setView(name) {
 }
 for (const b of viewButtons) b.addEventListener('click', () => setView(b.dataset.view));
 
+/* ---- Tempo: normaal, zen of stil ---- */
+const TEMPO_KEY = 'priority-orbit.tempo.v1';
+const TEMPOS = ['normaal', 'zen', 'stil'];
+const tempoButtons = [...document.querySelectorAll('[data-tempo]')];
+let tempo = 'normaal';
+try { const saved = localStorage.getItem(TEMPO_KEY); if (TEMPOS.includes(saved)) tempo = saved; } catch { /* geen opslag */ }
+function setTempo(name) {
+  tempo = name;
+  scene.setTempo(name);
+  for (const b of tempoButtons) b.setAttribute('aria-checked', String(b.dataset.tempo === name));
+  try { localStorage.setItem(TEMPO_KEY, name); } catch { /* geen opslag */ }
+}
+for (const b of tempoButtons) b.addEventListener('click', () => setTempo(b.dataset.tempo));
+setTempo(tempo);
+
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 function setFocus(on) {
@@ -465,6 +480,7 @@ document.addEventListener('keydown', e => {
   else if (k === '2') setView('side');
   else if (k === 'f') setFocus(!document.body.classList.contains('is-focus'));
   else if (k === 'z') undo();
+  else if (k === 't') setTempo(TEMPOS[(TEMPOS.indexOf(tempo) + 1) % TEMPOS.length]);
   else if (e.key === 'Escape' && document.body.classList.contains('is-focus')) setFocus(false);
 });
 
