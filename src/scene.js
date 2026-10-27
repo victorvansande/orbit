@@ -29,7 +29,7 @@ const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
-const FLING_MIN = 90, FLING_LIFE = 1.6;   // afvinken: minimale vaart (eenheden/s) en levensduur (s)
+const TWINKLE_LIFE = 1.1;   // afvinken: duur van het uitfonkelen (s)
 const CORE_RMIN = 13, CORE_RMAX = 22, CORE_SPACING = 3.1, CORE_MIN_PX = 5;
 const coreGrids = new Map();
 function coreGrid(spacing) {
@@ -93,7 +93,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const speed = new Map(LEVELS.map(l => [l.id, 1]));
   const ringHot = new Map(LEVELS.map(l => [l.id, 0]));
   const orbs = new Map();
-  const flung = [];      // afgevinkte bollen die uit hun baan vliegen
+  const twinkles = [];   // afgevinkte bollen die uitfonkelen
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
   // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
@@ -239,21 +239,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     orbs.delete(id);
     layoutOffsets();
     if (reducedMotion.matches || o.sx == null) return;
-    // Slinger: de zwaartekracht valt weg, dus de bol vliegt rechtdoor in de richting waarin hij bewoog,
-    // met de snelheid die hij had (tangentieel plus eventuele radiale snelheid), op zijn eigen diepte.
-    const lv = LEVEL_BY_ID.get(o.level);
-    const a = orbAngle(o);
-    const [x, y, z] = orbFunnel(o, a);
-    const omega = TAU / lv.period * speed.get(o.level) + (o.vo || 0);
-    let vx = -Math.sin(a) * o.r * omega - Math.cos(a) * (o.vr || 0);
-    let vy = Math.cos(a) * o.r * omega - Math.sin(a) * (o.vr || 0);
-    let v = Math.hypot(vx, vy);
-    if (v < FLING_MIN) {
-      // stilstaand (hover, tempo Stil) of heel traag (Ooit): zelfde richting, net genoeg vaart om weg te gaan
-      const dx = v > 0.01 ? vx / v : -Math.sin(a), dy = v > 0.01 ? vy / v : Math.cos(a);
-      vx = dx * FLING_MIN; vy = dy * FLING_MIN; v = FLING_MIN;
-    }
-    flung.push({ level: o.level, x, y, z, vx, vy, v, age: 0, alpha: o.alpha ?? 1 });
+    // Zilver: de bol fonkelt uit waar hij stond, als een ster (vaste plek in de trechter, draait mee met de trechter)
+    const [x, y, z] = orbFunnel(o, orbAngle(o));
+    twinkles.push({ level: o.level, x, y, z, age: 0, alpha: o.alpha ?? 1 });
   }
 
   /* ---- Weergave ---- */
@@ -320,11 +308,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (o.blend) { o.blend.p += dt / 0.45; if (o.blend.p >= 1) o.blend = null; }
     }
 
-    for (let i = flung.length - 1; i >= 0; i--) {
-      const q = flung[i];
-      q.age += dt;
-      q.x += q.vx * dt; q.y += q.vy * dt;
-      if (q.age > FLING_LIFE || Math.hypot(q.x, q.y) > 900) flung.splice(i, 1);
+    for (let i = twinkles.length - 1; i >= 0; i--) {
+      twinkles[i].age += dt;
+      if (twinkles[i].age > TWINKLE_LIFE) twinkles.splice(i, 1);
     }
 
     // kern: urgentie, kleur, tempo en aantal golven glijden mee met de taken
@@ -589,28 +575,34 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
   }
 
-  // Losgelaten bollen: rechte lijn, staart achter zich in de vliegrichting, vervagen tegen het einde
+  // Uitfonkelen ("Zilver", gekozen door Victor): een vierpuntige ster met holle zijden in de inktkleur zwelt op,
+  // draait een kwartslag en krimpt tot niets; de bol zelf blijft als gekleurde kern in het midden en dooft mee.
+  function star4(x, y, R, rot, waist = 0.18) {
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const a = rot + i * Math.PI / 2, b = a + Math.PI / 4, c = a + Math.PI / 2;
+      if (i === 0) ctx.moveTo(x + Math.cos(a) * R, y + Math.sin(a) * R);
+      ctx.quadraticCurveTo(x + Math.cos(b) * R * waist, y + Math.sin(b) * R * waist, x + Math.cos(c) * R, y + Math.sin(c) * R);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
   function drawEffects() {
-    for (const q of flung) {
+    for (const q of twinkles) {
       if (!project(q.x, q.y, q.z, true)) continue;
       const lv = LEVEL_BY_ID.get(q.level);
-      const hx = pt.x, hy = pt.y;
+      const p = Math.min(1, q.age / TWINKLE_LIFE);
       const r = lv.size / 2 * ORB_SCALE * cam.du * pt.f;
-      const cruise = lv.orbit * TAU / lv.period;
-      const length = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * Math.min(2.5, Math.max(0.6, q.v / cruise));
-      trailPts.length = 0;
-      trailPts.push(hx, hy);
-      for (let k = 1; k <= 10; k++) {
-        const back = length * k / 10;
-        if (!project(q.x - q.vx / q.v * back, q.y - q.vy / q.v * back, q.z, true)) break;
-        trailPts.push(pt.x, pt.y);
-      }
-      const fade = 1 - Math.max(0, (q.age - (FLING_LIFE - 0.5)) / 0.5);
-      ctx.globalAlpha = q.alpha * fade;
+      const grow = p < 0.3 ? ease(p / 0.3) : 1 - Math.pow((p - 0.3) / 0.7, 2.2);
+      const shrink = p < 0.3 ? 1 : 1 - Math.pow((p - 0.3) / 0.7, 2.2) * 0.9;
+      const R = (r * 1.4 + 11 * cam.du * pt.f * grow) * shrink;
+      ctx.globalAlpha = q.alpha;
+      ctx.fillStyle = rgba(INK, 0.9);
+      if (R > 0.3) star4(pt.x, pt.y, R, Math.PI / 2 * p);
       ctx.fillStyle = rgba(colors.get(q.level), 1);
-      taper(r * 2, r * 0.35);
       ctx.beginPath();
-      ctx.arc(hx, hy, r, 0, TAU);
+      ctx.arc(pt.x, pt.y, Math.max(0, r * 0.8 * (1 - p)), 0, TAU);
       ctx.fill();
       ctx.globalAlpha = 1;
     }
