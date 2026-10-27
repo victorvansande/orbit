@@ -1,5 +1,5 @@
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, CALM_TONES, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
-import { orbSprite, drawOrb } from './sprites.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
+import { ORB_STYLE_BY_ID, DEFAULT_ORB_STYLE, paintOrb, halftone } from './orbs.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */
 const TAU = Math.PI * 2;
@@ -14,12 +14,11 @@ const FIT = 440;                        // zoveel stage-eenheden passen in min(b
 const INK = [24, 24, 32];
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_ALPHA = 0.42, TRAIL_STEPS = 14;
-const ORB_SCALE = 1.7;                  // wazige bollen ogen kleiner dan een scherpe stip
 const MERIDIANS = 8, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.12;
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
 const ARRIVE_R = 320;
-const CORE_R = { calm: 9, urgent: 13 };
+const CALM = [168, 168, 178];
 
 const ease = cubicBezier(0.4, 0, 0.2, 1);
 
@@ -74,10 +73,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let introStart = performance.now(), last = performance.now();
   let pointer = { x: -1, y: -1, inside: false };
 
-  /* ---- Sprites ---- */
-  const sprites = new Map(LEVELS.map(l => [l.id, orbSprite(l.tones, 128)]));
-  const coreSprites = { urgent: orbSprite(LEVELS[0].tones, 256, { blur: 0.035, glow: 0.38 }), calm: orbSprite(CALM_TONES, 256, { blur: 0.035, glow: 0.3 }) };
+  /* ---- Kleuren en stijl ---- */
+  let style = DEFAULT_ORB_STYLE;
   const colors = new Map(LEVELS.map(l => [l.id, rgbOf(l.color)]));
+  const URGENT_RGB = colors.get(URGENT_LEVEL);
 
   /* ---- Vaste geometrie ---- */
   const rings = LEVELS.map(lv => {
@@ -214,11 +213,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     orbs.delete(id);
     layoutOffsets();
     if (reducedMotion.matches || o.sx == null) return;
-    const lv = LEVEL_BY_ID.get(o.level);
-    const tones = lv.tones.map(rgbOf);
+    const rgb = colors.get(o.level);
     for (let k = 0; k < 18; k++) {
       const a = Math.random() * TAU, v = (60 + Math.random() * 120) * cam.du;
-      particles.push({ x: o.sx, y: o.sy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 0.7 + Math.random() * 0.6, r: (1.5 + Math.random() * 2.5) * cam.du, c: tones[k % 3] });
+      particles.push({ x: o.sx, y: o.sy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 0.7 + Math.random() * 0.6, r: (1 + Math.random() * 1.4) * cam.du, c: rgb });
     }
     waves.push({ x: o.sx, y: o.sy, age: 0, c: colors.get(o.level), r0: o.sr });
   }
@@ -402,17 +400,81 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return [INK[0] + (c[0] - INK[0]) * t, INK[1] + (c[1] - INK[1]) * t, INK[2] + (c[2] - INK[2]) * t];
   }
 
+  /* Kern: per stijl een eigen vorm, rood en levendig met Nu-taken, grijs en stil zonder */
   function drawCore(now) {
     if (!project(0, 0, TIP_Z * cam.depth, false)) return;
     const intro = introAlpha(now, 0, 1.1);
+    if (intro <= 0) return;
+    const { x, y, f } = pt;
+    const u = cam.s * f;
     const n = Math.min(nowCount, 4);
     const period = 2.4 / (1 + 0.3 * Math.max(0, n - 1));
-    const pulse = reducedMotion.matches ? 0.5 : 0.5 + 0.5 * Math.sin(now / 1000 * TAU / period);
-    const scaleCalm = CORE_R.calm * cam.s * pt.f;
-    const scaleUrgent = CORE_R.urgent * cam.s * pt.f * (0.94 + 0.12 * pulse) * (1 + 0.04 * Math.max(0, n - 1));
-    drawOrb(ctx, coreSprites.calm, pt.x, pt.y, scaleCalm, (1 - nowGlow) * 0.9 * intro);
-    drawOrb(ctx, coreSprites.urgent, pt.x, pt.y, scaleUrgent, nowGlow * (0.78 + 0.22 * pulse) * intro);
+    const still = reducedMotion.matches;
+    const time = now / 1000;
+    const pulse = still ? 0.5 : 0.5 + 0.5 * Math.sin(time * TAU / period);
+    const color = mixRgb(CALM, URGENT_RGB, nowGlow);
+    const line = clamp(1.2 * cam.du * f, 1, 2.4);
+    ctx.globalAlpha = intro;
+
+    if (style === 'ring') {
+      // stip die sonarringen uitzendt
+      ctx.fillStyle = rgba(color, 1);
+      ctx.beginPath();
+      ctx.arc(x, y, 3.2 * u, 0, TAU);
+      ctx.fill();
+      ctx.lineWidth = line;
+      if (nowGlow > 0.01) {
+        for (let i = 0; i < 3; i++) {
+          const p = still ? (i + 1) / 4 : ((time / (period * 1.4)) + i / 3) % 1;
+          ctx.strokeStyle = rgba(URGENT_RGB, Math.pow(1 - p, 1.6) * 0.6 * nowGlow * intro);
+          ctx.beginPath();
+          ctx.arc(x, y, (5 + p * 30) * u, 0, TAU);
+          ctx.stroke();
+        }
+      }
+      ctx.strokeStyle = rgba(CALM, 0.45 * (1 - nowGlow) * intro);
+      ctx.beginPath();
+      ctx.arc(x, y, 8 * u, 0, TAU);
+      ctx.stroke();
+    } else if (style === 'vlak') {
+      // effen stip met een ademende ring
+      ctx.fillStyle = rgba(color, 1);
+      ctx.beginPath();
+      ctx.arc(x, y, (5 + 0.5 * pulse * nowGlow) * u, 0, TAU);
+      ctx.fill();
+      ctx.strokeStyle = rgba(color, (0.5 - 0.3 * pulse * nowGlow) * intro);
+      ctx.lineWidth = line;
+      ctx.beginPath();
+      ctx.arc(x, y, (10 + 3 * pulse * nowGlow) * u, 0, TAU);
+      ctx.stroke();
+    } else if (style === 'raster') {
+      // stippenbol die pulseert
+      halftone(ctx, color, x, y, 13 * u, 0.75 + 0.4 * pulse * nowGlow);
+    } else {
+      // ring met een draaiend segment, sneller bij meer Nu-taken
+      const R = 9 * u;
+      ctx.lineWidth = line * 1.6;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = rgba(color, 0.22 * intro);
+      ctx.beginPath();
+      ctx.arc(x, y, R, 0, TAU);
+      ctx.stroke();
+      if (nowGlow > 0.01) {
+        const start = still ? -Math.PI / 2 : time * TAU / (period * 1.2);
+        ctx.strokeStyle = rgba(URGENT_RGB, nowGlow * intro);
+        ctx.beginPath();
+        ctx.arc(x, y, R, start, start + Math.PI * 0.6);
+        ctx.stroke();
+      }
+      ctx.fillStyle = rgba(color, 1);
+      ctx.beginPath();
+      ctx.arc(x, y, 2.4 * u, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
+
+  function mixRgb(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
 
   const isHot = o => hover.orb === o.id || external.task === o.id || pinned === o.id;
 
@@ -423,31 +485,34 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return [Math.cos(a) * o.r, Math.sin(a) * o.r, z];
   }
 
+  // Punten langs de baan achter een bol, op het scherm
   const trailPts = [];
-  function drawTrail(o, it, lv, sp) {
-    const span = (lv.tail + 1) * TAIL_GAP * 1.5 * sp / o.r;
+  function tracePath(o, from, a, span, steps) {
     trailPts.length = 0;
-    trailPts.push(it.sx, it.sy);
-    for (let k = 1; k <= TRAIL_STEPS; k++) {
-      const [x, y, z] = orbFunnel(o, it.a - k / TRAIL_STEPS * span);
+    trailPts.push(from.x, from.y);
+    for (let k = 1; k <= steps; k++) {
+      const [x, y, z] = orbFunnel(o, a - k / steps * span);
       if (!project(x, y, z, true)) break;
       trailPts.push(pt.x, pt.y);
     }
+    return trailPts.length / 2;
+  }
+
+  // Taps vlak langs trailPts met verloop naar transparant
+  function taper(rgb, wHead, wTail, alpha) {
     const n = trailPts.length / 2;
     if (n < 2) return;
     const left = [], right = [];
     for (let k = 0; k < n; k++) {
       const a = Math.max(0, k - 1), b = Math.min(n - 1, k + 1);
-      let dx = trailPts[2 * b] - trailPts[2 * a], dy = trailPts[2 * b + 1] - trailPts[2 * a + 1];
+      const dx = trailPts[2 * b] - trailPts[2 * a], dy = trailPts[2 * b + 1] - trailPts[2 * a + 1];
       const len = Math.hypot(dx, dy) || 1;
-      const w = it.r * 0.72 * (1 - (k / (n - 1)) * 0.92);
-      const nx = -dy / len * w, ny = dx / len * w;
-      left.push(trailPts[2 * k] + nx, trailPts[2 * k + 1] + ny);
-      right.push(trailPts[2 * k] - nx, trailPts[2 * k + 1] - ny);
+      const w = (wHead + (wTail - wHead) * k / (n - 1)) / 2;
+      left.push(trailPts[2 * k] - dy / len * w, trailPts[2 * k + 1] + dx / len * w);
+      right.push(trailPts[2 * k] + dy / len * w, trailPts[2 * k + 1] - dx / len * w);
     }
-    const rgb = colors.get(o.level);
     const grad = ctx.createLinearGradient(trailPts[0], trailPts[1], trailPts[2 * n - 2], trailPts[2 * n - 1]);
-    grad.addColorStop(0, rgba(rgb, TAIL_ALPHA * o.alpha));
+    grad.addColorStop(0, rgba(rgb, alpha));
     grad.addColorStop(1, rgba(rgb, 0));
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -458,7 +523,47 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.fill();
   }
 
+  function drawTrail(o, it, lv, sp, line) {
+    const rgb = colors.get(o.level);
+    const span = (lv.tail + 1) * TAIL_GAP * 1.5 * sp / o.r;
+    if (style === 'raster') {
+      // stippellijn die kleiner wordt
+      const n = tracePath(o, it, it.a, span, 5);
+      ctx.fillStyle = rgba(rgb, 1);
+      for (let k = 1; k < n; k++) {
+        const p = k / 5;
+        ctx.globalAlpha = TAIL_ALPHA * (1 - p) * o.alpha;
+        ctx.beginPath();
+        ctx.arc(trailPts[2 * k], trailPts[2 * k + 1], Math.max(0.6, it.r * 0.28 * (1 - p * 0.7)), 0, TAU);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+    tracePath(o, it, it.a, span, TRAIL_STEPS);
+    if (style === 'ring') taper(rgb, line, line * 0.3, 0.55 * o.alpha);
+    else taper(rgb, it.r * 1.1, it.r * 0.1, TAIL_ALPHA * o.alpha);
+  }
+
+  // Capsule: de bol rekt uit langs de baan, lengte volgt de snelheid
+  function drawCapsule(o, it, lv, sp, rgb) {
+    const span = (lv.tail + 1) * TAIL_GAP * 0.8 * sp / o.r;
+    ctx.globalAlpha = o.alpha;
+    ctx.strokeStyle = rgba(rgb, 1);
+    ctx.lineWidth = it.r * 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(it.sx, it.sy);
+    const n = tracePath(o, it, it.a, span, 8);
+    for (let k = 1; k < n; k++) ctx.lineTo(trailPts[2 * k], trailPts[2 * k + 1]);
+    if (n < 2) ctx.lineTo(it.sx + 0.01, it.sy);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
   function drawOrbs() {
+    const scale = ORB_STYLE_BY_ID.get(style).scale;
     const list = [...orbs.values()].filter(o => o.wait <= 0 && o.alpha > 0.01);
     const items = [];
     for (const o of list) {
@@ -470,18 +575,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const f = pt.f, depth = pt.z;
       if (drag?.type === 'orb' && drag.id === o.id && drag.active) { sx = pointer.x; sy = pointer.y; }
       else if (o.blend) { const e = ease(o.blend.p); sx = o.blend.x + (sx - o.blend.x) * e; sy = o.blend.y + (sy - o.blend.y) * e; }
-      const r = lv.size / 2 * ORB_SCALE * cam.du * f * (isHot(o) ? 1.2 : 1);
-      o.sx = sx; o.sy = sy; o.sr = r;
-      items.push({ o, lv, a, sx, sy, r, f, depth });
+      const r = lv.size / 2 * scale * cam.du * f * (isHot(o) ? 1.2 : 1);
+      o.sx = sx; o.sy = sy; o.sr = Math.max(r, 4);
+      items.push({ o, lv, a, x: sx, y: sy, sx, sy, r, f, depth });
     }
     items.sort((p, q) => p.depth - q.depth);
     for (const it of items) {
       const { o, lv } = it;
-      const sprite = sprites.get(o.level);
+      const rgb = colors.get(o.level);
       const sp = speed.get(o.level);
-      const dragged = drag?.type === 'orb' && drag.id === o.id && drag.active;
-      // staart: één taps vlak met een verloop naar transparant, korter naarmate de baan vertraagt
-      if (!dragged && !o.blend && sp > 0.05 && o.r > 1) drawTrail(o, it, lv, sp);
+      const line = clamp(1.15 * cam.du * it.f, 1, 2.2);
+      const free = !(drag?.type === 'orb' && drag.id === o.id && drag.active) && !o.blend;
       if (isHot(o)) {
         ctx.strokeStyle = rgba(INK, 0.35 * o.alpha);
         ctx.lineWidth = 1;
@@ -489,7 +593,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.arc(it.sx, it.sy, it.r + 4, 0, TAU);
         ctx.stroke();
       }
-      drawOrb(ctx, sprite, it.sx, it.sy, it.r, o.alpha);
+      if (style === 'capsule' && free && sp > 0.05) { drawCapsule(o, it, lv, sp, rgb); continue; }
+      if (free && sp > 0.05 && o.r > 1) drawTrail(o, it, lv, sp, line);
+      paintOrb(ctx, style, rgb, it.sx, it.sy, it.r, { alpha: o.alpha, line });
     }
   }
 
@@ -721,6 +827,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   return {
     setTasks, complete, setView, setInsets, highlight,
+    setStyle(id) { if (ORB_STYLE_BY_ID.has(id)) style = id; },
     restartIntro() { introStart = performance.now(); },
   };
 }

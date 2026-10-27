@@ -45,8 +45,7 @@ kbd {
   display: block;
   width: 10px; height: 10px;
   border-radius: 50%;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--c3) 82%, #fff), var(--c) 50%, var(--c2));
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--c) 35%, transparent);
+  background: var(--c);
 }
 
 /* ---- Scène ---- */
@@ -83,6 +82,9 @@ kbd {
 .views button[aria-checked="true"] { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 .slash { color: var(--line); }
 .focus-btn { display: flex; align-items: center; gap: 8px; }
+.styles { gap: 12px; padding-left: 22px; border-left: 1px solid var(--line); }
+.styles-label { display: flex; align-items: center; gap: 6px; color: var(--ink-3); }
+.styles button[aria-checked="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 
 /* ---- Takenlijst ---- */
 .tracks {
@@ -117,7 +119,7 @@ kbd {
 .group-name { display: flex; align-items: center; gap: 8px; }
 .group-name::before {
   content: ""; width: 7px; height: 7px; border-radius: 50%;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--c3) 82%, #fff), var(--c) 50%, var(--c2));
+  background: var(--c);
 }
 .group.is-hot .group-head, .group-head:hover { color: var(--ink); }
 .group-list { list-style: none; margin: 0; padding: 0; }
@@ -141,8 +143,7 @@ kbd {
 .track:hover .t-check::before, .t-check:focus-visible::before { border-color: var(--c); }
 .track.is-done .t-check::before {
   border-color: transparent;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--c3) 82%, #fff), var(--c) 50%, var(--c2));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+  background: var(--c);
 }
 .track.is-done .t-check svg { opacity: 1; }
 .t-title { padding: 10px 6px 10px 2px; font-size: 14.5px; overflow-wrap: anywhere; cursor: default; }
@@ -349,7 +350,8 @@ body.is-idle .controls { opacity: 0; }
   .stage { position: relative; height: min(100vw, 62svh); }
   .stage canvas { touch-action: pan-y; }
   .grain { position: fixed; }
-  .controls { position: relative; left: auto; bottom: auto; justify-content: center; margin-top: -4px; }
+  .controls { position: relative; left: auto; bottom: auto; justify-content: center; flex-wrap: wrap; column-gap: 18px; row-gap: 0; margin-top: -4px; padding: 0 var(--pad); }
+  .styles { padding-left: 0; border-left: 0; }
   .wheel {
     position: relative; top: auto; right: auto;
     width: 100%; height: 204px;

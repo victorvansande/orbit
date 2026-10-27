@@ -1,10 +1,11 @@
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL } from './config.js';
-import { orbSprite } from './sprites.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, rgbOf } from './config.js';
+import { ORB_STYLES, ORB_STYLE_BY_ID, DEFAULT_ORB_STYLE, paintOrb } from './orbs.js';
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
+const STYLE_KEY = 'priority-orbit.orbstyle.v1';
 const DONE_MS = 320;          // rij vervaagt, daarna verdwijnt ze uit de lijst
 const TOAST_MS = 5000;
 const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stilstand
@@ -130,8 +131,6 @@ const leaving = new Set();
 
 function tone(node, lv) {
   node.style.setProperty('--c', lv.color);
-  node.style.setProperty('--c2', lv.tones[1]);
-  node.style.setProperty('--c3', lv.tones[2]);
 }
 
 function renderTracks() {
@@ -305,15 +304,14 @@ const composerForm = $('composer-form');
 const composerTitle = $('composer-title');
 const composerSubmit = $('composer-submit');
 const composerOrb = $('composer-orb');
-const orbCache = new Map();
 let composerLevel = DEFAULT_LEVEL, closeTimer = 0;
 
 function paintComposerOrb() {
   const lv = LEVEL_BY_ID.get(composerLevel);
-  if (!orbCache.has(lv.id)) orbCache.set(lv.id, orbSprite(lv.tones, composerOrb.width, { blur: 0.03, glow: 0.32 }));
   const g = composerOrb.getContext('2d');
-  g.clearRect(0, 0, composerOrb.width, composerOrb.height);
-  g.drawImage(orbCache.get(lv.id), 0, 0);
+  const size = composerOrb.width;
+  g.clearRect(0, 0, size, size);
+  paintOrb(g, orbStyle, rgbOf(lv.color), size / 2, size / 2, size * 0.17, { line: 5 });
   composer.style.setProperty('--c', lv.color);
   $('composer-level').textContent = lv.name;
   for (const b of $('composer-levels').children) b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));
@@ -378,6 +376,32 @@ composerForm.addEventListener('submit', e => {
   closeComposer();
 });
 
+/* ---- Bolstijl (tijdelijke kiezer om te vergelijken) ---- */
+function readStyle() {
+  const fromUrl = new URLSearchParams(location.search).get('bollen');
+  if (ORB_STYLE_BY_ID.has(fromUrl)) return fromUrl;
+  try { const saved = localStorage.getItem(STYLE_KEY); if (ORB_STYLE_BY_ID.has(saved)) return saved; } catch { /* geen opslag */ }
+  return DEFAULT_ORB_STYLE;
+}
+let orbStyle = readStyle();
+const styleBox = $('styles');
+for (const st of ORB_STYLES) {
+  const b = el('button', '', st.name);
+  b.type = 'button';
+  b.dataset.style = st.id;
+  b.setAttribute('role', 'radio');
+  b.addEventListener('click', () => setOrbStyle(st.id));
+  styleBox.append(b);
+}
+function setOrbStyle(id) {
+  orbStyle = id;
+  scene.setStyle(id);
+  try { localStorage.setItem(STYLE_KEY, id); } catch { /* geen opslag */ }
+  for (const b of styleBox.querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.style === id));
+  if (composer.open) paintComposerOrb();
+}
+setOrbStyle(orbStyle);
+
 /* ---- Aanzicht ---- */
 const viewButtons = [...document.querySelectorAll('[data-view]')];
 function syncViewButtons(name) {
@@ -426,6 +450,7 @@ document.addEventListener('keydown', e => {
   else if (k === '2') setView('side');
   else if (k === 'f') setFocus(!document.body.classList.contains('is-focus'));
   else if (k === 'z') undo();
+  else if (k === 'b') setOrbStyle(ORB_STYLES[(ORB_STYLES.findIndex(st => st.id === orbStyle) + 1) % ORB_STYLES.length].id);
   else if (e.key === 'Escape' && document.body.classList.contains('is-focus')) setFocus(false);
 });
 
