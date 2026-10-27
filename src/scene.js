@@ -28,7 +28,7 @@ const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 const CORE_R = 4.5, WAVE_R = 32, WAVES = 3;   // kern en lichtgolven (stage-eenheden)
-const MERIDIANS = 8, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.12;
+const MERIDIANS = 6, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.07;
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
 const ARRIVE_R = 320;
@@ -349,7 +349,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const g of grid) {
       const z = g.r < RIM ? depthAt(g.r) * depth : 0;
       if (!project(g.x, g.y, z, false)) continue;
-      const a = g.a * fade * Math.min(1, pt.f * pt.f);
+      // binnen de trechter verdwijnt het raster in het zijaanzicht: de ringen tonen de vorm al
+      const inside = 1 - depth * (1 - smoothstep(RIM - 24, RIM + 16, g.r));
+      const a = g.a * fade * inside * Math.min(1, pt.f * pt.f);
       if (!(a >= 0.006)) continue;
       if (pt.x < -8 || pt.x > W + 8 || pt.y < -8 || pt.y > H + 8) continue;
       const k = Math.min(5, Math.floor(a / GRID_ALPHA * 6));
@@ -372,7 +374,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.strokeStyle = rgba(INK, 1);
     ctx.lineWidth = 1;
     for (const major of [false, true]) {
-      ctx.globalAlpha = (major ? 0.32 : 0.14) * a;
+      ctx.globalAlpha = (major ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
       ctx.beginPath();
       for (let i = 0; i < 120; i++) {
         const isMajor = i % 10 === 0;
@@ -418,14 +420,19 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const z = ring.z * cam.depth;
       // stippen
       ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
-      ctx.globalAlpha = alpha;
-      ctx.beginPath();
+      // in het zijaanzicht worden de ringen platte ellipsen: elke tweede stip vervaagt, anders kruipen ze op elkaar
       const r = (1 + 0.35 * hot) * cam.du;
-      for (let i = 0; i < ring.pts.length; i += 2) {
-        if (!project(ring.pts[i], ring.pts[i + 1], z, true)) continue;
-        dotPath(pt, r * pt.f);
+      const thin = 1 - 0.8 * cam.depth * (1 - hot);
+      for (const odd of [0, 1]) {
+        ctx.globalAlpha = Math.min(1, alpha * (odd ? thin : 1 + 0.4 * cam.depth));
+        if (ctx.globalAlpha < 0.004) continue;
+        ctx.beginPath();
+        for (let i = odd * 2; i < ring.pts.length; i += 4) {
+          if (!project(ring.pts[i], ring.pts[i + 1], z, true)) continue;
+          dotPath(pt, r * pt.f);
+        }
+        ctx.fill();
       }
-      ctx.fill();
       // monsterpunten voor hit-testing
       for (let k = 0; k < 48; k++) {
         const a = k / 48 * TAU;
