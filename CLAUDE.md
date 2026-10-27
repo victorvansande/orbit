@@ -42,7 +42,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | 4 | Maand | 140 | 140 | 16 s | #22AFC6 |
 | 5 | Ooit | 174 | 174 | 38 s | #6A6CF6 |
 
-"Nu" draait binnen de kernring (baan 24 < ring 38).
+Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat oogde alsof de Nu-bollen naast hun baan zweefden).
 
 ## Scène (`src/scene.js`)
 
