@@ -362,10 +362,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const major of [false, true]) {
       ctx.globalAlpha = (major ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
       ctx.beginPath();
-      for (let i = 0; i < 120; i++) {
-        const isMajor = i % 10 === 0;
+      for (let i = 0; i < 60; i++) {
+        const isMajor = i % 5 === 0;
         if (isMajor !== major) continue;
-        const ang = i / 120 * TAU;
+        const ang = i / 60 * TAU;
         const c = Math.cos(ang), s = Math.sin(ang);
         if (!project(c * BEZEL_IN, s * BEZEL_IN, 0, false)) continue;
         const x0 = pt.x, y0 = pt.y;
@@ -379,7 +379,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.globalAlpha = 1;
   }
 
-  // Klok op de wijzerplaat (12 uur): lange streepjes zijn uren, korte 6 minuten.
+  // Klok op de wijzerplaat (12 uur): 60 streepjes zoals op een klok, elk streepje een minuut, elk vijfde (lang) een uur.
   // Geen wijzers door de scène: een stip op de rand toont het uur, een fijne lijn de minuten.
   function drawClock(a) {
     const d = new Date();
