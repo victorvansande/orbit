@@ -1,80 +1,94 @@
 # Orbit: projectkennis
 
-To-do-visualizer: taken draaien als bolletjes rond vijf concentrische ringen, één per prioriteit. Hoe dringender, hoe dichter bij het midden, hoe sneller en feller. Een snel draaiende rode kern in je ooghoek zegt: er ligt iets dat nu moet.
+To-do-visualizer: taken draaien als iriserende bollen rond vijf ringen, één per moment (Nu, Vandaag, Week, Maand, Ooit). Hoe dringender, hoe dichter bij de kern, hoe sneller. Gemaakt om open te staan op een scherm: mensen moeten vragen "wat is dat?".
+
+Live: https://victorvansande.github.io/orbit/ (GitHub Pages, bron `main` / root). Elke push naar `main` publiceert opnieuw.
 
 ## Werkafspraken
 
 - Antwoord en UI-tekst in het Nederlands. Geen em dashes, geen marketingtaal, geen emoji.
-- Geen build-stap. Alleen `index.html`, `src/styles.css`, `src/app.js` (vanilla JS).
-- Elke wijziging nakijken op 375 px breed (gsm) en op desktop. Console moet foutloos blijven.
-- Lokaal testen: `python3 -m http.server 3000` in deze map, open `http://localhost:3000/`.
+- Geen build-stap. `index.html` + `src/*.js` (ES-modules) + `src/styles.css`.
+- Na elke afgeronde wijziging committen en pushen naar `main`, daarna de Pages-run opvolgen.
+- Elke wijziging nakijken op desktop (1440×900) én gsm (375 px). Console foutloos, geen horizontale scroll.
+- Lokaal testen: `python3 -m http.server 3000` in deze map (modules werken niet via `file://`).
 
-## Concept
+## Ontwerp
 
-- Vijf niveaus, elk een gestippelde ring. Elke taak is één bolletje met een korte staart.
-- Taken op dezelfde ring staan gelijk verdeeld via een negatieve `animation-delay` (`-(i/n) * omlooptijd`).
-- Zijaanzicht: dezelfde 3D-scène, gekanteld. De ringen vormen een trechter, de kern is de punt (de "teut"). Hoe dringender, hoe dieper.
-- De hele trechter draait traag rond zijn as (160 s per omwenteling).
+Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige, iriserende bollen) en een gebogen wiel als kiezer (referentie: verticale boog met pillen en labels). Bewust één licht thema.
+
+- Papier #F1F1EF met lichte korrel (`.grain`, SVG-ruis, opacity 0,14). Inkt #1B1B22, secundair #5E5E68, tertiair #9A9AA3.
+- Typografie: Geist (UI) en Geist Mono (kapitaaltjes in de hoeken, tellers), via Google Fonts, met systeemfont als terugval.
+- Hoeklabels zoals op een platenhoes: linksboven ORBIT + samenvatting, rechtsboven weeknummer + datum, linksonder Boven / Zijkant / Focus.
+- Kleur zit alleen in de bollen. Ringen, raster en wijzerplaat zijn grafiet met lage dekking; een ring krijgt zijn kleur pas bij hover of als sleepdoel.
+- Desktop (≥ 1000 px): takenlijst links (300 px), scène in het midden, wiel rechts. Smaller: alles onder elkaar (kop, scène, aanzicht, horizontaal wiel, lijst).
+
+## Bestanden
+
+| Bestand | Inhoud |
+|---|---|
+| `src/config.js` | `LEVELS` (enige bron van waarheid: naam, ring, baan, omloop, kleur, tones, grootte, staart), diepteprofiel, kleurhelpers, iconen voor het wiel |
+| `src/sprites.js` | `orbSprite(tones, size, {soft})`: tekent een iriserende bol eenmalig op een offscreen canvas. `drawOrb` schaalt hem zo dat de bol zelf straal r krijgt |
+| `src/scene.js` | Canvas-renderer met eigen 3D-projectie, animatie, hit-testing, slepen |
+| `src/wheel.js` | Het gebogen wiel (DOM, posities via JS) |
+| `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out |
 
 ## Niveaus
 
-De array `LEVELS` bovenaan `src/app.js` is de enige bron van waarheid (naam, ringstraal, baanstraal, omlooptijd, kleur, grootte bolletje, aantal staartstippen). CSS bevat geen niveauwaarden; alles komt via custom properties per element.
-
 | id | naam | ring | baan | omloop | kleur |
 |---|---|---:|---:|---:|---|
-| 1 | Nu | 38 | 24 | 1,1 s | #FF453A |
-| 2 | Vandaag | 72 | 72 | 2,8 s | #FF9F0A |
-| 3 | Week | 106 | 106 | 7 s | #D9C25B |
-| 4 | Maand | 140 | 140 | 16 s | #64B5C8 |
-| 5 | Ooit | 174 | 174 | 38 s | #5E8BD6 |
+| 1 | Nu | 38 | 24 | 1,1 s | #FF3B30 |
+| 2 | Vandaag | 72 | 72 | 2,8 s | #FF8A00 |
+| 3 | Week | 106 | 106 | 7 s | #E5B21A |
+| 4 | Maand | 140 | 140 | 16 s | #22AFC6 |
+| 5 | Ooit | 174 | 174 | 38 s | #6A6CF6 |
 
-"Nu" draait binnen de kernring (baan 24 < ring 38), dus dieper in de trechter.
+Elk niveau heeft drie `tones` (basis, schifting, glans) voor de bol. "Nu" draait binnen de kernring (baan 24 < ring 38).
 
-## Ontwerpregels
+## Scène (`src/scene.js`)
 
-- Apple HIG, alleen dark mode. Achtergrond #000, oppervlak #1C1C1E, secundaire tekst rgba(235,235,245,.6), scheidingslijnen rgba(84,84,88,.65), accent #0A84FF. Systeemfont.
-- Rustig, geen neon: geen gradients, glow op het hoofd van een bolletje (`GLOW = 0.35`, blur = GLOW × 10 px = 3,5 px) en een zachte, pulserende gloed in de kern.
-- Ringen: 2 px stippen elke ~8 px, opacity 0,38 (kernring 0,55). Oorspronkelijk 0,2 en 0,38, opgetrokken omdat de banen te zwak waren tegen het zwart. Staart: stippen elke ~7 px booglengte terug, kleiner, opacity max. 0,45.
-- Touch targets minstens 44 px (segmented controls via een onzichtbare `::after`, afvinkcirkel in een 44 px knop).
-- `prefers-reduced-motion`: banen, trechter en kernpulse staan stil (gepauzeerd, verdeling blijft zichtbaar), cameraovergang is direct.
+- Eén canvas over het hele venster (desktop) of in `.stage` (gsm). Stage-eenheden: dezelfde 390-stage als vroeger; `FIT = 440` eenheden passen in min(beschikbare breedte, hoogte). `setInsets({left, right})` houdt de scène gecentreerd tussen lijst en wiel (zacht geanimeerd, ook bij focusmodus).
+- Projectie per punt: spin (rond de trechteras) → rotateX (tilt) → rotateY (parallax) → zoom → shift → perspectief 1100 met oorsprong op 38 %. Zelfde waarden als de oude CSS-versie: boven tilt 0 / zoom 0,92, zijkant tilt 58° / zoom 0,96 / shift -66. Overgang 0,9 s met cubic-bezier(.4,0,.2,1), eigen implementatie.
+- Lagen van achter naar voor: raster (zwaartekrachtput, buigt in het zijaanzicht mee met het diepteprofiel), wijzerplaat (120 streepjes, statisch), meridianen (alleen zijkant), ringen, kern, bollen met staart, effecten, labels.
+- Banen draaien via een fase per niveau (`phase`), elke bol heeft een `offset` die zacht naar gelijke verdeling glijdt. Bij een niveauwissel blijft de absolute hoek behouden.
+- Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader). Hover op een rij in de lijst doet hetzelfde voor die ene taak.
+- Slepen op een bol: bol volgt de cursor, dichtstbijzijnde ring licht op ("Naar …"), loslaten verplaatst de taak (`onReassign`). Slepen op lege ruimte: horizontaal draaien, verticaal kantelen; loslaten klikt naar het dichtste aanzicht.
+- Kern: wazige rode bol die pulseert zolang er Nu-taken zijn (sneller en iets groter bij meer Nu-taken); anders een bleke, rustige bol. Ligt op de diepte van de tip.
+- Intro: raster, wijzerplaat en ringen (van binnen naar buiten) faden in, bollen spiralen gestaffeld binnen. Nieuwe taken spiralen ook binnen; afvinken laat de bol uiteenspatten (deeltjes + ring).
+- Tijdgebaseerd (dt), dus even snel op 60 en 120 Hz.
 
-## Architectuur
+## Wiel (`src/wheel.js`)
 
-### Scène (`#scene`)
+- Vijf items langs een cirkelboog; `pos` (kommagetal) volgt `index` met een veer. Verticaal op desktop (middelpunt rechts buiten beeld), horizontaal op gsm (middelpunt onder het wiel).
+- Scrollen (muiswiel of trackpad, met drempel en korte vergrendeling), slepen langs de boog, pijltjestoetsen. Klik op een ander item centreert het; klik op het geselecteerde item (of Enter) opent het venster "nieuwe taak" voor dat moment.
+- Hover of selectiewissel licht de bijhorende ring in de scène kort op.
 
-- Stage van 390×390 px, middelpunt (195,195). `ResizeObserver` zet `--fit` = containerbreedte / 390; `.scene` schaalt zich daarmee (2D, buiten de 3D-ruimte, zodat perspectief overal gelijk blijft).
-- Nesting: `.scene` (perspective 1100px, origin 50% 38%) > `.camera` (shift, zoom, rotateX) > `.spin` (160 s) > `.origin` > lagen `#rings`, `#meridians`, tip, `#orbits`.
-- `.camera`, `.spin`, `.origin`, lagen, `.orbit` en `.rotor` zijn 0×0 op het middelpunt met `preserve-3d`. Zo klopt het draaipunt en geven de onzichtbare containers geen horizontale overflow. Nooit `opacity` op zo'n container zetten: dat platdrukt de 3D-context.
-- Camera via geregistreerde properties (`@property --depth, --tilt, --shift, --zoom, --now`) op `data-view` van `.scene`. Overgang 0,9 s `cubic-bezier(.4,0,.2,1)`.
-  - Boven: depth 0, tilt 0, zoom 0,92.
-  - Zijkant: depth 1, tilt 58°, zoom 0,96, shift -66 px.
-- Elke stip (`.pt`): `translate3d(var(--x), var(--y), calc(var(--depth) * var(--z) * 1px))`. `--z` komt uit het diepteprofiel `PROFILE` via `depthAt(r)` (lineaire interpolatie).
-- Meridianen (8) en de rode tip zijn er altijd, maar hun opacity is × `--depth`, dus alleen zichtbaar in het zijaanzicht. De tip ook × `--now` (1 als er Nu-taken zijn, klasse `has-now`).
-- Kern (`.core` > `.core-glow`): zachte rode gloed die pulseert (2,4 s, opacity 0,5 tot 1, scale 0,8 tot 1,2). Zit op de diepte van de punt, dus in het bovenaanzicht in het midden en in het zijaanzicht op de tip. Alleen zichtbaar met Nu-taken (× `--now`). Pulse via de losse `scale`-property, zodat ze niet botst met de `transform` van de diepte. Bij reduced motion: vaste gloed zonder pulse.
-- Ringen, meridianen en tip worden één keer opgebouwd. Taakbolletjes (`buildOrbits`) worden bij elke wijziging volledig opnieuw opgebouwd: `.orbit` (diepte) > `.rotor` (draait) > staartstippen + `.head`.
+## Data
 
-### Data
+- Taken `{id, title, level, createdAt}` in localStorage, sleutel `priority-orbit.tasks.v1`. Ontbreekt de sleutel, dan demotaken (2 Nu, 2 Vandaag, 3 Week, 2 Maand, 2 Ooit).
+- "Dringend" in de samenvatting = aantal Nu-taken.
 
-- Taken `{id, title, level, createdAt}` in localStorage, sleutel `priority-orbit.tasks.v1`.
-- Ontbreekt de sleutel (of is de inhoud kapot), dan komen er demotaken: 2× Nu, 2× Vandaag, 3× Week, 2× Maand, 2× Ooit. Een lege lijst `[]` blijft leeg.
-- Lijst gesorteerd op niveau, daarna op `createdAt`.
-- "Dringend" in de samenvatting = aantal taken op niveau Nu.
+## Interactie in de lijst en het venster
 
-### UI-stromen
+- Lijst gegroepeerd per moment. Afvinken: cirkel kleurt als bol, rij schuift weg, bol spat uiteen, toast met "Ongedaan maken" (5 s, ook `Z` of Ctrl/Cmd+Z).
+- Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten.
+- Venster "nieuwe taak": native `<dialog>`, grote zwevende bol bovenaan in de kleur van het moment, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), "Voeg toe" pas actief met een titel.
+- Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `Z` ongedaan, `Esc` sluit.
+- Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand.
 
-- Afvinken: cirkel wordt meteen blauw, rij vervaagt 280 ms (na 140 ms vertraging), na 430 ms verdwijnt de taak uit lijst en orbit en wordt er opgeslagen. Ids in `completing` blijven vervaagd als de lijst tussendoor herbouwd wordt.
-- Nieuwe taak: native `<dialog>` als bottom sheet (`showModal`). Annuleer, Escape en tik op de achtergrond sluiten met een korte schuifanimatie. "Voeg toe" is uitgeschakeld zolang de titel leeg is (Enter doet dan ook niets). Standaardprioriteit: Week.
+## Toegankelijkheid
 
-### Valkuilen
+- Canvas heeft `role="img"` met een samenvatting per niveau. Alles wat in de scène kan (afvinken, niveau wijzigen) kan ook via de lijst met toetsenbord.
+- `prefers-reduced-motion`: banen, trechter en pulse staan stil, geen intro of deeltjes, overgangen direct.
 
-- Klassenamen in de scène (`.head`, `.tail`, `.pt`, `.orbit`, `.rotor`) niet hergebruiken in de rest van de pagina. Een `<header class="head">` kreeg ooit de absolute positionering van een taakbolletje; daarom heet de paginakop `.masthead`.
+## Valkuilen
+
+- Canvas-teksten gebruiken Geist; is het font nog niet geladen, dan tekent hij met de terugval tot het binnen is (elk frame opnieuw).
+- `ctx.filter` (blur in de sprites) bestaat niet in elke browser; dan zijn de bollen iets scherper, maar alles werkt.
+- Gsm: `.stage canvas` heeft `touch-action: pan-y` zodat de pagina kan scrollen; verticaal kantelen met de vinger kan daardoor niet, horizontaal draaien wel.
 
 ## Open vragen
 
-- `GLOW = 0.35`: in de opdracht stond een box-shadow van 3,5 px en een globale constante 0,35. Nu geïnterpreteerd als blur = GLOW × 10 px, met de volle kleur. Andere lezing: kleur op 35 % alpha.
-- Zijaanzicht-shift staat op -66 px in plaats van ~50 px, omdat de trechter anders te laag in het vierkant hangt.
-- Telt "Vandaag" ook als dringend? Nu niet (de voorbeeldtekst "2 dringend · 11 taken" klopt alleen met enkel Nu).
-- Bij reduced motion staat alles stil. Alternatief: heel traag laten draaien zodat de kern nog "leeft".
-- Een taak bewerken of van niveau veranderen kan nog niet. Afgevinkte taken worden niet bewaard (geen geschiedenis of ongedaan maken).
-- Geen synchronisatie tussen toestellen; alles zit in localStorage van één browser.
-- Bij elke wijziging herstarten alle banen (posities springen even). Eventueel later fases behouden.
+- Moeten afgevinkte taken bewaard worden (geschiedenis, statistiek)?
+- Synchronisatie tussen toestellen (nu alleen localStorage van één browser).
+- Een donkere variant voor 's avonds, of bewust alleen licht houden?
+- Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.
