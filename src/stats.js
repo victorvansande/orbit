@@ -1,11 +1,13 @@
-/* ---- Statistiek: afgevinkt per dag, en de sterrenhemel ---- */
-// Telling per dag die nooit verloopt (het archief houdt maar 60 dagen bij). Bij de eerste keer aangevuld uit het
-// archief. Elke afgevinkte taak telt één keer per toestel, ook als ze op een ander toestel werd afgevinkt.
+/* ---- Statistiek: afgevinkte taken en de sterrenhemel ---- */
+// Een logboek {id: tijdstip} van elke afgevinkte taak, voorgoed (het archief houdt maar 60 dagen bij). Het logboek
+// gaat mee met de synchronisatie, dus elk gekoppeld toestel toont dezelfde telling en evenveel sterren.
+// Per taak telt één afvinkmoment; ongedaan maken haalt ze weer weg (ook elders, zie mergeStates in sync.js).
 
-const STATS_KEY = 'priority-orbit.stats.v1';   // {days: {'JJJJ-MM-DD': n}}
-const STARS_KEY = 'priority-orbit.stars.v2';   // {stars: [{id, x, y, s, ph}]}: één ster per afgevinkte taak, voorgoed
-
-export const STATS_KEYS = { STATS_KEY, STARS_KEY };
+const DONE_KEY = 'priority-orbit.done.v1';     // {id: tijdstip van afvinken}
+const STARS_KEY = 'priority-orbit.stars.v2';   // {stars: [{id, x, y, s, ph}]}: één ster per afgevinkte taak
+const RESET_KEY = 'priority-orbit.doneReset.v1';   // tijdstip waarop de teller op nul ging (gaat mee met de sync)
+const LEGACY_KEY = 'priority-orbit.stats.v1';  // vroegere telling per dag, alleen nog om over te zetten
+export const STATS_KEYS = { DONE_KEY, STARS_KEY, RESET_KEY };
 
 const pad = n => String(n).padStart(2, '0');
 export const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -13,36 +15,54 @@ export const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}
 function readObj(key) { try { const v = JSON.parse(localStorage.getItem(key)); return v && typeof v === 'object' ? v : null; } catch { return null; } }
 function writeObj(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* geen opslag */ } }
 
-export function loadStats(archive) {
-  const s = readObj(STATS_KEY);
-  if (s && s.days && typeof s.days === 'object') return s;
-  const fresh = { days: {} };
-  for (const a of archive) if (a.doneAt) fresh.days[dayKey(a.doneAt)] = (fresh.days[dayKey(a.doneAt)] || 0) + 1;
-  writeObj(STATS_KEY, fresh);
-  return fresh;
+/* ---- Logboek ---- */
+export const cleanDone = done => Object.fromEntries(Object.entries(done || {}).filter(([, t]) => Number.isFinite(t)));
+
+// Eerste keer: opbouwen uit het archief (echte taken) en de vroegere telling per dag. Wat de telling meer had dan
+// het archief nog kent (ouder dan 60 dagen), krijgt een eigen id per toestel, zodat het ook elders meetelt.
+export function loadDone(archive) {
+  const saved = readObj(DONE_KEY);
+  if (saved) return cleanDone(saved);
+  const done = {};
+  for (const a of archive) if (a.doneAt) done[a.id] = a.doneAt;
+  const legacy = readObj(LEGACY_KEY)?.days || {};
+  const device = Math.random().toString(36).slice(2, 8);
+  for (const [day, n] of Object.entries(legacy)) {
+    const known = Object.values(done).filter(t => dayKey(t) === day).length;
+    const [y, m, d] = day.split('-').map(Number);
+    for (let i = known; i < n; i++) done[`oud-${device}-${day}-${i}`] = new Date(y, m - 1, d, 12).getTime();
+  }
+  saveDone(done);
+  return done;
 }
 
-export function countDone(stats, ts, delta = 1) {
-  const k = dayKey(ts);
-  const n = Math.max(0, (stats.days[k] || 0) + delta);
-  if (n) stats.days[k] = n; else delete stats.days[k];
-  writeObj(STATS_KEY, stats);
+export const saveDone = done => writeObj(DONE_KEY, done);
+export const loadReset = () => { try { return Number(localStorage.getItem(RESET_KEY)) || 0; } catch { return 0; } };
+export const saveReset = t => { try { localStorage.setItem(RESET_KEY, String(t)); } catch { /* geen opslag */ } };
+
+export const totalDone = done => Object.keys(done).length;
+
+function perDay(done) {
+  const days = {};
+  for (const t of Object.values(done)) days[dayKey(t)] = (days[dayKey(t)] || 0) + 1;
+  return days;
 }
 
-export const totalDone = stats => Object.values(stats.days).reduce((a, b) => a + b, 0);
-
-// maandag tot zondag van deze week; null voor dagen die nog moeten komen
-export function weekCounts(stats, now = new Date()) {
+// Details bij de teller: vandaag, deze week (vanaf maandag), deze maand, beste dag en de eerste afgevinkte taak
+export function doneSummary(done, now = new Date()) {
+  const days = perDay(done);
+  const today = dayKey(now);
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
-    return d > now && dayKey(d) !== dayKey(now) ? null : stats.days[dayKey(d)] || 0;
-  });
-}
-
-export function monthCount(stats, now = new Date()) {
-  const prefix = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-`;
-  return Object.entries(stats.days).reduce((n, [k, v]) => n + (k.startsWith(prefix) ? v : 0), 0);
+  const month = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-`;
+  let week = 0, inMonth = 0, best = null;
+  for (const [day, n] of Object.entries(days)) {
+    const [y, m, d] = day.split('-').map(Number);
+    if (new Date(y, m - 1, d) >= monday && day <= today) week += n;
+    if (day.startsWith(month)) inMonth += n;
+    if (!best || n > best.n || (n === best.n && day > best.day)) best = { n, day };
+  }
+  const times = Object.values(done);
+  return { today: days[today] || 0, week, month: inMonth, best, first: times.length ? times.reduce((a, b) => Math.min(a, b)) : null };
 }
 
 /* ---- Sterrenhemel ---- */
@@ -55,17 +75,27 @@ export function loadStars() {
   return s && Array.isArray(s.stars) ? s : { stars: [] };
 }
 
-// Evenveel sterren als afgevinkte taken: taken van vóór de hemel krijgen nu een plek, verspreid over de hemel
-export function matchStars(sky, total) {
-  let added = 0;
-  while (sky.stars.length < total && added < 5000) {
-    const before = sky.stars.length;
-    placeStar(sky, `oud-${before}-${Date.now().toString(36)}`, null, false);
-    if (sky.stars.length === before) break;         // hemel vol
-    added++;
+// Eén ster per id in het logboek. Sterren zonder geldig id (bv. van vóór het logboek) krijgen eerst een ontbrekend
+// id, zodat de hemel niet verspringt; wat dan nog ontbreekt, krijgt een plek; wat overblijft, verdwijnt.
+export function syncStars(sky, done) {
+  const ids = Object.keys(done);
+  const known = new Set(ids);
+  const have = new Set(sky.stars.map(s => s.id));
+  const orphans = sky.stars.filter(s => !known.has(s.id));
+  let changed = false;
+  for (const id of ids) {
+    if (have.has(id)) continue;
+    const star = orphans.shift();
+    if (star) star.id = id;
+    else placeStar(sky, id, null, false);
+    changed = true;
   }
-  while (sky.stars.length > total) sky.stars.pop();
-  writeObj(STARS_KEY, sky);
+  if (orphans.length) {
+    const drop = new Set(orphans);
+    sky.stars = sky.stars.filter(s => !drop.has(s));
+    changed = true;
+  }
+  if (changed) writeObj(STARS_KEY, sky);
   return sky;
 }
 
@@ -73,6 +103,7 @@ export function matchStars(sky, total) {
 // zelf), en daarvan de kandidaat die het verst van alle bestaande sterren ligt. Geeft een natuurlijke, gelijkmatige
 // spreiding zonder raster en zonder klonters. Lukt het niet in de buurt, dan ergens anders aan de hemel.
 export function placeStar(sky, id, near, save = true) {
+  if (sky.stars.some(s => s.id === id)) return sky;
   const stars = sky.stars;
   const nearest = (x, y) => stars.reduce((m, s) => Math.min(m, Math.hypot(s.x - x, s.y - y)), Infinity);
   const inSky = (x, y) => { const r = Math.hypot(x, y); return r >= SKY_MIN && r <= SKY_MAX; };
@@ -105,10 +136,14 @@ export function placeStar(sky, id, near, save = true) {
   return sky;
 }
 
-// Ster van een teruggezette taak weg; heeft die taak geen eigen ster (van vóór de hemel), dan een oude ster
+export function clearStars(sky) {
+  sky.stars = [];
+  writeObj(STARS_KEY, sky);
+  return sky;
+}
+
 export function removeStar(sky, id) {
-  let i = sky.stars.findIndex(s => s.id === id);
-  if (i < 0) i = sky.stars.findIndex(s => String(s.id).startsWith('oud-'));
+  const i = sky.stars.findIndex(s => s.id === id);
   if (i >= 0) { sky.stars.splice(i, 1); writeObj(STARS_KEY, sky); }
   return sky;
 }

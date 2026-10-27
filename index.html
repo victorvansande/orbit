@@ -42,31 +42,42 @@
   <div class="hud-block hud-right">
     <p id="week" aria-hidden="true"></p>
     <p class="muted" id="date" aria-hidden="true"></p>
-    <div class="views theme-switch" role="radiogroup" aria-label="Thema">
-      <button type="button" role="radio" aria-checked="false" data-theme-pref="light">Licht</button>
-      <span class="slash" aria-hidden="true">/</span>
-      <button type="button" role="radio" aria-checked="false" data-theme-pref="dark">Donker</button>
-      <span class="slash" aria-hidden="true">/</span>
-      <button type="button" role="radio" aria-checked="true" data-theme-pref="auto">Auto</button>
-    </div>
-    <div class="hud-actions">
-      <button type="button" class="sync-btn" id="intro-btn">Uitleg</button>
-      <span class="slash" aria-hidden="true">/</span>
-      <button type="button" class="sync-btn" id="archive-btn">Archief</button>
-      <span class="slash" aria-hidden="true">/</span>
-      <button type="button" class="sync-btn" id="sync-btn" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Koppelen</span></button>
+    <!-- gsm: alles hieronder achter het knopje Instellingen -->
+    <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="hud-menu" data-status="off"><span class="sync-dot" aria-hidden="true"></span>Instellingen</button>
+    <div class="hud-menu" id="hud-menu">
+      <div class="menu-row menu-view" id="menu-view"></div>
+      <div class="menu-row menu-tempo" id="menu-tempo"></div>
+      <div class="menu-row">
+        <span class="menu-label">Thema <kbd>D</kbd></span>
+        <div class="views theme-switch" role="radiogroup" aria-label="Thema">
+          <button type="button" role="radio" aria-checked="false" data-theme-pref="light">Licht</button>
+          <span class="slash" aria-hidden="true">/</span>
+          <button type="button" role="radio" aria-checked="false" data-theme-pref="dark">Donker</button>
+          <span class="slash" aria-hidden="true">/</span>
+          <button type="button" role="radio" aria-checked="true" data-theme-pref="auto">Auto</button>
+        </div>
+      </div>
+      <p class="menu-row menu-keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
+      <div class="menu-row hud-actions">
+        <button type="button" class="sync-btn" id="intro-btn">Uitleg</button>
+        <span class="slash" aria-hidden="true">/</span>
+        <button type="button" class="sync-btn" id="archive-btn">Archief</button>
+        <span class="slash" aria-hidden="true">/</span>
+        <button type="button" class="sync-btn" id="sync-btn" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Koppelen</span></button>
+      </div>
     </div>
   </div>
 </header>
 
 <div class="controls">
-  <div class="views" role="radiogroup" aria-label="Aanzicht">
+  <div class="views" id="view-switch" role="radiogroup" aria-label="Aanzicht">
     <button type="button" role="radio" aria-checked="true" data-view="top">Boven</button>
     <span class="slash" aria-hidden="true">/</span>
     <button type="button" role="radio" aria-checked="false" data-view="side">Zijkant</button>
   </div>
   <button type="button" class="focus-btn" id="focus-btn" aria-pressed="false">Focus <kbd>F</kbd></button>
-  <div class="views tempo" role="radiogroup" aria-label="Tempo">
+  <button type="button" class="menu-btn focus-exit" id="focus-exit">Focus uit <kbd>Esc</kbd></button>
+  <div class="views tempo" id="tempo" role="radiogroup" aria-label="Tempo">
     <span class="tempo-label">Tempo <kbd>T</kbd></span>
     <button type="button" role="radio" aria-checked="true" data-tempo="normaal">Normaal</button>
     <span class="slash" aria-hidden="true">/</span>
@@ -95,13 +106,19 @@
   <p class="tracks-demo" id="tracks-demo" hidden>Dit zijn voorbeeldtaken. Ze verdwijnen zodra je zelf een taak toevoegt.</p>
   <div class="groups" id="groups"></div>
   <div class="stats" id="stats" hidden>
-    <div class="stats-head"><span>Deze week</span><span id="stat-week"></span></div>
-    <div class="weekdots" id="weekdots" role="img"></div>
-    <div class="stats-total"><div class="stat-dm" id="stat-total" role="img"></div><span id="stat-stars-label">stars collected</span></div>
-  </div>
-  <div class="keys" id="keys">
-    <button type="button" class="keys-toggle" id="keys-toggle" aria-expanded="false" aria-controls="keys-list">Sneltoetsen</button>
-    <p class="keys-list" id="keys-list"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
+    <button type="button" class="stats-total" id="stats-toggle" aria-expanded="false" aria-controls="stats-detail">
+      <span class="stat-dm" id="stat-total" role="img"></span><span id="stat-stars-label">stars collected</span>
+    </button>
+    <div class="stats-detail" id="stats-detail" hidden>
+      <dl id="stats-rows"></dl>
+      <div class="stats-reset">
+        <button type="button" class="stats-reset-btn" id="stats-reset">Teller op nul</button>
+        <div class="stats-confirm" id="stats-confirm" hidden>
+          <p>Teller en sterren op nul? Dat geldt ook op je gekoppelde toestellen. Je taken blijven.</p>
+          <div class="sync-row"><button type="button" class="btn-solid" id="stats-reset-yes">Op nul</button><button type="button" class="btn-ghost" id="stats-reset-no">Annuleer</button></div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -172,15 +189,15 @@
     <ul class="intro-levels" id="intro-levels" aria-label="De vijf momenten, van binnen naar buiten"></ul>
     <dl class="intro-grid">
       <div><dt>Toevoegen</dt><dd>Kies een moment op het wiel en tik nog eens, of druk <kbd>N</kbd>. Met een deadline schuift de taak vanzelf naar binnen naarmate de datum nadert.</dd></div>
-      <div><dt>Afvinken</dt><dd>Tik op het rondje in de lijst: de taak fonkelt uit. <kbd>Z</kbd> zet ze terug, en alles blijft 60 dagen in Archief.</dd></div>
+      <div><dt>Afvinken</dt><dd>Tik op het rondje in de lijst: de taak fonkelt uit en wordt een ster aan de hemel. <kbd>Z</kbd> zet ze terug, en alles blijft 60 dagen in Archief.</dd></div>
       <div><dt>Verplaatsen</dt><dd>Sleep een bol naar een andere ring, of tik op het bolletje rechts van een taak in de lijst.</dd></div>
       <div><dt>Kijken</dt><dd>Boven of zijkant (<kbd>1</kbd> <kbd>2</kbd>), slepen in de scène draait mee. Focus (<kbd>F</kbd>) toont klok, weer en wat nu moet.</dd></div>
-      <div><dt>Rust</dt><dd>Te druk? Tempo (<kbd>T</kbd>) wisselt tussen normaal, zen en stil. <kbd>D</kbd> wisselt licht en donker.</dd></div>
-      <div><dt>Toestellen</dt><dd>Koppelen rechtsboven: het ene toestel toont een QR-code, het andere scant en ontvangt je taken. Daarna blijven ze gelijk, ook offline.</dd></div>
+      <div><dt>Rust</dt><dd>Te druk? Onder Instellingen wissel je het tempo (<kbd>T</kbd>: normaal, zen, stil) en licht of donker (<kbd>D</kbd>).</dd></div>
+      <div><dt>Toestellen</dt><dd>Koppelen (rechtsboven, op gsm onder Instellingen): het ene toestel toont een QR-code, het andere scant en ontvangt je taken. Daarna blijven ze gelijk, ook offline.</dd></div>
     </dl>
     <p class="intro-keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>F</kbd> focus <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief <kbd>Z</kbd> ongedaan <kbd>?</kbd> uitleg</p>
     <div class="sync-row intro-foot">
-      <span class="intro-note">Deze uitleg staat altijd onder Uitleg rechtsboven.</span>
+      <span class="intro-note">Deze uitleg vind je altijd terug onder Uitleg.</span>
       <button type="button" class="btn-solid" id="intro-close">Aan de slag</button>
     </div>
   </div>

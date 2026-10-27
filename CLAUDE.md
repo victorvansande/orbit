@@ -19,13 +19,13 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 - Papier #F1F1EF met lichte korrel (`.grain`, SVG-ruis, opacity 0,14). Inkt #1B1B22, secundair #5E5E68, tertiair #9A9AA3.
 - Typografie: Geist (UI) en Geist Mono (kapitaaltjes in de hoeken, tellers), via Google Fonts, met systeemfont als terugval.
-- Hoeklabels zoals op een platenhoes: linksboven ORBIT TASKS (Geist 600, 13 px, kapitalen met letterafstand 0,18em) + samenvatting, rechtsboven weeknummer + datum, linksonder Boven / Zijkant / Focus en Tempo (Normaal / Zen / Stil).
+- Hoeklabels zoals op een platenhoes: linksboven ORBIT TASKS (Geist 600, 13 px, kapitalen met letterafstand 0,18em) + samenvatting, rechtsboven weeknummer, datum en Uitleg / Archief / Koppelen, linksonder het knopje Instellingen (zie Instellingen).
 - Kleur zit alleen in de bollen. Ringen, raster en wijzerplaat zijn grafiet met lage dekking; een ring krijgt zijn kleur pas bij hover of als sleepdoel.
 - Desktop (≥ 1000 px): takenlijst links (300 px), scène in het midden, wiel rechts. Smaller: alles onder elkaar (kop, scène, aanzicht, horizontaal wiel, lijst).
 
 ## Thema
 
-- Schakelaar rechtsboven onder de datum: Licht / Donker / Auto (Auto volgt `prefers-color-scheme`, standaard). Toets `D` wisselt licht en donker. Keuze in localStorage `priority-orbit.theme.v1`.
+- Licht / Donker / Auto staat in het paneel Instellingen (Auto volgt `prefers-color-scheme`, standaard). Toets `D` wisselt licht en donker. Keuze in localStorage `priority-orbit.theme.v1`.
 - Een inline script in `<head>` zet `data-theme` vóór de eerste weergave (geen lichte flits). `app.js` houdt het daarna bij, ook als het systeemthema wijzigt, en past `meta[name=theme-color]` aan.
 - CSS: alle kleuren zijn tokens op `:root`, herdefinieerd onder `:root[data-theme="dark"]` (papier #0F0F12, oppervlak #19191D, inkt #ECECF1). Nieuwe kleuren altijd als token toevoegen, nooit een losse `#fff` of `rgba(27, 27, 34, …)`.
 - Momentkleuren: elk niveau heeft `color` (licht) en `dark` (gedempt: minder verzadigd, zodat de bollen in het donker niet als kleurboek ogen). DOM-elementen krijgen beide via `toneNode()` (`data-tone`, `--c-l`, `--c-d`); CSS kiest `--c` per thema.
@@ -52,7 +52,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
 | `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)`, `twinkleDot(root)` |
 | `src/quotes.js` | Bibliotheek van 223 korte, positieve Engelse quotes met gekende bron, voor de focusmodus |
-| `src/stats.js` | Statistiek: afgevinkt per dag (`priority-orbit.stats.v1`) en de sterrenhemel (`priority-orbit.stars.v2`) |
+| `src/stats.js` | Statistiek: logboek van afgevinkte taken (`priority-orbit.done.v1`, gaat mee met sync), samenvatting voor de details, sterrenhemel (`priority-orbit.stars.v2`) |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
 | `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, verbinding met de Orbit-server, samenvoegen |
@@ -81,7 +81,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Lagen van achter naar voor: raster (zwaartekrachtput), sterrenhemel, wijzerplaat (120 streepjes), ringen, kern, bollen met staart, effecten, labels.
 - Banen draaien via een fase per niveau (`phase`), elke bol heeft een `offset` die zacht naar gelijke verdeling glijdt. Bij een niveauwissel blijft de absolute hoek behouden.
 - Bol (`drawOrb`): `tracePath` rekent de werkelijke baan terug (hoeksnelheid inclusief herschikking `vo`, radiale snelheid `vr`), `taper` vult er een effen, taps vlak langs (breedte 2r aan de kop, 0,35r aan het eind). Zo wijst de staart ook tijdens binnenvliegen en ringwissels de goede kant op. Lengte = (staart + 1) × 7 × `TAIL_LENGTH` × (snelheid / kruissnelheid), begrensd op 2,5 keer.
-- Wijzerplaat: 120 streepjes (elke tiende lang). Vanaf 12 uur lichten er evenveel op als er deze maand taken afgevinkt zijn (max. 120), met het label "n IN MAAND" erboven (zie Statistiek). De klok op de rand (uurstip, minutenlijn, cijfers 12/3/6/9) is weggehaald op vraag van Victor: geen meerwaarde, enkel afleiding naast de digitale klok.
+- Wijzerplaat: 120 statische streepjes (elke tiende lang), puur decor. Een tijdje vulden ze zich met de taken van de maand; Victor vond dat te druk, weggehaald. De klok op de rand (uurstip, minutenlijn, cijfers 12/3/6/9) is ook weggehaald: geen meerwaarde naast de digitale klok.
 - Minder drukte in het zijaanzicht (alles schaalt met `cam.depth`, dus glijdt mee met de camera): de achterkant van elke ring (van de kijker af) zakt naar ongeveer een derde dekking zodat de ellipsen niet even sterk kruisen, elke tweede ringstip vervaagt (de overige worden iets krachtiger), het raster wijkt binnen en rond de trechter terug (tot ±90 eenheden buiten de rand) en is lichter, wijzerplaat op de helft. Geen meridianen meer: de ringen tonen de vorm al.
 - Hover dimt de andere ringen licht (factor 0,32), niet weg: in het zijaanzicht moeten ze leesbaar blijven.
 - Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader), de bol krijgt een dun ringetje. Hover op een rij in de lijst doet hetzelfde voor die ene taak.
@@ -144,12 +144,19 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 
 ## Statistiek (`src/stats.js`)
 
-Victor wou iets kleins ter motivatie; vier voorstellen tijdelijk tegelijk aan (2, 3, 4 en 5):
-- Telling per dag `{days: {'JJJJ-MM-DD': n}}` in `priority-orbit.stats.v1`, verloopt nooit. Bij de eerste keer aangevuld uit het archief. Afvinken telt +1 (ook elders afgevinkt via sync), ongedaan maken -1. Voorbeeldtaken tellen niet.
-- **Matrixteller** onder de lijst (`#stat-total`, zelfde stippen als de klok) met "stars collected": evenveel als er sterren aan de hemel staan. Af en toe (7 tot 16 s) fonkelt één verlichte stip uit als dezelfde vierpuntige ster (`twinkleDot` in `matrix.js`), als knipoog naar de hemel. Niet bij reduced motion of als de teller onzichtbaar is.
-- **Weekraster**: zeven rasterpuntjes ma tot zo (`rasterDot`, vol bij 5), toekomstige dagen vaag, vandaag vet.
-- **Wijzerplaat** vult zich met de maand (zie Scène).
-- **Sterrenhemel**: één ster per afgevinkte taak, voorgoed (`priority-orbit.stars.v2`, `{id, x, y, s, ph}` in stage-eenheden rond het midden, tussen straal 24 en 250). Plaatsing met best candidate (Mitchell): 14 kandidaten rond de plek waar de taak uitfonkelde (14 tot 60 eenheden weg, dus niet op de baan), anders 80 overal; de kandidaat die het verst van de rest ligt, met minimale afstand `GAPS` 11, 9, 7,5 of 6,5. Zo oogt een volle hemel natuurlijk, zonder raster en zonder overlap (getest: 400 sterren, kleinste afstand 11). `matchStars` zorgt dat er evenveel sterren als afgevinkte taken zijn. Getekend achter de wijzerplaat, los van de camera, zachtjes fonkelend; bij veel sterren iets kleiner.
+Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (weekraster en de wijzerplaat die zich vulde zijn weggehaald, te druk).
+- **Logboek** `{id: tijdstip}` van elke afgevinkte taak in `priority-orbit.done.v1`, voorgoed. Gaat mee met de sync (`done` in de toestand): elk gekoppeld toestel toont dezelfde telling en evenveel sterren. Vroeger telde elk toestel apart (`priority-orbit.stats.v1`), waardoor Victors gsm niets toonde; die oude telling wordt bij het eerste laden omgezet (archief met echte id's, het overschot als `oud-<toestel>-<dag>-<n>`).
+- `mergeStates`: logboek = alles van beide kanten (recentste tijdstip), behalve taken die na het afvinken teruggezet zijn (`updatedAt` > afvinktijd) en alles van vóór `doneReset`.
+- **Teller op nul**: in de details "Teller op nul", met bevestiging. Zet `doneReset` (tijdstip, `priority-orbit.doneReset.v1`, gaat mee met de sync) zodat gekoppelde toestellen volgen en de oude sterren niet terugbrengen. Taken blijven.
+- **Matrixteller** onder de lijst (`#stat-total`, zelfde stippen als de klok) met "stars collected". Een tik toont de details (`doneSummary`): vandaag, deze week, deze maand, beste dag, eerste ster, en de knop Teller op nul. Af en toe (7 tot 16 s) fonkelt één verlichte stip uit als dezelfde vierpuntige ster (`twinkleDot` in `matrix.js`). Niet bij reduced motion of als de teller onzichtbaar is.
+- **Sterrenhemel**: één ster per id in het logboek (`syncStars`; sterren zonder geldig id krijgen eerst een ontbrekend id, zodat de hemel niet verspringt). `{id, x, y, s, ph}` in stage-eenheden rond het midden, tussen straal 24 en 250. Plaatsing met best candidate (Mitchell): 14 kandidaten rond de plek waar de taak uitfonkelde (14 tot 60 eenheden weg, dus niet op de baan), anders 80 overal; de kandidaat die het verst van de rest ligt, met minimale afstand `GAPS` 11, 9, 7,5 of 6,5. Een volle hemel oogt natuurlijk, zonder raster en zonder overlap (getest: 400 sterren, kleinste afstand 11). Getekend achter de wijzerplaat, los van de camera, zachtjes fonkelend; bij veel sterren iets kleiner.
+- Export bevat het logboek; import voegt het samen.
+
+## Instellingen
+
+- Eén knopje Instellingen met een paneel (`#hud-menu`, `.is-open`), dicht bij een tik ernaast of Esc. `placeMenu()` verhuist de onderdelen bij het wisselen tussen desktop en gsm.
+- **Desktop**: knopje linksonder. Paneel: Boven / Zijkant met Focus, Tempo, Thema, sneltoetsen. Uitleg / Archief / Koppelen blijven rechtsboven. In de focusmodus staat naast het knopje "Focus uit (Esc)".
+- **Gsm**: knopje rechtsboven naast de naam (met het syncbolletje). Daaronder één regel: samenvatting links ("Niets dringend · 12 taken", mono, nooit op twee regels) en het weeknummer rechts; de datum valt weg. Paneel zweeft over de scène: Tempo, Thema, Uitleg / Archief / Koppelen. Boven / Zijkant / Focus blijven onder de scène.
 
 ## Interactie in de lijst en het venster
 
@@ -159,8 +166,8 @@ Victor wou iets kleins ter motivatie; vier voorstellen tijdelijk tegelijk aan (2
 - Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), optioneel "Deadline" (native datumveld; met een datum is de momentkeuze vergrendeld en toont een hint in welke schil de taak komt), "Voeg toe" pas actief met een titel.
 - Sneltoetsen reageren niet op toetsherhaling (`e.repeat`): `D` ingedrukt houden flitste anders tussen licht en donker.
 - Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `D` thema, `A` archief, `Z` ongedaan, `Esc` sluit. Niet actief zolang een venster open is.
-- Sneltoetsen onder de lijst zitten achter een klein knopje "Sneltoetsen" (Victor: niet altijd zichtbaar); de regel schuift open bij hover, toetsenbordfocus of klik (`.keys.is-open`), blijft op één regel (`white-space: nowrap`, mag voorbij de lijstbreedte lopen). Verborgen op gsm en touchscreens.
-- Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
+- Sneltoetsen staan als laatste regel in het paneel Instellingen (desktop); het losse knopje Sneltoetsen is weg.
+- Tempo in het paneel Instellingen; keuze in localStorage `priority-orbit.tempo.v1`.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote matrixklok (stippen van 5 × 7 zoals in Kwick, onverlichte stippen als schim met `--dm-ghost`, geen gloed; alleen een gewijzigd cijfer laat zijn stippen oplichten; hoogte `min(84px, 9,4vh)`, op gsm 52 px), datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand. Een tik of muisbeweging toont ze weer; bij het verlaten wordt de timer gewist.
 - Weer in de focusmodus (`src/weather.js`): boven de matrixklok, links gelijk met de klok, een lijnicoon (zelfde iconen als Kwick, symbolen `w-*` in `index.html`) met de temperatuur, link naar https://victorvansande.github.io/kwick/. Open-Meteo (`current=temperature_2m,weather_code,is_day`), 15 min in cache (`priority-orbit.weather.v2`), alleen opgehaald zolang de focusmodus aan staat. Plaats: die van Kwick (`isobar:place`, zelfde origin dus gedeelde localStorage), anders je locatie als je die al toestond, anders Brussel. Bij een fout blijft het icoon weg of toont het de laatst bekende stand. Naast de temperatuur de plaatsnaam (bij je locatie opgezocht via bigdatacloud, zoals Kwick). Eronder neerslag in het komende uur uit `minutely_15` (vanaf 0,1 mm per kwartier): "Regen vanaf 16:45", "Regen tot 17:15", "Regen het komende uur" of "Sneeuw …"; droog = geen regel. Die zin wordt elke minuut opnieuw berekend uit de bewaarde kwartierwaarden (`rainText`).
 - Quote in de focusmodus als er geen Nu-taken zijn (vervangt "Niets dringend. Rustig aan.", dat Victor te standaard vond): `QUOTES` uit `src/quotes.js`, alleen quotes met gekende bron of spreekwoorden (geen foutief toegeschreven internetquotes). Om de 20 minuten een andere, in een geschudde volgorde die eerst de hele bibliotheek doorloopt (`priority-orbit.quote.v1`: `{order, i, at}`), zodat je dagenlang geen herhaling ziet. Quote 21 px (gsm 17 px), auteur in kapitaaltjes, zacht ingefade. Breedte volgt de ruimte tot de buitenste ring (`calc(50vw - 41vmin - 72px)`, min. 260 px, max. 52ch); Victor vond 34ch te smal.

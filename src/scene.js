@@ -95,7 +95,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const orbs = new Map();
   const twinkles = [];   // afgevinkte bollen die uitfonkelen
   let sky = [];          // sterrenhemel van deze week
-  let progress = { month: 0, label: '' };   // afgevinkt deze maand, voor de wijzerplaat
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
   // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
@@ -365,35 +364,21 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (a <= 0) return;
     ctx.strokeStyle = rgba(INK, 1);
     ctx.lineWidth = 1;
-    // Wijzerplaat vult zich: per afgevinkte taak deze maand licht een streepje op, met de klok mee vanaf twaalf uur
-    const lit = Math.min(120, progress.month);
-    for (const kind of ['minor', 'major', 'lit']) {
-      ctx.globalAlpha = (kind === 'lit' ? 0.85 : kind === 'major' ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
-      ctx.lineWidth = kind === 'lit' ? 1.6 : 1;
+    for (const major of [false, true]) {
+      ctx.globalAlpha = (major ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
       ctx.beginPath();
       for (let i = 0; i < 120; i++) {
-        const isMajor = i % 10 === 0, isLit = i < lit;
-        if ((isLit ? 'lit' : isMajor ? 'major' : 'minor') !== kind) continue;
-        const ang = -Math.PI / 2 + i / 120 * TAU;
+        const isMajor = i % 10 === 0;
+        if (isMajor !== major) continue;
+        const ang = i / 120 * TAU;
         const c = Math.cos(ang), s = Math.sin(ang);
         if (!project(c * BEZEL_IN, s * BEZEL_IN, 0, false)) continue;
         const x0 = pt.x, y0 = pt.y;
-        const out = isMajor ? BEZEL_MAJOR : isLit ? BEZEL_OUT + 3 : BEZEL_OUT;
+        const out = isMajor ? BEZEL_MAJOR : BEZEL_OUT;
         if (!project(c * out, s * out, 0, false)) continue;
         ctx.moveTo(x0, y0); ctx.lineTo(pt.x, pt.y);
       }
       ctx.stroke();
-    }
-    // onderaan de wijzerplaat het aantal, alleen in het bovenaanzicht leesbaar
-    const la = 0.5 * a * (1 - cam.depth);
-    if (lit > 0 && la > 0.02 && project(0, BEZEL_MAJOR + 16, 0, false)) {
-      ctx.globalAlpha = la;
-      ctx.fillStyle = rgba(INK, 1);
-      ctx.font = `500 ${clamp(8.5 * cam.du, 8, 12).toFixed(1)}px "Geist Mono", ui-monospace, monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${progress.month} IN ${progress.label}`.toUpperCase(), pt.x, pt.y);
-      ctx.textAlign = 'start';
     }
     ctx.globalAlpha = 1;
   }
@@ -865,7 +850,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
     setSky(list) { sky = list; },
-    setProgress(next) { progress = next; },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;

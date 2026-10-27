@@ -34,8 +34,10 @@ export function savedCode() {
 }
 
 /* ---- Samenvoegen ---- */
-// state = { tasks: [{id, updatedAt, ...}], gone: { id: tijdstip van afvinken } }
+// state = { tasks: [{id, updatedAt, ...}], gone: { id: tijdstip van afvinken }, done: { id: tijdstip } }
 // Per taak wint de recentste wijziging; een afgevinkte taak komt pas terug als ze nadien opnieuw gewijzigd is (ongedaan maken).
+// done is het logboek voor de statistiek: alles van beide kanten, behalve taken die na het afvinken teruggezet zijn
+// en alles van vóór de laatste keer dat de teller op nul ging (doneReset).
 export function mergeStates(a, b) {
   const gone = { ...a.gone };
   for (const [id, t] of Object.entries(b.gone || {})) gone[id] = Math.max(gone[id] || 0, t);
@@ -47,14 +49,22 @@ export function mergeStates(a, b) {
   const tasks = [...byId.values()].filter(t => !(gone[t.id] >= (t.updatedAt || 0)));
   const limit = Date.now() - GONE_DAYS * 86400000;
   for (const [id, t] of Object.entries(gone)) if (t < limit) delete gone[id];
-  return { tasks, gone };
+  const done = { ...a.done };
+  for (const [id, t] of Object.entries(b.done || {})) if (Number.isFinite(t)) done[id] = Math.max(done[id] || 0, t);
+  for (const t of tasks) if (done[t.id] && (t.updatedAt || 0) > done[t.id]) delete done[t.id];
+  const doneReset = Math.max(a.doneReset || 0, b.doneReset || 0);
+  for (const [id, t] of Object.entries(done)) if (t <= doneReset) delete done[id];
+  return { tasks, gone, done, doneReset };
 }
 
-// Twee toestanden zijn gelijk als dezelfde taken met dezelfde wijzigingstijd bestaan en dezelfde taken afgevinkt zijn
+// Twee toestanden zijn gelijk als dezelfde taken met dezelfde wijzigingstijd bestaan, dezelfde taken afgevinkt zijn
+// en het logboek gelijk is
 export function sameState(a, b) {
   const sig = s => JSON.stringify([
     s.tasks.map(t => `${t.id}:${t.updatedAt || 0}`).sort(),
     Object.keys(s.gone || {}).sort(),
+    Object.entries(s.done || {}).map(([id, t]) => `${id}:${t}`).sort(),
+    s.doneReset || 0,
   ]);
   return sig(a) === sig(b);
 }

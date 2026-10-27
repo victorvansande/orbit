@@ -5,7 +5,7 @@ import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
 import { mirror, readMirror } from './backup.js';
 import { setMatrix, twinkleDot } from './matrix.js';
-import { loadStats, countDone, totalDone, weekCounts, monthCount, loadStars, placeStar, removeStar, matchStars, dayKey, STATS_KEYS } from './stats.js';
+import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, clearStars, dayKey, STATS_KEYS } from './stats.js';
 import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
@@ -168,8 +168,9 @@ let gone = loadGone();
 let tasks = loadTasks();
 tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'Voor opruimen voorbeeldtaken');
 let archive = loadArchive();
-let stats = loadStats(archive);
-let sky = matchStars(loadStars(), totalDone(stats));   // één ster per afgevinkte taak
+let done = loadDone(archive);                    // logboek van afgevinkte taken, gaat mee met de sync
+let doneReset = loadReset();                      // teller op nul gezet op dit tijdstip
+let sky = syncStars(loadStars(), done);           // één ster per afgevinkte taak
 applyDeadlines();
 saveTasks({ notify: false });
 // Vraag de browser om de opslag niet op te ruimen als er plaats tekort is
@@ -323,49 +324,59 @@ function renderFocusNow() {
   box.append(ul);
 }
 
-/* ---- Statistiek: weekraster en totaal (lijst), wijzerplaat en sterrenhemel (scène) ---- */
-const DAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
+/* ---- Statistiek: teller onder de lijst (met details bij een tik) en de sterrenhemel in de scène ---- */
 const MONTH_FMT = new Intl.DateTimeFormat('nl-BE', { month: 'long' });
+const LONG_DAY = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
 let statsDay = '';
-function rasterDot(ctx, cx, cy, R, fill, color) {
-  const sp = R / 3.2;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  for (let row = -4; row <= 4; row++) for (let c = -4; c <= 4; c++) {
-    const x = (c + (row & 1) * 0.5) * sp, y = row * sp * 0.866, r = Math.hypot(x, y);
-    if (r > R) continue;
-    const s = sp * 0.42 * Math.max(0.15, Math.min(1, fill * 1.3 - r / R * 0.6));
-    ctx.moveTo(cx + x + s, cy + y); ctx.arc(cx + x, cy + y, s, 0, Math.PI * 2);
-  }
-  ctx.fill();
-}
 function renderStats() {
   const now = new Date();
   statsDay = dayKey(now);
   scene.setSky(sky.stars);
-  scene.setProgress({ month: monthCount(stats, now), label: MONTH_FMT.format(now) });
-  const week = weekCounts(stats, now), total = totalDone(stats);
+  const total = totalDone(done);
   $('stats').hidden = total === 0;
   if (!total) return;
-  const weekSum = week.reduce((a, b) => a + (b || 0), 0);
-  $('stat-week').textContent = String(weekSum);
-  const box = $('weekdots');
-  if (box.children.length !== 7) box.replaceChildren(...DAYS.map(d => { const sp = el('span'); const cv = el('canvas'); cv.width = cv.height = 52; sp.append(cv, d); return sp; }));
-  const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
-  const todayIdx = (now.getDay() + 6) % 7;
-  [...box.children].forEach((sp, i) => {
-    const n = week[i], ctx = sp.firstChild.getContext('2d');
-    ctx.clearRect(0, 0, 52, 52);
-    ctx.globalAlpha = n === null ? 0.3 : i === todayIdx ? 1 : 0.75;
-    rasterDot(ctx, 26, 26, 21, n === null ? 0 : Math.min(1, n / 5), ink);
-    sp.classList.toggle('is-today', i === todayIdx);
-    sp.title = n === null ? '' : `${n} afgevinkt`;
-  });
-  box.setAttribute('aria-label', `Deze week afgevinkt: ${week.map((n, i) => `${DAYS[i]} ${n ?? '-'}`).join(', ')}`);
   setMatrix($('stat-total'), String(total));
   $('stat-total').setAttribute('aria-label', `${total} afgevinkt in totaal, evenveel sterren in de hemel`);
   $('stat-stars-label').textContent = total === 1 ? 'star collected' : 'stars collected';
+  const sum = doneSummary(done, now);
+  const day = ts => LONG_DAY.format(ts);
+  const bestDay = sum.best ? (([y, m, d]) => new Date(y, m - 1, d))(sum.best.day.split('-').map(Number)) : null;
+  const rows = [
+    ['Vandaag', sum.today],
+    ['Deze week', sum.week],
+    [MONTH_FMT.format(now), sum.month],
+    ['Beste dag', sum.best ? `${sum.best.n} · ${day(bestDay)}` : '-'],
+    ['Eerste ster', sum.first ? day(sum.first) : '-'],
+  ];
+  $('stats-rows').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', '', k), el('dd', '', String(v))]));
 }
+// Teller en sterren op nul, na bevestiging. Het tijdstip gaat mee met de sync, zodat gekoppelde toestellen volgen
+// en de oude sterren niet terugbrengen.
+function showResetConfirm(on) {
+  $('stats-confirm').hidden = !on;
+  $('stats-reset').hidden = on;
+  if (on) $('stats-reset-no').focus();
+}
+$('stats-reset').addEventListener('click', () => showResetConfirm(true));
+$('stats-reset-no').addEventListener('click', () => showResetConfirm(false));
+$('stats-reset-yes').addEventListener('click', () => {
+  doneReset = Date.now();
+  done = {};
+  saveReset(doneReset);
+  saveDone(done);
+  clearStars(sky);
+  showResetConfirm(false);
+  $('stats-detail').hidden = true;
+  $('stats-toggle').setAttribute('aria-expanded', 'false');
+  renderStats();
+  notifySync();
+  showToast('Teller en sterren op nul');
+});
+$('stats-toggle').addEventListener('click', () => {
+  const open = $('stats-detail').hidden;
+  $('stats-detail').hidden = !open;
+  $('stats-toggle').setAttribute('aria-expanded', String(open));
+});
 
 // Af en toe fonkelt één stip van de teller, net als de sterren in de scène
 (function wink() {
@@ -568,7 +579,8 @@ function complete(id, row) {
     const now = Date.now();
     gone[id] = now;
     archive = saveArchive([{ ...task, doneAt: now }, ...archive]);
-    countDone(stats, now);
+    done[id] = now;
+    saveDone(done);
     placeStar(sky, id, spot);
     renderStats();
   }
@@ -588,7 +600,7 @@ function restore(ids) {
   const back = archive.filter(a => want.has(a.id) && !tasks.some(t => t.id === a.id));
   if (!back.length) return 0;
   for (const a of back) {
-    countDone(stats, a.doneAt, -1);
+    delete done[a.id];
     removeStar(sky, a.id);
     const { doneAt, by, ...task } = a;
     touch(task);
@@ -596,6 +608,7 @@ function restore(ids) {
     tasks.push(task);
   }
   archive = saveArchive(archive.filter(a => !want.has(a.id)));
+  saveDone(done);
   applyDeadlines();
   saveTasks();
   render();
@@ -867,6 +880,7 @@ function bumpIdle() {
   if (document.body.classList.contains('is-focus')) idleTimer = setTimeout(() => document.body.classList.add('is-idle'), IDLE_MS);
 }
 $('focus-btn').addEventListener('click', () => setFocus(!document.body.classList.contains('is-focus')));
+$('focus-exit').addEventListener('click', () => setFocus(false));
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement && document.body.classList.contains('is-focus')) setFocus(false);
 });
@@ -1008,15 +1022,19 @@ function bringBack(list, reason, { preferNewer = false } = {}) {
     const task = { ...t, updatedAt: t.updatedAt ?? t.createdAt };
     touch(task);
     delete gone[task.id];
+    delete done[task.id];
+    removeStar(sky, task.id);
     tasks.push(task);
     added++;
   }
   const ids = new Set(tasks.map(t => t.id));
   archive = saveArchive(archive.filter(a => !ids.has(a.id)));
+  saveDone(done);
   applyDeadlines();
   saveTasks({ reason });
   render();
   renderArchive();
+  renderStats();
   const parts = [];
   if (added) parts.push(`${added} ${added === 1 ? 'taak' : 'taken'} terug`);
   if (updated) parts.push(`${updated} bijgewerkt`);
@@ -1038,7 +1056,7 @@ $('arch-close').addEventListener('click', () => archiveDialog.close());
 archiveDialog.addEventListener('click', e => { if (e.target === archiveDialog) archiveDialog.close(); });
 
 $('arch-export').addEventListener('click', () => {
-  const data = { app: 'orbit', version: 1, exportedAt: new Date().toISOString(), tasks: realTasks(), archive };
+  const data = { app: 'orbit', version: 1, exportedAt: new Date().toISOString(), tasks: realTasks(), archive, done };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   const a = el('a');
   a.href = url;
@@ -1061,6 +1079,11 @@ $('arch-file').addEventListener('change', async e => {
       const known = new Set([...tasks, ...archive].map(t => t.id));
       archive = saveArchive([...archive, ...data.archive.filter(a => isTask(a) && typeof a.doneAt === 'number' && !known.has(a.id))]);
     }
+    if (data.done && typeof data.done === 'object') {
+      ({ done } = mergeStates({ tasks: [], gone: {}, done, doneReset }, { tasks: [], gone: {}, done: cleanDone(data.done) }));
+      saveDone(done);
+      syncStars(sky, done);
+    }
     bringBack(list, 'Voor import', { preferNewer: true });
   } catch {
     showToast('Dat bestand kon Orbit niet lezen');
@@ -1080,9 +1103,10 @@ window.addEventListener('storage', e => {
   } else if (e.key === STORE_KEYS.ARCHIVE_KEY || e.key === STORE_KEYS.SNAP_KEY) {
     archive = loadArchive();
     renderArchive();
-  } else if (e.key === STATS_KEYS.STATS_KEY || e.key === STATS_KEYS.STARS_KEY) {
+  } else if (e.key === STATS_KEYS.DONE_KEY || e.key === STATS_KEYS.STARS_KEY || e.key === STATS_KEYS.RESET_KEY) {
     // anders overschrijft dit tabblad bij de volgende afgevinkte taak de telling van het andere
-    stats = loadStats(archive);
+    done = loadDone(archive);
+    doneReset = loadReset();
     sky = loadStars();
     renderStats();
   }
@@ -1097,7 +1121,7 @@ const DEVICE = deviceName();
 
 const sync = createSync({
   deviceName: DEVICE,
-  getState: () => ({ tasks: realTasks(), gone }),
+  getState: () => ({ tasks: realTasks(), gone, done, doneReset }),
   applyState(state) {
     gone = { ...state.gone };
     const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken');
@@ -1108,12 +1132,16 @@ const sync = createSync({
       snapshot(tasks, 'Voor synchronisatie');
       const now = Date.now();
       archive = saveArchive([...lost.map(t => ({ ...t, doneAt: state.gone?.[t.id] || now, by: 'elders' })), ...archive]);
-      for (const t of lost) {
-        countDone(stats, state.gone?.[t.id] || now);
-        placeStar(sky, t.id, scene.complete(t.id));     // ook hier fonkelt de taak uit en blijft er een ster
-      }
-      renderStats();
+      for (const t of lost) placeStar(sky, t.id, scene.complete(t.id));     // ook hier fonkelt de taak uit en blijft er een ster
     }
+    // logboek van het andere toestel (een oudere versie van Orbit stuurt er geen: dan zelf aanvullen)
+    done = cleanDone(state.done || done);
+    doneReset = Math.max(doneReset, state.doneReset || 0);
+    for (const t of lost) if (!done[t.id] && (state.gone?.[t.id] || Date.now()) > doneReset) done[t.id] = state.gone?.[t.id] || Date.now();
+    saveDone(done);
+    saveReset(doneReset);
+    syncStars(sky, done);
+    renderStats();
     tasks = incoming;
     applyDeadlines();
     saveTasks({ notify: false, reason: 'Voor synchronisatie' });
@@ -1133,7 +1161,14 @@ const sync = createSync({
       ? realTasks().filter(t => (t.updatedAt || 0) > pending.confirmedAt && !state.tasks.some(r => r.id === t.id)) : [];
     gone = { ...state.gone };
     tasks = [...dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken'), ...unsynced];
-    if (tasks.length !== state.tasks.length) setTimeout(() => sync.changed(), 0);
+    // het logboek van beide toestellen samen: niemand verliest zijn telling
+    ({ done, doneReset } = mergeStates({ tasks: [], gone: {}, done, doneReset }, { tasks, gone: {}, done: cleanDone(state.done), doneReset: state.doneReset }));
+    saveDone(done);
+    saveReset(doneReset);
+    syncStars(sky, done);
+    renderStats();
+    // had dit toestel iets wat de verzender niet had (eigen taken of afgevinkte), dan terugsturen
+    if (tasks.length !== state.tasks.length || totalDone(done) !== totalDone(cleanDone(state.done)) || doneReset !== (state.doneReset || 0)) setTimeout(() => sync.changed(), 0);
     applyDeadlines();
     saveTasks({ notify: false, reason: 'Voor ontvangen' });
     render();
@@ -1251,6 +1286,7 @@ function renderSync({ status, lastSync, code } = { status: sync.status, lastSync
   try { renderPairHint(); } catch { /* bij het opstarten nog niet klaar */ }
   const btn = $('sync-btn');
   btn.dataset.status = status;
+  $('menu-btn').dataset.status = status;      // gsm: de status blijft zichtbaar als bolletje op het knopje
   // verbonden maar nog niets uitgewisseld: nog niet "gesynchroniseerd" noemen
   const text = status === 'online' && !lastSync ? 'Verbonden' : SYNC_TEXT[status];
   // wijzigingen die nog naar de server moeten: zichtbaar tot de server ze bevestigt
@@ -1394,12 +1430,37 @@ $('intro-close').addEventListener('click', closeIntro);
 introDialog.addEventListener('click', e => { if (e.target === introDialog) closeIntro(); });
 introDialog.addEventListener('cancel', () => { try { localStorage.setItem(INTRO_KEY, 'gezien'); } catch { /* geen opslag */ } });
 
-/* ---- Sneltoetsen: openklappen met een klik (hover doet CSS) ---- */
-$('keys-toggle').addEventListener('click', () => {
-  const open = !$('keys').classList.contains('is-open');
-  $('keys').classList.toggle('is-open', open);
-  $('keys-toggle').setAttribute('aria-expanded', String(open));
-});
+/* ---- Instellingen: één knopje met een paneel ---- */
+// Desktop: het knopje staat linksonder en het paneel bevat aanzicht, focus, tempo, thema en de sneltoetsen;
+// uitleg, archief en sync blijven rechtsboven. Gsm: het knopje staat in de kop en het paneel bevat thema, tempo,
+// uitleg, archief en sync; aanzicht en focus blijven onder de scène.
+const hudMenu = $('hud-menu'), menuBtn = $('menu-btn');
+function setMenu(open) {
+  hudMenu.classList.toggle('is-open', open);
+  menuBtn.setAttribute('aria-expanded', String(open));
+}
+menuBtn.addEventListener('click', () => setMenu(!hudMenu.classList.contains('is-open')));
+document.addEventListener('pointerdown', e => { if (!hudMenu.contains(e.target) && !menuBtn.contains(e.target)) setMenu(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && hudMenu.classList.contains('is-open')) { setMenu(false); menuBtn.focus(); } });
+document.querySelector('.hud-actions').addEventListener('click', e => { if (e.target.closest('button')) setMenu(false); });
+function placeMenu() {
+  const controls = document.querySelector('.controls'), actions = document.querySelector('.hud-actions');
+  if (desktop.matches) {
+    $('menu-view').append($('view-switch'), $('focus-btn'));
+    $('menu-tempo').append($('tempo'));
+    hudMenu.before(actions);
+    controls.append(menuBtn, $('focus-exit'), hudMenu);
+  } else {
+    controls.append($('view-switch'), $('focus-btn'));
+    $('menu-tempo').append($('tempo'));
+    hudMenu.append(actions);
+    document.querySelector('.hud-right').append(menuBtn, hudMenu);
+  }
+  setMenu(false);
+}
+desktop.addEventListener('change', placeMenu);
+placeMenu();
+
 
 /* ---- Offline (sw.js) ---- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
