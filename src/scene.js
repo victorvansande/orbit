@@ -13,8 +13,8 @@ const FIT = 440;                        // zoveel stage-eenheden passen in min(b
 
 const INK = [24, 24, 32];
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
-const TAIL_GAP = 7, TAIL_ALPHA = 0.45, TAIL_SHRINK = 0.18;
-const ORB_SCALE = 2.2;                  // wazige bollen ogen kleiner dan een scherpe stip
+const TAIL_GAP = 7, TAIL_ALPHA = 0.42, TRAIL_STEPS = 14;
+const ORB_SCALE = 1.7;                  // wazige bollen ogen kleiner dan een scherpe stip
 const MERIDIANS = 8, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.12;
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
@@ -75,8 +75,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let pointer = { x: -1, y: -1, inside: false };
 
   /* ---- Sprites ---- */
-  const sprites = new Map(LEVELS.map(l => [l.id, orbSprite(l.tones, 128, { soft: 2.2 })]));
-  const coreSprites = { urgent: orbSprite(LEVELS[0].tones, 256, { soft: 1.6 }), calm: orbSprite(CALM_TONES, 256, { soft: 1.4 }) };
+  const sprites = new Map(LEVELS.map(l => [l.id, orbSprite(l.tones, 128)]));
+  const coreSprites = { urgent: orbSprite(LEVELS[0].tones, 256, { blur: 0.035, glow: 0.38 }), calm: orbSprite(CALM_TONES, 256, { blur: 0.035, glow: 0.3 }) };
   const colors = new Map(LEVELS.map(l => [l.id, rgbOf(l.color)]));
 
   /* ---- Vaste geometrie ---- */
@@ -414,11 +414,48 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawOrb(ctx, coreSprites.urgent, pt.x, pt.y, scaleUrgent, nowGlow * (0.78 + 0.22 * pulse) * intro);
   }
 
+  const isHot = o => hover.orb === o.id || external.task === o.id || pinned === o.id;
+
   function orbAngle(o) { return phase.get(o.level) + o.offset; }
 
   function orbFunnel(o, a) {
     const z = o.r < RIM ? depthAt(o.r) * cam.depth : 0;
     return [Math.cos(a) * o.r, Math.sin(a) * o.r, z];
+  }
+
+  const trailPts = [];
+  function drawTrail(o, it, lv, sp) {
+    const span = (lv.tail + 1) * TAIL_GAP * 1.5 * sp / o.r;
+    trailPts.length = 0;
+    trailPts.push(it.sx, it.sy);
+    for (let k = 1; k <= TRAIL_STEPS; k++) {
+      const [x, y, z] = orbFunnel(o, it.a - k / TRAIL_STEPS * span);
+      if (!project(x, y, z, true)) break;
+      trailPts.push(pt.x, pt.y);
+    }
+    const n = trailPts.length / 2;
+    if (n < 2) return;
+    const left = [], right = [];
+    for (let k = 0; k < n; k++) {
+      const a = Math.max(0, k - 1), b = Math.min(n - 1, k + 1);
+      let dx = trailPts[2 * b] - trailPts[2 * a], dy = trailPts[2 * b + 1] - trailPts[2 * a + 1];
+      const len = Math.hypot(dx, dy) || 1;
+      const w = it.r * 0.72 * (1 - (k / (n - 1)) * 0.92);
+      const nx = -dy / len * w, ny = dx / len * w;
+      left.push(trailPts[2 * k] + nx, trailPts[2 * k + 1] + ny);
+      right.push(trailPts[2 * k] - nx, trailPts[2 * k + 1] - ny);
+    }
+    const rgb = colors.get(o.level);
+    const grad = ctx.createLinearGradient(trailPts[0], trailPts[1], trailPts[2 * n - 2], trailPts[2 * n - 1]);
+    grad.addColorStop(0, rgba(rgb, TAIL_ALPHA * o.alpha));
+    grad.addColorStop(1, rgba(rgb, 0));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(left[0], left[1]);
+    for (let k = 1; k < n; k++) ctx.lineTo(left[2 * k], left[2 * k + 1]);
+    for (let k = n - 1; k >= 0; k--) ctx.lineTo(right[2 * k], right[2 * k + 1]);
+    ctx.closePath();
+    ctx.fill();
   }
 
   function drawOrbs() {
@@ -433,8 +470,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const f = pt.f, depth = pt.z;
       if (drag?.type === 'orb' && drag.id === o.id && drag.active) { sx = pointer.x; sy = pointer.y; }
       else if (o.blend) { const e = ease(o.blend.p); sx = o.blend.x + (sx - o.blend.x) * e; sy = o.blend.y + (sy - o.blend.y) * e; }
-      const isHover = hover.orb === o.id || external.task === o.id || pinned === o.id;
-      const r = lv.size / 2 * ORB_SCALE * cam.du * f * (isHover ? 1.25 : 1);
+      const r = lv.size / 2 * ORB_SCALE * cam.du * f * (isHot(o) ? 1.2 : 1);
       o.sx = sx; o.sy = sy; o.sr = r;
       items.push({ o, lv, a, sx, sy, r, f, depth });
     }
@@ -444,14 +480,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const sprite = sprites.get(o.level);
       const sp = speed.get(o.level);
       const dragged = drag?.type === 'orb' && drag.id === o.id && drag.active;
-      // staart: ghosts achter het hoofd, korter naarmate de baan vertraagt
-      if (!dragged && !o.blend && sp > 0.05 && o.r > 1) {
-        const step = TAIL_GAP / o.r * sp * 1.6;
-        for (let k = lv.tail; k >= 1; k--) {
-          const [x, y, z] = orbFunnel(o, it.a - k * step);
-          if (!project(x, y, z, true)) continue;
-          drawOrb(ctx, sprite, pt.x, pt.y, it.r * (1 - k * TAIL_SHRINK), TAIL_ALPHA * (1 - (k - 1) / lv.tail) * o.alpha);
-        }
+      // staart: één taps vlak met een verloop naar transparant, korter naarmate de baan vertraagt
+      if (!dragged && !o.blend && sp > 0.05 && o.r > 1) drawTrail(o, it, lv, sp);
+      if (isHot(o)) {
+        ctx.strokeStyle = rgba(INK, 0.35 * o.alpha);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(it.sx, it.sy, it.r + 4, 0, TAU);
+        ctx.stroke();
       }
       drawOrb(ctx, sprite, it.sx, it.sy, it.r, o.alpha);
     }

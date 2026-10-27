@@ -310,7 +310,7 @@ let composerLevel = DEFAULT_LEVEL, closeTimer = 0;
 
 function paintComposerOrb() {
   const lv = LEVEL_BY_ID.get(composerLevel);
-  if (!orbCache.has(lv.id)) orbCache.set(lv.id, orbSprite(lv.tones, composerOrb.width, { soft: 1.3 }));
+  if (!orbCache.has(lv.id)) orbCache.set(lv.id, orbSprite(lv.tones, composerOrb.width, { blur: 0.03, glow: 0.32 }));
   const g = composerOrb.getContext('2d');
   g.clearRect(0, 0, composerOrb.width, composerOrb.height);
   g.drawImage(orbCache.get(lv.id), 0, 0);

@@ -5,7 +5,6 @@ import { rgbOf, rgba, mix } from './config.js';
 export const SPHERE = 0.3;
 const TAU = Math.PI * 2;
 const WHITE = [255, 255, 255];
-const BLACK = [18, 16, 30];
 
 let filterOk = null;
 function supportsFilter(ctx) {
@@ -29,55 +28,38 @@ function radial(g, x, y, r0, r1, stops) {
   return gr;
 }
 
-// tones: [basis, schifting, glans] als hex
-export function orbSprite(tones, size = 160, { soft = 1 } = {}) {
+// tones: [basis, schifting, licht] als hex
+// Mat en strak: een diagonaal verloop door de drie tinten, geen glans, geen donkere rand.
+// blur: zachtheid van de rand (fractie van de grootte), glow: dekking van de gekleurde gloed eronder.
+export function orbSprite(tones, size = 160, { blur = 0.004, glow = 0.22 } = {}) {
   const [c1, c2, c3] = tones.map(rgbOf);
   const C = size / 2;
   const R = size * SPHERE;
 
-  // 1. De bol, scherp getekend
+  // 1. De bol
   const body = canvas(size);
   const b = body.getContext('2d');
-  b.save();
-  b.beginPath();
-  b.arc(C, C, R, 0, TAU);
-  b.clip();
-  b.fillStyle = radial(b, C - R * 0.35, C - R * 0.4, 0, R * 1.55, [
-    [0, rgba(mix(c3, WHITE, 0.55), 1)],
-    [0.42, rgba(c1, 1)],
-    [1, rgba(mix(c2, BLACK, 0.28), 1)],
-  ]);
-  b.fillRect(0, 0, size, size);
-  // diagonale veeg, zoals op de posters
-  b.translate(C, C);
-  b.rotate(-0.62);
-  const sweep = b.createLinearGradient(0, -R, 0, R);
-  sweep.addColorStop(0.38, rgba(c2, 0));
-  sweep.addColorStop(0.62, rgba(c2, 0.62));
-  sweep.addColorStop(0.86, rgba(c2, 0));
-  b.fillStyle = sweep;
-  b.fillRect(-R, -R, R * 2, R * 2);
-  b.setTransform(1, 0, 0, 1, 0, 0);
-  // warme gloed onderaan rechts
-  b.fillStyle = radial(b, C + R * 0.35, C + R * 0.3, 0, R * 0.75, [[0, rgba(c3, 0.55)], [1, rgba(c3, 0)]]);
-  b.fillRect(0, 0, size, size);
-  // iriserende rand
-  b.fillStyle = radial(b, C, C, R * 0.72, R, [[0, rgba(c2, 0)], [1, rgba(mix(c2, c3, 0.4), 0.55)]]);
-  b.fillRect(0, 0, size, size);
-  // zachte glans linksboven
-  b.fillStyle = radial(b, C - R * 0.32, C - R * 0.38, 0, R * 0.5, [[0, rgba(WHITE, 0.3)], [1, rgba(WHITE, 0)]]);
-  b.fillRect(0, 0, size, size);
-  b.restore();
+  const sphere = () => { b.beginPath(); b.arc(C, C, R, 0, TAU); };
+  const lin = b.createLinearGradient(C - R, C - R, C + R, C + R);
+  lin.addColorStop(0, rgba(mix(c3, WHITE, 0.18), 1));
+  lin.addColorStop(0.5, rgba(c1, 1));
+  lin.addColorStop(1, rgba(c2, 1));
+  b.fillStyle = lin;
+  sphere();
+  b.fill();
+  // zachte tweede vlek, zoals een mesh-gradient
+  b.fillStyle = radial(b, C + R * 0.35, C - R * 0.3, 0, R * 0.95, [[0, rgba(c3, 0.32)], [1, rgba(c3, 0)]]);
+  sphere();
+  b.fill();
 
-  // 2. Halo + kleurschifting + wazige bol samenvoegen
+  // 2. Gekleurde gloed onder de bol, dan de bol erop
   const out = canvas(size);
   const g = out.getContext('2d');
-  g.fillStyle = radial(g, C, C, R * 0.7, R * 1.65, [[0, rgba(c1, 0.32 * soft)], [1, rgba(c1, 0)]]);
+  g.fillStyle = radial(g, C, C + R * 0.24, R * 0.55, R * 1.6, [[0, rgba(c1, glow)], [1, rgba(c1, 0)]]);
   g.fillRect(0, 0, size, size);
-  g.fillStyle = radial(g, C - R * 0.08, C - R * 0.1, R * 0.8, R * 1.35, [[0, rgba(c2, 0.22 * soft)], [1, rgba(c2, 0)]]);
-  g.fillRect(0, 0, size, size);
-  if (supportsFilter(g)) {
-    g.filter = `blur(${(size * 0.018 * soft).toFixed(1)}px)`;
+  const px = size * blur;
+  if (px >= 0.6 && supportsFilter(g)) {
+    g.filter = `blur(${px.toFixed(1)}px)`;
     g.drawImage(body, 0, 0);
     g.filter = 'none';
   } else {

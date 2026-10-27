@@ -1,10 +1,10 @@
 /* ---- Config (enige bron van waarheid) ---- */
 // ring: straal van de gestippelde ring, orbit: baanstraal van de bollen (eenheden in de 390-stage)
-// tones: kleuren voor de iriserende bol (basis, schifting, glans)
+// tones: kleuren voor het verloop van de bol (basis, diep, licht)
 export const LEVELS = [
   { id: 1, name: 'Nu',      ring: 38,  orbit: 24,  period: 1.1, color: '#FF3B30', tones: ['#FF3B30', '#FF2D92', '#FFA51F'], size: 7,   tail: 3 },
   { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#FF8A00', tones: ['#FF8A00', '#FF3B6B', '#FFD84D'], size: 6,   tail: 2 },
-  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#E5B21A', tones: ['#E5B21A', '#5ED38A', '#FF7A45'], size: 5.5, tail: 2 },
+  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#E5B21A', tones: ['#EDB21E', '#F28C28', '#FFE07A'], size: 5.5, tail: 2 },
   { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#22AFC6', tones: ['#22AFC6', '#4F6BFF', '#9BEBC8'], size: 5,   tail: 1 },
   { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#6A6CF6', tones: ['#6A6CF6', '#D06BFA', '#8FC2FF'], size: 5,   tail: 1 },
 ];
