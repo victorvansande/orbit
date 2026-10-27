@@ -487,25 +487,32 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const spacing = Math.max(CORE_SPACING, Math.round(CORE_MIN_PX / cam.s / 0.25) * 0.25);
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
     const eyes = faceState(now, rMax, spacing, z);
-    ctx.fillStyle = rgba(coreColor, intro);
-    ctx.beginPath();
+    // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In vier stappen
+    // gebundeld, zodat het één pad per tint blijft.
+    const paths = [[], [], [], []];
     for (const d of coreGrid(spacing)) {
       if (d.r > rMax) continue;
-      if (eyes.hides(d.x, d.y)) continue;
       const base = 0.25 + 1.05 * Math.pow(1 - d.r / rMax, 0.7);
       const bump = rippleAmp ? Math.exp(-(((d.r - front) / (3.2 * grow)) ** 2)) * rippleAmp : 0;
       const breathe = breatheAmp ? breatheAmp * Math.sin(t * 1.3 - d.r * 0.25) : 0;
       const size = base + bump + breathe;
       if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
-      const rad = size * grow * cam.s * pt.f;
-      ctx.moveTo(pt.x + rad, pt.y);
-      ctx.arc(pt.x, pt.y, rad, 0, TAU);
+      paths[Math.round(eyes.ink(d.x, d.y) * 3)].push(pt.x, pt.y, size * grow * cam.s * pt.f);
     }
-    ctx.fill();
-    drawEyes(eyes, z, intro);
+    paths.forEach((list, i) => {
+      if (!list.length) return;
+      ctx.fillStyle = rgba(mixInk(coreColor, 1 - i / 3), intro);
+      ctx.beginPath();
+      for (let k = 0; k < list.length; k += 3) {
+        ctx.moveTo(list[k] + list[k + 2], list[k + 1]);
+        ctx.arc(list[k], list[k + 1], list[k + 2], 0, TAU);
+      }
+      ctx.fill();
+    });
   }
 
-  // Ogen: plaats en grootte volgen de kern (op gsm met grover raster wat groter, anders verdwijnt de uitsparing)
+  // Ogen: plaats en grootte volgen de kern (op gsm met grover raster wat groter, anders lezen ze niet).
+  // ink(x, y) geeft per puntje hoeveel inkt het krijgt (0..1).
   function faceState(now, rMax, spacing, z) {
     const t = now / 1000, still = reducedMotion.matches;
     const dt = Math.min(0.1, Math.max(0, (now - face.last) / 1000)); face.last = now;
@@ -525,53 +532,36 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const b = (t - face.blinkAt) / 0.24;
       if (b >= 0 && b < 1) open = 1 - Math.sin(b * Math.PI);
     }
-    const hour = new Date().getHours();
-    if (hour < 6) open *= 0.45;                                   // 's nachts slaperig
+    const sleepy = new Date().getHours() < 6;                     // 's nachts slaperig: half zo hoog, bovenkant zakt
+    if (sleepy) open *= 0.42;
     const happy = performance.now() < face.happyUntil;
     const h = Math.max(rMax * 0.25, spacing * 0.95);
-    const gap = Math.max(rMax * 0.36, h * 1.3);
-    const list = [[-gap, -rMax * 0.12], [gap, -rMax * 0.12]];
+    const gap = Math.max(rMax * 0.36, h * 1.3), ey = -rMax * 0.12;
+    const soft = spacing * 0.55, o = Math.max(0.12, open);
+    const [lx, ly] = face.look;
+    const hl = h * 0.62 * o, rw = h * 0.4, flat = Math.min(1, Math.max(0.25, o * 2));
+    const eyes = [-gap, gap].map(ex => {
+      const px = ex + lx * h * 0.4, py = ey + ly * h * 0.35;
+      return { ex, px, py, top: sleepy ? py - hl * 0.2 : py - hl, bot: py + hl };
+    });
+    const cover = (v, w) => Math.max(0, Math.min(1, (w - v) / soft + 0.5));
     return {
-      list, h, open, happy,
-      hides(x, y) {
-        const o = Math.max(0.15, open);
-        return list.some(([ex, ey]) => (x - ex) ** 2 + ((y - ey) / o) ** 2 < h * h);
+      ink(x, y) {
+        let c = 0;
+        for (const e of eyes) {
+          if (happy) {
+            // blij: een boogje (∩) van inktpuntjes
+            const cy = ey + h * 0.5, rad = h * 0.62;
+            if (y > cy + rad * 0.25) continue;
+            c = Math.max(c, cover(Math.abs(Math.hypot(x - e.ex, y - cy) - rad), spacing * 0.45));
+          } else {
+            const yy = Math.max(e.top, Math.min(e.bot, y));
+            c = Math.max(c, cover(Math.hypot(x - e.px, (y - yy) / flat), rw));
+          }
+        }
+        return c;
       },
     };
-  }
-
-  function drawEyes(eyes, z, alpha) {
-    const { list, h, open, happy } = eyes, [lx, ly] = face.look;
-    ctx.fillStyle = ctx.strokeStyle = rgba(INK, alpha);
-    ctx.lineCap = 'round';
-    for (const [ex, ey] of list) {
-      if (happy) {
-        // blij: een boogje (∩) in de uitsparing
-        ctx.lineWidth = Math.max(1.2, h * 0.32 * cam.s);
-        ctx.beginPath();
-        for (let k = 0; k <= 8; k++) {
-          const a = Math.PI * (0.12 + 0.76 * k / 8);
-          if (!project(ex - Math.cos(a) * h * 0.62, ey + h * 0.3 - Math.sin(a) * h * 0.62, z, false)) continue;
-          if (k) ctx.lineTo(pt.x, pt.y); else ctx.moveTo(pt.x, pt.y);
-        }
-        ctx.stroke();
-        continue;
-      }
-      if (open < 0.2) {
-        // dicht: een streepje
-        ctx.lineWidth = Math.max(1.2, h * 0.28 * cam.s);
-        ctx.beginPath();
-        if (project(ex - h * 0.7, ey, z, false)) ctx.moveTo(pt.x, pt.y);
-        if (project(ex + h * 0.7, ey, z, false)) ctx.lineTo(pt.x, pt.y);
-        ctx.stroke();
-        continue;
-      }
-      if (!project(ex + lx * h * 0.45, ey + ly * h * 0.4 * open, z, false)) continue;
-      const r = h * 0.42 * Math.min(1, open + 0.2) * cam.s * pt.f;
-      ctx.beginPath();
-      ctx.ellipse(pt.x, pt.y, r, r * Math.min(1, open * 1.1), 0, 0, TAU);
-      ctx.fill();
-    }
   }
 
   const isHot = o => hover.orb === o.id || external.task === o.id || pinned === o.id;
