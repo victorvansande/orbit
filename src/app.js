@@ -5,6 +5,7 @@ import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
 import { mirror, readMirror } from './backup.js';
 import { setMatrix } from './matrix.js';
+import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
 import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
@@ -266,12 +267,48 @@ function renderFocusDue() {
   line.classList.toggle('is-late', isOverdue(next.due));
 }
 
+// Quote in de focusmodus als er niets dringend is: om de 20 minuten een andere, in een geschudde volgorde die eerst
+// de hele bibliotheek doorloopt voor er een terugkomt. De volgorde blijft bewaard, ook over herladen heen.
+const QUOTE_KEY = 'priority-orbit.quote.v1';
+const QUOTE_MS = 20 * 60 * 1000;
+function shuffled(n, avoidFirst = -1) {
+  const a = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  if (a[0] === avoidFirst && n > 1) [a[0], a[1]] = [a[1], a[0]];
+  return a;
+}
+function currentQuote() {
+  let st = null;
+  try { st = JSON.parse(localStorage.getItem(QUOTE_KEY)); } catch { /* opnieuw beginnen */ }
+  if (!st || !Array.isArray(st.order) || st.order.length !== QUOTES.length) st = { order: shuffled(QUOTES.length), i: 0, at: Date.now() };
+  if (Date.now() - st.at >= QUOTE_MS) {
+    st.i++;
+    st.at = Date.now();
+    if (st.i >= st.order.length) st = { order: shuffled(QUOTES.length, st.order[st.order.length - 1]), i: 0, at: Date.now() };
+  }
+  try { localStorage.setItem(QUOTE_KEY, JSON.stringify(st)); } catch { /* geen opslag */ }
+  return { index: st.order[st.i], quote: QUOTES[st.order[st.i]] };
+}
+let shownQuote = -1;
+function quoteNode() {
+  const { index, quote: [text, author] } = currentQuote();
+  shownQuote = index;
+  const fig = el('figure', 'focus-quote');
+  fig.append(el('blockquote', '', text), el('figcaption', '', author));
+  return fig;
+}
+// elke minuut nakijken of het tijd is voor een nieuwe quote (alleen zichtbaar in de focusmodus)
+setInterval(() => {
+  if (!document.body.classList.contains('is-focus') || shownQuote < 0) return;
+  if (currentQuote().index !== shownQuote) renderFocusNow();
+}, 60000);
+
 function renderFocusNow() {
   renderFocusDue();
   const box = $('focus-now');
   const urgent = tasks.filter(t => t.level === URGENT_LEVEL).sort((a, b) => a.createdAt - b.createdAt);
   box.replaceChildren();
-  if (!urgent.length) { box.append(el('p', 'focus-calm', 'Niets dringend. Rustig aan.')); return; }
+  if (!urgent.length) { box.append(quoteNode()); return; }
   box.append(el('p', 'focus-kicker', 'Nu'));
   const ul = el('ul');
   const max = desktop.matches ? 4 : 3;   // op gsm minder plaats onder de scène

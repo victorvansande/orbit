@@ -112,7 +112,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   };
   let colors = PALETTES.light;
   let URGENT_RGB = colors.get(URGENT_LEVEL);
-  let TODAY_RGB = colors.get(URGENT_LEVEL + 1);
+  coreColor.splice(0, 3, ...URGENT_RGB);   // meteen rood, niet eerst grijs
 
   /* ---- Vaste geometrie ---- */
   const rings = LEVELS.map(lv => {
@@ -316,7 +316,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // kern: urgentie, kleur, tempo en aantal golven glijden mee met de taken
     const target = nowCount > 0 ? 1 + Math.min(nowCount - 1, 3) / 3 : todayCount > 0 ? 0.5 : 0;
     urgency = smooth(urgency, target, 2.5, dt);
-    const goal = nowCount > 0 ? URGENT_RGB : todayCount > 0 ? TODAY_RGB : theme.calm;
+    const goal = URGENT_RGB;   // de kern is altijd rood (Nu); urgentie zit in grootte en golf, niet in kleur
     for (let i = 0; i < 3; i++) coreColor[i] = smooth(coreColor[i], goal[i], 3, dt);
     if (motion && urgency > 0.01) beat += dt / beatPeriod() * beatScale;
   }
@@ -827,7 +827,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       INK = theme.ink;
       colors = PALETTES[name] || PALETTES.light;
       URGENT_RGB = colors.get(URGENT_LEVEL);
-      TODAY_RGB = colors.get(URGENT_LEVEL + 1);
     },
   };
 }
