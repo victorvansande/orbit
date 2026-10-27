@@ -55,7 +55,7 @@ const cleanName = name => String(name || '').replace(/^(arrondissement|district|
 
 // Neerslag in het komende uur uit de kwartierwaarden. Geeft een korte zin, of '' als het droog blijft.
 const WET = 0.1;   // mm per kwartier
-export function rainText(w, now = Date.now()) {
+function rainText(w, now = Date.now()) {
   if (!w.slots?.length) return '';
   const slots = w.slots.filter(s => s.end > now && s.start < now + 3600000);
   const wetAt = slots.findIndex(s => s.mm >= WET);

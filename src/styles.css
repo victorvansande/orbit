@@ -375,7 +375,7 @@ kbd {
 .focus-kicker { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--late); margin-bottom: 12px; }
 .focus-now ul { list-style: none; margin: 0; padding: 0; }
 .focus-now li { font-size: 22px; line-height: 1.35; font-weight: 400; letter-spacing: -.01em; }
-.focus-now .focus-more, .focus-calm { font-size: 15px; color: var(--ink-3); }
+.focus-now .focus-more { font-size: 15px; color: var(--ink-3); }
 /* Quote als er niets dringend is: groot genoeg om van op afstand te lezen, auteur in kapitaaltjes */
 /* zo breed als de ruimte tot de buitenste ring toelaat (ring ≈ 41vmin van het midden), met een maximum voor de leesbaarheid */
 .focus-quote { margin: 0; width: max(260px, min(52ch, calc(50vw - 41vmin - 72px))); animation: fade-in 1.2s var(--ease) both; }
@@ -667,7 +667,7 @@ body.is-idle .controls { opacity: 0; }
   body.is-focus .focus-now { margin-top: 18px; max-width: none; }
   body.is-focus .focus-kicker { margin-bottom: 8px; }
   body.is-focus .focus-now li { font-size: 18px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  body.is-focus .focus-now .focus-more, body.is-focus .focus-calm { font-size: 14px; }
+  body.is-focus .focus-now .focus-more { font-size: 14px; }
   body.is-focus .focus-quote { width: auto; max-width: none; }
   body.is-focus .focus-quote blockquote { font-size: 17px; line-height: 1.4; }
   body.is-focus .focus-quote figcaption { margin-top: 8px; }

@@ -48,9 +48,9 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/wheel.js` | Het gebogen wiel (DOM, posities via JS) |
 | `sw.js` | Service worker: offline werken (netwerk eerst met time-out van 3,5 s, anders de bewaarde kopie) |
 | `favicon.svg`, `favicon.ico`, `icons/`, `manifest.webmanifest` | App-icoon en favicon voor alle platformen; bron en uitleg in `icons/README.md`, opnieuw maken met `python3 icons/make_icons.py` en daarna renderen |
-| `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
+| `src/deadline.js` | Datumhulp: `levelForDue`, `dueLabel`, `isDue`, `isOverdue`, `toDue` |
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
-| `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)` |
+| `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)`, `twinkleDot(root)` |
 | `src/quotes.js` | Bibliotheek van 223 korte, positieve Engelse quotes met gekende bron, voor de focusmodus |
 | `src/stats.js` | Statistiek: afgevinkt per dag (`priority-orbit.stats.v1`) en de sterrenhemel (`priority-orbit.stars.v2`) |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
@@ -78,7 +78,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 
 - Eén canvas over het hele venster (desktop) of in `.stage` (gsm). Stage-eenheden: dezelfde 390-stage als vroeger; `FIT = 440` eenheden passen in min(beschikbare breedte, hoogte). `setInsets({left, right})` houdt de scène gecentreerd tussen lijst en wiel (zacht geanimeerd, ook bij focusmodus).
 - Projectie per punt: spin (rond de trechteras) → rotateX (tilt) → rotateY (parallax) → zoom → shift → perspectief 1100 met oorsprong op 38 %. Zelfde waarden als de oude CSS-versie: boven tilt 0 / zoom 0,92, zijkant tilt 58° / zoom 0,96 / shift -66. Overgang 0,9 s met cubic-bezier(.4,0,.2,1), eigen implementatie.
-- Lagen van achter naar voor: raster (zwaartekrachtput), wijzerplaat (120 streepjes, statisch), ringen, kern, bollen met staart, effecten, labels.
+- Lagen van achter naar voor: raster (zwaartekrachtput), sterrenhemel, wijzerplaat (120 streepjes), ringen, kern, bollen met staart, effecten, labels.
 - Banen draaien via een fase per niveau (`phase`), elke bol heeft een `offset` die zacht naar gelijke verdeling glijdt. Bij een niveauwissel blijft de absolute hoek behouden.
 - Bol (`drawOrb`): `tracePath` rekent de werkelijke baan terug (hoeksnelheid inclusief herschikking `vo`, radiale snelheid `vr`), `taper` vult er een effen, taps vlak langs (breedte 2r aan de kop, 0,35r aan het eind). Zo wijst de staart ook tijdens binnenvliegen en ringwissels de goede kant op. Lengte = (staart + 1) × 7 × `TAIL_LENGTH` × (snelheid / kruissnelheid), begrensd op 2,5 keer.
 - Wijzerplaat: 120 streepjes (elke tiende lang). Vanaf 12 uur lichten er evenveel op als er deze maand taken afgevinkt zijn (max. 120), met het label "n IN MAAND" erboven (zie Statistiek). De klok op de rand (uurstip, minutenlijn, cijfers 12/3/6/9) is weggehaald op vraag van Victor: geen meerwaarde, enkel afleiding naast de digitale klok.
@@ -113,20 +113,20 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 - **Momentopnames** (`priority-orbit.snapshots.v1`, laatste 20, ontdubbeld op id:updatedAt): dagelijks bij het laden, vóór elke sync die taken laat verdwijnen, vóór import en terugzetten, en in `saveTasks` telkens de opslag taken bevat die niet in het geheugen zitten en niet afgevinkt zijn (bv. een ander tabblad). Terugzetten (`bringBack`) voegt alleen ontbrekende taken toe, nooit iets weg.
 - **Voorbeeldtaken** (`demo: true`) worden nooit opgeslagen of gesynchroniseerd (`realTasks()`); je eerste eigen taak vervangt ze, een hint in de lijst zegt dat.
 - **Oude opgeslagen voorbeeldtaken** (`demoIds`): titel en moment uit `DEMO`, nooit gewijzigd, en als groepje van minstens drie aangemaakt binnen 15 s. Staan ze tussen echte taken, dan ruimt `dropDemo` ze op met een afvinkmarkering (`gone`), zodat ze ook op gekoppelde toestellen verdwijnen, na een momentopname "Voor opruimen voorbeeldtaken". Dat gebeurt bij het laden én op alles wat via sync binnenkomt. Zonder echte taken blijven ze zichtbaar als voorbeeld, maar worden ze niet bewaard of gedeeld. Fout uit het verleden: het vangnet maakte ze eerst tot gewone taken, waarna sync de voorbeeldtaken van Victors gsm tussen zijn 11 eigen taken op de pc zette.
-- **Tabbladen**: `storage`-event leest de opslag opnieuw in, zodat tabbladen elkaar niet overschrijven.
+- **Tabbladen**: `storage`-event leest de opslag opnieuw in (taken, archief, statistiek en sterren), zodat tabbladen elkaar niet overschrijven.
 - **Venster Archief** (knop rechtsboven naast Sync, toets `A`): tabbladen Afgevinkt en Momentopnames, Exporteer (JSON `orbit-JJJJ-MM-DD.json` met taken en archief) en Importeer (samenvoegen, recentste versie wint, niets verdwijnt).
 - Getest: bestaande taken blijven staan, voorbeeld niet bewaard, archief en terugzetten, momentopname bij overschrijven, export en import, tabbladen, sync met elders afgevinkt en terugzetten.
 
 ## Synchronisatie (`src/sync.js`)
 
 - **Eigen server op Cloudflare** (`worker/`, live op `https://orbit-sync.victorvansande.workers.dev`). Vroeger publieke MQTT-servers zoals streep (HiveMQ 8884, EMQX 8084), maar die waren voor Victor onbereikbaar (op 27/10/2026 synchroniseerde ook streep niet) en Orbit moet op het werk werken. De Worker loopt over https (443).
-  - Eén Durable Object (`Channel`, SQLite-opslag, gratis abonnement) per kanaal. Bewaart de laatste versleutelde lijst met versienummer plus de 20 vorige versies (noodherstel, nog zonder knop), en recente bevestigingen (10 min).
+  - Eén Durable Object (`Channel`, SQLite-opslag, gratis abonnement) per kanaal. Bewaart de laatste versleutelde lijst met versienummer plus de 20 vorige versies, elk onder een eigen sleutel `h:0000000042` (één waarde mag max. 2 MB zijn; vroeger zaten alle versies samen onder `history`, dat wordt bij het eerste gebruik omgezet), en recente bevestigingen (10 min).
   - `GET /v1/<kanaal>/history`: huidige plus 20 vorige versies, versleuteld. De app ontcijfert ze (`sync.history()`) en toont ze onder Archief → Momentopnames → "Op de Orbit-server", met "Zet n terug" (`bringBack`, voegt alleen ontbrekende taken toe).
   - API: `GET /v1/<kanaal>` als WebSocket (live, berichten `snap`, `ok`, `ack`, `pub`, keepalive `ping`/`pong` via auto-response zodat het object niet wakker hoeft) of als JSON `{v, d, acks}`; `PUT /v1/<kanaal>` met `{d}`; `POST /v1/<kanaal>/ack`. Kanaal = 32 hex-tekens, max. 512 KB, CORS alleen voor `victorvansande.github.io` en localhost.
   - Client: WebSocket; mislukt die twee keer zonder ooit te openen (proxy die WebSockets breekt), dan gewone https om de 4 s (20 s als het tabblad verborgen is). Herverbinden met oplopende wachttijd (1 tot 15 s).
   - Deploy: GitHub Action `sync-worker.yml` bij een push in `worker/` of handmatig (Actions, "Run workflow"). Repo-secrets `CLOUDFLARE_API_TOKEN` (sjabloon "Edit Cloudflare Workers") en `CLOUDFLARE_ACCOUNT_ID`, door Victor zelf ingesteld. Secrets nooit zelf invullen.
   - Lokaal testen: `npx wrangler@4.153.0 dev --port 8787` in `worker/` en in de browser `localStorage.setItem('priority-orbit.server', 'http://127.0.0.1:8787')`. Die sleutel overschrijft de server; nooit in productie zetten.
-- Verschil met streep: Orbit is een openbare site met persoonlijke taken. Een synccode van 16 tekens (`XXXX-XXXX-XXXX-XXXX`, zonder 0/O/1/I/L) bepaalt het kanaal (`orbit/v1/` + SHA-256) en de sleutel (PBKDF2 150k, AES-GCM 256). Alles wordt in de browser versleuteld; de broker ziet enkel ruis. Wie de code niet heeft, vindt het kanaal niet en kan niets lezen.
+- Verschil met streep: Orbit is een openbare site met persoonlijke taken. Een synccode van 16 tekens (`XXXX-XXXX-XXXX-XXXX`, zonder 0/O/1/I/L) bepaalt het kanaal (eerste 16 bytes van SHA-256 over `orbit-topic:` + code, als 32 hex-tekens) en de sleutel (PBKDF2 150k, AES-GCM 256). Alles wordt in de browser versleuteld; de broker ziet enkel ruis. Wie de code niet heeft, vindt het kanaal niet en kan niets lezen.
 - Koppelen met een QR-code, **in één richting** (Victor: "degene die scant ontvangt, degene die gescand wordt stuurt enkel door"). Knop rechtsboven heet "Koppelen" zolang er niets gekoppeld is, daarna de status.
   - Startscherm: twee keuzes. **Verstuur van dit toestel** (toont de QR met de koppellink `…#sync=CODE`, de lijst hier blijft) of **Ontvang op dit toestel** (camera in Orbit: BarcodeDetector, anders jsQR voor Safari; de lijst hier wordt vervangen). "Code typen om te ontvangen" als terugval; zonder camera gaat het venster daar vanzelf naartoe.
   - Rollen in `sync.js`: `send` (publiceert zijn lijst als bewaarde snapshot, luistert op `<kanaal>/ack`), `receive` (publiceert niets tot er een lijst binnen is, neemt die over via `onReceive` na een momentopname "Voor ontvangen", stuurt dan een versleutelde bevestiging met toestelnaam en aantal), daarna `normal` (samenvoegen per taak, beide richtingen).
@@ -153,7 +153,7 @@ Victor wou iets kleins ter motivatie; vier voorstellen tijdelijk tegelijk aan (2
 
 ## Interactie in de lijst en het venster
 
-- Lijst gegroepeerd per moment. Afvinken: cirkel kleurt als bol, rij schuift weg, bol spat uiteen, toast met "Ongedaan maken" (5 s, ook `Z` of Ctrl/Cmd+Z).
+- Lijst gegroepeerd per moment. Afvinken: cirkel kleurt als bol, rij schuift weg, bol fonkelt uit (Zilver), toast met "Ongedaan maken" (5 s, ook `Z` of Ctrl/Cmd+Z).
 - Datumlabel bij een deadline-taak opent een bewerker: datum wijzigen of deadline wissen (dan wordt het een gewone taak in de huidige schil).
 - Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten; op apparaten met hover verschijnt het pas als je over de rij gaat.
 - Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), optioneel "Deadline" (native datumveld; met een datum is de momentkeuze vergrendeld en toont een hint in welke schil de taak komt), "Voeg toe" pas actief met een titel.
@@ -162,7 +162,7 @@ Victor wou iets kleins ter motivatie; vier voorstellen tijdelijk tegelijk aan (2
 - Sneltoetsen onder de lijst zitten achter een klein knopje "Sneltoetsen" (Victor: niet altijd zichtbaar); de regel schuift open bij hover, toetsenbordfocus of klik (`.keys.is-open`), blijft op één regel (`white-space: nowrap`, mag voorbij de lijstbreedte lopen). Verborgen op gsm en touchscreens.
 - Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote matrixklok (stippen van 5 × 7 zoals in Kwick, onverlichte stippen als schim met `--dm-ghost`, geen gloed; alleen een gewijzigd cijfer laat zijn stippen oplichten; hoogte `min(84px, 9,4vh)`, op gsm 52 px), datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand. Een tik of muisbeweging toont ze weer; bij het verlaten wordt de timer gewist.
-- Weer in de focusmodus (`src/weather.js`): boven de matrixklok, links gelijk met de klok, een lijnicoon (zelfde iconen als Kwick, symbolen `w-*` in `index.html`) met de temperatuur, link naar https://victorvansande.github.io/kwick/. Open-Meteo (`current=temperature_2m,weather_code,is_day`), 15 min in cache (`priority-orbit.weather.v1`), alleen opgehaald zolang de focusmodus aan staat. Plaats: die van Kwick (`isobar:place`, zelfde origin dus gedeelde localStorage), anders je locatie als je die al toestond, anders Brussel. Bij een fout blijft het icoon weg of toont het de laatst bekende stand. Naast de temperatuur de plaatsnaam (bij je locatie opgezocht via bigdatacloud, zoals Kwick). Eronder neerslag in het komende uur uit `minutely_15` (vanaf 0,1 mm per kwartier): "Regen vanaf 16:45", "Regen tot 17:15", "Regen het komende uur" of "Sneeuw …"; droog = geen regel. Die zin wordt elke minuut opnieuw berekend uit de bewaarde kwartierwaarden (`rainText`).
+- Weer in de focusmodus (`src/weather.js`): boven de matrixklok, links gelijk met de klok, een lijnicoon (zelfde iconen als Kwick, symbolen `w-*` in `index.html`) met de temperatuur, link naar https://victorvansande.github.io/kwick/. Open-Meteo (`current=temperature_2m,weather_code,is_day`), 15 min in cache (`priority-orbit.weather.v2`), alleen opgehaald zolang de focusmodus aan staat. Plaats: die van Kwick (`isobar:place`, zelfde origin dus gedeelde localStorage), anders je locatie als je die al toestond, anders Brussel. Bij een fout blijft het icoon weg of toont het de laatst bekende stand. Naast de temperatuur de plaatsnaam (bij je locatie opgezocht via bigdatacloud, zoals Kwick). Eronder neerslag in het komende uur uit `minutely_15` (vanaf 0,1 mm per kwartier): "Regen vanaf 16:45", "Regen tot 17:15", "Regen het komende uur" of "Sneeuw …"; droog = geen regel. Die zin wordt elke minuut opnieuw berekend uit de bewaarde kwartierwaarden (`rainText`).
 - Quote in de focusmodus als er geen Nu-taken zijn (vervangt "Niets dringend. Rustig aan.", dat Victor te standaard vond): `QUOTES` uit `src/quotes.js`, alleen quotes met gekende bron of spreekwoorden (geen foutief toegeschreven internetquotes). Om de 20 minuten een andere, in een geschudde volgorde die eerst de hele bibliotheek doorloopt (`priority-orbit.quote.v1`: `{order, i, at}`), zodat je dagenlang geen herhaling ziet. Quote 21 px (gsm 17 px), auteur in kapitaaltjes, zacht ingefade. Breedte volgt de ruimte tot de buitenste ring (`calc(50vw - 41vmin - 72px)`, min. 260 px, max. 52ch); Victor vond 34ch te smal.
 - Volgende deadline in de focusmodus (`renderFocusDue`): de vroegste `due`, ook een verstreken ("Te laat" in rood), met hetzelfde label als in de lijst.
 - Focus op gsm: één kolom die precies het scherm vult (kop, scène met flex 1, klok en max. 3 Nu-taken, knoppen); thema-schakelaar en datum rechtsboven verdwijnen. Geen vaste posities, zodat niets overlapt. Getest op 375×667, 390×844 en 430×932.
@@ -199,10 +199,14 @@ Victor wou iets kleins ter motivatie; vier voorstellen tijdelijk tegelijk aan (2
 
 - Canvas-teksten gebruiken Geist; is het font nog niet geladen, dan tekent hij met de terugval tot het binnen is (elk frame opnieuw).
 - De camera moet geldig zijn vóór de eerste pointermove: `resize()` loopt meteen bij het opstarten (anders werd alles NaN als de muis al over de scène stond).
+- Base64 in `sync.js` in stukken (`toB64`): `String.fromCharCode(...bytes)` loopt vast op grote lijsten.
+- Opstarten mag niet crashen als localStorage geblokkeerd is: elke toegang staat in try/catch.
 - Gsm: `.stage canvas` heeft `touch-action: pan-y` zodat de pagina kan scrollen; verticaal kantelen met de vinger kan daardoor niet, horizontaal draaien wel.
 
 ## Open vragen
 
+- Markering van bollen met deadline: zes voorstellen (Aftelboog, Maantje, Holle kop, Kralen, Kernstip, Vizier) liggen bij Victor; nu nog het dunne ringetje.
+
 - Statistiek: vier vormen staan tijdelijk tegelijk aan; Victor kiest later welke blijven.
-- Sync-server is lokaal getest (wrangler dev), nog niet live: wacht op de Cloudflare-secrets in de repo. Daarna de eerste echte test pc ↔ gsm, ook op het werknetwerk.
+- Sync-server staat live; nog na te gaan: werkt `workers.dev` op het werknetwerk van Victor.
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.

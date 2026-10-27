@@ -5,7 +5,7 @@ import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
 import { mirror, readMirror } from './backup.js';
 import { setMatrix, twinkleDot } from './matrix.js';
-import { loadStats, countDone, totalDone, weekCounts, monthCount, loadStars, placeStar, removeStar, matchStars, dayKey } from './stats.js';
+import { loadStats, countDone, totalDone, weekCounts, monthCount, loadStars, placeStar, removeStar, matchStars, dayKey, STATS_KEYS } from './stats.js';
 import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
@@ -13,9 +13,9 @@ import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STOR
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
-const GONE_KEY = 'priority-orbit.gone.v1';
+const GONE_KEY = 'priority-orbit.gone.v1';        // afgevinkte taken (id → tijdstip), nodig voor synchronisatie
 const SAVED_KEY = 'priority-orbit.saved.v1';      // tijdstip van de laatste geslaagde bewaring in localStorage
-const PENDING_KEY = 'priority-orbit.pending.v1';  // {n, confirmedAt}: wijzigingen die de server nog niet bevestigde      // afgevinkte taken (id → tijdstip), nodig voor synchronisatie
+const PENDING_KEY = 'priority-orbit.pending.v1';  // {n, confirmedAt}: wijzigingen die de server nog niet bevestigde
 const DONE_MS = 320;          // rij vervaagt, daarna verdwijnt ze uit de lijst
 const TOAST_MS = 5000;
 const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stilstand
@@ -158,8 +158,11 @@ function dropDemo(list, reason) {
 
 // Reservekopie en bewaartijd lezen vóór het eerste bewaren hieronder ze overschrijft
 const mirrorAtStart = readMirror();
-const savedAtStart = Number(localStorage.getItem(SAVED_KEY) || 0);
-const lsEmptyAtStart = localStorage.getItem(STORAGE_KEY) === null;
+let savedAtStart = 0, lsEmptyAtStart = true;
+try {
+  savedAtStart = Number(localStorage.getItem(SAVED_KEY) || 0);
+  lsEmptyAtStart = localStorage.getItem(STORAGE_KEY) === null;
+} catch { /* opslag geblokkeerd (bv. privévenster): de app werkt verder met de reservekopie */ }
 
 let gone = loadGone();
 let tasks = loadTasks();
@@ -376,10 +379,6 @@ function renderStats() {
 const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const leaving = new Set();
 
-function tone(node, lv) {
-  toneNode(node, lv);
-}
-
 function renderTracks() {
   const frag = document.createDocumentFragment();
   if (!tasks.length) {
@@ -392,7 +391,7 @@ function renderTracks() {
     if (!own.length) continue;
     const group = el('section', 'group');
     group.dataset.level = lv.id;
-    tone(group, lv);
+    toneNode(group, lv);
     const head = el('h3', 'group-head');
     head.append(el('span', 'group-name', lv.name), el('span', 'group-count', String(own.length).padStart(2, '0')));
     head.addEventListener('pointerenter', () => scene.highlight({ level: lv.id }));
@@ -446,7 +445,7 @@ function levelControls(t, li) {
   for (const lv of LEVELS) {
     const opt = el('button', 't-opt');
     opt.type = 'button';
-    tone(opt, lv);
+    toneNode(opt, lv);
     opt.setAttribute('aria-label', lv.name);
     opt.title = lv.name;
     if (lv.id === t.level) opt.setAttribute('aria-current', 'true');
@@ -641,6 +640,7 @@ const composerTitle = $('composer-title');
 const composerSubmit = $('composer-submit');
 const composerOrb = $('composer-orb');
 let composerLevel = DEFAULT_LEVEL, composerDue = '', closeTimer = 0;
+let wheelLevel = DEFAULT_LEVEL;     // moment van het wiel, terug als de deadline gewist wordt
 
 // Mini-orbit in het venster: een taps bolletje rond een kleine kern, in kleur en tempo van het moment
 let orbRaf = 0;
@@ -652,7 +652,7 @@ function drawComposerOrbit(now) {
   const period = Math.min(lv.period, 6);
   const a = reducedMotion.matches ? -Math.PI / 2 : (now / 1000) / period * TAU;
   g.clearRect(0, 0, size, size);
-  // kern: kleine stip, zoals het baken in de scène
+  // kern: kleine stip
   g.fillStyle = `rgba(${inkRgb()}, .2)`;
   g.beginPath();
   g.arc(C, C, size * 0.02, 0, TAU);
@@ -708,7 +708,7 @@ function buildComposerLevels() {
     b.type = 'button';
     b.dataset.level = lv.id;
     b.setAttribute('role', 'radio');
-    tone(b, lv);
+    toneNode(b, lv);
     b.append(el('span', 'orb-dot'), el('span', '', lv.name));
     b.addEventListener('click', () => { if (composerDue) return; composerLevel = wheelLevel = lv.id; paintComposerOrb(); composerTitle.focus(); });
     box.append(b);
@@ -746,7 +746,6 @@ composerTitle.addEventListener('keydown', e => {
   }
 });
 // Deadline in het venster: met een datum volgt het moment uit de datum en is de keuze vergrendeld
-let wheelLevel = DEFAULT_LEVEL;
 function setComposerDue(due) {
   composerDue = isDue(due) ? due : '';
   $('due-field').hidden = !composerDue && !$('due-toggle').hidden;
@@ -922,7 +921,7 @@ function stamp(ts) {
 function archRow({ title, meta, level, action, label, disabled = false }) {
   const li = el('li', 'arch-row');
   const dot = el('span', 'arch-dot');
-  if (level) tone(dot, LEVEL_BY_ID.get(level)); else dot.classList.add('is-plain');
+  if (level) toneNode(dot, LEVEL_BY_ID.get(level)); else dot.classList.add('is-plain');
   const text = el('div', 'arch-text');
   text.append(el('span', 'arch-title', title), el('span', 'arch-meta', meta));
   const btn = el('button', 'btn-ghost arch-btn', label);
@@ -1081,6 +1080,11 @@ window.addEventListener('storage', e => {
   } else if (e.key === STORE_KEYS.ARCHIVE_KEY || e.key === STORE_KEYS.SNAP_KEY) {
     archive = loadArchive();
     renderArchive();
+  } else if (e.key === STATS_KEYS.STATS_KEY || e.key === STATS_KEYS.STARS_KEY) {
+    // anders overschrijft dit tabblad bij de volgende afgevinkte taak de telling van het andere
+    stats = loadStats(archive);
+    sky = loadStars();
+    renderStats();
   }
 });
 
@@ -1089,7 +1093,6 @@ window.addEventListener('storage', e => {
 // en neemt die lijst over (na een momentopname). Daarna houden ze elkaar gewoon gelijk.
 const syncDialog = $('sync');
 const SYNC_TEXT = { off: 'Koppelen', connecting: 'Verbinden', online: 'Gesynchroniseerd', offline: 'Offline' };
-const TIME_FMT_SYNC = new Intl.DateTimeFormat('nl-BE', { hour: '2-digit', minute: '2-digit' });
 const DEVICE = deviceName();
 
 const sync = createSync({
@@ -1264,7 +1267,7 @@ function renderSync({ status, lastSync, code } = { status: sync.status, lastSync
     $('sync-code').hidden = !showCode;
     $('sync-show-code').textContent = showCode ? 'Verberg code' : 'Toon code';
     $('sync-show-code').setAttribute('aria-expanded', String(showCode));
-    $('sync-meta').textContent = lastSync ? `Gekoppeld · ${text.toLowerCase()} om ${TIME_FMT_SYNC.format(lastSync)}` : `Gekoppeld · ${text.toLowerCase()}`;
+    $('sync-meta').textContent = lastSync ? `Gekoppeld · ${text.toLowerCase()} om ${TIME_FMT.format(lastSync)}` : `Gekoppeld · ${text.toLowerCase()}`;
   }
 }
 

@@ -74,7 +74,12 @@ async function channelFor(code) {
   return [...hash.slice(0, 16)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const toB64 = bytes => btoa(String.fromCharCode(...bytes));
+// In stukken: String.fromCharCode(...bytes) loopt vast op grote lijsten (te veel argumenten)
+function toB64(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
 const fromB64 = str => Uint8Array.from(atob(str), c => c.charCodeAt(0));
 
 async function seal(key, obj) {
@@ -85,7 +90,7 @@ async function seal(key, obj) {
   return toB64(out);
 }
 
-async function open(key, text) {
+async function unseal(key, text) {
   const bytes = fromB64(text);
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.slice(0, 12) }, key, bytes.slice(12));
   return JSON.parse(dec.decode(plain));
@@ -99,7 +104,6 @@ async function open(key, text) {
 // getState(): lokale toestand; applyState(state): samengevoegde toestand overnemen; onReceive(state): ontvangen lijst
 // overnemen (vervangt de lokale); onStatus({status, lastSync, code}); onPair({role, step, ...}) voor de stappen.
 const RECEIVE_TIMEOUT = 20000;
-const SERVER_NAME = 'Orbit-server';
 
 export function createSync({ getState, applyState, onReceive = applyState, onStatus = () => {}, onPair = () => {}, onPublished = () => {}, deviceName = '' }) {
   let code = null, key = null, channel = null, mode = 'normal';
@@ -175,7 +179,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
     attempts++;
     const offline = navigator.onLine === false;
     setStatus(offline ? 'offline' : 'connecting');
-    onPair({ role: mode, step: 'retrying', attempts, server: SERVER_NAME, servers: [SERVER_NAME], offline });
+    onPair({ role: mode, step: 'retrying', attempts, offline });
     clearTimeout(retryTimer);
     retryTimer = setTimeout(() => connect(gen), Math.min(15000, 1000 * 2 ** Math.min(attempts - 1, 4)));
   }
@@ -208,7 +212,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
       setStatus('online');
       if (mode === 'receive') {
         if (!d) {
-          onPair({ role: 'receive', step: 'waiting', server: SERVER_NAME });
+          onPair({ role: 'receive', step: 'waiting' });
           clearTimeout(waitTimer);
           waitTimer = setTimeout(() => { if (mode === 'receive') onPair({ role: 'receive', step: 'timeout' }); }, RECEIVE_TIMEOUT);
           return;
@@ -225,7 +229,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
 
   async function receive(text) {
     let remote;
-    try { remote = await open(key, text); } catch { return; }        // niet van ons of beschadigd
+    try { remote = await unseal(key, text); } catch { return; }        // niet van ons of beschadigd
     if (!remote || !Array.isArray(remote.tasks)) return;
     lastSync = Date.now();
     if (mode === 'receive') {
@@ -256,7 +260,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
 
   async function receiveAck(text) {
     let info;
-    try { info = await open(key, text); } catch { return; }
+    try { info = await unseal(key, text); } catch { return; }
     if (info?.ack) onPair({ role: 'send', step: 'received', count: info.count, by: info.from || '' });
   }
 
@@ -313,7 +317,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
     const out = [];
     for (const h of await res.json()) {
       try {
-        const state = await open(key, h.d);
+        const state = await unseal(key, h.d);
         if (Array.isArray(state?.tasks)) out.push({ v: h.v, at: h.at || null, tasks: state.tasks, from: state.from || '' });
       } catch { /* onleesbaar: overslaan */ }
     }

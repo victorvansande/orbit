@@ -20,7 +20,7 @@ export const URGENT_LEVEL = 1;
 export const DEFAULT_LEVEL = 3;
 
 // Diepteprofiel van de trechter [straal, z]
-export const PROFILE = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
+const PROFILE = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
 export const RIM = PROFILE[PROFILE.length - 1][0];
 export const TIP_Z = PROFILE[0][1];
 
@@ -42,10 +42,9 @@ export function rgbOf(hex) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 export const rgba = ([r, g, b], a) => `rgba(${r | 0},${g | 0},${b | 0},${a})`;
-export const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 
 /* ---- Iconen voor het wiel (24x24, lijn) ---- */
-export const ICONS = {
+const ICONS = {
   1: '<path d="M13.5 2.5 5 13.5h6l-1 8 8.5-11h-6l1-8z"/>',
   2: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   3: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M7 13.5h10M7 16.5h6"/>',

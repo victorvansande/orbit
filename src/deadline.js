@@ -19,7 +19,7 @@ export function toDue(date) {
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
 }
 
-export function daysUntil(due, now = new Date()) {
+function daysUntil(due, now = new Date()) {
   return Math.round((parseDue(due) - midnight(now)) / DAY);
 }
 

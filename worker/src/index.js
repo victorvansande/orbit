@@ -14,6 +14,7 @@ const HISTORY = 20;               // vorige versies blijven bewaard (versleuteld
 const ACK_TTL = 10 * 60 * 1000;
 const ALLOWED_ORIGINS = ['https://victorvansande.github.io'];
 const CHANNEL = /^[0-9a-f]{32}$/;
+const hkey = v => `h:${String(v).padStart(10, '0')}`;
 
 function cors(request) {
   const origin = request.headers.get('Origin') || '';
@@ -57,13 +58,33 @@ export class Channel {
     return (await this.state.storage.get('snap')) || { v: 0, d: null };
   }
 
+  // Elke vorige versie onder een eigen sleutel (h:0000000042): één waarde mag maximaal 2 MB zijn, en 20 versies van
+  // een grote lijst samen kunnen dat overschrijden. Versienummers lopen op met 1, dus de oudste is altijd v - HISTORY.
   async store(d) {
+    await this.migrate();
     const prev = await this.current();
     const next = { v: prev.v + 1, d, at: Date.now() };
-    const history = (await this.state.storage.get('history')) || [];
-    if (prev.d) history.unshift({ v: prev.v, d: prev.d, at: prev.at });
-    await this.state.storage.put({ snap: next, history: history.slice(0, HISTORY) });
+    const put = { snap: next };
+    if (prev.d) put[hkey(prev.v)] = { v: prev.v, d: prev.d, at: prev.at };
+    await this.state.storage.put(put);
+    if (prev.v > HISTORY) await this.state.storage.delete(hkey(prev.v - HISTORY));
     return next;
+  }
+
+  async history() {
+    await this.migrate();
+    const list = await this.state.storage.list({ prefix: 'h:', reverse: true, limit: HISTORY });
+    return [...list.values()];
+  }
+
+  // Oude opslag (alle versies samen onder 'history') eenmalig omzetten
+  async migrate() {
+    const old = await this.state.storage.get('history');
+    if (!Array.isArray(old)) return;
+    const put = {};
+    for (const h of old) put[hkey(h.v)] = h;
+    if (old.length) await this.state.storage.put(put);
+    await this.state.storage.delete('history');
   }
 
   async acks() {
@@ -90,7 +111,7 @@ export class Channel {
     if (url.pathname.endsWith('/history')) {
       if (request.method !== 'GET') return Response.json({ error: 'niet toegestaan' }, { status: 405 });
       const snap = await this.current();
-      const history = (await this.state.storage.get('history')) || [];
+      const history = await this.history();
       const list = snap.d ? [{ v: snap.v, at: snap.at || null, d: snap.d }, ...history] : history;
       return Response.json(list, { headers: { 'Cache-Control': 'no-store' } });
     }

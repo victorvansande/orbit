@@ -332,11 +332,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return smoothstep(0, 1, ((now - introStart) / 1000 - delay) / dur);
   }
 
-  function dotPath(list, r) {
-    ctx.moveTo(list.x + r, list.y);
-    ctx.arc(list.x, list.y, r, 0, TAU);
-  }
-
   function drawGrid(now) {
     const depth = cam.depth;
     const fade = introAlpha(now, 0, 1.4) * (0.5 + 0.2 * depth);

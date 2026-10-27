@@ -5,6 +5,8 @@
 const STATS_KEY = 'priority-orbit.stats.v1';   // {days: {'JJJJ-MM-DD': n}}
 const STARS_KEY = 'priority-orbit.stars.v2';   // {stars: [{id, x, y, s, ph}]}: één ster per afgevinkte taak, voorgoed
 
+export const STATS_KEYS = { STATS_KEY, STARS_KEY };
+
 const pad = n => String(n).padStart(2, '0');
 export const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
@@ -41,15 +43,6 @@ export function weekCounts(stats, now = new Date()) {
 export function monthCount(stats, now = new Date()) {
   const prefix = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-`;
   return Object.entries(stats.days).reduce((n, [k, v]) => n + (k.startsWith(prefix) ? v : 0), 0);
-}
-
-// ISO-week
-export function weekKey(now = new Date()) {
-  const t = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  const day = t.getUTCDay() || 7;
-  t.setUTCDate(t.getUTCDate() + 4 - day);
-  const start = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
-  return `${t.getUTCFullYear()}-W${pad(Math.ceil(((t - start) / 86400000 + 1) / 7))}`;
 }
 
 /* ---- Sterrenhemel ---- */

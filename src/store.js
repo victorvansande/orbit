@@ -20,7 +20,7 @@ function write(key, list) {
   return false;
 }
 
-export const signature = tasks => tasks.map(t => `${t.id}:${t.updatedAt || 0}`).sort().join('|');
+const signature = tasks => tasks.map(t => `${t.id}:${t.updatedAt || 0}`).sort().join('|');
 
 /* ---- Archief ---- */
 export function loadArchive() {
