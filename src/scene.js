@@ -28,7 +28,6 @@ const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 const CORE_R = 4.5, WAVE_R = 32, WAVES = 3;   // kern en lichtgolven (stage-eenheden)
-const MERIDIANS = 6, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.07;
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
 const ARRIVE_R = 320;
@@ -108,19 +107,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (let i = 0; i < n; i++) { const a = i / n * TAU; pts.push(Math.cos(a) * lv.ring, Math.sin(a) * lv.ring); }
     return { lv, z: depthAt(lv.ring), pts, screen: new Float32Array(2 * 48) };
   });
-
-  const meridianSamples = (() => {
-    const path = [[RIM, 0]];
-    for (let r = RIM; r > 0; r -= 1) path.push([r - 1, depthAt(r - 1)]);
-    const out = [];
-    let acc = 0, next = 0;
-    for (let i = 1; i < path.length; i++) {
-      const [r0, z0] = path[i - 1], [r1, z1] = path[i];
-      acc += Math.hypot(r1 - r0, z1 - z0);
-      if (acc >= next) { out.push([r1, z1]); next += MERIDIAN_GAP; }
-    }
-    return out.filter(([r]) => r > 6);
-  })();
 
   let grid = [];
   function buildGrid(s) {
@@ -343,14 +329,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   function drawGrid(now) {
     const depth = cam.depth;
-    const fade = introAlpha(now, 0, 1.4) * (0.5 + 0.5 * depth);
+    const fade = introAlpha(now, 0, 1.4) * (0.5 + 0.2 * depth);
     if (fade <= 0) return;
     const buckets = Array.from({ length: 6 }, () => []);
     for (const g of grid) {
       const z = g.r < RIM ? depthAt(g.r) * depth : 0;
       if (!project(g.x, g.y, z, false)) continue;
-      // binnen de trechter verdwijnt het raster in het zijaanzicht: de ringen tonen de vorm al
-      const inside = 1 - depth * (1 - smoothstep(RIM - 24, RIM + 16, g.r));
+      // in het zijaanzicht wijkt het raster binnen en rond de trechter terug: de ringen tonen de vorm al
+      const inside = 1 - depth * (1 - smoothstep(RIM - 24, RIM + 90, g.r));
       const a = g.a * fade * inside * Math.min(1, pt.f * pt.f);
       if (!(a >= 0.006)) continue;
       if (pt.x < -8 || pt.x > W + 8 || pt.y < -8 || pt.y > H + 8) continue;
@@ -392,23 +378,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.globalAlpha = 1;
   }
 
-  function drawMeridians() {
-    const a = MERIDIAN_ALPHA * cam.depth;
-    if (a < 0.004) return;
-    ctx.fillStyle = rgba(INK, 1);
-    ctx.globalAlpha = a;
-    ctx.beginPath();
-    for (let m = 0; m < MERIDIANS; m++) {
-      const ang = m / MERIDIANS * TAU, c = Math.cos(ang), s = Math.sin(ang);
-      for (const [r, z] of meridianSamples) {
-        if (!project(r * c, r * s, z * cam.depth, true)) continue;
-        dotPath(pt, 0.9 * cam.du * pt.f);
-      }
-    }
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-
   function drawRings(now) {
     const maxHot = Math.max(...ringHot.values());
     rings.forEach((ring, idx) => {
@@ -420,17 +389,25 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const z = ring.z * cam.depth;
       // stippen
       ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
-      // in het zijaanzicht worden de ringen platte ellipsen: elke tweede stip vervaagt, anders kruipen ze op elkaar
+      // In het zijaanzicht worden de ringen platte ellipsen die elkaar kruisen. Twee ingrepen houden het rustig:
+      // elke tweede stip vervaagt, en de achterkant van elke ring (van je af) krijgt minder dekking dan de voorkant.
       const r = (1 + 0.35 * hot) * cam.du;
-      const thin = 1 - 0.8 * cam.depth * (1 - hot);
-      for (const odd of [0, 1]) {
-        ctx.globalAlpha = Math.min(1, alpha * (odd ? thin : 1 + 0.4 * cam.depth));
-        if (ctx.globalAlpha < 0.004) continue;
+      const cue = cam.depth * (1 - hot);
+      const buckets = new Map();
+      for (let i = 0, j = 0; i < ring.pts.length; i += 2, j++) {
+        const x = ring.pts[i], y = ring.pts[i + 1];
+        const front = (x * cam.ss + y * cam.cs) / lv.ring;          // 1 = dichtst bij de kijker, -1 = achteraan
+        const factor = (j % 2 ? 1 - 0.8 * cue : 1 + 0.4 * cue) * (1 - 0.68 * cue * (1 - front) / 2);
+        const a = Math.min(1, alpha * factor);
+        if (a < 0.004 || !project(x, y, z, true)) continue;
+        const k = Math.round(a * 24);
+        if (!buckets.has(k)) buckets.set(k, []);
+        buckets.get(k).push(pt.x, pt.y, r * pt.f);
+      }
+      for (const [k, list] of buckets) {
+        ctx.globalAlpha = k / 24;
         ctx.beginPath();
-        for (let i = odd * 2; i < ring.pts.length; i += 4) {
-          if (!project(ring.pts[i], ring.pts[i + 1], z, true)) continue;
-          dotPath(pt, r * pt.f);
-        }
+        for (let i = 0; i < list.length; i += 3) { ctx.moveTo(list[i] + list[i + 2], list[i + 1]); ctx.arc(list[i], list[i + 1], list[i + 2], 0, TAU); }
         ctx.fill();
       }
       // monsterpunten voor hit-testing
@@ -686,7 +663,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     updateCamera();
     drawGrid(now);
     drawBezel(now);
-    drawMeridians();
     drawRings(now);
     drawCore(now);
     drawOrbs();
