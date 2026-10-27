@@ -32,6 +32,11 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 - Korrel in het donker: `filter: invert(1)` met `mix-blend-mode: screen` en lagere dekking.
 - Het wiel is op desktop maximaal `100dvh - 280px` hoog, zodat de hoeken (themaschakelaar, hint) klikbaar blijven.
 
+## Icoon
+
+- Merkteken: rode kern met één effen lichtgolf (het baken) en één taps bolletje in grafiet dat er met de klok mee omheen draait; op het grote icoon ook de gestippelde ring. Papier #F1F1EF, geen verloop of glans: iOS (liquid glass) en Android (maskers, Material You) voegen hun eigen effect toe.
+- Favicon is vetter en zonder stippelring (leesbaar op 16 px) en volgt licht/donker via een media query in de SVG.
+
 ## Bestanden
 
 | Bestand | Inhoud |
@@ -39,6 +44,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/config.js` | `LEVELS` (enige bron van waarheid: naam, ring, baan, omloop, kleur, grootte, staart), diepteprofiel, kleurhelpers, iconen voor het wiel |
 | `src/scene.js` | Canvas-renderer met eigen 3D-projectie, animatie, hit-testing, slepen, bollen en kern |
 | `src/wheel.js` | Het gebogen wiel (DOM, posities via JS) |
+| `favicon.svg`, `favicon.ico`, `icons/`, `manifest.webmanifest` | App-icoon en favicon voor alle platformen; bron en uitleg in `icons/README.md`, opnieuw maken met `python3 icons/make_icons.py` en daarna renderen |
 | `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out |
 
