@@ -187,7 +187,7 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 - Service worker met scope `/orbit/`. Eigen bestanden en Google Fonts: netwerk eerst (altijd de nieuwste versie), time-out 3,5 s, dan de bewaarde kopie. Eigen bestanden met `cache: 'no-cache'` (en `reload` bij installeren): GitHub Pages laat bestanden 10 min in de browsercache, waardoor een toestel na een update oude en nieuwe bestanden kon mengen; paginanavigatie zonder kopie krijgt `index.html`. Nooit de sync-server, de weerdienst of Kwick.
 - Taken staan sowieso in localStorage; offline gemaakte wijzigingen gaan via sync door zodra er weer verbinding is (herverbinden bij `online` en `visibilitychange`).
 - Nieuwe bestanden in `src/` ook in `SHELL` zetten, anders zijn ze offline pas beschikbaar na een eerste online bezoek. `CACHE` verhogen hoeft niet voor gewone wijzigingen (netwerk eerst), wel als bestanden verdwijnen.
-- Getest: offline herladen toont de app met taken, offline een taak toevoegen werkt.
+- Getest: offline herladen toont de app met taken, offline een taak toevoegen werkt. Ook (27/10/2026) twee gekoppelde toestellen, A zonder internet én zonder server: afvinken en toevoegen, app sluiten en heropenen (app laadt, wijzigingen en ster blijven, "2 wachten"), weer online: B krijgt de nieuwe taak, het afvinken en de ster. Let op bij testen: `context.setOffline` in Playwright laat WebSockets door; zet daarom ook de server op een dood adres.
 
 ## Uitleg (eerste bezoek)
 
