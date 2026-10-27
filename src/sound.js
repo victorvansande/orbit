@@ -51,69 +51,60 @@ function noise(a, seconds) {
 }
 
 export const SOUNDS = {
-  // Zilverglas: een fijne FM-bel, zoals een tik tegen een kristallen glas; past bij de zilveren ster
+  // Zilverglas: een fijne tik tegen kristal (FM), past bij de zilveren ster
   glas(a, out, t, f) {
     const car = a.createOscillator(), mod = a.createOscillator(), mg = a.createGain(), g = a.createGain();
     car.frequency.value = f; mod.frequency.value = f * 3.5;
-    mg.gain.setValueAtTime(f * 1.6, t); mg.gain.exponentialRampToValueAtTime(1, t + 0.9);
+    mg.gain.setValueAtTime(f * 1.2, t); mg.gain.exponentialRampToValueAtTime(1, t + 0.08);
     mod.connect(mg).connect(car.frequency);
-    env(g, t, 0.16, 0.003, 1.3);
+    env(g, t, 0.18, 0.002, 0.16);
     car.connect(g).connect(out);
-    car.start(t); mod.start(t); car.stop(t + 1.4); mod.stop(t + 1.4);
-    tone(a, out, { f: f * 2.76, t, peak: 0.03, decay: 0.5 });
+    car.start(t); mod.start(t); car.stop(t + 0.2); mod.stop(t + 0.2);
   },
-  // Rasterregen: tikjes die versnellen zoals de golf door de puntjes van de kern, met een zachte toon als slot
+  // Rasterregen: drie piepkleine tikjes vlak na elkaar, zoals de golf door de puntjes, met een toontje als slot
   raster(a, out, t, f) {
-    let at = t;
-    for (let i = 0; i < 8; i++) {
-      const src = noise(a, 0.02), bp = a.createBiquadFilter(), g = a.createGain();
-      bp.type = 'bandpass'; bp.frequency.value = 2600 + i * 380; bp.Q.value = 9;
-      env(g, at, 0.22 - i * 0.015, 0.001, 0.02);
+    [0, 0.028, 0.048].forEach((dt, i) => {
+      const src = noise(a, 0.015), bp = a.createBiquadFilter(), g = a.createGain();
+      bp.type = 'bandpass'; bp.frequency.value = 3200 + i * 700; bp.Q.value = 10;
+      env(g, t + dt, 0.25, 0.001, 0.012);
       src.connect(bp).connect(g).connect(out);
-      src.start(at); src.stop(at + 0.03);
-      at += 0.055 * Math.pow(0.82, i);
-    }
-    tone(a, out, { f, t: at + 0.01, peak: 0.12, decay: 0.6 });
-    tone(a, out, { f: f * 2, t: at + 0.01, peak: 0.03, decay: 0.3 });
+      src.start(t + dt); src.stop(t + dt + 0.02);
+    });
+    tone(a, out, { f, t: t + 0.062, peak: 0.12, attack: 0.002, decay: 0.1 });
   },
-  // Komeet: een zachte zoef die voorbijkomt (gefilterde ruis die zakt), dan een heldere stip
+  // Komeet: een korte zoef, meteen gevolgd door een stip
   komeet(a, out, t, f) {
-    const src = noise(a, 0.5), bp = a.createBiquadFilter(), g = a.createGain();
-    bp.type = 'bandpass'; bp.Q.value = 2.5;
-    bp.frequency.setValueAtTime(5200, t); bp.frequency.exponentialRampToValueAtTime(700, t + 0.38);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.09, t + 0.12);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+    const src = noise(a, 0.12), bp = a.createBiquadFilter(), g = a.createGain();
+    bp.type = 'bandpass'; bp.Q.value = 3;
+    bp.frequency.setValueAtTime(6000, t); bp.frequency.exponentialRampToValueAtTime(1500, t + 0.07);
+    env(g, t, 0.08, 0.02, 0.06);
     src.connect(bp).connect(g).connect(out);
-    src.start(t); src.stop(t + 0.5);
-    tone(a, out, { f, t: t + 0.3, peak: 0.13, decay: 0.7 });
-    tone(a, out, { f: f * 1.5, t: t + 0.3, peak: 0.025, decay: 0.4 });
+    src.start(t); src.stop(t + 0.12);
+    tone(a, out, { f, t: t + 0.07, peak: 0.13, attack: 0.002, decay: 0.11 });
   },
-  // Sterrenmelodie: elke afgevinkte taak speelt de volgende noot van een vast deuntje (marimba). Je dag wordt een liedje.
+  // Sterrenmelodie: elke afgevinkte taak de volgende noot van een vast deuntje, als een korte marimbatik
   melodie(a, out, t, f, n) {
     const fm = 1046.5 * Math.pow(2, MELODY[n % MELODY.length] / 12) / 2;
-    tone(a, out, { f: fm, t, peak: 0.2, attack: 0.002, decay: 0.55 });
-    tone(a, out, { f: fm * 4, t, peak: 0.05, attack: 0.001, decay: 0.08 });
-    tone(a, out, { f: fm * 10, t, peak: 0.012, attack: 0.001, decay: 0.03 });
+    tone(a, out, { f: fm, t, peak: 0.22, attack: 0.001, decay: 0.14 });
+    tone(a, out, { f: fm * 4, t, peak: 0.05, attack: 0.001, decay: 0.03 });
   },
-  // Kalimba: een getokkelde snaar (Karplus-Strong), warm en houterig
+  // Kalimba: een getokkelde snaar (Karplus-Strong), snel gedempt
   kalimba(a, out, t, f) {
-    const fk = f / 2, len = Math.round(a.sampleRate / fk), dur = 1.2;
+    const fk = f / 2, len = Math.round(a.sampleRate / fk), dur = 0.22;
     const buf = a.createBuffer(1, Math.ceil(a.sampleRate * dur), a.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.6;
-    for (let i = len; i < d.length; i++) d[i] = 0.996 * 0.5 * (d[i - len] + d[i - len + 1]);
+    for (let i = len; i < d.length; i++) d[i] = 0.975 * 0.5 * (d[i - len] + d[i - len + 1]);
     const src = a.createBufferSource(), lp = a.createBiquadFilter(), g = a.createGain();
-    src.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 3200; g.gain.value = 0.35;
+    src.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 3200;
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(lp).connect(g).connect(out);
     src.start(t);
   },
-  // Baken: twee zachte tonen, een kwint omhoog, licht zwevend. Een vriendelijke computer die "klaar" zegt.
+  // Baken: twee blipjes, een kwint omhoog, als een computer die "klaar" zegt
   baken(a, out, t, f) {
     const fb = f / 2;
-    for (const det of [-6, 6]) {
-      tone(a, out, { f: fb, t, peak: 0.07, attack: 0.02, decay: 0.22, detune: det });
-      tone(a, out, { f: fb * 1.5, t: t + 0.13, peak: 0.08, attack: 0.02, decay: 0.55, detune: det });
-    }
+    tone(a, out, { f: fb, t, peak: 0.1, attack: 0.003, decay: 0.045 });
+    tone(a, out, { f: fb * 1.5, t: t + 0.06, peak: 0.11, attack: 0.003, decay: 0.09 });
   },
 };
 
