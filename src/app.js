@@ -19,7 +19,7 @@
   const PROFILE = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]]; // [straal, z]
   const TIP_Z = PROFILE[0][1];
 
-  const RING_GAP = 8, RING_OPACITY = 0.2, CORE_OPACITY = 0.38;
+  const RING_GAP = 8, RING_OPACITY = 0.38, CORE_OPACITY = 0.55;
   const TAIL_GAP = 7, TAIL_MAX_OPACITY = 0.45, TAIL_SHRINK = 0.18;
   const MERIDIANS = 8, MERIDIAN_GAP = 14, MERIDIAN_COLOR = '#EBEBF5', MERIDIAN_OPACITY = 0.14;
 

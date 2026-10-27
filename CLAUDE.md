@@ -34,7 +34,7 @@ De array `LEVELS` bovenaan `src/app.js` is de enige bron van waarheid (naam, rin
 
 - Apple HIG, alleen dark mode. Achtergrond #000, oppervlak #1C1C1E, secundaire tekst rgba(235,235,245,.6), scheidingslijnen rgba(84,84,88,.65), accent #0A84FF. Systeemfont.
 - Rustig, geen neon: geen gradients, glow op het hoofd van een bolletje (`GLOW = 0.35`, blur = GLOW × 10 px = 3,5 px) en een zachte, pulserende gloed in de kern.
-- Ringen: 2 px stippen elke ~8 px, opacity 0,2 (kernring 0,38). Staart: stippen elke ~7 px booglengte terug, kleiner, opacity max. 0,45.
+- Ringen: 2 px stippen elke ~8 px, opacity 0,38 (kernring 0,55). Oorspronkelijk 0,2 en 0,38, opgetrokken omdat de banen te zwak waren tegen het zwart. Staart: stippen elke ~7 px booglengte terug, kleiner, opacity max. 0,45.
 - Touch targets minstens 44 px (segmented controls via een onzichtbare `::after`, afvinkcirkel in een 44 px knop).
 - `prefers-reduced-motion`: banen, trechter en kernpulse staan stil (gepauzeerd, verdeling blijft zichtbaar), cameraovergang is direct.
 
