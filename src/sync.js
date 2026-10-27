@@ -183,7 +183,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
       if (gen !== generation || c.dead) return;
       attempts++;
       setStatus(navigator.onLine === false ? 'offline' : 'connecting');
-      onPair({ role: mode, step: 'retrying', attempts, server: brokerName(url), offline: navigator.onLine === false });
+      onPair({ role: mode, step: 'retrying', attempts, server: brokerName(url), servers: list.map(brokerName), offline: navigator.onLine === false });
       if (++failures >= 2 && brokers().length > 1) {
         // na twee mislukte pogingen naar de reservebroker
         failures = 0;

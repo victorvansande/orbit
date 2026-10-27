@@ -994,7 +994,10 @@ function renderPair(e) {
 
 function serverHint(e) {
   if (e.offline) return 'Dit toestel is offline. Orbit probeert opnieuw zodra er internet is.';
-  if (e.attempts >= 4) return `De server (${e.server}) is niet bereikbaar. Sommige wifi-netwerken blokkeren deze verbinding: probeer via mobiele data of een ander netwerk.`;
+  if (e.attempts >= 4) {
+    const names = (e.servers?.length > 1 ? e.servers : [e.server]).join(' en ');
+    return `Geen verbinding met ${e.servers?.length > 1 ? 'de servers' : 'de server'} (${names}). Sommige wifi-netwerken blokkeren deze verbinding: probeer via mobiele data of een ander netwerk.`;
+  }
   return `Verbinden met de server (${e.server})…`;
 }
 
