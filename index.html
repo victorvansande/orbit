@@ -4,13 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F1F1EF">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <meta name="description" content="Orbit: je taken draaien als bollen rond vijf ringen. Hoe dringender, hoe dichter bij de kern.">
 <title>Orbit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap">
 <link rel="stylesheet" href="src/styles.css">
+<script>
+  // Thema zetten vóór de eerste weergave, zodat er geen lichte flits is
+  (() => {
+    let pref = 'auto';
+    try { pref = localStorage.getItem('priority-orbit.theme.v1') || 'auto'; } catch { /* geen opslag */ }
+    const dark = pref === 'dark' || (pref !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
 </head>
 <body>
 <div class="stage" id="stage">
@@ -23,9 +32,16 @@
     <h1 class="brand">Orbit</h1>
     <p class="summary" id="summary" aria-live="polite"></p>
   </div>
-  <div class="hud-block hud-right" aria-hidden="true">
-    <p id="week"></p>
-    <p class="muted" id="date"></p>
+  <div class="hud-block hud-right">
+    <p id="week" aria-hidden="true"></p>
+    <p class="muted" id="date" aria-hidden="true"></p>
+    <div class="views theme-switch" role="radiogroup" aria-label="Thema">
+      <button type="button" role="radio" aria-checked="false" data-theme-pref="light">Licht</button>
+      <span class="slash" aria-hidden="true">/</span>
+      <button type="button" role="radio" aria-checked="false" data-theme-pref="dark">Donker</button>
+      <span class="slash" aria-hidden="true">/</span>
+      <button type="button" role="radio" aria-checked="true" data-theme-pref="auto">Auto</button>
+    </div>
   </div>
 </header>
 
@@ -59,7 +75,7 @@
     <span id="tracks-count"></span>
   </div>
   <div class="groups" id="groups"></div>
-  <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo</p>
+  <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema</p>
 </section>
 
 <div class="focus-info" aria-hidden="true">

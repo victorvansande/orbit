@@ -19,7 +19,11 @@ const TEMPO = {
 };
 const FIT = 440;                        // zoveel stage-eenheden passen in min(breedte, hoogte)
 
-const INK = [24, 24, 32];
+// Kleuren van structuur en labels per thema; de bollen houden hun eigen kleur
+const THEMES = {
+  light: { ink: [24, 24, 32], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
+  dark:  { ink: [236, 236, 241], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
+};
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
@@ -28,7 +32,6 @@ const MERIDIANS = 8, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.12;
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
 const ARRIVE_R = 320;
-const CALM = [168, 168, 178];
 
 const ease = cubicBezier(0.4, 0, 0.2, 1);
 
@@ -81,7 +84,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let drag = null, dropLevel = null;
   // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
   let nowCount = 0, todayCount = 0, urgency = 0, beat = 0;
-  const coreColor = [...CALM];
+  let theme = THEMES.light;
+  let INK = theme.ink;
+  const coreColor = [...theme.calm];
   const waveOn = [0, 0, 0];
   let introStart = performance.now(), last = performance.now();
   let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
@@ -310,7 +315,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // kern: urgentie, kleur, tempo en aantal golven glijden mee met de taken
     const target = nowCount > 0 ? 1 + Math.min(nowCount - 1, 3) / 3 : todayCount > 0 ? 0.5 : 0;
     urgency = smooth(urgency, target, 2.5, dt);
-    const goal = nowCount > 0 ? URGENT_RGB : todayCount > 0 ? TODAY_RGB : CALM;
+    const goal = nowCount > 0 ? URGENT_RGB : todayCount > 0 ? TODAY_RGB : theme.calm;
     for (let i = 0; i < 3; i++) coreColor[i] = smooth(coreColor[i], goal[i], 3, dt);
     const waveCount = nowCount > 0 ? Math.min(WAVES, 1 + Math.floor((nowCount - 1) / 1.5)) : todayCount > 0 ? 1 : 0;
     for (let i = 0; i < WAVES; i++) waveOn[i] = smooth(waveOn[i], i < waveCount ? 1 : 0, 3, dt);
@@ -591,15 +596,15 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     left = clamp(left, 8, W - w - 8);
     const top = clamp(y - h / 2, 8, H - h - 8);
     ctx.save();
-    ctx.shadowColor = 'rgba(20,20,30,.10)';
+    ctx.shadowColor = theme.shadow;
     ctx.shadowBlur = 14;
     ctx.shadowOffsetY = 3;
-    ctx.fillStyle = 'rgba(252,252,251,.94)';
+    ctx.fillStyle = theme.pillBg;
     ctx.beginPath();
     ctx.roundRect(left, top, w, h, h / 2);
     ctx.fill();
     ctx.restore();
-    ctx.strokeStyle = 'rgba(20,20,30,.08)';
+    ctx.strokeStyle = theme.pillLine;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(left + 0.5, top + 0.5, w - 1, h - 1, h / 2);
@@ -610,7 +615,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.arc(left + padX + 3, top + h / 2, 3, 0, TAU);
       ctx.fill();
     }
-    ctx.fillStyle = opts.mono ? rgba(color || INK, 1) : '#1b1b22';
+    ctx.fillStyle = opts.mono ? rgba(color || INK, 1) : theme.pillText;
     ctx.textBaseline = 'middle';
     ctx.fillText(label, left + padX + dot, top + h / 2 + 0.5);
   }
@@ -633,7 +638,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       dx /= len; dy /= len;
       const gap = o.sr + 14;
       const ax = o.sx + dx * gap, ay = o.sy + dy * gap;
-      ctx.strokeStyle = 'rgba(20,20,30,.22)';
+      ctx.strokeStyle = theme.leader;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(o.sx + dx * (o.sr + 3), o.sy + dy * (o.sr + 3));
@@ -792,5 +797,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
+    setTheme(name) { theme = THEMES[name] || THEMES.light; INK = theme.ink; },
   };
 }

@@ -381,13 +381,13 @@ function drawComposerOrbit(now) {
   const a = reducedMotion.matches ? -Math.PI / 2 : (now / 1000) / period * TAU;
   g.clearRect(0, 0, size, size);
   // kern: kleine stip, zoals het baken in de scène
-  g.fillStyle = 'rgba(27, 27, 34, .2)';
+  g.fillStyle = `rgba(${inkRgb()}, .2)`;
   g.beginPath();
   g.arc(C, C, size * 0.02, 0, TAU);
   g.fill();
   // baan
   g.lineWidth = size * 0.003;
-  g.strokeStyle = 'rgba(27, 27, 34, .12)';
+  g.strokeStyle = `rgba(${inkRgb()}, .14)`;
   g.beginPath();
   g.arc(C, C, R, 0, TAU);
   g.stroke();
@@ -543,6 +543,31 @@ function setTempo(name) {
 for (const b of tempoButtons) b.addEventListener('click', () => setTempo(b.dataset.tempo));
 setTempo(tempo);
 
+/* ---- Thema: licht, donker of auto (volgt het toestel) ---- */
+const THEME_KEY = 'priority-orbit.theme.v1';
+const THEME_PREFS = ['light', 'dark', 'auto'];
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
+const themeButtons = [...document.querySelectorAll('[data-theme-pref]')];
+let themePref = 'auto';
+try { const saved = localStorage.getItem(THEME_KEY); if (THEME_PREFS.includes(saved)) themePref = saved; } catch { /* geen opslag */ }
+const resolvedTheme = () => (themePref === 'auto' ? (systemDark.matches ? 'dark' : 'light') : themePref);
+function inkRgb() { return resolvedTheme() === 'dark' ? '236, 236, 241' : '27, 27, 34'; }
+function applyTheme() {
+  const name = resolvedTheme();
+  document.documentElement.dataset.theme = name;
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', name === 'dark' ? '#0F0F12' : '#F1F1EF');
+  scene.setTheme(name);
+  for (const b of themeButtons) b.setAttribute('aria-checked', String(b.dataset.themePref === themePref));
+}
+function setThemePref(pref) {
+  themePref = pref;
+  try { localStorage.setItem(THEME_KEY, pref); } catch { /* geen opslag */ }
+  applyTheme();
+}
+for (const b of themeButtons) b.addEventListener('click', () => setThemePref(b.dataset.themePref));
+systemDark.addEventListener('change', () => { if (themePref === 'auto') applyTheme(); });
+applyTheme();
+
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 function setFocus(on) {
@@ -580,6 +605,7 @@ document.addEventListener('keydown', e => {
   else if (k === '2') setView('side');
   else if (k === 'f') setFocus(!document.body.classList.contains('is-focus'));
   else if (k === 'z') undo();
+  else if (k === 'd') setThemePref(resolvedTheme() === 'dark' ? 'light' : 'dark');
   else if (k === 't') setTempo(TEMPOS[(TEMPOS.indexOf(tempo) + 1) % TEMPOS.length]);
   else if (e.key === 'Escape' && document.body.classList.contains('is-focus')) setFocus(false);
 });

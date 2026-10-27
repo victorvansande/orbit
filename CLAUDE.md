@@ -14,7 +14,7 @@ Live: https://victorvansande.github.io/orbit/ (GitHub Pages, bron `main` / root)
 
 ## Ontwerp
 
-Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurbollen) en een gebogen wiel als kiezer (referentie: verticale boog met pillen en labels). Bewust één licht thema.
+Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurbollen) en een gebogen wiel als kiezer (referentie: verticale boog met pillen en labels). Licht thema als basis, met een donkere variant (zie Thema).
 - Bollen: stijl Taps (gekozen door Victor uit vier stijlen en vier varianten). Effen kleur, geen verloop, geen gloed: een ronde kop die taps uitloopt langs de baan, lengte volgt de snelheid. Bij stilstand (hover, slepen) blijft alleen de ronde kop over. Kern: een pulserend baken dat de urgentie weerspiegelt (zie Scène). Verloop, glans en dikke bollen oogden gedateerd; niet terugbrengen.
 
 - Papier #F1F1EF met lichte korrel (`.grain`, SVG-ruis, opacity 0,14). Inkt #1B1B22, secundair #5E5E68, tertiair #9A9AA3.
@@ -22,6 +22,15 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 - Hoeklabels zoals op een platenhoes: linksboven ORBIT + samenvatting, rechtsboven weeknummer + datum, linksonder Boven / Zijkant / Focus en Tempo (Normaal / Zen / Stil).
 - Kleur zit alleen in de bollen. Ringen, raster en wijzerplaat zijn grafiet met lage dekking; een ring krijgt zijn kleur pas bij hover of als sleepdoel.
 - Desktop (≥ 1000 px): takenlijst links (300 px), scène in het midden, wiel rechts. Smaller: alles onder elkaar (kop, scène, aanzicht, horizontaal wiel, lijst).
+
+## Thema
+
+- Schakelaar rechtsboven onder de datum: Licht / Donker / Auto (Auto volgt `prefers-color-scheme`, standaard). Toets `D` wisselt licht en donker. Keuze in localStorage `priority-orbit.theme.v1`.
+- Een inline script in `<head>` zet `data-theme` vóór de eerste weergave (geen lichte flits). `app.js` houdt het daarna bij, ook als het systeemthema wijzigt, en past `meta[name=theme-color]` aan.
+- CSS: alle kleuren zijn tokens op `:root`, herdefinieerd onder `:root[data-theme="dark"]` (papier #0F0F12, oppervlak #19191D, inkt #ECECF1). Nieuwe kleuren altijd als token toevoegen, nooit een losse `#fff` of `rgba(27, 27, 34, …)`.
+- Canvas: `scene.setTheme(name)` wisselt `THEMES` (inkt van raster, ringen en wijzerplaat, labelpillen, grijze kern). De bolkleuren blijven gelijk.
+- Korrel in het donker: `filter: invert(1)` met `mix-blend-mode: screen` en lagere dekking.
+- Het wiel is op desktop maximaal `100dvh - 280px` hoog, zodat de hoeken (themaschakelaar, hint) klikbaar blijven.
 
 ## Bestanden
 
@@ -79,7 +88,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Datumlabel bij een deadline-taak opent een bewerker: datum wijzigen of deadline wissen (dan wordt het een gewone taak in de huidige schil).
 - Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten; op apparaten met hover verschijnt het pas als je over de rij gaat.
 - Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), optioneel "Deadline" (native datumveld; met een datum is de momentkeuze vergrendeld en toont een hint in welke schil de taak komt), "Voeg toe" pas actief met een titel.
-- Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `Z` ongedaan, `Esc` sluit.
+- Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `D` thema, `Z` ongedaan, `Esc` sluit.
 - Sneltoetsenregel onder de lijst blijft op één regel (`width: max-content`, mag voorbij de lijstbreedte lopen).
 - Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand.
@@ -99,5 +108,4 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 
 - Moeten afgevinkte taken bewaard worden (geschiedenis, statistiek)?
 - Synchronisatie tussen toestellen (nu alleen localStorage van één browser).
-- Een donkere variant voor 's avonds, of bewust alleen licht houden?
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.
