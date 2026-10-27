@@ -311,7 +311,7 @@ setInterval(() => {
   if (currentQuote().index !== shownQuote) renderFocusNow();
 }, 60000);
 
-// De quote loopt door tot vlak voor de buitenste ring (desktop): breedte uit de echte positie van de wijzerplaat op
+// De quote loopt door tot vlak voor de buitenste ring (desktop): breedte uit de echte positie van de buitenste ring op
 // de hoogte van de quote. Na het openen van de focusmodus schuift de scène nog even, dus ook later opnieuw.
 function fitQuote() {
   const fig = document.querySelector('.focus-quote');
@@ -321,7 +321,7 @@ function fitQuote() {
   for (let i = 0; i < 2; i++) {
     const box = fig.getBoundingClientRect();
     if (!box.height) return;
-    const edges = [box.top, box.bottom].map(y => scene.bezelLeft(y)).filter(x => x !== null);
+    const edges = [box.top, box.bottom].map(y => scene.edgeLeft(y)).filter(x => x !== null);
     const edge = edges.length ? Math.min(...edges) : innerWidth / 2;
     fig.style.width = `${Math.max(260, Math.min(760, edge - box.left - 32))}px`;
   }

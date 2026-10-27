@@ -46,7 +46,7 @@ function coreGrid(spacing) {
   return coreGrids.get(key);
 }
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
-const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
+const EDGE = 180;   // net buiten de buitenste ring (Ooit, 174): rand van de scène voor tekst ernaast
 const ARRIVE_R = 320;
 
 const ease = cubicBezier(0.4, 0, 0.2, 1);
@@ -364,30 +364,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       for (let i = 0; i < b.length; i += 3) { ctx.moveTo(b[i] + b[i + 2], b[i + 1]); ctx.arc(b[i], b[i + 1], b[i + 2], 0, TAU); }
       ctx.fill();
     });
-    ctx.globalAlpha = 1;
-  }
-
-  function drawBezel(now) {
-    const a = introAlpha(now, 0.2, 1.2);
-    if (a <= 0) return;
-    ctx.strokeStyle = rgba(INK, 1);
-    ctx.lineWidth = 1;
-    for (const major of [false, true]) {
-      ctx.globalAlpha = (major ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
-      ctx.beginPath();
-      for (let i = 0; i < 120; i++) {
-        const isMajor = i % 10 === 0;
-        if (isMajor !== major) continue;
-        const ang = i / 120 * TAU;
-        const c = Math.cos(ang), s = Math.sin(ang);
-        if (!project(c * BEZEL_IN, s * BEZEL_IN, 0, false)) continue;
-        const x0 = pt.x, y0 = pt.y;
-        const out = isMajor ? BEZEL_MAJOR : BEZEL_OUT;
-        if (!project(c * out, s * out, 0, false)) continue;
-        ctx.moveTo(x0, y0); ctx.lineTo(pt.x, pt.y);
-      }
-      ctx.stroke();
-    }
     ctx.globalAlpha = 1;
   }
 
@@ -806,7 +782,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     updateCamera();
     drawGrid(now);
     drawSky(now);
-    drawBezel(now);
     drawRings(now);
     drawCore(now);
     drawOrbs();
@@ -950,9 +925,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },
     get centerX() { return cam.cx; },
-    // linkerrand van de wijzerplaat (px) op schermhoogte y, zodat tekst ernaast tot aan de buitenste ring kan lopen
-    bezelLeft(y) {
-      if (!project(-BEZEL_MAJOR, 0, 0, false)) return null;
+    // linkerrand van de buitenste ring (px) op schermhoogte y, zodat tekst ernaast tot aan die ring kan lopen
+    edgeLeft(y) {
+      if (!project(-EDGE, 0, 0, false)) return null;
       const r = cam.cx - pt.x, dy = y - cam.cy;
       return Math.abs(dy) >= r ? null : cam.cx - Math.sqrt(r * r - dy * dy);
     },
