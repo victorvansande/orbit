@@ -3,6 +3,7 @@ import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode } from './sync.js';
+import { setMatrix } from './matrix.js';
 import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
 
 /* ---- Instellingen ---- */
@@ -163,7 +164,7 @@ function renderClock() {
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   $('week').textContent = `Week ${isoWeek(now)}`;
   $('date').textContent = `${dd} · ${mm} · ${now.getFullYear()}`;
-  $('clock').textContent = TIME_FMT.format(now);
+  setMatrix($('clock'), TIME_FMT.format(now));
   $('clock-date').textContent = DAY_FMT.format(now);
 }
 

@@ -29,7 +29,7 @@ const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 const CORE_R = 4.5, WAVE_R = 32, WAVES = 3;   // kern en lichtgolven (stage-eenheden)
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
-const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196, NUMERAL_R = 207;
+const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
 const ARRIVE_R = 320;
 
 const ease = cubicBezier(0.4, 0, 0.2, 1);
@@ -362,10 +362,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const major of [false, true]) {
       ctx.globalAlpha = (major ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
       ctx.beginPath();
-      for (let i = 0; i < 60; i++) {
-        const isMajor = i % 5 === 0;
+      for (let i = 0; i < 120; i++) {
+        const isMajor = i % 10 === 0;
         if (isMajor !== major) continue;
-        const ang = i / 60 * TAU;
+        const ang = i / 120 * TAU;
         const c = Math.cos(ang), s = Math.sin(ang);
         if (!project(c * BEZEL_IN, s * BEZEL_IN, 0, false)) continue;
         const x0 = pt.x, y0 = pt.y;
@@ -375,46 +375,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       }
       ctx.stroke();
     }
-    drawClock(a);
     ctx.globalAlpha = 1;
-  }
-
-  // Klok op de wijzerplaat (12 uur): 60 streepjes zoals op een klok, elk streepje een minuut, elk vijfde (lang) een uur.
-  // Geen wijzers door de scène: een stip op de rand toont het uur, een fijne lijn de minuten.
-  function drawClock(a) {
-    const d = new Date();
-    const min = d.getMinutes() + d.getSeconds() / 60;
-    const hour = (d.getHours() % 12) + min / 60;
-    const at = frac => -Math.PI / 2 + frac * TAU;          // 0 bovenaan, met de klok mee
-    ctx.strokeStyle = ctx.fillStyle = rgba(INK, 1);
-    const am = at(min / 60), cm = Math.cos(am), sm = Math.sin(am);
-    if (project(cm * (BEZEL_IN - 3), sm * (BEZEL_IN - 3), 0, false)) {
-      const x0 = pt.x, y0 = pt.y;
-      if (project(cm * (BEZEL_MAJOR + 6), sm * (BEZEL_MAJOR + 6), 0, false)) {
-        ctx.globalAlpha = 0.8 * a;
-        ctx.lineWidth = clamp(1.3 * cam.du, 1, 2.2);
-        ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(pt.x, pt.y); ctx.stroke();
-      }
-    }
-    const ah = at(hour / 12), R = (BEZEL_IN + BEZEL_OUT) / 2;
-    if (project(Math.cos(ah) * R, Math.sin(ah) * R, 0, false)) {
-      ctx.globalAlpha = 0.85 * a;
-      ctx.beginPath(); ctx.arc(pt.x, pt.y, 3 * cam.du * pt.f, 0, TAU); ctx.fill();
-    }
-    // cijfers 12, 3, 6, 9: alleen in het bovenaanzicht goed leesbaar, dus ze vervagen bij het kantelen
-    const na = 0.45 * a * (1 - cam.depth);
-    if (na > 0.01) {
-      ctx.globalAlpha = na;
-      ctx.font = `500 ${clamp(9 * cam.du, 8, 13).toFixed(1)}px "Geist Mono", ui-monospace, monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (const [n, frac] of [[12, 0], [3, 0.25], [6, 0.5], [9, 0.75]]) {
-        const ang = at(frac);
-        if (project(Math.cos(ang) * NUMERAL_R, Math.sin(ang) * NUMERAL_R, 0, false)) ctx.fillText(String(n), pt.x, pt.y);
-      }
-      ctx.textAlign = 'start';
-    }
   }
 
   function drawRings(now) {

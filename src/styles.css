@@ -2,6 +2,7 @@
    Desktop: lijst links, scène in het midden, wiel rechts. Onder 1000 px alles onder elkaar. */
 
 :root {
+  --dm-ghost: .08;
   --bg: #F1F1EF;
   --surface: #FBFBFA;
   --ink: #1B1B22;
@@ -36,6 +37,7 @@
 
 /* Donker: zelfde posterstijl, bijna zwart papier met lichte inkt. data-theme wordt vóór de eerste weergave gezet. */
 :root[data-theme="dark"] {
+  --dm-ghost: .1;
   --bg: #0F0F12;
   --surface: #19191D;
   --ink: #ECECF1;
@@ -314,7 +316,12 @@ kbd {
   transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
   pointer-events: none;
 }
-.clock { font: 300 76px/1 var(--font); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+/* Matrixklok (src/matrix.js): stippen van 5 × 7, onverlichte stippen als zachte schim */
+.clock { --dm-h: min(84px, 9.4vh); display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
+.clock .dm { display: block; height: 100%; width: auto; overflow: visible; }
+.dm .o { fill: currentColor; animation: dm-in .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d); }
+.dm .g { fill: currentColor; opacity: var(--dm-ghost); }
+@keyframes dm-in { from { opacity: .1; transform: scale(.4); transform-box: fill-box; transform-origin: center; } }
 .clock-date { margin-top: 10px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 .focus-now { margin-top: 36px; max-width: 30ch; }
 .focus-kicker { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--late); margin-bottom: 12px; }
@@ -520,7 +527,7 @@ body.is-idle .controls { opacity: 0; }
     display: block; order: 2; position: relative; left: auto; bottom: auto; transform: none;
     padding: 4px var(--pad) 12px;
   }
-  body.is-focus .clock { font-size: 52px; }
+  body.is-focus .clock { --dm-h: 52px; }
   body.is-focus .clock-date { margin-top: 8px; }
   body.is-focus .focus-now { margin-top: 18px; max-width: none; }
   body.is-focus .focus-kicker { margin-bottom: 8px; }
@@ -540,4 +547,5 @@ body.is-idle .controls { opacity: 0; }
   .composer-orb, .composer-orb.is-swap { animation: none; }
   .composer[open] form, .composer.is-closing form, .composer[open]::backdrop, .composer.is-closing::backdrop { animation-duration: .01s; }
   .track, .tracks, .wheel, .focus-info, .toast { transition-duration: .01s; }
+  .dm .o { animation: none; }
 }

@@ -49,6 +49,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `favicon.svg`, `favicon.ico`, `icons/`, `manifest.webmanifest` | App-icoon en favicon voor alle platformen; bron en uitleg in `icons/README.md`, opnieuw maken met `python3 icons/make_icons.py` en daarna renderen |
 | `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
+| `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)` |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
 | `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, MQTT-verbinding, samenvoegen |
 | `src/vendor/mqtt.min.js` | MQTT.js 2.1.0 (zelfde bestand als in streep), pas geladen als sync aan staat |
@@ -71,10 +72,10 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 
 - Eén canvas over het hele venster (desktop) of in `.stage` (gsm). Stage-eenheden: dezelfde 390-stage als vroeger; `FIT = 440` eenheden passen in min(beschikbare breedte, hoogte). `setInsets({left, right})` houdt de scène gecentreerd tussen lijst en wiel (zacht geanimeerd, ook bij focusmodus).
 - Projectie per punt: spin (rond de trechteras) → rotateX (tilt) → rotateY (parallax) → zoom → shift → perspectief 1100 met oorsprong op 38 %. Zelfde waarden als de oude CSS-versie: boven tilt 0 / zoom 0,92, zijkant tilt 58° / zoom 0,96 / shift -66. Overgang 0,9 s met cubic-bezier(.4,0,.2,1), eigen implementatie.
-- Lagen van achter naar voor: raster (zwaartekrachtput), wijzerplaat (60 streepjes, statisch) met klok, ringen, kern, bollen met staart, effecten, labels.
+- Lagen van achter naar voor: raster (zwaartekrachtput), wijzerplaat (120 streepjes, statisch), ringen, kern, bollen met staart, effecten, labels.
 - Banen draaien via een fase per niveau (`phase`), elke bol heeft een `offset` die zacht naar gelijke verdeling glijdt. Bij een niveauwissel blijft de absolute hoek behouden.
 - Bol (`drawOrb`): `tracePath` rekent de werkelijke baan terug (hoeksnelheid inclusief herschikking `vo`, radiale snelheid `vr`), `taper` vult er een effen, taps vlak langs (breedte 2r aan de kop, 0,35r aan het eind). Zo wijst de staart ook tijdens binnenvliegen en ringwissels de goede kant op. Lengte = (staart + 1) × 7 × `TAIL_LENGTH` × (snelheid / kruissnelheid), begrensd op 2,5 keer.
-- Klok op de wijzerplaat (`drawClock`, 12 uur, lokale tijd): 60 streepjes zoals op een echte klok: elk streepje = 1 minuut (voor de minutenlijn), elk vijfde streepje is lang = uur (voor de uurstip). Vroeger 120, dan klopte de minutenlijn niet met de streepjes. Geen wijzers door de scène: een stip op de rand = uur, een fijne lijn over de rand = minuten, cijfers 12/3/6/9 in Geist Mono buiten de rand (vervagen in het zijaanzicht). Alles grafiet, de klok draait niet mee met de trechter en loopt ook in tempo Stil.
+- Wijzerplaat: 120 statische streepjes (elke tiende lang), puur decor. De klok op de rand (uurstip, minutenlijn, cijfers 12/3/6/9) is weggehaald op vraag van Victor: geen meerwaarde, enkel afleiding naast de digitale klok.
 - Minder drukte in het zijaanzicht (alles schaalt met `cam.depth`, dus glijdt mee met de camera): de achterkant van elke ring (van de kijker af) zakt naar ongeveer een derde dekking zodat de ellipsen niet even sterk kruisen, elke tweede ringstip vervaagt (de overige worden iets krachtiger), het raster wijkt binnen en rond de trechter terug (tot ±90 eenheden buiten de rand) en is lichter, wijzerplaat op de helft. Geen meridianen meer: de ringen tonen de vorm al.
 - Hover dimt de andere ringen licht (factor 0,32), niet weg: in het zijaanzicht moeten ze leesbaar blijven.
 - Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader), de bol krijgt een dun ringetje. Hover op een rij in de lijst doet hetzelfde voor die ene taak.
@@ -129,7 +130,7 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 - Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `D` thema, `A` archief, `Z` ongedaan, `Esc` sluit. Niet actief zolang een venster open is.
 - Sneltoetsenregel onder de lijst blijft op één regel (`width: max-content`, mag voorbij de lijstbreedte lopen).
 - Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
-- Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand. Een tik of muisbeweging toont ze weer; bij het verlaten wordt de timer gewist.
+- Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote matrixklok (stippen van 5 × 7 zoals in Kwick, onverlichte stippen als schim met `--dm-ghost`, geen gloed; alleen een gewijzigd cijfer laat zijn stippen oplichten; hoogte `min(84px, 9,4vh)`, op gsm 52 px), datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand. Een tik of muisbeweging toont ze weer; bij het verlaten wordt de timer gewist.
 - Focus op gsm: één kolom die precies het scherm vult (kop, scène met flex 1, klok en max. 3 Nu-taken, knoppen); thema-schakelaar en datum rechtsboven verdwijnen. Geen vaste posities, zodat niets overlapt. Getest op 375×667, 390×844 en 430×932.
 
 ## Toegankelijkheid
