@@ -49,7 +49,11 @@
       <span class="slash" aria-hidden="true">/</span>
       <button type="button" role="radio" aria-checked="true" data-theme-pref="auto">Auto</button>
     </div>
-    <button type="button" class="sync-btn" id="sync-btn" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Sync uit</span></button>
+    <div class="hud-actions">
+      <button type="button" class="sync-btn" id="archive-btn">Archief</button>
+      <span class="slash" aria-hidden="true">/</span>
+      <button type="button" class="sync-btn" id="sync-btn" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Sync uit</span></button>
+    </div>
   </div>
 </header>
 
@@ -82,8 +86,9 @@
     <h2 id="tracks-title">Taken</h2>
     <span id="tracks-count"></span>
   </div>
+  <p class="tracks-demo" id="tracks-demo" hidden>Dit zijn voorbeeldtaken. Ze verdwijnen zodra je zelf een taak toevoegt.</p>
   <div class="groups" id="groups"></div>
-  <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema</p>
+  <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief</p>
 </section>
 
 <div class="focus-info" aria-hidden="true">
@@ -119,6 +124,31 @@
       <button type="submit" class="btn-solid" id="composer-submit" disabled>Voeg toe <kbd>↵</kbd></button>
     </div>
   </form>
+</dialog>
+
+<dialog class="sync archive" id="archive" aria-labelledby="archive-title">
+  <div class="sync-card archive-card">
+    <div class="composer-meta"><span id="archive-title">Archief</span><span>Op dit toestel</span></div>
+    <div class="views archive-tabs" role="tablist" aria-label="Archief">
+      <button type="button" role="tab" id="arch-tab-done" aria-selected="true" aria-controls="arch-done">Afgevinkt</button>
+      <span class="slash" aria-hidden="true">/</span>
+      <button type="button" role="tab" id="arch-tab-snaps" aria-selected="false" aria-controls="arch-snaps">Momentopnames</button>
+    </div>
+    <div class="arch-panel" id="arch-done" role="tabpanel" aria-labelledby="arch-tab-done">
+      <p class="sync-text sync-note">Afgevinkte taken blijven 60 dagen bewaard. Zet ze terug met één tik.</p>
+      <ul class="arch-list" id="arch-done-list"></ul>
+    </div>
+    <div class="arch-panel" id="arch-snaps" role="tabpanel" aria-labelledby="arch-tab-snaps" hidden>
+      <p class="sync-text sync-note">Orbit bewaart de hele lijst vóór elke synchronisatie, import of terugzetting, en minstens één keer per dag. Terugzetten voegt enkel de ontbrekende taken toe; er verdwijnt niets.</p>
+      <ul class="arch-list" id="arch-snaps-list"></ul>
+    </div>
+    <div class="sync-row arch-foot">
+      <button type="button" class="btn-ghost" id="arch-export">Exporteer</button>
+      <button type="button" class="btn-ghost" id="arch-import">Importeer</button>
+      <input type="file" id="arch-file" accept="application/json,.json" hidden>
+      <button type="button" class="btn-solid" id="arch-close">Klaar</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog class="sync" id="sync" aria-labelledby="sync-title">

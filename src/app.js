@@ -3,6 +3,7 @@ import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode } from './sync.js';
+import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
@@ -34,8 +35,11 @@ function loadTasks() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
     const data = JSON.parse(raw);
-    // oudere taken hebben nog geen wijzigingstijd: dan geldt de aanmaaktijd
-    return Array.isArray(data) ? data.filter(isTask).map(t => ({ ...t, updatedAt: t.updatedAt ?? t.createdAt })) : null;
+    // oudere taken hebben nog geen wijzigingstijd: dan geldt de aanmaaktijd.
+    // Wat ooit bewaard werd is een echte taak, ook een voormalige voorbeeldtaak.
+    return Array.isArray(data)
+      ? data.filter(isTask).map(({ demo, ...t }) => ({ ...t, updatedAt: t.updatedAt ?? t.createdAt }))
+      : null;
   } catch {
     return null;
   }
@@ -45,11 +49,23 @@ function loadGone() {
   try { const g = JSON.parse(localStorage.getItem(GONE_KEY)); return g && typeof g === 'object' ? g : {}; } catch { return {}; }
 }
 
-// Lokaal bewaren; met notify (standaard) ook doorgeven aan de synchronisatie
+// Voorbeeldtaken worden nooit bewaard: zolang je niets eigens hebt, blijft de opslag leeg
+const realTasks = () => tasks.filter(t => !t.demo);
+
+// Lokaal bewaren; met notify (standaard) ook doorgeven aan de synchronisatie.
+// Vangnet: verdwijnen er taken die niet afgevinkt zijn (bv. een ander tabblad dat een oude lijst bewaart),
+// dan eerst een momentopname van wat er stond.
 let notifySync = () => {};
-function saveTasks({ notify = true } = {}) {
+function saveTasks({ notify = true, reason = 'Voor een overschrijving' } = {}) {
+  const real = realTasks();
+  const before = loadTasks();
+  if (before) {
+    const keep = new Set(real.map(t => t.id));
+    const lost = before.filter(t => !keep.has(t.id) && !gone[t.id]);
+    if (lost.length) snapshot(before, reason);
+  }
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    if (before || real.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(real));
     localStorage.setItem(GONE_KEY, JSON.stringify(gone));
   } catch { /* opslag geblokkeerd */ }
   if (notify) notifySync();
@@ -78,8 +94,11 @@ function demoTasks() {
 
 let tasks = loadTasks() ?? demoTasks();
 let gone = loadGone();
+let archive = loadArchive();
 applyDeadlines();
 saveTasks({ notify: false });
+// Elke dag minstens één momentopname, ook als er niets misgaat
+if (Date.now() - lastSnapshotAt() > 20 * 3600000) snapshot(tasks, 'Dagelijkse kopie');
 
 // Taken met een deadline krijgen hun schil uit de datum; geeft true als er iets opschoof
 function applyDeadlines() {
@@ -193,6 +212,7 @@ function renderTracks() {
   }
   groupsEl.replaceChildren(frag);
   $('tracks-count').textContent = String(tasks.length).padStart(2, '0');
+  $('tracks-demo').hidden = !tasks.some(t => t.demo);
   markHot();
 }
 
@@ -344,7 +364,7 @@ function followDeadlines() {
   else renderTracks();
 }
 
-let lastDone = null, toastTimer = 0;
+let toastAction = null, toastTimer = 0;
 function complete(id, row) {
   const task = tasks.find(t => t.id === id);
   if (!task || leaving.has(id)) return;
@@ -352,27 +372,52 @@ function complete(id, row) {
   row.classList.add('is-done');
   scene.complete(id);
   tasks = tasks.filter(t => t.id !== id);
-  gone[id] = Date.now();
+  if (!task.demo) {
+    const now = Date.now();
+    gone[id] = now;
+    archive = saveArchive([{ ...task, doneAt: now }, ...archive]);
+  }
   saveTasks();
   renderSummary();
   renderFocusNow();
+  renderArchive();
   scene.setTasks(tasks);
-  lastDone = task;
-  showToast(`Afgevinkt · ${task.title}`);
+  showToast(`Afgevinkt · ${task.title}`, task.demo ? () => { tasks.push(task); render(); } : () => restore([id]));
   setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
 }
 
-function undo() {
-  if (!lastDone) return;
-  touch(lastDone);          // recenter dan het afvinken, dus ook elders terug
-  tasks.push(lastDone);
-  lastDone = null;
+// Taken uit het archief terugzetten. Een nieuwe wijzigingstijd maakt ze recenter dan het afvinken,
+// dus komen ze via de synchronisatie ook op andere toestellen terug.
+function restore(ids) {
+  const want = new Set(ids);
+  const back = archive.filter(a => want.has(a.id) && !tasks.some(t => t.id === a.id));
+  if (!back.length) return 0;
+  for (const a of back) {
+    const { doneAt, by, ...task } = a;
+    touch(task);
+    delete gone[task.id];
+    tasks.push(task);
+  }
+  archive = saveArchive(archive.filter(a => !want.has(a.id)));
+  applyDeadlines();
   saveTasks();
   render();
+  renderArchive();
+  return back.length;
+}
+
+function undo() {
+  if (!toastAction) return;
+  const action = toastAction;
+  toastAction = null;
+  action();
   hideToast();
 }
 
-function showToast(text) {
+function showToast(text, action = null, label = 'Ongedaan maken') {
+  toastAction = action;
+  $('undo').textContent = label;
+  $('undo').hidden = !action;
   $('toast-text').textContent = text;
   const toast = $('toast');
   toast.hidden = false;
@@ -541,6 +586,7 @@ composerForm.addEventListener('submit', e => {
   const now = Date.now();
   const task = { id: uid(), title, level: composerLevel, createdAt: now, updatedAt: now };
   if (composerDue) { task.due = composerDue; task.level = levelForDue(composerDue); }
+  tasks = tasks.filter(t => !t.demo);     // je eerste eigen taak vervangt het voorbeeld
   tasks.push(task);
   saveTasks();
   render();
@@ -628,7 +674,7 @@ window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraaks
 
 /* ---- Toetsenbord ---- */
 document.addEventListener('keydown', e => {
-  if (composer.open) return;
+  if (composer.open || archiveDialog.open || syncDialog.open) return;
   if (e.target.closest?.('input, textarea, [contenteditable]')) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -638,6 +684,7 @@ document.addEventListener('keydown', e => {
   else if (k === '2') setView('side');
   else if (k === 'f') setFocus(!document.body.classList.contains('is-focus'));
   else if (k === 'z') undo();
+  else if (k === 'a') openArchive();
   else if (k === 'd') setThemePref(resolvedTheme() === 'dark' ? 'light' : 'dark');
   else if (k === 't') setTempo(TEMPOS[(TEMPOS.indexOf(tempo) + 1) % TEMPOS.length]);
   else if (e.key === 'Escape' && document.body.classList.contains('is-focus')) setFocus(false);
@@ -656,19 +703,181 @@ function updateInsets() {
 window.addEventListener('resize', updateInsets);
 desktop.addEventListener('change', () => { updateInsets(); renderTracks(); renderFocusNow(); });
 
+/* ---- Archief: afgevinkt, momentopnames, export en import ---- */
+const archiveDialog = $('archive');
+const STAMP_DAY = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'short' });
+let archiveTab = 'done';
+
+function stamp(ts) {
+  const d = new Date(ts), today = new Date();
+  const days = Math.round((new Date(today.toDateString()) - new Date(d.toDateString())) / 86400000);
+  const day = days === 0 ? 'vandaag' : days === 1 ? 'gisteren' : STAMP_DAY.format(d);
+  return `${day} ${TIME_FMT.format(d)}`;
+}
+
+function archRow({ title, meta, level, action, label, disabled = false }) {
+  const li = el('li', 'arch-row');
+  const dot = el('span', 'arch-dot');
+  if (level) tone(dot, LEVEL_BY_ID.get(level)); else dot.classList.add('is-plain');
+  const text = el('div', 'arch-text');
+  text.append(el('span', 'arch-title', title), el('span', 'arch-meta', meta));
+  const btn = el('button', 'btn-ghost arch-btn', label);
+  btn.type = 'button';
+  btn.disabled = disabled;
+  btn.addEventListener('click', action);
+  li.append(dot, text, btn);
+  return li;
+}
+
+function renderArchive() {
+  if (!archiveDialog.open) return;
+  for (const [tab, panel] of [['done', 'arch-done'], ['snaps', 'arch-snaps']]) {
+    $(`arch-tab-${tab}`).setAttribute('aria-selected', String(archiveTab === tab));
+    $(panel).hidden = archiveTab !== tab;
+  }
+  const doneList = $('arch-done-list');
+  doneList.replaceChildren(...archive.map(a => archRow({
+    title: a.title,
+    meta: `${LEVEL_BY_ID.get(a.level)?.name ?? ''} · afgevinkt ${stamp(a.doneAt)}${a.by === 'elders' ? ' op een ander toestel' : ''}`,
+    level: a.level, label: 'Terugzetten',
+    action: () => { restore([a.id]); showToast(`Teruggezet · ${a.title}`); },
+  })));
+  if (!archive.length) doneList.append(el('li', 'arch-empty', 'Nog niets afgevinkt.'));
+
+  const now = new Set(tasks.map(t => t.id));
+  const snaps = loadSnapshots();
+  const snapList = $('arch-snaps-list');
+  snapList.replaceChildren(...snaps.map(sn => {
+    const missing = sn.tasks.filter(t => !now.has(t.id)).length;
+    return archRow({
+      title: sn.reason,
+      meta: `${stamp(sn.at)} · ${sn.tasks.length} ${sn.tasks.length === 1 ? 'taak' : 'taken'}${missing ? ` · ${missing} ontbreken nu` : ' · niets ontbreekt'}`,
+      label: missing ? `Zet ${missing} terug` : 'Volledig',
+      disabled: !missing,
+      action: () => bringBack(sn.tasks, 'Voor terugzetten'),
+    });
+  }));
+  if (!snaps.length) snapList.append(el('li', 'arch-empty', 'Nog geen momentopnames.'));
+}
+
+// Ontbrekende taken uit een momentopname of export toevoegen; bestaande taken blijven onaangeroerd
+// (bij een import wint wel de recentste versie van dezelfde taak)
+function bringBack(list, reason, { preferNewer = false } = {}) {
+  snapshot(tasks, reason);
+  tasks = tasks.filter(t => !t.demo);
+  let added = 0, updated = 0;
+  for (const raw of list) {
+    if (!isTask(raw)) continue;
+    const { demo, doneAt, by, ...t } = raw;
+    const cur = tasks.find(x => x.id === t.id);
+    if (cur) {
+      if (preferNewer && (t.updatedAt || 0) > (cur.updatedAt || 0)) { Object.assign(cur, t); updated++; }
+      continue;
+    }
+    const task = { ...t, updatedAt: t.updatedAt ?? t.createdAt };
+    touch(task);
+    delete gone[task.id];
+    tasks.push(task);
+    added++;
+  }
+  const ids = new Set(tasks.map(t => t.id));
+  archive = saveArchive(archive.filter(a => !ids.has(a.id)));
+  applyDeadlines();
+  saveTasks({ reason });
+  render();
+  renderArchive();
+  const parts = [];
+  if (added) parts.push(`${added} ${added === 1 ? 'taak' : 'taken'} terug`);
+  if (updated) parts.push(`${updated} bijgewerkt`);
+  showToast(parts.length ? parts.join(' · ') : 'Niets nieuws: alles stond er al');
+  return added + updated;
+}
+
+function openArchive(tab = archiveTab) {
+  archiveTab = tab;
+  if (!archiveDialog.open) archiveDialog.showModal();
+  renderArchive();
+}
+
+$('archive-btn').addEventListener('click', () => openArchive());
+$('arch-tab-done').addEventListener('click', () => { archiveTab = 'done'; renderArchive(); });
+$('arch-tab-snaps').addEventListener('click', () => { archiveTab = 'snaps'; renderArchive(); });
+$('arch-close').addEventListener('click', () => archiveDialog.close());
+archiveDialog.addEventListener('click', e => { if (e.target === archiveDialog) archiveDialog.close(); });
+
+$('arch-export').addEventListener('click', () => {
+  const data = { app: 'orbit', version: 1, exportedAt: new Date().toISOString(), tasks: realTasks(), archive };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  const a = el('a');
+  a.href = url;
+  a.download = `orbit-${toDue(new Date())}.json`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+$('arch-import').addEventListener('click', () => $('arch-file').click());
+$('arch-file').addEventListener('change', async e => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const list = Array.isArray(data) ? data : data?.tasks;
+    if (!Array.isArray(list)) throw new Error('geen taken');
+    if (Array.isArray(data.archive)) {
+      const known = new Set([...tasks, ...archive].map(t => t.id));
+      archive = saveArchive([...archive, ...data.archive.filter(a => isTask(a) && typeof a.doneAt === 'number' && !known.has(a.id))]);
+    }
+    bringBack(list, 'Voor import', { preferNewer: true });
+  } catch {
+    showToast('Dat bestand kon Orbit niet lezen');
+  }
+});
+
+/* ---- Tabbladen houden elkaar bij ---- */
+// Elke wijziging wordt meteen bewaard, dus een ander tabblad mag de opslag gewoon opnieuw inlezen
+window.addEventListener('storage', e => {
+  if (e.key === STORAGE_KEY || e.key === GONE_KEY) {
+    const stored = loadTasks();
+    if (stored) tasks = stored;
+    gone = loadGone();
+    applyDeadlines();
+    render();
+    renderArchive();
+  } else if (e.key === STORE_KEYS.ARCHIVE_KEY || e.key === STORE_KEYS.SNAP_KEY) {
+    archive = loadArchive();
+    renderArchive();
+  }
+});
+
 /* ---- Synchronisatie tussen toestellen ---- */
 const syncDialog = $('sync');
 const SYNC_TEXT = { off: 'Sync uit', connecting: 'Verbinden', online: 'Gesynchroniseerd', offline: 'Offline' };
 const TIME_FMT_SYNC = new Intl.DateTimeFormat('nl-BE', { hour: '2-digit', minute: '2-digit' });
 
 const sync = createSync({
-  getState: () => ({ tasks, gone }),
+  getState: () => ({ tasks: realTasks(), gone }),
   applyState(state) {
-    tasks = state.tasks.filter(isTask).map(t => ({ ...t }));
+    const incoming = state.tasks.filter(isTask).map(t => ({ ...t }));
+    const keep = new Set(incoming.map(t => t.id));
+    // Taken die hier verdwijnen omdat ze elders afgevinkt zijn: eerst een momentopname, dan naar het archief, en melden
+    const lost = realTasks().filter(t => !keep.has(t.id));
+    if (lost.length) {
+      snapshot(tasks, 'Voor synchronisatie');
+      const now = Date.now();
+      archive = saveArchive([...lost.map(t => ({ ...t, doneAt: state.gone?.[t.id] || now, by: 'elders' })), ...archive]);
+    }
+    tasks = incoming;
     gone = { ...state.gone };
     applyDeadlines();
-    saveTasks({ notify: false });
+    saveTasks({ notify: false, reason: 'Voor synchronisatie' });
     render();
+    renderArchive();
+    if (lost.length) {
+      showToast(lost.length === 1 ? `Elders afgevinkt · ${lost[0].title}` : `${lost.length} taken elders afgevinkt`,
+        () => restore(lost.map(t => t.id)), 'Terugzetten');
+    }
   },
   onStatus: renderSync,
 });
@@ -718,10 +927,6 @@ $('sync-join-form').addEventListener('submit', e => {
     $('sync-error').hidden = false;
     return;
   }
-  // Ongewijzigde voorbeeldtaken van dit toestel horen niet in je echte lijst
-  tasks = tasks.filter(t => !t.demo);
-  saveTasks({ notify: false });
-  render();
   sync.start(code);
 });
 $('sync-copy-code').addEventListener('click', e => copyText(sync.code, e.currentTarget));

@@ -49,6 +49,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `favicon.svg`, `favicon.ico`, `icons/`, `manifest.webmanifest` | App-icoon en favicon voor alle platformen; bron en uitleg in `icons/README.md`, opnieuw maken met `python3 icons/make_icons.py` en daarna renderen |
 | `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
+| `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
 | `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, MQTT-verbinding, samenvoegen |
 | `src/vendor/mqtt.min.js` | MQTT.js 2.1.0 (zelfde bestand als in streep), pas geladen als sync aan staat |
 
@@ -97,6 +98,16 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Taken `{id, title, level, createdAt, updatedAt, due?}` in localStorage, sleutel `priority-orbit.tasks.v1`. Elke wijziging (titel, moment, deadline, ongedaan maken) zet `updatedAt` via `touch()`; een automatische schilwissel door een deadline niet (die volgt op elk toestel vanzelf uit de datum). Afgevinkte taken staan als `{id: tijdstip}` in `priority-orbit.gone.v1` (nodig voor sync, na 60 dagen opgeruimd). `due` is optioneel, een lokale datum `JJJJ-MM-DD`. Ontbreekt de sleutel, dan demotaken (2 Nu, 2 Vandaag, 3 Week, 2 Maand, 2 Ooit).
 - "Dringend" in de samenvatting = aantal Nu-taken.
 
+## Vangnet: nooit iets kwijt (`src/store.js`)
+
+Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaak: sync wiste stil voorbeeldtaken en er bestond geen tweede kopie). Regel: geen enkele code mag taken laten verdwijnen zonder spoor.
+- **Archief** (`priority-orbit.archive.v1`): afvinken bewaart de volledige taak met `doneAt` (60 dagen, max. 500). Ook taken die via sync verdwijnen omdat ze elders afgevinkt zijn (`by: 'elders'`). `restore(ids)` zet terug met een nieuwe `updatedAt`, dus ook op andere toestellen. De toast "Ongedaan maken" en `Z` gebruiken `toastAction`.
+- **Momentopnames** (`priority-orbit.snapshots.v1`, laatste 20, ontdubbeld op id:updatedAt): dagelijks bij het laden, vóór elke sync die taken laat verdwijnen, vóór import en terugzetten, en in `saveTasks` telkens de opslag taken bevat die niet in het geheugen zitten en niet afgevinkt zijn (bv. een ander tabblad). Terugzetten (`bringBack`) voegt alleen ontbrekende taken toe, nooit iets weg.
+- **Voorbeeldtaken** (`demo: true`) worden nooit opgeslagen of gesynchroniseerd (`realTasks()`); je eerste eigen taak vervangt ze, een hint in de lijst zegt dat. Opgeslagen taken met een oude demo-vlag worden bij het laden gewone taken. Bij het koppelen met een code wordt niets meer gefilterd.
+- **Tabbladen**: `storage`-event leest de opslag opnieuw in, zodat tabbladen elkaar niet overschrijven.
+- **Venster Archief** (knop rechtsboven naast Sync, toets `A`): tabbladen Afgevinkt en Momentopnames, Exporteer (JSON `orbit-JJJJ-MM-DD.json` met taken en archief) en Importeer (samenvoegen, recentste versie wint, niets verdwijnt).
+- Getest: bestaande taken blijven staan, voorbeeld niet bewaard, archief en terugzetten, momentopname bij overschrijven, export en import, tabbladen, sync met elders afgevinkt en terugzetten.
+
 ## Synchronisatie (`src/sync.js`)
 
 - Zelfde aanpak als streep en Operatie-Erfpacht: MQTT over WSS naar publieke brokers (HiveMQ `wss://broker.hivemq.com:8884/mqtt`, na twee mislukte pogingen EMQX `wss://broker.emqx.io:8084/mqtt`), één bewaarde (retained) snapshot per kanaal, qos 1. Geen server, geen account, geen secrets.
@@ -104,7 +115,8 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Bediening: knop rechtsboven onder de themaschakelaar ("Sync uit", "Verbinden", "Verbonden", "Gesynchroniseerd", "Offline"). Venster: "Nieuwe synccode" of een bestaande code invullen; als het aan staat: code, laatste sync, kopieer code of link, stoppen. Een link `#sync=CODE` opent het venster met de code ingevuld en wist de hash.
 - Code in localStorage `priority-orbit.sync.v1`; bij het laden verbindt de app meteen opnieuw. Ook opnieuw bij `visibilitychange` (gsm uit de achtergrond) en `online`.
 - Samenvoegen (`mergeStates`): per taak wint de recentste `updatedAt`; een taak in `gone` blijft weg tenzij ze nadien opnieuw gewijzigd is (ongedaan maken). Na samenvoegen publiceert een toestel enkel als het iets had wat de snapshot nog niet had. Wijzigingen worden 400 ms gebundeld.
-- Bij een bestaande code invullen vallen de onaangeraakte demotaken van dat toestel weg (`demo: true`), zodat ze niet in de gedeelde lijst belanden.
+- Voorbeeldtaken gaan nooit mee (`getState` geeft `realTasks()`); er wordt bij het koppelen niets meer weggefilterd.
+- Wat sync laat verdwijnen (elders afgevinkt) gaat naar het archief, met eerst een momentopname en een toast "Terugzetten".
 - Lokaal testen zonder internet: een eigen broker (bv. aedes met websocket) en `localStorage.setItem('priority-orbit.broker', 'ws://localhost:8899/mqtt')`. Die sleutel overschrijft de brokerlijst; nooit in productie zetten.
 - Risico: publieke brokers bieden geen garantie en kunnen bewaarde berichten wissen. Elk toestel heeft een volledige kopie en publiceert die opnieuw bij verbinden, dus er gaat pas iets verloren als alle toestellen tegelijk hun opslag kwijt zijn.
 
@@ -114,7 +126,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Datumlabel bij een deadline-taak opent een bewerker: datum wijzigen of deadline wissen (dan wordt het een gewone taak in de huidige schil).
 - Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten; op apparaten met hover verschijnt het pas als je over de rij gaat.
 - Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), optioneel "Deadline" (native datumveld; met een datum is de momentkeuze vergrendeld en toont een hint in welke schil de taak komt), "Voeg toe" pas actief met een titel.
-- Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `D` thema, `Z` ongedaan, `Esc` sluit.
+- Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `D` thema, `A` archief, `Z` ongedaan, `Esc` sluit. Niet actief zolang een venster open is.
 - Sneltoetsenregel onder de lijst blijft op één regel (`width: max-content`, mag voorbij de lijstbreedte lopen).
 - Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand. Een tik of muisbeweging toont ze weer; bij het verlaten wordt de timer gewist.
@@ -135,6 +147,6 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 
 ## Open vragen
 
-- Moeten afgevinkte taken bewaard worden (geschiedenis, statistiek)?
+- Statistiek op basis van het archief (hoeveel afgevinkt per week)?
 - Sync is enkel getest met een lokale broker; de publieke brokers waren niet bereikbaar vanuit de cloudomgeving. Eerste echte test op twee toestellen nog doen.
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.
