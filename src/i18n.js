@@ -80,6 +80,10 @@ const NL = {
 
   // venster nieuwe taak
   'composer': 'Nieuwe taak', 'composer.placeholder': 'Wat moet er gebeuren?', 'composer.title': 'Titel', 'composer.moment': 'Moment',
+  'composer.repeat': 'Herhaal', 'repeat.none': 'Niet herhalen', 'repeat.day': 'Elke dag', 'repeat.week': 'Elke week', 'repeat.month': 'Elke maand',
+  'repeat.hint': '{repeat}, eerst {label}. Na afvinken komt hij terug.', 'task.repeat': 'Herhalen',
+  'toast.repeat': 'Afgevinkt · {title}. Terug {label}.',
+  'menu.sound': 'Geluid', 'sound.on': 'Aan', 'sound.off': 'Uit',
   'composer.due': 'Deadline', 'composer.clear': 'Wissen', 'composer.add': 'Voeg toe <kbd>↵</kbd>',
   'composer.levelDue': '{level} · deadline', 'composer.hint': '{label}, komt in {level}. Schuift vanzelf mee.',
 
@@ -224,6 +228,10 @@ const EN = {
   'toast.standalone': 'This app has its own storage. Bring in your tasks via Pair.',
 
   'composer': 'New task', 'composer.placeholder': 'What needs doing?', 'composer.title': 'Title', 'composer.moment': 'Moment',
+  'composer.repeat': 'Repeat', 'repeat.none': 'No repeat', 'repeat.day': 'Every day', 'repeat.week': 'Every week', 'repeat.month': 'Every month',
+  'repeat.hint': '{repeat}, first {label}. Comes back after you tick it off.', 'task.repeat': 'Repeat',
+  'toast.repeat': 'Done · {title}. Back {label}.',
+  'menu.sound': 'Sound', 'sound.on': 'On', 'sound.off': 'Off',
   'composer.due': 'Deadline', 'composer.clear': 'Clear', 'composer.add': 'Add <kbd>↵</kbd>',
   'composer.levelDue': '{level} · deadline', 'composer.hint': '{label}, goes into {level}. Moves along by itself.',
 

@@ -1,7 +1,7 @@
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './config.js';
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
-import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
+import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
 import { mirror, readMirror } from './backup.js';
 import { setMatrix, twinkleDot } from './matrix.js';
@@ -11,7 +11,8 @@ import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
 import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
 import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './i18n.js';
-import { greeting } from './greet.js';
+import { greeting, coreLine } from './greet.js';
+import { playDone, soundOn, setSound } from './sound.js';
 
 applyStatic();
 
@@ -201,7 +202,7 @@ function applyDeadlines() {
   for (const t of tasks) {
     if (!t.due) continue;
     const level = levelForDue(t.due);
-    if (level !== t.level) { t.level = level; moved = true; }
+    if (level !== t.level) { t.level = level; t.levelAt = Date.now(); moved = true; }
   }
   return moved;
 }
@@ -215,6 +216,7 @@ const scene = createScene($('scene'), {
   onHover(taskId, level) { hotTask = taskId; hotLevel = level; markHot(); },
   onReassign(id, level) { setLevel(id, level); },
   onView(name) { syncViewButtons(name); },
+  onCore() { tapCore(); },
 });
 
 let flashTimer = 0;
@@ -503,6 +505,7 @@ function dueControls(t, li) {
   li.classList.add('has-due');
   const chip = el('button', isOverdue(t.due) ? 't-due is-late' : 't-due', dueLabel(t.due));
   chip.type = 'button';
+  if (t.repeat) { chip.insertAdjacentHTML('afterbegin', REPEAT_SVG); chip.title = tx(`repeat.${t.repeat}`); }
   chip.setAttribute('aria-label', tx('task.due', { label: dueLabel(t.due) }));
   chip.setAttribute('aria-expanded', 'false');
 
@@ -516,7 +519,9 @@ function dueControls(t, li) {
   const clear = el('button', 'due-clear', tx('task.dueClear'));
   clear.type = 'button';
   clear.addEventListener('click', () => setDue(t.id, null));
-  editor.append(input, clear);
+  const repeat = repeatSelect(t.repeat || '');
+  repeat.addEventListener('change', () => setRepeat(t.id, repeat.value));
+  editor.append(input, repeat, clear);
 
   chip.addEventListener('click', () => {
     const open = editor.hidden;
@@ -526,6 +531,19 @@ function dueControls(t, li) {
     if (open) input.focus();
   });
   return [chip, editor];
+}
+
+const REPEAT_SVG = '<svg class="t-rep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></svg>';
+function repeatSelect(value) {
+  const sel = el('select', 'due-input repeat-select');
+  sel.setAttribute('aria-label', tx('task.repeat'));
+  for (const v of ['', 'day', 'week', 'month']) {
+    const o = el('option', '', tx(v ? `repeat.${v}` : 'repeat.none'));
+    o.value = v;
+    sel.append(o);
+  }
+  sel.value = value;
+  return sel;
 }
 
 function markHot() {
@@ -570,6 +588,7 @@ function setLevel(id, level) {
   const task = tasks.find(t => t.id === id);
   if (!task || task.due || task.level === level) return;
   task.level = level;
+  task.levelAt = Date.now();
   touch(task);
   saveTasks();
   render();
@@ -578,8 +597,19 @@ function setLevel(id, level) {
 function setDue(id, due) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
+  const before = task.level;
   if (due) { task.due = due; task.level = levelForDue(due); }
-  else delete task.due;
+  else { delete task.due; delete task.repeat; }   // herhalen kan alleen met een datum
+  if (task.level !== before) task.levelAt = Date.now();
+  touch(task);
+  saveTasks();
+  render();
+}
+
+function setRepeat(id, repeat) {
+  const task = tasks.find(t => t.id === id);
+  if (!task || !task.due || (task.repeat || '') === repeat) return;
+  if (repeat) task.repeat = repeat; else delete task.repeat;
   touch(task);
   saveTasks();
   render();
@@ -601,6 +631,7 @@ function complete(id, row) {
   const spot = scene.complete(id);
   scene.cheer();
   tasks = tasks.filter(t => t.id !== id);
+  let next = null;
   if (!task.demo) {
     const now = Date.now();
     gone[id] = now;
@@ -609,13 +640,24 @@ function complete(id, row) {
     saveDone(done);
     placeStar(sky, id, spot);
     renderStats();
+    // herhalende taak: meteen de volgende, met de eerstvolgende datum na vandaag
+    if (task.repeat && task.due) {
+      const due = nextDue(task.due, task.repeat);
+      next = { id: uid(), title: task.title, level: levelForDue(due), due, repeat: task.repeat, createdAt: now, updatedAt: now, levelAt: now };
+      tasks.push(next);
+    }
   }
+  playDone({ level: task.level, n: totalDone(done) - 1 });
   saveTasks();
   renderSummary();
   renderFocusNow();
   renderArchive();
   scene.setTasks(tasks);
-  showToast(tx('toast.completed', { title: task.title }), task.demo ? () => { tasks.push(task); render(); } : () => restore([id]));
+  const back = task.demo ? () => { tasks.push(task); render(); } : () => {
+    if (next) { tasks = tasks.filter(t => t.id !== next.id); gone[next.id] = Date.now(); }
+    restore([id]);
+  };
+  showToast(next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), back);
   setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
 }
 
@@ -742,7 +784,8 @@ function paintComposerOrb() {
     b.disabled = Boolean(composerDue);
   }
   $('composer-levels').classList.toggle('is-locked', Boolean(composerDue));
-  $('due-hint').textContent = composerDue ? tx('composer.hint', { label: dueLabel(composerDue), level: lv.name }) : '';
+  $('due-hint').textContent = composerDue && composerRepeat ? tx('repeat.hint', { repeat: tx(`repeat.${composerRepeat}`), label: dueLabel(composerDue) })
+    : composerDue ? tx('composer.hint', { label: dueLabel(composerDue), level: lv.name }) : '';
   composerOrb.classList.remove('is-swap');
   void composerOrb.offsetWidth;
   composerOrb.classList.add('is-swap');
@@ -769,6 +812,7 @@ function openComposer(level = wheel.level) {
   wheelLevel = level;
   composerForm.reset();
   $('due-toggle').hidden = false;
+  setComposerRepeat('');
   setComposerDue('');
   composerSubmit.disabled = true;
   paintComposerOrb();
@@ -811,9 +855,30 @@ $('composer-due').addEventListener('change', e => setComposerDue(e.target.value)
 $('due-clear').addEventListener('click', () => {
   $('composer-due').value = '';
   $('due-toggle').hidden = false;
+  setComposerRepeat('');   // herhalen kan alleen met een datum
   setComposerDue('');
   composerTitle.focus();
 });
+// Herhalen: kies dag, week of maand; zonder datum begint de reeks vandaag
+let composerRepeat = '';
+function setComposerRepeat(value) {
+  composerRepeat = value;
+  $('composer-repeat').value = value;
+  $('composer-repeat').hidden = !value;
+  $('repeat-toggle').hidden = Boolean(value);
+}
+$('repeat-toggle').addEventListener('click', () => {
+  setComposerRepeat('week');
+  if (!composerDue) {
+    const today = toDue(new Date());
+    $('due-toggle').hidden = true;
+    $('composer-due').min = today;
+    $('composer-due').value = today;
+    setComposerDue(today);
+  } else paintComposerOrb();
+  composerTitle.focus();   // Enter voegt meteen toe; de keuze staat ernaast
+});
+$('composer-repeat').addEventListener('change', e => { setComposerRepeat(e.target.value); paintComposerOrb(); });
 
 $('composer-cancel').addEventListener('click', closeComposer);
 composer.addEventListener('cancel', e => { e.preventDefault(); closeComposer(); });
@@ -829,8 +894,9 @@ composerForm.addEventListener('submit', e => {
   const title = composerTitle.value.trim();
   if (!title) return;
   const now = Date.now();
-  const task = { id: uid(), title, level: composerLevel, createdAt: now, updatedAt: now };
+  const task = { id: uid(), title, level: composerLevel, createdAt: now, updatedAt: now, levelAt: now };
   if (composerDue) { task.due = composerDue; task.level = levelForDue(composerDue); }
+  if (composerDue && composerRepeat) task.repeat = composerRepeat;
   tasks = tasks.filter(t => !t.demo);     // je eerste eigen taak vervangt het voorbeeld
   tasks.push(task);
   saveTasks();
@@ -896,6 +962,17 @@ for (const b of document.querySelectorAll('[data-lang]')) {
   b.setAttribute('aria-checked', String(b.dataset.lang === LANG));
   b.addEventListener('click', () => setLang(b.dataset.lang));
 }
+
+/* ---- Geluid bij afvinken (standaard uit) ---- */
+const soundButtons = [...document.querySelectorAll('[data-sound]')];
+function renderSound() { for (const b of soundButtons) b.setAttribute('aria-checked', String((b.dataset.sound === 'on') === soundOn())); }
+for (const b of soundButtons) b.addEventListener('click', () => {
+  const on = b.dataset.sound === 'on';
+  setSound(on);
+  renderSound();
+  if (on) playDone({ level: wheel.level, force: true });   // meteen laten horen hoe het klinkt
+});
+renderSound();
 
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
@@ -1549,18 +1626,8 @@ function hideGreeting() {
   scene.lookAt(null);
   greetTimer = setTimeout(() => { $('greeting').hidden = true; }, 800);
 }
-function greet() {
-  if (document.body.classList.contains('is-focus') || document.querySelector('dialog[open]')) return;
-  const real = realTasks();
-  const today = toDue(new Date());
-  const line = greeting({
-    urgent: real.filter(t => t.level === URGENT_LEVEL).length,
-    total: real.length,
-    overdue: real.filter(t => t.due && isOverdue(t.due)).length,
-    dueToday: real.filter(t => t.due === today).length,
-    stars: totalDone(done),
-  });
-  if (!line) return;
+function sayLine(line) {
+  clearTimeout(greetTimer);
   $('greeting-text').textContent = line;
   placeGreeting();
   const node = $('greeting');
@@ -1569,7 +1636,65 @@ function greet() {
   scene.lookAt([0, 0.9]);
   setTimeout(() => scene.lookAt(null), 2200);
   greetTimer = setTimeout(hideGreeting, 6500);
-  window.addEventListener('pointerdown', hideGreeting, { once: true });
+  window.removeEventListener('pointerdown', hideOnTap);
+  window.addEventListener('pointerdown', hideOnTap);
+}
+// een tik ergens laat de zin verdwijnen, behalve een tik op de kern zelf (die zegt iets nieuws of knipoogt)
+function hideOnTap(e) {
+  if (scene.coreAt(e.clientX, e.clientY)) return;
+  window.removeEventListener('pointerdown', hideOnTap);
+  hideGreeting();
+}
+
+// Hoe lang een taak al op haar moment staat (dagen); oudere taken zonder levelAt: laatste wijziging
+const DAY_MS = 86400000;
+const daysOn = t => Math.floor((Date.now() - (t.levelAt || t.updatedAt || t.createdAt)) / DAY_MS);
+const daysLate = due => Math.round((new Date(toDue(new Date()) + 'T00:00') - new Date(due + 'T00:00')) / DAY_MS);
+const levelName = id => LEVEL_BY_ID.get(id).name;
+function longest(list) {
+  let best = null;
+  for (const t of list) if (!best || daysOn(t) > daysOn(best)) best = t;
+  return best;
+}
+
+function greet() {
+  if (document.body.classList.contains('is-focus') || document.querySelector('dialog[open]')) return;
+  const real = realTasks();
+  const today = toDue(new Date());
+  const stuck = longest(real.filter(t => t.level <= 2 && !t.due && daysOn(t) >= 7));
+  const dusty = longest(real.filter(t => t.level === 5 && !t.due && daysOn(t) >= 30));
+  const line = greeting({
+    urgent: real.filter(t => t.level === URGENT_LEVEL).length,
+    total: real.length,
+    overdue: real.filter(t => t.due && isOverdue(t.due)).length,
+    dueToday: real.filter(t => t.due === today).length,
+    stars: totalDone(done),
+    stuck: stuck && { title: stuck.title, days: daysOn(stuck), level: levelName(stuck.level) },
+    dusty: dusty && { title: dusty.title, days: daysOn(dusty) },
+  });
+  if (line) sayLine(line);
+}
+
+// Tik op de kern: hij zegt wat er nu het meest toe doet. Nog een tik binnen 4 s: een knipoog.
+let lastCoreTap = 0;
+function tapCore() {
+  if (Date.now() - lastCoreTap < 4000) { lastCoreTap = 0; scene.wink(); return; }
+  lastCoreTap = Date.now();
+  const list = tasks;
+  const today = toDue(new Date());
+  const byAge = (a, b) => a.createdAt - b.createdAt;
+  const late = list.filter(t => t.due && isOverdue(t.due)).sort((a, b) => a.due.localeCompare(b.due))[0];
+  const dueToday = list.filter(t => t.due === today).sort(byAge)[0];
+  const stuck = longest(list.filter(t => t.level <= 2 && !t.due && daysOn(t) >= 2));
+  const next = list.filter(t => t.level === URGENT_LEVEL).sort(byAge)[0] || list.filter(t => t.level === 2).sort(byAge)[0];
+  scene.cheer(900);
+  sayLine(coreLine({
+    total: list.length,
+    late: late && { title: late.title, days: daysLate(late.due) },
+    today: dueToday && { title: dueToday.title },
+    stuck: stuck && { title: stuck.title, days: daysOn(stuck), level: levelName(stuck.level) },
+    next: next && { title: next.title },
+  }));
 }
 window.addEventListener('resize', () => { if (!$('greeting').hidden) placeGreeting(); });
 

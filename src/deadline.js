@@ -46,3 +46,19 @@ export function dueLabel(due, now = new Date()) {
 }
 
 export const isOverdue = (due, now = new Date()) => daysUntil(due, now) < 0;
+
+// Herhalen: de volgende datum na vandaag, in stappen van een dag, week of maand vanaf de vorige datum.
+// Een maand later op de 31e wordt de laatste dag van die maand.
+export const REPEATS = ['day', 'week', 'month'];
+export function nextDue(due, repeat, now = new Date()) {
+  const start = parseDue(due), today = midnight(now);
+  let n = 0, next;
+  do {
+    n++;
+    if (repeat === 'month') {
+      const m = start.getMonth() + n, last = new Date(start.getFullYear(), m + 1, 0).getDate();
+      next = new Date(start.getFullYear(), m, Math.min(start.getDate(), last));
+    } else next = new Date(start.getFullYear(), start.getMonth(), start.getDate() + n * (repeat === 'week' ? 7 : 1));
+  } while (next <= today);
+  return toDue(next);
+}

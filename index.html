@@ -69,6 +69,14 @@
           <button type="button" role="radio" aria-checked="false" data-lang="en" lang="en">English</button>
         </div>
       </div>
+      <div class="menu-row">
+        <span class="menu-label" data-i="menu.sound">Geluid</span>
+        <div class="views sound-switch" role="radiogroup" aria-label="Geluid" data-ia="aria-label:menu.sound">
+          <button type="button" role="radio" aria-checked="false" data-sound="on" data-i="sound.on">Aan</button>
+          <span class="slash" aria-hidden="true">/</span>
+          <button type="button" role="radio" aria-checked="true" data-sound="off" data-i="sound.off">Uit</button>
+        </div>
+      </div>
       <p class="menu-row menu-keys" data-ih="menu.keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
       <div class="menu-row hud-actions">
         <button type="button" class="sync-btn" id="intro-btn" data-i="menu.intro">Uitleg</button>
@@ -184,6 +192,13 @@
         <input type="date" class="due-input" id="composer-due" aria-label="Deadline" data-ia="aria-label:composer.due">
         <button type="button" class="due-clear" id="due-clear" data-i="composer.clear">Wissen</button>
       </div>
+      <button type="button" class="due-toggle" id="repeat-toggle"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></svg><span data-i="composer.repeat">Herhaal</span></button>
+      <select class="due-input repeat-select" id="composer-repeat" hidden aria-label="Herhaal" data-ia="aria-label:composer.repeat">
+        <option value="" data-i="repeat.none">Niet herhalen</option>
+        <option value="day" data-i="repeat.day">Elke dag</option>
+        <option value="week" data-i="repeat.week">Elke week</option>
+        <option value="month" data-i="repeat.month">Elke maand</option>
+      </select>
       <p class="due-hint" id="due-hint" aria-live="polite"></p>
     </div>
     <div class="composer-actions">

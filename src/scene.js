@@ -81,7 +81,7 @@ function distToSegment(px, py, ax, ay, bx, by) {
   return Math.hypot(px - ax - t * vx, py - ay - t * vy);
 }
 
-export function createScene(canvas, { onHover = () => {}, onReassign = () => {}, onView = () => {}, reducedMotion }) {
+export function createScene(canvas, { onHover = () => {}, onReassign = () => {}, onView = () => {}, onCore = () => {}, reducedMotion }) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, DPR = 1;
   let insets = { left: 0, right: 0 }, center = { x: 0, y: 0 }, centerReady = false;
@@ -111,7 +111,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // Gezicht van de kern ("Uitgespaard", gekozen door Victor): twee oogvormen uitgespaard in het raster, met een pupil
   // in inktkleur die je cursor volgt (anders rustig rondkijkt), af en toe knippert, blij kijkt bij afvinken en 's
   // nachts slaperig is. look: kijkrichting (-1..1), lookGoal: waar hij heen wil kijken (null = vrij).
-  const face = { look: [0, 0.1], lookGoal: null, nextBlink: 0, blinkAt: -1, happyUntil: 0, last: 0 };
+  const face = { look: [0, 0.1], lookGoal: null, nextBlink: 0, blinkAt: -1, happyUntil: 0, winkUntil: 0, last: 0 };
+  let coreHit = null;   // plek en straal van de kern op het scherm, voor een tik
 
   /* ---- Kleuren ---- */
   const PALETTES = {
@@ -487,6 +488,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const spacing = Math.max(CORE_SPACING, Math.round(CORE_MIN_PX / cam.s / 0.25) * 0.25);
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
     const eyes = faceState(now, rMax, spacing, z);
+    coreHit = project(0, 0, z, false) ? { x: pt.x, y: pt.y, r: Math.max(22, (rMax + 4) * cam.s * pt.f) } : null;
     // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In vier stappen
     // gebundeld, zodat het één pad per tint blijft.
     const paths = [[], [], [], []];
@@ -539,10 +541,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const gap = Math.max(rMax * 0.36, h * 1.3), ey = -rMax * 0.12;
     const soft = spacing * 0.55, o = Math.max(0.12, open);
     const [lx, ly] = face.look;
-    const hl = h * 0.62 * o, rw = h * 0.4, flat = Math.min(1, Math.max(0.25, o * 2));
-    const eyes = [-gap, gap].map(ex => {
+    const rw = h * 0.4;
+    const wink = performance.now() < face.winkUntil;   // knipoog: het rechteroog dicht
+    const eyes = [-gap, gap].map((ex, i) => {
       const px = ex + lx * h * 0.4, py = ey + ly * h * 0.35;
-      return { ex, px, py, top: sleepy ? py - hl * 0.2 : py - hl, bot: py + hl };
+      const oe = wink && i === 1 ? 0.12 : o, hle = h * 0.62 * oe;
+      return { ex, px, py, top: sleepy ? py - hle * 0.2 : py - hle, bot: py + hle, flat: Math.min(1, Math.max(0.25, oe * 2)) };
     });
     const cover = (v, w) => Math.max(0, Math.min(1, (w - v) / soft + 0.5));
     return {
@@ -556,7 +560,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
             c = Math.max(c, cover(Math.abs(Math.hypot(x - e.ex, y - cy) - rad), spacing * 0.45));
           } else {
             const yy = Math.max(e.top, Math.min(e.bot, y));
-            c = Math.max(c, cover(Math.hypot(x - e.px, (y - yy) / flat), rw));
+            c = Math.max(c, cover(Math.hypot(x - e.px, (y - yy) / e.flat), rw));
           }
         }
         return c;
@@ -848,6 +852,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return { orb: null, level: nearestRing(x, y, 12) };
   }
 
+  const onCoreSpot = p => coreHit && Math.hypot(p.x - coreHit.x, p.y - coreHit.y) < coreHit.r;
+
   function setHover(next) {
     if (next.orb === hover.orb && next.level === hover.level) return;
     hover = next;
@@ -884,7 +890,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     const h = pick(p.x, p.y);
     setHover(h);
-    canvas.style.cursor = h.orb ? (orbs.get(h.orb)?.due ? 'pointer' : 'grab') : 'default';
+    canvas.style.cursor = h.orb ? (orbs.get(h.orb)?.due ? 'pointer' : 'grab') : onCoreSpot(p) ? 'pointer' : 'default';
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -926,6 +932,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     } else {
       pinned = null;
       if (e?.pointerType !== 'mouse') setHover({ orb: null, level: null });
+      if (!cancelled && e && onCoreSpot(local(e))) onCore();
     }
   }
   canvas.addEventListener('pointerup', e => endDrag(e, false));
@@ -938,6 +945,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     restartIntro() { introStart = performance.now(); },
     // de kern kijkt even blij (bv. bij afvinken)
     cheer(ms = 1600) { face.happyUntil = performance.now() + ms; },
+    wink(ms = 650) { face.winkUntil = performance.now() + ms; },
+    coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },
     get centerX() { return cam.cx; },

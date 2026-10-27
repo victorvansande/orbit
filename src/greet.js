@@ -27,6 +27,8 @@ const LINES = {
     evening: ['Goedenavond. Nog eentje, of voor morgen?', 'Goedenavond. Wat af is, is af.', 'Avond. De kern doet het rustig aan.'],
     calm: ['Alles draait, niets brandt.', 'Rustige hemel vandaag.'],
     egg: ['Ik kan dat wel doen, Dave.'],
+    stuck: ['{title} ligt al {days} dagen op {level}. Vandaag de dag?', '{title} draait al {days} dagen rond op {level}.'],
+    dusty: ['{title} staat al {days} dagen op Ooit. Nog nodig?', 'Maandag, tijd om op te ruimen: {title} wacht al {days} dagen op Ooit.'],
   },
   en: {
     away: ['There you are. I kept everything going round.', 'Long time no see. The orbits just kept turning.'],
@@ -45,16 +47,47 @@ const LINES = {
     evening: ['Good evening. One more, or tomorrow?', 'Good evening. Done is done.', 'Evening. The core is taking it easy.'],
     calm: ['Everything turning, nothing burning.', 'A calm sky today.'],
     egg: ['I can do that, Dave.'],
+    stuck: ['{title} has been on {level} for {days} days. Today the day?', '{title} has been circling {level} for {days} days.'],
+    dusty: ['{title} has been on Someday for {days} days. Still needed?', 'Monday, time to tidy up: {title} has waited {days} days on Someday.'],
   },
 };
 
 const pick = list => list[Math.floor(Math.random() * list.length)];
 const fill = (line, n) => line.replace('{n}', n);
+const fillIn = (line, vars) => line.replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
+
+// Tik op de kern: hij zegt wat er nu het meest toe doet. ctx: { late, today, stuck, next, total }
+const CORE = {
+  nl: {
+    late: v => fillIn(v.days === 1 ? '{title}: al {days} dag te laat.' : '{title}: al {days} dagen te laat.', v),
+    today: v => fillIn('Vandaag nog: {title}.', v),
+    stuck: v => fillIn(v.days === 1 ? '{title} ligt al {days} dag op {level}.' : '{title} ligt al {days} dagen op {level}.', v),
+    next: v => fillIn('Volgende: {title}.', v),
+    calm: () => pick(['Niets dringend. Ik hou de wacht.', 'Alles onder controle. Ik kijk mee.']),
+    empty: () => 'Geen taken. Ik draai gewoon wat rondjes.',
+  },
+  en: {
+    late: v => fillIn(v.days === 1 ? '{title}: {days} day overdue.' : '{title}: {days} days overdue.', v),
+    today: v => fillIn('Still today: {title}.', v),
+    stuck: v => fillIn(v.days === 1 ? '{title} has been on {level} for {days} day.' : '{title} has been on {level} for {days} days.', v),
+    next: v => fillIn('Next up: {title}.', v),
+    calm: () => pick(['Nothing urgent. I am keeping watch.', 'All under control. I am watching.']),
+    empty: () => 'No tasks. I am just doing some laps.',
+  },
+};
+export function coreLine(ctx) {
+  const C = CORE[LANG] || CORE.nl;
+  if (ctx.late) return C.late(ctx.late);
+  if (ctx.today) return C.today(ctx.today);
+  if (ctx.stuck) return C.stuck(ctx.stuck);
+  if (ctx.next) return C.next(ctx.next);
+  return ctx.total ? C.calm() : C.empty();
+}
 
 function read() { try { return JSON.parse(localStorage.getItem(VISIT_KEY)) || {}; } catch { return {}; } }
 function write(v) { try { localStorage.setItem(VISIT_KEY, JSON.stringify(v)); } catch { /* geen opslag */ } }
 
-// ctx: { urgent, total, overdue, dueToday, stars } → zin, of '' als hij beter zwijgt (net nog begroet)
+// ctx: { urgent, total, overdue, dueToday, stars, stuck?: {title, days, level}, dusty?: {title, days} } → zin, of '' als hij beter zwijgt (net nog begroet)
 export function greeting(ctx, now = new Date()) {
   const L = LINES[LANG] || LINES.nl, visit = read(), ms = now.getTime();
   const lastAt = visit.at || 0;
@@ -68,8 +101,9 @@ export function greeting(ctx, now = new Date()) {
   else if (ctx.overdue) line = ctx.overdue === 1 ? pick(L.overdue1) : fill(pick(L.overdue), ctx.overdue);
   else if (milestone) line = fill(pick(L.milestone), ctx.stars);
   else if (ctx.dueToday) line = ctx.dueToday === 1 ? pick(L.dueToday1) : fill(pick(L.dueToday), ctx.dueToday);
+  else if (ctx.stuck) line = fillIn(pick(L.stuck), ctx.stuck);
   else if (ctx.urgent >= 3) line = fill(pick(L.busy), ctx.urgent);
-  else if (day === 1 && h >= 6 && h < 12) line = pick(L.monday);
+  else if (day === 1 && h >= 6 && h < 12) line = ctx.dusty ? fillIn(pick(L.dusty), ctx.dusty) : pick(L.monday);
   else if (day === 5 && h >= 14 && h < 19) line = pick(L.friday);
   else if (!ctx.total) line = pick(L.empty);
   else if (h < 6) line = pick(L.night);
