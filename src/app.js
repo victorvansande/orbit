@@ -39,10 +39,11 @@ function loadTasks() {
     if (raw === null) return null;
     const data = JSON.parse(raw);
     // oudere taken hebben nog geen wijzigingstijd: dan geldt de aanmaaktijd.
-    // Wat ooit bewaard werd is een echte taak, ook een voormalige voorbeeldtaak.
-    return Array.isArray(data)
-      ? data.filter(isTask).map(({ demo, ...t }) => ({ ...t, updatedAt: t.updatedAt ?? t.createdAt }))
-      : null;
+    // Een opgeslagen voorbeeldtaak die nooit aangepast werd, blijft een voorbeeldtaak (zie demoIds).
+    if (!Array.isArray(data)) return null;
+    const list = data.filter(isTask).map(({ demo, ...t }) => ({ ...t, updatedAt: t.updatedAt ?? t.createdAt }));
+    const demo = demoIds(list);
+    return list.map(t => (demo.has(t.id) ? { ...t, demo: true } : t));
   } catch {
     return null;
   }
@@ -80,23 +81,54 @@ function touch(task) {
   delete task.demo;
 }
 
+const DEMO = [
+  [1, 'Huur overschrijven'], [1, 'Offerte terugsturen'],
+  [2, 'Boodschappen doen'], [2, 'Planten water geven'],
+  [3, 'Fiets laten herstellen'], [3, 'Cadeau voor zaterdag kopen'], [3, 'Was opvouwen'],
+  [4, 'Tandarts bellen'], [4, 'Belastingaangifte invullen'],
+  [5, 'Japans leren'], [5, 'Zolder opruimen'],
+];
+const DEMO_LEVEL = new Map(DEMO.map(([level, title]) => [title, level]));
+
+// Voorbeeldtaken herkennen die ooit opgeslagen werden: zelfde titel en moment als in het voorbeeld, nooit gewijzigd,
+// en als groepje (minstens drie, aangemaakt binnen 15 s, zoals het voorbeeld dat doet). Zo wordt een eigen taak die
+// toevallig "Boodschappen doen" heet niet aangezien voor een voorbeeld. Zulke taken horen niet in je echte lijst;
+// vroeger werden ze soms opgeslagen en via sync tussen je eigen taken gezet.
+const untouchedDemo = t => DEMO_LEVEL.get(t.title) === t.level && !t.due && (t.updatedAt ?? t.createdAt) === t.createdAt;
+function demoIds(list) {
+  const ids = new Set(list.filter(t => t.demo).map(t => t.id));
+  const cand = list.filter(t => !t.demo && untouchedDemo(t)).sort((a, b) => a.createdAt - b.createdAt);
+  for (let i = 0; i < cand.length; i++) {
+    const group = cand.filter(t => t.createdAt >= cand[i].createdAt && t.createdAt - cand[i].createdAt <= 15000);
+    if (group.length >= 3) for (const t of group) ids.add(t.id);
+  }
+  return ids;
+}
+
 function demoTasks() {
-  const demo = [
-    [1, 'Huur overschrijven'], [1, 'Offerte terugsturen'],
-    [2, 'Boodschappen doen'], [2, 'Planten water geven'],
-    [3, 'Fiets laten herstellen'], [3, 'Cadeau voor zaterdag kopen'], [3, 'Was opvouwen'],
-    [4, 'Tandarts bellen'], [4, 'Belastingaangifte invullen'],
-    [5, 'Japans leren'], [5, 'Zolder opruimen'],
-  ];
   const now = Date.now();
-  return demo.map(([level, title], i) => {
-    const createdAt = now - (demo.length - i) * 1000;
+  return DEMO.map(([level, title], i) => {
+    const createdAt = now - (DEMO.length - i) * 1000;
     return { id: uid(), title, level, createdAt, updatedAt: createdAt, demo: true };
   });
 }
 
-let tasks = loadTasks() ?? demoTasks();
+// Voorbeeldtaken tussen echte taken: weg, met een afvinkmarkering zodat ze ook op gekoppelde toestellen verdwijnen.
+// Eerst een momentopname, zodat er toch niets onherroepelijk verdwijnt.
+function dropDemo(list, reason) {
+  const ids = demoIds(list);
+  const demo = list.filter(t => ids.has(t.id)), real = list.filter(t => !ids.has(t.id));
+  if (!demo.length) return list;
+  if (!real.length) return list.map(t => ({ ...t, demo: true }));    // enkel voorbeeld: tonen, niet bewaren of delen
+  snapshot(list.map(({ demo: _, ...t }) => t), reason);
+  const now = Date.now();
+  for (const t of demo) gone[t.id] = Math.max(gone[t.id] || 0, now);
+  return real;
+}
+
 let gone = loadGone();
+let tasks = loadTasks();
+tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'Voor opruimen voorbeeldtaken');
 let archive = loadArchive();
 applyDeadlines();
 saveTasks({ notify: false });
@@ -869,7 +901,8 @@ const sync = createSync({
   deviceName: DEVICE,
   getState: () => ({ tasks: realTasks(), gone }),
   applyState(state) {
-    const incoming = state.tasks.filter(isTask).map(t => ({ ...t }));
+    gone = { ...state.gone };
+    const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken');
     const keep = new Set(incoming.map(t => t.id));
     // Taken die hier verdwijnen omdat ze elders afgevinkt zijn: eerst een momentopname, dan naar het archief, en melden
     const lost = realTasks().filter(t => !keep.has(t.id));
@@ -879,9 +912,9 @@ const sync = createSync({
       archive = saveArchive([...lost.map(t => ({ ...t, doneAt: state.gone?.[t.id] || now, by: 'elders' })), ...archive]);
     }
     tasks = incoming;
-    gone = { ...state.gone };
     applyDeadlines();
     saveTasks({ notify: false, reason: 'Voor synchronisatie' });
+    if (incoming.length < state.tasks.length) sync.changed();     // opgeruimde voorbeeldtaken ook elders weg
     render();
     renderArchive();
     if (lost.length) {
@@ -892,8 +925,9 @@ const sync = createSync({
   // Ontvanger: de lijst van de verzender vervangt de eigen lijst; eerst een momentopname
   onReceive(state) {
     snapshot(tasks, 'Voor ontvangen');
-    tasks = state.tasks.filter(isTask).map(t => ({ ...t }));
     gone = { ...state.gone };
+    tasks = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken');
+    if (tasks.length < state.tasks.length) setTimeout(() => sync.changed(), 0);
     applyDeadlines();
     saveTasks({ notify: false, reason: 'Voor ontvangen' });
     render();
@@ -1095,7 +1129,7 @@ function readSyncHash() {
   history.replaceState(null, '', location.pathname + location.search);
   const code = normalizeCode(m[1]);
   if (!code) return;
-  if (code === sync.code) { openSync(); return; }
+  // Ook als dit toestel al met deze code gekoppeld is: wie scant, ontvangt (vroeger werd dat stil overgeslagen)
   pendingCode = code;
   openSync('confirm');
 }
