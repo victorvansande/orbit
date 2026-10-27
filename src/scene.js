@@ -296,8 +296,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const o of orbs.values()) {
       if (o.wait > 0) { o.wait -= dt; continue; }
       const target = LEVEL_BY_ID.get(o.level).orbit;
+      const r0 = o.r, off0 = o.offset;
       o.r = motion ? smooth(o.r, target, 2.6, dt) : target;
       o.offset += wrapAngle(o.targetOffset - o.offset) * (motion ? 1 - Math.exp(-4 * dt) : 1);
+      // werkelijke snelheid (radiaal en extra hoeksnelheid) voor een staart die de echte baan volgt
+      o.vr = dt > 0 ? (o.r - r0) / dt : 0;
+      o.vo = dt > 0 ? wrapAngle(o.offset - off0) / dt : 0;
       o.alpha = smooth(o.alpha, o.leaving ? 0 : 1, o.leaving ? 8 : 3, dt);
       if (o.leaving && o.alpha < 0.01) orbs.delete(o.id);
       if (o.blend) { o.blend.p += dt / 0.45; if (o.blend.p >= 1) o.blend = null; }
@@ -470,18 +474,20 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   function orbAngle(o) { return phase.get(o.level) + o.offset; }
 
-  function orbFunnel(o, a) {
-    const z = o.r < RIM ? depthAt(o.r) * cam.depth : 0;
-    return [Math.cos(a) * o.r, Math.sin(a) * o.r, z];
+  function orbFunnel(o, a, r = o.r) {
+    const z = r < RIM ? depthAt(r) * cam.depth : 0;
+    return [Math.cos(a) * r, Math.sin(a) * r, z];
   }
 
   // Punten langs de baan achter een bol, op het scherm
   const trailPts = [];
-  function tracePath(o, from, a, span, steps) {
+  // Teruggerekend over tau seconden met hoeksnelheid omega en radiale snelheid vr
+  function tracePath(o, from, a, omega, vr, tau, steps) {
     trailPts.length = 0;
     trailPts.push(from.x, from.y);
     for (let k = 1; k <= steps; k++) {
-      const [x, y, z] = orbFunnel(o, a - k / steps * span);
+      const t = k / steps * tau;
+      const [x, y, z] = orbFunnel(o, a - omega * t, Math.max(1, o.r - vr * t));
       if (!project(x, y, z, true)) break;
       trailPts.push(pt.x, pt.y);
     }
@@ -509,14 +515,21 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.fill();
   }
 
-  // Bol: ronde kop die taps uitloopt langs de baan; lengte volgt de snelheid
+  // Bol: ronde kop die taps uitloopt langs de werkelijke baan (ook tijdens binnenvliegen of van ring wisselen).
+  // Lengte volgt de snelheid: op kruissnelheid de gewone staart, sneller (binnenvliegen) tot 2,5 keer zo lang.
   function drawOrb(o, it, lv, sp, moving) {
     ctx.globalAlpha = o.alpha;
     ctx.fillStyle = rgba(colors.get(o.level), 1);
     if (moving) {
-      const span = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * sp / o.r;
-      tracePath(o, it, it.a, span, TRAIL_STEPS);
-      taper(it.r * 2, it.r * 0.35);
+      const omega = TAU / lv.period * sp + (o.vo || 0);
+      const vr = o.vr || 0;
+      const v = Math.hypot(o.r * omega, vr);
+      const cruise = lv.orbit * TAU / lv.period;
+      const length = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * Math.min(2.5, v / cruise);
+      if (v > 0.01 && length > 0.5) {
+        tracePath(o, it, it.a, omega, vr, length / v, TRAIL_STEPS);
+        taper(it.r * 2, it.r * 0.35);
+      }
     }
     ctx.beginPath();
     ctx.arc(it.sx, it.sy, it.r, 0, TAU);
@@ -552,7 +565,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.arc(it.sx, it.sy, it.r + 4, 0, TAU);
         ctx.stroke();
       }
-      drawOrb(o, it, lv, sp, free && sp > 0.05 && o.r > 1);
+      drawOrb(o, it, lv, sp, free && o.r > 1);
       if (o.due) {
         // deadline: dun ringetje in de eigen kleur, de schil volgt de datum
         ctx.strokeStyle = rgba(colors.get(o.level), 0.55 * o.alpha);
