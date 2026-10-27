@@ -29,6 +29,7 @@ const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
+const FLING_MIN = 90, FLING_LIFE = 1.6;   // afvinken: minimale vaart (eenheden/s) en levensduur (s)
 const CORE_RMIN = 13, CORE_RMAX = 22, CORE_SPACING = 3.1, CORE_MIN_PX = 5;
 const coreGrids = new Map();
 function coreGrid(spacing) {
@@ -92,8 +93,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const speed = new Map(LEVELS.map(l => [l.id, 1]));
   const ringHot = new Map(LEVELS.map(l => [l.id, 0]));
   const orbs = new Map();
-  const particles = [];
-  const waves = [];
+  const flung = [];      // afgevinkte bollen die uit hun baan vliegen
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
   // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
@@ -239,12 +239,21 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     orbs.delete(id);
     layoutOffsets();
     if (reducedMotion.matches || o.sx == null) return;
-    const rgb = colors.get(o.level);
-    for (let k = 0; k < 18; k++) {
-      const a = Math.random() * TAU, v = (60 + Math.random() * 120) * cam.du;
-      particles.push({ x: o.sx, y: o.sy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 0.7 + Math.random() * 0.6, r: (1 + Math.random() * 1.4) * cam.du, c: rgb });
+    // Slinger: de zwaartekracht valt weg, dus de bol vliegt rechtdoor in de richting waarin hij bewoog,
+    // met de snelheid die hij had (tangentieel plus eventuele radiale snelheid), op zijn eigen diepte.
+    const lv = LEVEL_BY_ID.get(o.level);
+    const a = orbAngle(o);
+    const [x, y, z] = orbFunnel(o, a);
+    const omega = TAU / lv.period * speed.get(o.level) + (o.vo || 0);
+    let vx = -Math.sin(a) * o.r * omega - Math.cos(a) * (o.vr || 0);
+    let vy = Math.cos(a) * o.r * omega - Math.sin(a) * (o.vr || 0);
+    let v = Math.hypot(vx, vy);
+    if (v < FLING_MIN) {
+      // stilstaand (hover, tempo Stil) of heel traag (Ooit): zelfde richting, net genoeg vaart om weg te gaan
+      const dx = v > 0.01 ? vx / v : -Math.sin(a), dy = v > 0.01 ? vy / v : Math.cos(a);
+      vx = dx * FLING_MIN; vy = dy * FLING_MIN; v = FLING_MIN;
     }
-    waves.push({ x: o.sx, y: o.sy, age: 0, c: colors.get(o.level), r0: o.sr });
+    flung.push({ level: o.level, x, y, z, vx, vy, v, age: 0, alpha: o.alpha ?? 1 });
   }
 
   /* ---- Weergave ---- */
@@ -311,14 +320,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (o.blend) { o.blend.p += dt / 0.45; if (o.blend.p >= 1) o.blend = null; }
     }
 
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const q = particles[i];
-      q.life += dt;
+    for (let i = flung.length - 1; i >= 0; i--) {
+      const q = flung[i];
+      q.age += dt;
       q.x += q.vx * dt; q.y += q.vy * dt;
-      q.vx *= Math.exp(-2.4 * dt); q.vy *= Math.exp(-2.4 * dt);
-      if (q.life >= q.max) particles.splice(i, 1);
+      if (q.age > FLING_LIFE || Math.hypot(q.x, q.y) > 900) flung.splice(i, 1);
     }
-    for (let i = waves.length - 1; i >= 0; i--) { waves[i].age += dt; if (waves[i].age > 0.8) waves.splice(i, 1); }
 
     // kern: urgentie, kleur, tempo en aantal golven glijden mee met de taken
     const target = nowCount > 0 ? 1 + Math.min(nowCount - 1, 3) / 3 : todayCount > 0 ? 0.5 : 0;
@@ -582,21 +589,30 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
   }
 
+  // Losgelaten bollen: rechte lijn, staart achter zich in de vliegrichting, vervagen tegen het einde
   function drawEffects() {
-    for (const q of particles) {
-      const k = 1 - q.life / q.max;
-      ctx.fillStyle = rgba(q.c, 0.85 * k);
+    for (const q of flung) {
+      if (!project(q.x, q.y, q.z, true)) continue;
+      const lv = LEVEL_BY_ID.get(q.level);
+      const hx = pt.x, hy = pt.y;
+      const r = lv.size / 2 * ORB_SCALE * cam.du * pt.f;
+      const cruise = lv.orbit * TAU / lv.period;
+      const length = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * Math.min(2.5, Math.max(0.6, q.v / cruise));
+      trailPts.length = 0;
+      trailPts.push(hx, hy);
+      for (let k = 1; k <= 10; k++) {
+        const back = length * k / 10;
+        if (!project(q.x - q.vx / q.v * back, q.y - q.vy / q.v * back, q.z, true)) break;
+        trailPts.push(pt.x, pt.y);
+      }
+      const fade = 1 - Math.max(0, (q.age - (FLING_LIFE - 0.5)) / 0.5);
+      ctx.globalAlpha = q.alpha * fade;
+      ctx.fillStyle = rgba(colors.get(q.level), 1);
+      taper(r * 2, r * 0.35);
       ctx.beginPath();
-      ctx.arc(q.x, q.y, q.r * (0.6 + 0.4 * k), 0, TAU);
+      ctx.arc(hx, hy, r, 0, TAU);
       ctx.fill();
-    }
-    for (const w of waves) {
-      const p = w.age / 0.8;
-      ctx.strokeStyle = rgba(w.c, 0.5 * (1 - p));
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(w.x, w.y, w.r0 + p * 46 * cam.du, 0, TAU);
-      ctx.stroke();
+      ctx.globalAlpha = 1;
     }
   }
 

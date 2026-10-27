@@ -35,7 +35,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 ## Icoon
 
-- Merkteken: rode kern met één effen lichtgolf (het baken) en één taps bolletje dat er met de klok mee omheen draait; op het grote icoon ook de gestippelde ring. Geen verloop of glans: iOS (liquid glass) en Android (maskers, Material You) voegen hun eigen effect toe.
+- Merkteken: Amaranth-kern (#E70049, zelfde als Nu) met één effen lichtgolf (het baken) en één taps bolletje dat er met de klok mee omheen draait; op het grote icoon ook de gestippelde ring. Geen verloop of glans: iOS (liquid glass) en Android (maskers, Material You) voegen hun eigen effect toe.
 - App-icoon (`apple-touch-icon`, Android `any`) is volledig transparant buiten de orbit-elementen (Victor: liquid glass). Bolletje en ring zijn daarom middengrijs #8A8A94, leesbaar op lichte én donkere achtergronden. Alleen `maskable` heeft papier #F1F1EF (Android eist een vol vlak). Onzeker: iOS vulde transparantie bij webiconen vroeger met zwart; blijkt dat zo, terug naar een vol vlak.
 - Favicon is vetter en zonder stippelring (leesbaar op 16 px) en volgt licht/donker via een media query in de SVG.
 
@@ -60,13 +60,13 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 | id | naam | ring | baan | omloop | kleur | donker |
 |---|---|---:|---:|---:|---|---|
-| 1 | Nu | 38 | 38 | 1,1 s | #FF3B30 | #E25A52 |
-| 2 | Vandaag | 72 | 72 | 2,8 s | #FF8A00 | #D98C4A |
-| 3 | Week | 106 | 106 | 7 s | #34B87A | #62AE88 |
-| 4 | Maand | 140 | 140 | 16 s | #2A93E0 | #5F99CC |
-| 5 | Ooit | 174 | 174 | 38 s | #8A63F2 | #9580D6 |
+| 1 | Nu | 38 | 38 | 1,1 s | #E70049 | #F0306A |
+| 2 | Vandaag | 72 | 72 | 2,8 s | #E08600 | #F5A623 |
+| 3 | Week | 106 | 106 | 7 s | #0FAE69 | #20E08A |
+| 4 | Maand | 140 | 140 | 16 s | #1F78B4 | #38A0F0 |
+| 5 | Ooit | 174 | 174 | 38 s | #08415C | #B3B9D6 |
 
-Kleuren liggen gelijk verdeeld over het spectrum (rood, oranje, groen, blauw, violet); geel naast oranje was te weinig onderscheidbaar, zeker in het donker.
+Palet C "Foto, warm naar koel" (gekozen door Victor, vertrokken van zijn foto: Amaranth, Orange, Spring Green, Yale Blue). Hoe verder weg, hoe koeler: Nu en Vandaag warm, Week groen, Maand en Ooit twee tinten Yale Blue; in het donker wordt Ooit een zacht staalblauw (anders te dicht bij Maand). Geen geel: naast oranje te weinig onderscheidbaar. Getoetst: elke kleur minstens 2,4:1 tegen het lichte papier en 4,9:1 tegen het donkere, en elk paar momenten minstens 0,16 uit elkaar in OKLab (vorige palet: Maand en Ooit 0,09 in het donker, te dicht).
 
 Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat oogde alsof de Nu-bollen naast hun baan zweefden).
 
@@ -83,7 +83,8 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader), de bol krijgt een dun ringetje. Hover op een rij in de lijst doet hetzelfde voor die ene taak.
 - Slepen op een bol: bol volgt de cursor, dichtstbijzijnde ring licht op ("Naar …"), loslaten verplaatst de taak (`onReassign`). Slepen op lege ruimte: horizontaal draaien, verticaal kantelen; loslaten klikt naar het dichtste aanzicht.
 - Kern (`drawCore`): **Rasterpunt** (gekozen door Victor uit twee reeksen voorstellen, nr. 10). Een cirkel van drukpuntjes in een zeshoekig raster, zoals op een risoposter, plat in het vlak van de tip (elk puntje wordt geprojecteerd, dus een ellips in het zijaanzicht). Puntjes groter in het midden, kleiner naar de rand. `urgency` bepaalt kleur (grijs, oranje, rood), straal (13 tot 22 + 4 eenheden) en de golf: bij elke slag (`beat`) rolt een golf van grotere puntjes naar buiten. Rustig: klein, grijs, een trage ademgolf. Stil-tempo en reduced motion: geen golf. Op kleine schermen wordt het raster grover (min. 5 px tussen puntjes, `coreGrid(spacing)` wordt gecachet), anders vervloeit het tot een vlek. Vorige kern (baken met stip en schijven) vond Victor te lakluster.
-- Intro: raster, wijzerplaat en ringen (van binnen naar buiten) faden in, bollen spiralen gestaffeld binnen. Nieuwe taken spiralen ook binnen; afvinken laat de bol uiteenspatten (deeltjes + ring).
+- Intro: raster, wijzerplaat en ringen (van binnen naar buiten) faden in, bollen spiralen gestaffeld binnen. Nieuwe taken spiralen ook binnen.
+- Afvinken: **Slinger** (gekozen door Victor). De zwaartekracht valt weg: de bol vliegt in een rechte lijn verder in de richting waarin hij bewoog (raaklijn plus eventuele radiale snelheid), met de snelheid die hij had, op zijn eigen diepte in de trechter (`flung`). Stond hij stil of ging hij heel traag (hover, tempo Stil, Ooit), dan dezelfde richting met minstens `FLING_MIN` = 90 eenheden/s. Staart recht achter zich, lengte volgt de snelheid zoals bij gewone bollen; na `FLING_LIFE` = 1,6 s vervaagd. Vervangt de oude deeltjes en ring ("standaard"). Reduced motion: geen animatie.
 - Tijdgebaseerd (dt), dus even snel op 60 en 120 Hz.
 - Tempo (`TEMPO`, `setTempo`): normaal; zen (omlooptijd Nu 8 s, de rest op een samengedrukte schaal `8 × (omloop / 1,1)^0,55`, zodat Nu het snelst blijft; trechter draait aan 35 %, kern klopt half zo snel); stil (banen en trechter glijden tot stilstand, kern zonder golven). Wissels glijden via `speed`, `spinScale`, `beatScale` en `waveVis`. Staarten volgen de snelheid en worden in zen vanzelf korte druppels.
 

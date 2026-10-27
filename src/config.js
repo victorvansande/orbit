@@ -2,11 +2,11 @@
 // ring: straal van de gestippelde ring, orbit: baanstraal van de bollen (eenheden in de 390-stage)
 // color: tint op licht papier, dark: gedempte tint voor de donkere modus (minder verzadigd, geen kleurboek-effect)
 export const LEVELS = [
-  { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#FF3B30', dark: '#E25A52', size: 7,   tail: 3 },
-  { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#FF8A00', dark: '#D98C4A', size: 6,   tail: 2 },
-  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#34B87A', dark: '#62AE88', size: 5.5, tail: 2 },
-  { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#2A93E0', dark: '#5F99CC', size: 5,   tail: 1 },
-  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#8A63F2', dark: '#9580D6', size: 5,   tail: 1 },
+  { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#E70049', dark: '#F0306A', size: 7,   tail: 3 },
+  { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#E08600', dark: '#F5A623', size: 6,   tail: 2 },
+  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#0FAE69', dark: '#20E08A', size: 5.5, tail: 2 },
+  { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#1F78B4', dark: '#38A0F0', size: 5,   tail: 1 },
+  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#08415C', dark: '#B3B9D6', size: 5,   tail: 1 },
 ];
 export const LEVEL_BY_ID = new Map(LEVELS.map(l => [l.id, l]));
 

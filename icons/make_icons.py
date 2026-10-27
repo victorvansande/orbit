@@ -1,6 +1,6 @@
 import math, os
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-PAPER, INK, RED = '#F1F1EF', '#1B1B22', '#FF3B30'
+PAPER, INK, RED = '#F1F1EF', '#1B1B22', '#E70049'
 DARK_BG, DARK_INK = '#0F0F12', '#ECECF1'
 # App-icoon is transparant (liquid glass): middengrijs blijft leesbaar op lichte én donkere achtergronden
 GLASS_INK = '#8A8A94'
