@@ -35,7 +35,8 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 ## Icoon
 
-- Merkteken: rode kern met één effen lichtgolf (het baken) en één taps bolletje in grafiet dat er met de klok mee omheen draait; op het grote icoon ook de gestippelde ring. Papier #F1F1EF, geen verloop of glans: iOS (liquid glass) en Android (maskers, Material You) voegen hun eigen effect toe.
+- Merkteken: rode kern met één effen lichtgolf (het baken) en één taps bolletje dat er met de klok mee omheen draait; op het grote icoon ook de gestippelde ring. Geen verloop of glans: iOS (liquid glass) en Android (maskers, Material You) voegen hun eigen effect toe.
+- App-icoon (`apple-touch-icon`, Android `any`) is volledig transparant buiten de orbit-elementen (Victor: liquid glass). Bolletje en ring zijn daarom middengrijs #8A8A94, leesbaar op lichte én donkere achtergronden. Alleen `maskable` heeft papier #F1F1EF (Android eist een vol vlak). Onzeker: iOS vulde transparantie bij webiconen vroeger met zwart; blijkt dat zo, terug naar een vol vlak.
 - Favicon is vetter en zonder stippelring (leesbaar op 16 px) en volgt licht/donker via een media query in de SVG.
 
 ## Bestanden
