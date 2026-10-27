@@ -4,6 +4,8 @@
 // Bibliotheken worden pas geladen als ze nodig zijn: QR maken (qrcode-generator, 21 KB) en QR lezen (jsQR, 131 KB,
 // alleen als de browser geen ingebouwde BarcodeDetector heeft, zoals Safari).
 
+import { tx } from './i18n.js';
+
 import { normalizeCode } from './sync.js';
 
 let qrLib = null;
@@ -50,13 +52,13 @@ export function createScanner(video, { onCode, onMessage }) {
   async function start() {
     stop();
     if (!navigator.mediaDevices?.getUserMedia) {
-      onMessage('Deze browser geeft geen toegang tot de camera. Open de link of typ de code.', true);
+      onMessage(tx('cam.none'), true);
       return false;
     }
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
     } catch {
-      onMessage('Geen toegang tot de camera. Sta de camera toe, of open de link of typ de code.', true);
+      onMessage(tx('cam.denied'), true);
       return false;
     }
     video.srcObject = stream;
@@ -68,7 +70,7 @@ export function createScanner(video, { onCode, onMessage }) {
       } catch { detector = null; }
     }
     if (!detector) {
-      try { await loadJsQr(); } catch { onMessage('De scanner kon niet laden. Probeer opnieuw of typ de code.', true); stop(); return false; }
+      try { await loadJsQr(); } catch { onMessage(tx('cam.load'), true); stop(); return false; }
     }
     running = true;
     tick();
@@ -121,10 +123,10 @@ export function deviceName() {
   const ua = navigator.userAgent || '';
   if (/iPhone/.test(ua)) return 'iPhone';
   if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
-  if (/Android/.test(ua)) return /Mobile/.test(ua) ? 'Android-gsm' : 'Android-tablet';
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? tx('device.android') : tx('device.androidTab');
   if (/Macintosh/.test(ua)) return 'Mac';
-  if (/Windows/.test(ua)) return 'Windows-pc';
+  if (/Windows/.test(ua)) return tx('device.windows');
   if (/CrOS/.test(ua)) return 'Chromebook';
-  if (/Linux/.test(ua)) return 'Linux-pc';
-  return 'ander toestel';
+  if (/Linux/.test(ua)) return tx('device.linux');
+  return tx('device.other');
 }

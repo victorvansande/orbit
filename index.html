@@ -31,6 +31,8 @@
 <body>
 <div class="stage" id="stage">
   <canvas id="scene" role="img" aria-label="Orbit"></canvas>
+  <!-- begroeting van de kern, onder de scène (src/greet.js) -->
+  <p class="greeting" id="greeting" role="status" hidden><span id="greeting-text"></span><small>Orbit</small></p>
 </div>
 <div class="grain" aria-hidden="true"></div>
 
@@ -45,25 +47,33 @@
     <!-- gsm: de teller bovenaan, een tik toont de details onder de lijst -->
     <button type="button" class="stat-mini" id="stat-mini" hidden><svg viewBox="-1 -1 2 2" aria-hidden="true"><path d="M0-1Q.13-.13 1 0Q.13 .13 0 1Q-.13 .13-1 0Q-.13-.13 0-1Z"/></svg><span id="stat-mini-n"></span></button>
     <!-- gsm: alles hieronder achter het knopje Instellingen -->
-    <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="hud-menu" data-status="off"><span class="sync-dot" aria-hidden="true"></span>Instellingen</button>
+    <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="hud-menu" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span data-i="menu.settings">Instellingen</span></button>
     <div class="hud-menu" id="hud-menu">
       <div class="menu-row menu-view" id="menu-view"></div>
       <div class="menu-row menu-tempo" id="menu-tempo"></div>
       <div class="menu-row">
-        <span class="menu-label">Thema <kbd>D</kbd></span>
-        <div class="views theme-switch" role="radiogroup" aria-label="Thema">
-          <button type="button" role="radio" aria-checked="false" data-theme-pref="light">Licht</button>
+        <span class="menu-label"><span data-i="menu.theme">Thema</span> <kbd>D</kbd></span>
+        <div class="views theme-switch" role="radiogroup" aria-label="Thema" data-ia="aria-label:menu.theme">
+          <button type="button" role="radio" aria-checked="false" data-theme-pref="light" data-i="theme.light">Licht</button>
           <span class="slash" aria-hidden="true">/</span>
-          <button type="button" role="radio" aria-checked="false" data-theme-pref="dark">Donker</button>
+          <button type="button" role="radio" aria-checked="false" data-theme-pref="dark" data-i="theme.dark">Donker</button>
           <span class="slash" aria-hidden="true">/</span>
-          <button type="button" role="radio" aria-checked="true" data-theme-pref="auto">Auto</button>
+          <button type="button" role="radio" aria-checked="true" data-theme-pref="auto" data-i="theme.auto">Auto</button>
         </div>
       </div>
-      <p class="menu-row menu-keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
+      <div class="menu-row">
+        <span class="menu-label" data-i="menu.language">Taal</span>
+        <div class="views lang-switch" role="radiogroup" aria-label="Taal" data-ia="aria-label:menu.language">
+          <button type="button" role="radio" aria-checked="false" data-lang="nl" lang="nl">Nederlands</button>
+          <span class="slash" aria-hidden="true">/</span>
+          <button type="button" role="radio" aria-checked="false" data-lang="en" lang="en">English</button>
+        </div>
+      </div>
+      <p class="menu-row menu-keys" data-ih="menu.keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
       <div class="menu-row hud-actions">
-        <button type="button" class="sync-btn" id="intro-btn">Uitleg</button>
+        <button type="button" class="sync-btn" id="intro-btn" data-i="menu.intro">Uitleg</button>
         <span class="slash" aria-hidden="true">/</span>
-        <button type="button" class="sync-btn" id="archive-btn">Archief</button>
+        <button type="button" class="sync-btn" id="archive-btn" data-i="menu.archive">Archief</button>
         <span class="slash" aria-hidden="true">/</span>
         <button type="button" class="sync-btn" id="sync-btn" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Koppelen</span></button>
       </div>
@@ -72,40 +82,40 @@
 </header>
 
 <div class="controls">
-  <div class="views" id="view-switch" role="radiogroup" aria-label="Aanzicht">
-    <button type="button" role="radio" aria-checked="true" data-view="top">Boven</button>
+  <div class="views" id="view-switch" role="radiogroup" aria-label="Aanzicht" data-ia="aria-label:view">
+    <button type="button" role="radio" aria-checked="true" data-view="top" data-i="view.top">Boven</button>
     <span class="slash" aria-hidden="true">/</span>
-    <button type="button" role="radio" aria-checked="false" data-view="side">Zijkant</button>
+    <button type="button" role="radio" aria-checked="false" data-view="side" data-i="view.side">Zijkant</button>
   </div>
   <button type="button" class="focus-btn" id="focus-btn" aria-pressed="false">Focus <kbd>F</kbd></button>
-  <button type="button" class="menu-btn focus-exit" id="focus-exit">Focus uit <kbd>Esc</kbd></button>
-  <div class="views tempo" id="tempo" role="radiogroup" aria-label="Tempo">
-    <span class="tempo-label">Tempo <kbd>T</kbd></span>
-    <button type="button" role="radio" aria-checked="true" data-tempo="normaal">Normaal</button>
+  <button type="button" class="menu-btn focus-exit" id="focus-exit"><span data-i="focus.exit">Focus uit</span> <kbd>Esc</kbd></button>
+  <div class="views tempo" id="tempo" role="radiogroup" aria-label="Tempo" data-ia="aria-label:tempo">
+    <span class="tempo-label"><span data-i="tempo">Tempo</span> <kbd>T</kbd></span>
+    <button type="button" role="radio" aria-checked="true" data-tempo="normaal" data-i="tempo.normaal">Normaal</button>
     <span class="slash" aria-hidden="true">/</span>
     <button type="button" role="radio" aria-checked="false" data-tempo="zen">Zen</button>
     <span class="slash" aria-hidden="true">/</span>
-    <button type="button" role="radio" aria-checked="false" data-tempo="stil">Stil</button>
+    <button type="button" role="radio" aria-checked="false" data-tempo="stil" data-i="tempo.stil">Stil</button>
   </div>
 </div>
 
-<nav class="wheel" id="wheel" aria-label="Nieuwe taak">
+<nav class="wheel" id="wheel" aria-label="Nieuwe taak" data-ia="aria-label:wheel">
   <svg class="wheel-arc" aria-hidden="true"><path d=""/></svg>
   <span class="wheel-handle" aria-hidden="true"></span>
-  <ul class="wheel-list" role="listbox" tabindex="0" aria-label="Kies een moment, druk Enter om een taak toe te voegen"></ul>
-  <p class="wheel-hint" aria-hidden="true">Scroll · klik om toe te voegen</p>
+  <ul class="wheel-list" role="listbox" tabindex="0" aria-label="Kies een moment, druk Enter om een taak toe te voegen" data-ia="aria-label:wheel.list"></ul>
+  <p class="wheel-hint" aria-hidden="true" data-i="wheel.hint">Scroll · klik om toe te voegen</p>
 </nav>
 
 <section class="tracks" id="tracks" aria-labelledby="tracks-title">
   <div class="tracks-head">
-    <h2 id="tracks-title">Taken</h2>
+    <h2 id="tracks-title" data-i="tracks">Taken</h2>
     <span id="tracks-count"></span>
   </div>
   <div class="tracks-pair" id="tracks-pair" hidden>
-    <p>Deze app op je beginscherm heeft een eigen opslag, los van je browser. Haal je taken hierheen: kies in Orbit in je browser of op je pc Koppelen, Verstuur, en ontvang ze hier.</p>
-    <div class="sync-row"><button type="button" class="btn-solid" id="tracks-pair-go">Taken ontvangen</button><button type="button" class="btn-ghost" id="tracks-pair-no">Later</button></div>
+    <p data-i="tracks.pair">Deze app op je beginscherm heeft een eigen opslag, los van je browser. Haal je taken hierheen: kies in Orbit in je browser of op je pc Koppelen, Verstuur, en ontvang ze hier.</p>
+    <div class="sync-row"><button type="button" class="btn-solid" id="tracks-pair-go" data-i="tracks.pairGo">Taken ontvangen</button><button type="button" class="btn-ghost" id="tracks-pair-no" data-i="tracks.pairLater">Later</button></div>
   </div>
-  <p class="tracks-demo" id="tracks-demo" hidden>Dit zijn voorbeeldtaken. Ze verdwijnen zodra je zelf een taak toevoegt.</p>
+  <p class="tracks-demo" id="tracks-demo" hidden data-i="tracks.demo">Dit zijn voorbeeldtaken. Ze verdwijnen zodra je zelf een taak toevoegt.</p>
   <div class="groups" id="groups"></div>
   <div class="stats" id="stats" hidden>
     <button type="button" class="stats-total" id="stats-toggle" aria-expanded="false" aria-controls="stats-detail">
@@ -114,10 +124,10 @@
     <div class="stats-detail" id="stats-detail" hidden>
       <dl id="stats-rows"></dl>
       <div class="stats-reset">
-        <button type="button" class="stats-reset-btn" id="stats-reset">Teller op nul</button>
+        <button type="button" class="stats-reset-btn" id="stats-reset" data-i="stats.reset">Teller op nul</button>
         <div class="stats-confirm" id="stats-confirm" hidden>
-          <p>Teller en sterren op nul? Dat geldt ook op je gekoppelde toestellen. Je taken blijven.</p>
-          <div class="sync-row"><button type="button" class="btn-solid" id="stats-reset-yes">Op nul</button><button type="button" class="btn-ghost" id="stats-reset-no">Annuleer</button></div>
+          <p data-i="stats.resetAsk">Teller en sterren op nul? Dat geldt ook op je gekoppelde toestellen. Je taken blijven.</p>
+          <div class="sync-row"><button type="button" class="btn-solid" id="stats-reset-yes" data-i="stats.resetYes">Op nul</button><button type="button" class="btn-ghost" id="stats-reset-no" data-i="cancel">Annuleer</button></div>
         </div>
       </div>
     </div>
@@ -156,81 +166,81 @@
 
 <div class="toast" id="toast" role="status" hidden>
   <span id="toast-text"></span>
-  <button type="button" id="undo">Ongedaan maken</button>
+  <button type="button" id="undo" data-i="undo">Ongedaan maken</button>
 </div>
 
 <dialog class="composer" id="composer" aria-labelledby="composer-kicker">
   <form id="composer-form" novalidate>
     <canvas class="composer-orb" id="composer-orb" width="560" height="560" aria-hidden="true"></canvas>
     <div class="composer-meta">
-      <span id="composer-kicker">Nieuwe taak</span>
+      <span id="composer-kicker" data-i="composer">Nieuwe taak</span>
       <span class="composer-level" id="composer-level"></span>
     </div>
-    <input class="composer-title" id="composer-title" name="title" type="text" placeholder="Wat moet er gebeuren?" autocomplete="off" enterkeyhint="done" maxlength="120" aria-label="Titel">
-    <div class="composer-levels" id="composer-levels" role="radiogroup" aria-label="Moment"></div>
+    <input class="composer-title" id="composer-title" name="title" type="text" placeholder="Wat moet er gebeuren?" autocomplete="off" enterkeyhint="done" maxlength="120" aria-label="Titel" data-ia="placeholder:composer.placeholder;aria-label:composer.title">
+    <div class="composer-levels" id="composer-levels" role="radiogroup" aria-label="Moment" data-ia="aria-label:composer.moment"></div>
     <div class="composer-due">
-      <button type="button" class="due-toggle" id="due-toggle"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>Deadline</button>
+      <button type="button" class="due-toggle" id="due-toggle"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg><span data-i="composer.due">Deadline</span></button>
       <div class="due-field" id="due-field" hidden>
-        <input type="date" class="due-input" id="composer-due" aria-label="Deadline">
-        <button type="button" class="due-clear" id="due-clear">Wissen</button>
+        <input type="date" class="due-input" id="composer-due" aria-label="Deadline" data-ia="aria-label:composer.due">
+        <button type="button" class="due-clear" id="due-clear" data-i="composer.clear">Wissen</button>
       </div>
       <p class="due-hint" id="due-hint" aria-live="polite"></p>
     </div>
     <div class="composer-actions">
-      <button type="button" class="btn-ghost" id="composer-cancel">Annuleer</button>
-      <button type="submit" class="btn-solid" id="composer-submit" disabled>Voeg toe <kbd>↵</kbd></button>
+      <button type="button" class="btn-ghost" id="composer-cancel" data-i="cancel">Annuleer</button>
+      <button type="submit" class="btn-solid" id="composer-submit" disabled data-ih="composer.add">Voeg toe <kbd>↵</kbd></button>
     </div>
   </form>
 </dialog>
 
 <dialog class="sync intro" id="intro" aria-labelledby="intro-title">
   <div class="sync-card intro-card" tabindex="-1" autofocus>
-    <div class="composer-meta"><span>Welkom bij</span><span>Uitleg</span></div>
+    <div class="composer-meta"><span data-i="intro.kicker">Welkom bij</span><span data-i="intro.kicker2">Uitleg</span></div>
     <h2 class="intro-title" id="intro-title">Orbit Tasks</h2>
-    <p class="intro-lead">Je taken draaien rond een kern. Hoe dringender, hoe dichter bij het midden en hoe sneller ze draaien.</p>
-    <ul class="intro-levels" id="intro-levels" aria-label="De vijf momenten, van binnen naar buiten"></ul>
+    <p class="intro-lead" data-i="intro.lead">Je taken draaien rond een kern. Hoe dringender, hoe dichter bij het midden en hoe sneller ze draaien.</p>
+    <ul class="intro-levels" id="intro-levels" aria-label="De vijf momenten, van binnen naar buiten" data-ia="aria-label:intro.levels"></ul>
     <dl class="intro-grid">
-      <div><dt>Toevoegen</dt><dd>Kies een moment op het wiel en tik nog eens, of druk <kbd>N</kbd>. Met een deadline schuift de taak vanzelf naar binnen naarmate de datum nadert.</dd></div>
-      <div><dt>Afvinken</dt><dd>Tik op het rondje in de lijst: de taak fonkelt uit en wordt een ster aan de hemel. <kbd>Z</kbd> zet ze terug, en alles blijft 60 dagen in Archief.</dd></div>
-      <div><dt>Verplaatsen</dt><dd>Sleep een bol naar een andere ring, of tik op het bolletje rechts van een taak in de lijst.</dd></div>
-      <div><dt>Kijken</dt><dd>Boven of zijkant (<kbd>1</kbd> <kbd>2</kbd>), slepen in de scène draait mee. Focus (<kbd>F</kbd>) toont klok, weer en wat nu moet.</dd></div>
-      <div><dt>Rust</dt><dd>Te druk? Onder Instellingen wissel je het tempo (<kbd>T</kbd>: normaal, zen, stil) en licht of donker (<kbd>D</kbd>).</dd></div>
-      <div><dt>Toestellen</dt><dd>Koppelen (rechtsboven, op gsm onder Instellingen): het ene toestel toont een QR-code, het andere scant en ontvangt je taken. Daarna blijven ze gelijk, ook offline.</dd></div>
+      <div><dt data-i="intro.add">Toevoegen</dt><dd data-ih="intro.addText">Kies een moment op het wiel en tik nog eens, of druk <kbd>N</kbd>. Met een deadline schuift de taak vanzelf naar binnen naarmate de datum nadert.</dd></div>
+      <div><dt data-i="intro.done">Afvinken</dt><dd data-ih="intro.doneText">Tik op het rondje in de lijst: de taak fonkelt uit en wordt een ster aan de hemel. <kbd>Z</kbd> zet ze terug, en alles blijft 60 dagen in Archief.</dd></div>
+      <div><dt data-i="intro.move">Verplaatsen</dt><dd data-ih="intro.moveText">Sleep een bol naar een andere ring, of tik op het bolletje rechts van een taak in de lijst.</dd></div>
+      <div><dt data-i="intro.look">Kijken</dt><dd data-ih="intro.lookText">Boven of zijkant (<kbd>1</kbd> <kbd>2</kbd>), slepen in de scène draait mee. Focus (<kbd>F</kbd>) toont klok, weer en wat nu moet.</dd></div>
+      <div><dt data-i="intro.calm">Rust</dt><dd data-ih="intro.calmText">Te druk? Onder Instellingen wissel je het tempo (<kbd>T</kbd>: normaal, zen, stil) en licht of donker (<kbd>D</kbd>).</dd></div>
+      <div><dt data-i="intro.devices">Toestellen</dt><dd data-ih="intro.devicesText">Koppelen (rechtsboven, op gsm onder Instellingen): het ene toestel toont een QR-code, het andere scant en ontvangt je taken. Daarna blijven ze gelijk, ook offline.</dd></div>
     </dl>
-    <p class="intro-keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>F</kbd> focus <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief <kbd>Z</kbd> ongedaan <kbd>?</kbd> uitleg</p>
+    <p class="intro-keys" data-ih="intro.keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>F</kbd> focus <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief <kbd>Z</kbd> ongedaan <kbd>?</kbd> uitleg</p>
     <div class="sync-row intro-foot">
-      <span class="intro-note">Deze uitleg vind je altijd terug onder Uitleg.</span>
-      <button type="button" class="btn-solid" id="intro-close">Aan de slag</button>
+      <span class="intro-note" data-i="intro.note">Deze uitleg vind je altijd terug onder Uitleg.</span>
+      <button type="button" class="btn-solid" id="intro-close" data-i="intro.go">Aan de slag</button>
     </div>
   </div>
 </dialog>
 
 <dialog class="sync archive" id="archive" aria-labelledby="archive-title">
   <div class="sync-card archive-card">
-    <div class="composer-meta"><span id="archive-title">Archief</span><span>Op dit toestel</span></div>
-    <div class="views archive-tabs" role="tablist" aria-label="Archief">
-      <button type="button" role="tab" id="arch-tab-done" aria-selected="true" aria-controls="arch-done">Afgevinkt</button>
+    <div class="composer-meta"><span id="archive-title" data-i="archive">Archief</span><span data-i="archive.device">Op dit toestel</span></div>
+    <div class="views archive-tabs" role="tablist" aria-label="Archief" data-ia="aria-label:archive">
+      <button type="button" role="tab" id="arch-tab-done" aria-selected="true" aria-controls="arch-done" data-i="archive.done">Afgevinkt</button>
       <span class="slash" aria-hidden="true">/</span>
-      <button type="button" role="tab" id="arch-tab-snaps" aria-selected="false" aria-controls="arch-snaps">Momentopnames</button>
+      <button type="button" role="tab" id="arch-tab-snaps" aria-selected="false" aria-controls="arch-snaps" data-i="archive.snaps">Momentopnames</button>
     </div>
     <div class="arch-panel" id="arch-done" role="tabpanel" aria-labelledby="arch-tab-done">
-      <p class="sync-text sync-note">Afgevinkte taken blijven 60 dagen bewaard. Zet ze terug met één tik.</p>
+      <p class="sync-text sync-note" data-i="archive.doneNote">Afgevinkte taken blijven 60 dagen bewaard. Zet ze terug met één tik, of verwijder ze voorgoed.</p>
       <ul class="arch-list" id="arch-done-list"></ul>
     </div>
     <div class="arch-panel" id="arch-snaps" role="tabpanel" aria-labelledby="arch-tab-snaps" hidden>
-      <p class="sync-text sync-note">Orbit bewaart de hele lijst vóór elke synchronisatie, import of terugzetting, en minstens één keer per dag. Terugzetten voegt enkel de ontbrekende taken toe; er verdwijnt niets.</p>
+      <p class="sync-text sync-note" data-i="archive.snapsNote">Orbit bewaart de hele lijst vóór elke synchronisatie, import of terugzetting, en minstens één keer per dag. Terugzetten voegt enkel de ontbrekende taken toe; er verdwijnt niets.</p>
       <ul class="arch-list" id="arch-snaps-list"></ul>
       <div class="arch-server" id="arch-server" hidden>
-        <p class="sync-label">Op de Orbit-server</p>
-        <p class="sync-text sync-note">De server bewaart de laatste 20 versies van je gedeelde lijst, ook als al je toestellen iets kwijt zijn.</p>
+        <p class="sync-label" data-i="archive.server">Op de Orbit-server</p>
+        <p class="sync-text sync-note" data-i="archive.serverNote">De server bewaart de laatste 20 versies van je gedeelde lijst, ook als al je toestellen iets kwijt zijn.</p>
         <ul class="arch-list" id="arch-server-list"></ul>
       </div>
     </div>
     <div class="sync-row arch-foot">
-      <button type="button" class="btn-ghost" id="arch-export">Exporteer</button>
-      <button type="button" class="btn-ghost" id="arch-import">Importeer</button>
+      <button type="button" class="btn-ghost" id="arch-export" data-i="archive.export">Exporteer</button>
+      <button type="button" class="btn-ghost" id="arch-import" data-i="archive.import">Importeer</button>
       <input type="file" id="arch-file" accept="application/json,.json" hidden>
-      <button type="button" class="btn-solid" id="arch-close">Klaar</button>
+      <button type="button" class="btn-solid" id="arch-close" data-i="done">Klaar</button>
     </div>
   </div>
 </dialog>
@@ -240,24 +250,24 @@
     <div class="composer-meta"><span id="sync-title">Toestellen koppelen</span><span id="sync-kicker">Eenmalig</span></div>
 
     <div class="sync-view" id="sync-off">
-      <p class="sync-text">Kies op welk toestel je taken nu staan. Dat toestel verstuurt, het andere ontvangt. Daarna blijven ze vanzelf gelijk.</p>
+      <p class="sync-text" data-i="sync.intro">Kies op welk toestel je taken nu staan. Dat toestel verstuurt, het andere ontvangt. Daarna blijven ze vanzelf gelijk.</p>
       <div class="sync-choices">
         <button type="button" class="sync-choice" id="sync-new">
           <span class="sync-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
-          <span class="sync-choice-text"><span class="sync-choice-title">Verstuur van dit toestel</span><span class="sync-choice-sub">Toont een QR-code. Je lijst hier blijft zoals ze is.</span></span>
+          <span class="sync-choice-text"><span class="sync-choice-title" data-i="sync.newTitle">Verstuur van dit toestel</span><span class="sync-choice-sub" data-i="sync.newSub">Toont een QR-code. Je lijst hier blijft zoals ze is.</span></span>
         </button>
         <button type="button" class="sync-choice" id="sync-scan">
           <span class="sync-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
-          <span class="sync-choice-text"><span class="sync-choice-title">Ontvang op dit toestel</span><span class="sync-choice-sub">Scan de QR-code van je andere toestel. Je lijst hier wordt vervangen.</span></span>
+          <span class="sync-choice-text"><span class="sync-choice-title" data-i="sync.scanTitle">Ontvang op dit toestel</span><span class="sync-choice-sub" data-i="sync.scanSub">Scan de QR-code van je andere toestel. Je lijst hier wordt vervangen.</span></span>
         </button>
       </div>
       <details class="sync-manual" id="sync-manual">
-        <summary>Code of link plakken om te ontvangen</summary>
+        <summary data-i="sync.manual">Code of link plakken om te ontvangen</summary>
         <form class="sync-join" id="sync-join-form" novalidate>
           <div class="sync-row">
-            <input class="sync-input" id="sync-input" aria-label="Code of koppellink" placeholder="Code of link" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200">
-            <button type="button" class="btn-ghost" id="sync-paste">Plak</button>
-            <button type="submit" class="btn-ghost" id="sync-join">Ontvang</button>
+            <input class="sync-input" id="sync-input" aria-label="Code of koppellink" placeholder="Code of link" data-ia="aria-label:sync.input;placeholder:sync.inputPh" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200">
+            <button type="button" class="btn-ghost" id="sync-paste" data-i="sync.paste">Plak</button>
+            <button type="submit" class="btn-ghost" id="sync-join" data-i="sync.join">Ontvang</button>
           </div>
           <p class="sync-error" id="sync-error" role="alert" hidden></p>
         </form>
@@ -265,52 +275,52 @@
     </div>
 
     <div class="sync-view" id="sync-confirm" hidden>
-      <p class="sync-text">Taken ontvangen van je andere toestel?</p>
-      <p class="sync-warn">De lijst op dit toestel wordt vervangen door die van het andere toestel. Orbit bewaart eerst een momentopname, terug te vinden in Archief.</p>
+      <p class="sync-text" data-i="sync.confirmText">Taken ontvangen van je andere toestel?</p>
+      <p class="sync-warn" data-i="sync.confirmWarn">De lijst op dit toestel wordt vervangen door die van het andere toestel. Orbit bewaart eerst een momentopname, terug te vinden in Archief.</p>
       <div class="sync-row sync-end">
-        <button type="button" class="btn-ghost" id="sync-confirm-no">Niet nu</button>
-        <button type="button" class="btn-solid" id="sync-confirm-yes">Ontvang taken</button>
+        <button type="button" class="btn-ghost" id="sync-confirm-no" data-i="sync.notNow">Niet nu</button>
+        <button type="button" class="btn-solid" id="sync-confirm-yes" data-i="sync.receiveTasks">Ontvang taken</button>
       </div>
     </div>
 
     <div class="sync-view" id="sync-scanner" hidden>
-      <p class="sync-warn">De lijst op dit toestel wordt vervangen door die van het andere toestel. Orbit bewaart eerst een momentopname.</p>
+      <p class="sync-warn" data-i="sync.scanWarn">De lijst op dit toestel wordt vervangen door die van het andere toestel. Orbit bewaart eerst een momentopname.</p>
       <div class="sync-video"><video id="sync-video" playsinline muted></video><span class="sync-frame" aria-hidden="true"></span></div>
       <p class="sync-text sync-note" id="sync-scan-msg" role="status">Richt de camera op de QR-code van het toestel dat verstuurt.</p>
       <div class="sync-row sync-end">
-        <button type="button" class="btn-ghost" id="sync-scan-cancel">Annuleren</button>
+        <button type="button" class="btn-ghost" id="sync-scan-cancel" data-i="sync.cancel">Annuleren</button>
       </div>
     </div>
 
     <div class="sync-view" id="sync-recv" hidden>
       <ol class="sync-steps" id="sync-recv-steps">
-        <li data-step="scan">Code ontvangen</li>
-        <li data-step="connect">Verbinden met de server</li>
-        <li data-step="wait">Wachten op de lijst van het andere toestel</li>
-        <li data-step="done">Taken overgenomen</li>
+        <li data-step="scan" data-i="sync.step.scan">Code ontvangen</li>
+        <li data-step="connect" data-i="sync.step.connect">Verbinden met de server</li>
+        <li data-step="wait" data-i="sync.step.wait">Wachten op de lijst van het andere toestel</li>
+        <li data-step="done" data-i="sync.step.done">Taken overgenomen</li>
       </ol>
       <p class="sync-text sync-note" id="sync-recv-msg" role="status"></p>
       <div class="sync-row sync-end">
-        <button type="button" class="btn-ghost" id="sync-recv-cancel">Annuleren</button>
-        <button type="button" class="btn-ghost" id="sync-recv-retry" hidden>Opnieuw proberen</button>
-        <button type="button" class="btn-solid" id="sync-recv-done" hidden>Klaar</button>
+        <button type="button" class="btn-ghost" id="sync-recv-cancel" data-i="sync.cancel">Annuleren</button>
+        <button type="button" class="btn-ghost" id="sync-recv-retry" hidden data-i="sync.retry">Opnieuw proberen</button>
+        <button type="button" class="btn-solid" id="sync-recv-done" hidden data-i="done">Klaar</button>
       </div>
     </div>
 
     <div class="sync-view" id="sync-on" hidden>
-      <p class="sync-dir"><span>Dit toestel</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M2 6h34M31 1l5 5-5 5"/></svg><span>Toestel dat scant</span></p>
-      <div class="sync-qr" id="sync-qr" role="img" aria-label="QR-code om taken naar een ander toestel te versturen"></div>
+      <p class="sync-dir"><span data-i="sync.thisDevice">Dit toestel</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M2 6h34M31 1l5 5-5 5"/></svg><span data-i="sync.scanning">Toestel dat scant</span></p>
+      <div class="sync-qr" id="sync-qr" role="img" aria-label="QR-code om taken naar een ander toestel te versturen" data-ia="aria-label:sync.qr"></div>
       <p class="sync-status" id="sync-send-status" role="status"><span class="sync-dot" aria-hidden="true"></span><span id="sync-send-text"></span></p>
-      <p class="sync-text sync-note">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Naar de app op het beginscherm van deze zelfde gsm? Tik op "Kopieer link", open de app en plak de link bij Koppelen.</p>
+      <p class="sync-text sync-note" data-i="sync.onNote">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Naar de app op het beginscherm van deze zelfde gsm? Tik op "Kopieer link", open de app en plak de link bij Koppelen.</p>
       <div class="sync-row">
-        <button type="button" class="btn-ghost" id="sync-copy-link">Kopieer link</button>
+        <button type="button" class="btn-ghost" id="sync-copy-link" data-i="sync.copy">Kopieer link</button>
         <button type="button" class="btn-ghost" id="sync-show-code" aria-expanded="false">Toon code</button>
       </div>
       <p class="sync-code" id="sync-code" hidden></p>
       <p class="sync-meta" id="sync-meta"></p>
       <div class="sync-row sync-end">
-        <button type="button" class="btn-ghost" id="sync-stop">Ontkoppel dit toestel</button>
-        <button type="button" class="btn-solid" id="sync-close">Klaar</button>
+        <button type="button" class="btn-ghost" id="sync-stop" data-i="sync.stop">Ontkoppel dit toestel</button>
+        <button type="button" class="btn-solid" id="sync-close" data-i="done">Klaar</button>
       </div>
     </div>
   </div>

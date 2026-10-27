@@ -43,12 +43,13 @@ export function rgbOf(hex) {
 }
 export const rgba = ([r, g, b], a) => `rgba(${r | 0},${g | 0},${b | 0},${a})`;
 
-/* ---- Iconen voor het wiel (24x24, lijn) ---- */
+/* ---- Iconen voor het wiel (24x24, lijn): set "Afstand", gekozen door Victor ---- */
+// Hoe ver iets weg is: doelwit (nu), zonsopgang (vandaag), pad (week), berg (maand), oneindig (ooit).
 const ICONS = {
-  1: '<path d="M13.5 2.5 5 13.5h6l-1 8 8.5-11h-6l1-8z"/>',
-  2: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
-  3: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M7 13.5h10M7 16.5h6"/>',
-  4: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="8" cy="13.5" r=".6"/><circle cx="12" cy="13.5" r=".6"/><circle cx="16" cy="13.5" r=".6"/><circle cx="8" cy="16.8" r=".6"/><circle cx="12" cy="16.8" r=".6"/>',
+  1: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
+  2: '<path d="M3 17.5h18M7 17.5a5 5 0 0 1 10 0M12 7v2.5M5.8 10.8l1.6 1.4M18.2 10.8l-1.6 1.4M7 21h10"/>',
+  3: '<circle cx="5" cy="18" r="1.6"/><circle cx="19" cy="6" r="1.6"/><path d="M6.6 17.3c5-1.5 2-6.8 6.3-8.4 1.6-.6 3.6-.9 4.6-1.6" stroke-dasharray="2 2.6"/>',
+  4: '<path d="M2.5 19.5l6.5-10 4 6 2.5-3.5 6 7.5z"/><circle cx="17" cy="6" r="1.7"/>',
   5: '<path d="M8.2 8.5C5.6 8.5 3.5 10 3.5 12s2.1 3.5 4.7 3.5c3.9 0 3.7-7 7.6-7 2.6 0 4.7 1.5 4.7 3.5s-2.1 3.5-4.7 3.5c-3.9 0-3.7-7-7.6-7z"/>',
 };
 

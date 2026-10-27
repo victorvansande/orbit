@@ -10,6 +10,10 @@ import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
 import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
+import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './i18n.js';
+import { greeting } from './greet.js';
+
+applyStatic();
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
@@ -65,7 +69,7 @@ const realTasks = () => tasks.filter(t => !t.demo);
 // Vangnet: verdwijnen er taken die niet afgevinkt zijn (bv. een ander tabblad dat een oude lijst bewaart),
 // dan eerst een momentopname van wat er stond.
 let notifySync = () => {};
-function saveTasks({ notify = true, reason = 'Voor een overschrijving' } = {}) {
+function saveTasks({ notify = true, reason = 'overwrite' } = {}) {
   const real = realTasks();
   const before = loadTasks();
   if (before) {
@@ -93,8 +97,7 @@ let warned = 0;
 function storageWarning() {
   if (Date.now() - warned < 60000) return;
   warned = Date.now();
-  setTimeout(() => showToast('Bewaren op dit toestel lukte niet. Je taken staan in de reservekopie; exporteer ze voor de zekerheid.',
-    () => openArchive(), 'Archief'), 0);
+  setTimeout(() => showToast(tx('toast.saveFailed'), () => openArchive(), tx('menu.archive')), 0);
 }
 
 // Wijzigingen die nog niet bij de server zijn: geteld en bewaard, ook als je de app sluit
@@ -111,14 +114,10 @@ function touch(task) {
   delete task.demo;
 }
 
-const DEMO = [
-  [1, 'Huur overschrijven'], [1, 'Offerte terugsturen'],
-  [2, 'Boodschappen doen'], [2, 'Planten water geven'],
-  [3, 'Fiets laten herstellen'], [3, 'Cadeau voor zaterdag kopen'], [3, 'Was opvouwen'],
-  [4, 'Tandarts bellen'], [4, 'Belastingaangifte invullen'],
-  [5, 'Japans leren'], [5, 'Zolder opruimen'],
-];
-const DEMO_LEVEL = new Map(DEMO.map(([level, title]) => [title, level]));
+// Voorbeeldtaken in de taal van de app; herkennen (zie demoIds) gebeurt in beide talen
+const DEMO_LEVELS = [1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5];
+const DEMO = DEMO_TITLES[LANG].map((title, i) => [DEMO_LEVELS[i], title]);
+const DEMO_LEVEL = new Map(Object.values(DEMO_TITLES).flatMap(list => list.map((title, i) => [title, DEMO_LEVELS[i]])));
 
 // Voorbeeldtaken herkennen die ooit opgeslagen werden: zelfde titel en moment als in het voorbeeld, nooit gewijzigd,
 // en als groepje (minstens drie, aangemaakt binnen 15 s, zoals het voorbeeld dat doet). Zo wordt een eigen taak die
@@ -166,7 +165,7 @@ try {
 
 let gone = loadGone();
 let tasks = loadTasks();
-tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'Voor opruimen voorbeeldtaken');
+tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'demo');
 let archive = loadArchive();
 let done = loadDone(archive);                    // logboek van afgevinkte taken, gaat mee met de sync
 let doneReset = loadReset();                      // teller op nul gezet op dit tijdstip
@@ -185,16 +184,16 @@ mirrorAtStart.then(m => {
   const merged = mergeStates(local, { tasks: m.tasks.filter(isTask), gone: m.gone || {} });
   if (sameState(merged, local)) return;
   const added = merged.tasks.length - local.tasks.length;
-  snapshot(tasks, 'Voor herstel uit reservekopie');
+  snapshot(tasks, 'mirror');
   tasks = merged.tasks; gone = merged.gone;
   applyDeadlines();
   saveTasks();
   render();
-  if (added > 0) showToast(`${added} ${added === 1 ? 'taak' : 'taken'} hersteld uit de reservekopie`);
+  if (added > 0) showToast(tx('toast.mirror', { n: added }));
 });
 
 // Elke dag minstens één momentopname, ook als er niets misgaat
-if (Date.now() - lastSnapshotAt() > 20 * 3600000) snapshot(tasks, 'Dagelijkse kopie');
+if (Date.now() - lastSnapshotAt() > 20 * 3600000) snapshot(tasks, 'daily');
 
 // Taken met een deadline krijgen hun schil uit de datum; geeft true als er iets opschoof
 function applyDeadlines() {
@@ -232,8 +231,8 @@ const wheel = createWheel($('wheel'), {
 
 /* ---- Samenvatting en hoeklabels ---- */
 const countBy = level => tasks.reduce((n, t) => n + (t.level === level), 0);
-const DAY_FMT = new Intl.DateTimeFormat('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' });
-const TIME_FMT = new Intl.DateTimeFormat('nl-BE', { hour: '2-digit', minute: '2-digit' });
+const DAY_FMT = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
+const TIME_FMT = new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit' });
 
 function isoWeek(d) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -247,17 +246,17 @@ function renderSummary() {
   const total = tasks.length;
   const urgent = countBy(URGENT_LEVEL);
   $('summary').textContent = total === 0
-    ? 'Geen taken'
-    : `${urgent ? urgent + ' dringend' : 'Niets dringend'} · ${total} ${total === 1 ? 'taak' : 'taken'}`;
+    ? tx('summary.none')
+    : `${urgent ? tx('summary.urgent', { n: urgent }) : tx('summary.calm')} · ${tx('tasks.n', { n: total })}`;
   const parts = LEVELS.map(lv => `${countBy(lv.id)} ${lv.name}`).join(', ');
-  $('scene').setAttribute('aria-label', total ? `Orbit: ${parts}` : 'Orbit: geen taken');
+  $('scene').setAttribute('aria-label', total ? tx('scene.label', { parts }) : tx('scene.empty'));
 }
 
 function renderClock() {
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, '0');
   const mm = String(now.getMonth() + 1).padStart(2, '0');
-  $('week').textContent = `Week ${isoWeek(now)}`;
+  $('week').textContent = tx('week', { n: isoWeek(now) });
   $('date').textContent = `${dd} · ${mm} · ${now.getFullYear()}`;
   setMatrix($('clock'), TIME_FMT.format(now));
   $('clock-date').textContent = DAY_FMT.format(now);
@@ -269,7 +268,7 @@ function renderFocusDue() {
   const next = tasks.filter(t => t.due && !t.demo).sort((a, b) => a.due.localeCompare(b.due) || a.createdAt - b.createdAt)[0];
   line.hidden = !next;
   if (!next) return;
-  const b = el('b', '', isOverdue(next.due) ? 'Te laat' : 'Volgende deadline');
+  const b = el('b', '', isOverdue(next.due) ? tx('focus.late') : tx('focus.next'));
   line.replaceChildren(b, document.createTextNode(`${next.title} · ${dueLabel(next.due)}`));
   line.classList.toggle('is-late', isOverdue(next.due));
 }
@@ -333,17 +332,17 @@ function renderFocusNow() {
   const urgent = tasks.filter(t => t.level === URGENT_LEVEL).sort((a, b) => a.createdAt - b.createdAt);
   box.replaceChildren();
   if (!urgent.length) { box.append(quoteNode()); fitQuote(); return; }
-  box.append(el('p', 'focus-kicker', 'Nu'));
+  box.append(el('p', 'focus-kicker', tx('focus.now')));
   const ul = el('ul');
   const max = desktop.matches ? 4 : 3;   // op gsm minder plaats onder de scène
   for (const t of urgent.slice(0, max)) ul.append(el('li', '', t.title));
-  if (urgent.length > max) ul.append(el('li', 'focus-more', `en nog ${urgent.length - max}`));
+  if (urgent.length > max) ul.append(el('li', 'focus-more', tx('focus.more', { n: urgent.length - max })));
   box.append(ul);
 }
 
 /* ---- Statistiek: teller onder de lijst (met details bij een tik) en de sterrenhemel in de scène ---- */
-const MONTH_FMT = new Intl.DateTimeFormat('nl-BE', { month: 'long' });
-const LONG_DAY = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+const MONTH_FMT = new Intl.DateTimeFormat(LOCALE, { month: 'long' });
+const LONG_DAY = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 let statsDay = '';
 function renderStats() {
   const now = new Date();
@@ -354,19 +353,19 @@ function renderStats() {
   $('stat-mini').hidden = total === 0;
   if (!total) return;
   $('stat-mini-n').textContent = String(total);
-  $('stat-mini').setAttribute('aria-label', `${total} ${total === 1 ? 'ster' : 'sterren'}, toon details`);
+  $('stat-mini').setAttribute('aria-label', tx('stars.mini', { n: total }));
   setMatrix($('stat-total'), String(total));
-  $('stat-total').setAttribute('aria-label', `${total} afgevinkt in totaal, evenveel sterren in de hemel`);
-  $('stat-stars-label').textContent = total === 1 ? 'star collected' : 'stars collected';
+  $('stat-total').setAttribute('aria-label', tx('stats.total', { n: total }));
+  $('stat-stars-label').textContent = total === 1 ? tx('stats.label1') : tx('stats.label');
   const sum = doneSummary(done, now);
   const day = ts => LONG_DAY.format(ts);
   const bestDay = sum.best ? (([y, m, d]) => new Date(y, m - 1, d))(sum.best.day.split('-').map(Number)) : null;
   const rows = [
-    ['Vandaag', sum.today],
-    ['Deze week', sum.week],
+    [tx('stats.today'), sum.today],
+    [tx('stats.week'), sum.week],
     [MONTH_FMT.format(now), sum.month],
-    ['Beste dag', sum.best ? `${sum.best.n} · ${day(bestDay)}` : '-'],
-    ['Eerste ster', sum.first ? day(sum.first) : '-'],
+    [tx('stats.best'), sum.best ? `${sum.best.n} · ${day(bestDay)}` : '-'],
+    [tx('stats.first'), sum.first ? day(sum.first) : '-'],
   ];
   $('stats-rows').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', '', k), el('dd', '', String(v))]));
 }
@@ -390,7 +389,7 @@ $('stats-reset-yes').addEventListener('click', () => {
   $('stats-toggle').setAttribute('aria-expanded', 'false');
   renderStats();
   notifySync();
-  showToast('Teller en sterren op nul');
+  showToast(tx('stats.resetDone'));
 });
 function showStatsDetail(open) {
   $('stats-detail').hidden = !open;
@@ -421,9 +420,7 @@ const leaving = new Set();
 function renderTracks() {
   const frag = document.createDocumentFragment();
   if (!tasks.length) {
-    frag.append(el('p', 'tracks-empty', desktop.matches
-      ? 'Niets te doen. Kies rechts een moment om een taak toe te voegen.'
-      : 'Niets te doen. Kies hierboven een moment om een taak toe te voegen.'));
+    frag.append(el('p', 'tracks-empty', desktop.matches ? tx('tracks.emptyDesk') : tx('tracks.emptyMobile')));
   }
   for (const lv of LEVELS) {
     const own = tasks.filter(t => t.level === lv.id).sort((a, b) => a.createdAt - b.createdAt);
@@ -453,11 +450,11 @@ function trackRow(t) {
   const check = el('button', 't-check');
   check.type = 'button';
   check.innerHTML = CHECK_SVG;
-  check.setAttribute('aria-label', `Markeer “${t.title}” als klaar`);
+  check.setAttribute('aria-label', tx('task.check', { title: t.title }));
   check.addEventListener('click', () => complete(t.id, li));
 
   const title = el('span', 't-title', t.title);
-  title.title = 'Dubbelklik om aan te passen';
+  title.title = tx('task.dbl');
   title.addEventListener('dblclick', () => editTitle(t.id, title));
 
   li.append(check, title);
@@ -473,14 +470,14 @@ function trackRow(t) {
 function levelControls(t, li) {
   const levelBtn = el('button', 't-level');
   levelBtn.type = 'button';
-  levelBtn.setAttribute('aria-label', `Moment wijzigen, nu ${LEVEL_BY_ID.get(t.level).name}`);
+  levelBtn.setAttribute('aria-label', tx('task.level', { level: LEVEL_BY_ID.get(t.level).name }));
   levelBtn.setAttribute('aria-expanded', 'false');
   levelBtn.append(el('span', 'orb-dot'));
 
   const picker = el('div', 't-picker');
   picker.hidden = true;
   picker.setAttribute('role', 'group');
-  picker.setAttribute('aria-label', 'Kies een moment');
+  picker.setAttribute('aria-label', tx('task.pick'));
   for (const lv of LEVELS) {
     const opt = el('button', 't-opt');
     opt.type = 'button';
@@ -506,7 +503,7 @@ function dueControls(t, li) {
   li.classList.add('has-due');
   const chip = el('button', isOverdue(t.due) ? 't-due is-late' : 't-due', dueLabel(t.due));
   chip.type = 'button';
-  chip.setAttribute('aria-label', `Deadline ${dueLabel(t.due)}, wijzigen`);
+  chip.setAttribute('aria-label', tx('task.due', { label: dueLabel(t.due) }));
   chip.setAttribute('aria-expanded', 'false');
 
   const editor = el('div', 't-due-edit');
@@ -514,9 +511,9 @@ function dueControls(t, li) {
   const input = el('input', 'due-input');
   input.type = 'date';
   input.value = t.due;
-  input.setAttribute('aria-label', 'Deadline');
+  input.setAttribute('aria-label', tx('composer.due'));
   input.addEventListener('change', () => { if (isDue(input.value)) setDue(t.id, input.value); });
-  const clear = el('button', 'due-clear', 'Deadline wissen');
+  const clear = el('button', 'due-clear', tx('task.dueClear'));
   clear.type = 'button';
   clear.addEventListener('click', () => setDue(t.id, null));
   editor.append(input, clear);
@@ -542,7 +539,7 @@ function editTitle(id, span) {
   const input = el('input', 't-edit');
   input.value = task.title;
   input.maxLength = 120;
-  input.setAttribute('aria-label', 'Titel aanpassen');
+  input.setAttribute('aria-label', tx('task.edit'));
   span.replaceWith(input);
   input.focus();
   input.select();
@@ -602,6 +599,7 @@ function complete(id, row) {
   leaving.add(id);
   row.classList.add('is-done');
   const spot = scene.complete(id);
+  scene.cheer();
   tasks = tasks.filter(t => t.id !== id);
   if (!task.demo) {
     const now = Date.now();
@@ -617,7 +615,7 @@ function complete(id, row) {
   renderFocusNow();
   renderArchive();
   scene.setTasks(tasks);
-  showToast(`Afgevinkt · ${task.title}`, task.demo ? () => { tasks.push(task); render(); } : () => restore([id]));
+  showToast(tx('toast.completed', { title: task.title }), task.demo ? () => { tasks.push(task); render(); } : () => restore([id]));
   setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
 }
 
@@ -653,7 +651,7 @@ function undo() {
   hideToast();
 }
 
-function showToast(text, action = null, label = 'Ongedaan maken') {
+function showToast(text, action = null, label = tx('undo')) {
   toastAction = action;
   $('undo').textContent = label;
   $('undo').hidden = !action;
@@ -738,13 +736,13 @@ function paintComposerOrb() {
   cancelAnimationFrame(orbRaf);
   orbRaf = requestAnimationFrame(drawComposerOrbit);
   toneNode(composer, lv);
-  $('composer-level').textContent = composerDue ? `${lv.name} · deadline` : lv.name;
+  $('composer-level').textContent = composerDue ? tx('composer.levelDue', { level: lv.name }) : lv.name;
   for (const b of $('composer-levels').children) {
     b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));
     b.disabled = Boolean(composerDue);
   }
   $('composer-levels').classList.toggle('is-locked', Boolean(composerDue));
-  $('due-hint').textContent = composerDue ? `${dueLabel(composerDue)}, komt in ${lv.name}. Schuift vanzelf mee.` : '';
+  $('due-hint').textContent = composerDue ? tx('composer.hint', { label: dueLabel(composerDue), level: lv.name }) : '';
   composerOrb.classList.remove('is-swap');
   void composerOrb.offsetWidth;
   composerOrb.classList.add('is-swap');
@@ -893,6 +891,12 @@ for (const b of themeButtons) b.addEventListener('click', () => setThemePref(b.d
 systemDark.addEventListener('change', () => { if (themePref === 'auto') applyTheme(); });
 applyTheme();
 
+/* ---- Taal: Nederlands of Engels (wisselen herlaadt de pagina) ---- */
+for (const b of document.querySelectorAll('[data-lang]')) {
+  b.setAttribute('aria-checked', String(b.dataset.lang === LANG));
+  b.addEventListener('click', () => setLang(b.dataset.lang));
+}
+
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
@@ -959,17 +963,17 @@ desktop.addEventListener('change', () => { updateInsets(); renderTracks(); rende
 
 /* ---- Archief: afgevinkt, momentopnames, export en import ---- */
 const archiveDialog = $('archive');
-const STAMP_DAY = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'short' });
+const STAMP_DAY = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' });
 let archiveTab = 'done';
 
 function stamp(ts) {
   const d = new Date(ts), today = new Date();
   const days = Math.round((new Date(today.toDateString()) - new Date(d.toDateString())) / 86400000);
-  const day = days === 0 ? 'vandaag' : days === 1 ? 'gisteren' : STAMP_DAY.format(d);
+  const day = days === 0 ? tx('stamp.today') : days === 1 ? tx('stamp.yesterday') : STAMP_DAY.format(d);
   return `${day} ${TIME_FMT.format(d)}`;
 }
 
-function archRow({ title, meta, level, action, label, disabled = false }) {
+function archRow({ title, meta, level, action, label, disabled = false, remove = null }) {
   const li = el('li', 'arch-row');
   const dot = el('span', 'arch-dot');
   if (level) toneNode(dot, LEVEL_BY_ID.get(level)); else dot.classList.add('is-plain');
@@ -979,8 +983,39 @@ function archRow({ title, meta, level, action, label, disabled = false }) {
   btn.type = 'button';
   btn.disabled = disabled;
   btn.addEventListener('click', action);
-  li.append(dot, text, btn);
+  li.append(dot, text);
+  if (remove) li.append(removeButton(remove));
+  li.append(btn);
   return li;
+}
+
+// Definitief verwijderen in twee tikken: de eerste vraagt "Zeker?", na 3 s zonder tweede tik terug naar normaal
+function removeButton(action) {
+  const btn = el('button', 'arch-remove');
+  btn.type = 'button';
+  const label = () => { btn.textContent = tx('archive.remove'); btn.setAttribute('aria-label', tx('archive.removeLong')); btn.classList.remove('is-armed'); };
+  label();
+  let timer = 0;
+  btn.addEventListener('click', () => {
+    if (!btn.classList.contains('is-armed')) {
+      btn.classList.add('is-armed');
+      btn.textContent = tx('archive.sure');
+      clearTimeout(timer);
+      timer = setTimeout(label, 3000);
+      return;
+    }
+    clearTimeout(timer);
+    action();
+  });
+  return btn;
+}
+
+// Uit het archief, voorgoed. De taak blijft afgevinkt (ook op andere toestellen) en blijft meetellen bij de sterren.
+function removeFromArchive(id) {
+  const a = archive.find(x => x.id === id);
+  archive = saveArchive(archive.filter(x => x.id !== id));
+  renderArchive();
+  if (a) showToast(tx('archive.removed', { title: a.title }));
 }
 
 function renderArchive() {
@@ -992,11 +1027,12 @@ function renderArchive() {
   const doneList = $('arch-done-list');
   doneList.replaceChildren(...archive.map(a => archRow({
     title: a.title,
-    meta: `${LEVEL_BY_ID.get(a.level)?.name ?? ''} · afgevinkt ${stamp(a.doneAt)}${a.by === 'elders' ? ' op een ander toestel' : ''}`,
-    level: a.level, label: 'Terugzetten',
-    action: () => { restore([a.id]); showToast(`Teruggezet · ${a.title}`); },
+    meta: tx('archive.doneMeta', { level: LEVEL_BY_ID.get(a.level)?.name ?? '', when: stamp(a.doneAt) }) + (a.by === 'elders' ? tx('archive.elsewhere') : ''),
+    level: a.level, label: tx('archive.restore'),
+    action: () => { restore([a.id]); showToast(tx('toast.restored', { title: a.title })); },
+    remove: () => removeFromArchive(a.id),
   })));
-  if (!archive.length) doneList.append(el('li', 'arch-empty', 'Nog niets afgevinkt.'));
+  if (!archive.length) doneList.append(el('li', 'arch-empty', tx('archive.empty')));
 
   const now = new Set(tasks.map(t => t.id));
   const snaps = loadSnapshots();
@@ -1004,32 +1040,32 @@ function renderArchive() {
   snapList.replaceChildren(...snaps.map(sn => {
     const missing = sn.tasks.filter(t => !now.has(t.id)).length;
     return archRow({
-      title: sn.reason,
-      meta: `${stamp(sn.at)} · ${sn.tasks.length} ${sn.tasks.length === 1 ? 'taak' : 'taken'}${missing ? ` · ${missing} ${missing === 1 ? 'ontbreekt' : 'ontbreken'} nu` : ' · niets ontbreekt'}`,
-      label: missing ? `Zet ${missing} terug` : 'Volledig',
+      title: reasonText(sn.reason),
+      meta: `${stamp(sn.at)} · ${tx('tasks.n', { n: sn.tasks.length })}${missing ? tx('archive.missing', { n: missing }) : tx('archive.complete')}`,
+      label: missing ? tx('archive.bring', { n: missing }) : tx('archive.full'),
       disabled: !missing,
-      action: () => bringBack(sn.tasks, 'Voor terugzetten'),
+      action: () => bringBack(sn.tasks, 'restore'),
     });
   }));
-  if (!snaps.length) snapList.append(el('li', 'arch-empty', 'Nog geen momentopnames.'));
+  if (!snaps.length) snapList.append(el('li', 'arch-empty', tx('archive.noSnaps')));
 
   // Versies op de server, alleen als dit toestel gekoppeld is
   $('arch-server').hidden = !sync.code;
   const srv = $('arch-server-list');
-  if (serverHistory === 'loading') srv.replaceChildren(el('li', 'arch-empty', 'Versies ophalen…'));
-  else if (serverHistory === 'error') srv.replaceChildren(el('li', 'arch-empty', 'De server is nu niet bereikbaar.'));
+  if (serverHistory === 'loading') srv.replaceChildren(el('li', 'arch-empty', tx('archive.loading')));
+  else if (serverHistory === 'error') srv.replaceChildren(el('li', 'arch-empty', tx('archive.offline')));
   else if (Array.isArray(serverHistory)) {
     srv.replaceChildren(...serverHistory.map(h => {
       const missing = h.tasks.filter(t => !now.has(t.id)).length;
       return archRow({
-        title: `Versie ${h.v}${h.from ? ` · van ${h.from}` : ''}`,
-        meta: `${h.at ? stamp(h.at) : 'onbekend'} · ${h.tasks.length} ${h.tasks.length === 1 ? 'taak' : 'taken'}${missing ? ` · ${missing} ${missing === 1 ? 'ontbreekt' : 'ontbreken'} nu` : ' · niets ontbreekt'}`,
-        label: missing ? `Zet ${missing} terug` : 'Volledig',
+        title: tx('archive.version', { v: h.v }) + (h.from ? tx('archive.from', { from: h.from }) : ''),
+        meta: `${h.at ? stamp(h.at) : tx('archive.unknown')} · ${tx('tasks.n', { n: h.tasks.length })}${missing ? tx('archive.missing', { n: missing }) : tx('archive.complete')}`,
+        label: missing ? tx('archive.bring', { n: missing }) : tx('archive.full'),
         disabled: !missing,
-        action: () => bringBack(h.tasks, 'Voor terugzetten van server'),
+        action: () => bringBack(h.tasks, 'restoreServer'),
       });
     }));
-    if (!serverHistory.length) srv.append(el('li', 'arch-empty', 'Nog geen versies op de server.'));
+    if (!serverHistory.length) srv.append(el('li', 'arch-empty', tx('archive.noServer')));
   }
 }
 
@@ -1073,9 +1109,9 @@ function bringBack(list, reason, { preferNewer = false } = {}) {
   renderArchive();
   renderStats();
   const parts = [];
-  if (added) parts.push(`${added} ${added === 1 ? 'taak' : 'taken'} terug`);
-  if (updated) parts.push(`${updated} bijgewerkt`);
-  showToast(parts.length ? parts.join(' · ') : 'Niets nieuws: alles stond er al');
+  if (added) parts.push(tx('toast.back', { n: added }));
+  if (updated) parts.push(tx('toast.updated', { n: updated }));
+  showToast(parts.length ? parts.join(' · ') : tx('toast.nothing'));
   return added + updated;
 }
 
@@ -1121,9 +1157,9 @@ $('arch-file').addEventListener('change', async e => {
       saveDone(done);
       syncStars(sky, done);
     }
-    bringBack(list, 'Voor import', { preferNewer: true });
+    bringBack(list, 'import', { preferNewer: true });
   } catch {
-    showToast('Dat bestand kon Orbit niet lezen');
+    showToast(tx('toast.badFile'));
   }
 });
 
@@ -1153,7 +1189,7 @@ window.addEventListener('storage', e => {
 // Koppelen gebeurt in één richting: het toestel met de QR-code verstuurt, het toestel dat scant ontvangt
 // en neemt die lijst over (na een momentopname). Daarna houden ze elkaar gewoon gelijk.
 const syncDialog = $('sync');
-const SYNC_TEXT = { off: 'Koppelen', connecting: 'Verbinden', online: 'Gesynchroniseerd', offline: 'Offline' };
+const SYNC_TEXT = { off: tx('sync.off'), connecting: tx('sync.connecting'), online: tx('sync.online'), offline: tx('sync.offline') };
 const DEVICE = deviceName();
 
 const sync = createSync({
@@ -1161,12 +1197,12 @@ const sync = createSync({
   getState: () => ({ tasks: realTasks(), gone, done, doneReset }),
   applyState(state) {
     gone = { ...state.gone };
-    const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken');
+    const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo');
     const keep = new Set(incoming.map(t => t.id));
     // Taken die hier verdwijnen omdat ze elders afgevinkt zijn: eerst een momentopname, dan naar het archief, en melden
     const lost = realTasks().filter(t => !keep.has(t.id));
     if (lost.length) {
-      snapshot(tasks, 'Voor synchronisatie');
+      snapshot(tasks, 'sync');
       const now = Date.now();
       archive = saveArchive([...lost.map(t => ({ ...t, doneAt: state.gone?.[t.id] || now, by: 'elders' })), ...archive]);
       for (const t of lost) placeStar(sky, t.id, scene.complete(t.id));     // ook hier fonkelt de taak uit en blijft er een ster
@@ -1181,23 +1217,23 @@ const sync = createSync({
     renderStats();
     tasks = incoming;
     applyDeadlines();
-    saveTasks({ notify: false, reason: 'Voor synchronisatie' });
+    saveTasks({ notify: false, reason: 'sync' });
     if (incoming.length < state.tasks.length) sync.changed();     // opgeruimde voorbeeldtaken ook elders weg
     render();
     renderArchive();
     if (lost.length) {
-      showToast(lost.length === 1 ? `Elders afgevinkt · ${lost[0].title}` : `${lost.length} taken elders afgevinkt`,
-        () => restore(lost.map(t => t.id)), 'Terugzetten');
+      showToast(lost.length === 1 ? tx('toast.elsewhere1', { title: lost[0].title }) : tx('toast.elsewhere', { n: lost.length }),
+        () => restore(lost.map(t => t.id)), tx('toast.restore'));
     }
   },
   // Ontvanger: de lijst van de verzender vervangt de eigen lijst; eerst een momentopname
   onReceive(state) {
-    snapshot(tasks, 'Voor ontvangen');
+    snapshot(tasks, 'receive');
     // Eigen wijzigingen die nog niet bij de server waren (bv. offline toegevoegd op een al gekoppeld toestel) blijven
     const unsynced = pending.n > 0 && pending.confirmedAt > 0
       ? realTasks().filter(t => (t.updatedAt || 0) > pending.confirmedAt && !state.tasks.some(r => r.id === t.id)) : [];
     gone = { ...state.gone };
-    tasks = [...dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken'), ...unsynced];
+    tasks = [...dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo'), ...unsynced];
     // het logboek van beide toestellen samen: niemand verliest zijn telling
     ({ done, doneReset } = mergeStates({ tasks: [], gone: {}, done, doneReset }, { tasks, gone: {}, done: cleanDone(state.done), doneReset: state.doneReset }));
     saveDone(done);
@@ -1207,7 +1243,7 @@ const sync = createSync({
     // had dit toestel iets wat de verzender niet had (eigen taken of afgevinkte), dan terugsturen
     if (tasks.length !== state.tasks.length || totalDone(done) !== totalDone(cleanDone(state.done)) || doneReset !== (state.doneReset || 0)) setTimeout(() => sync.changed(), 0);
     applyDeadlines();
-    saveTasks({ notify: false, reason: 'Voor ontvangen' });
+    saveTasks({ notify: false, reason: 'receive' });
     render();
     renderArchive();
   },
@@ -1228,7 +1264,7 @@ const recv = { connect: 'todo', wait: 'todo', done: 'todo' };
 const scanner = createScanner($('sync-video'), {
   onCode(text) {
     const code = codeFromText(text);
-    if (!code) { scanMessage('Dat is geen QR-code van Orbit. Richt op de code van het toestel dat verstuurt.'); return false; }
+    if (!code) { scanMessage(tx('sync.notOrbitQr')); return false; }
     receiveFrom(code);
     return true;
   },
@@ -1284,39 +1320,40 @@ function renderPair(e) {
       renderRecv({ text: serverHint(e), error: e.attempts >= 4 });
     } else if (e.step === 'waiting') {
       Object.assign(recv, { connect: 'done', wait: 'active' });
-      renderRecv({ text: 'Verbonden. Hou de QR-code open op het andere toestel.' });
+      renderRecv({ text: tx('sync.connectedWait') });
     } else if (e.step === 'timeout') {
       recv.wait = 'fail';
-      renderRecv({ text: 'Nog niets ontvangen. Staat de QR-code nog open op het andere toestel, en zijn beide toestellen online? Orbit blijft wachten.', error: true });
+      renderRecv({ text: tx('sync.timeout'), error: true });
     } else if (e.step === 'done') {
       Object.assign(recv, { connect: 'done', wait: 'done', done: 'done' });
-      renderRecv({ text: `${e.count} ${e.count === 1 ? 'taak' : 'taken'} ontvangen${e.from ? ` van ${e.from}` : ''}. Vanaf nu blijven beide toestellen gelijk.` });
+      renderRecv({ text: tx('sync.received', { n: e.count, from: e.from ? tx('sync.fromDevice', { name: e.from }) : '' }) });
     } else if (e.step === 'error') {
       recv.connect = 'fail';
-      renderRecv({ text: 'Er liep iets mis bij het verbinden. Probeer opnieuw.', error: true });
+      renderRecv({ text: tx('sync.error'), error: true });
     }
     return;
   }
   if (e.role === 'receive' && e.step === 'done') {
-    showToast(`${e.count} ${e.count === 1 ? 'taak' : 'taken'} ontvangen${e.from ? ` van ${e.from}` : ''}`);
+    showToast(tx('sync.receivedToast', { n: e.count, from: e.from ? tx('sync.fromDevice', { name: e.from }) : '' }));
     return;
   }
   if (e.role !== 'send') return;
   const text = $('sync-send-text'), line = $('sync-send-status');
   const set = (msg, state) => { text.textContent = msg; line.dataset.state = state; };
-  if (e.step === 'connecting') set('Verbinden met de server…', 'busy');
+  if (e.step === 'connecting') set(tx('sync.serverConnecting'), 'busy');
   else if (e.step === 'retrying') set(serverHint(e), e.attempts >= 4 ? 'error' : 'busy');
-  else if (e.step === 'ready') set(`Klaar om te versturen: ${e.count} ${e.count === 1 ? 'taak' : 'taken'}. Scan met het toestel dat moet ontvangen.`, 'ready');
+  else if (e.step === 'ready') set(tx('sync.ready', { n: e.count }), 'ready');
   else if (e.step === 'received') {
-    set(`Verstuurd naar ${e.by || 'een ander toestel'}: ${e.count} ${e.count === 1 ? 'taak' : 'taken'}. Je kunt nog een toestel laten scannen.`, 'done');
-    showToast(`Verstuurd naar ${e.by || 'een ander toestel'}`);
-  } else if (e.step === 'error') set('Versturen lukte niet. Sluit het venster en probeer opnieuw.', 'error');
+    const name = e.by || tx('sync.otherDevice');
+    set(tx('sync.sent', { n: e.count, name }), 'done');
+    showToast(tx('sync.sentToast', { name }));
+  } else if (e.step === 'error') set(tx('sync.sendFailed'), 'error');
 }
 
 function serverHint(e) {
-  if (e.offline) return 'Dit toestel is offline. Orbit probeert opnieuw zodra er internet is.';
-  if (e.attempts >= 4) return 'Geen verbinding met de Orbit-server. Controleer je internet. Lukt het op dit netwerk nooit, probeer dan even via mobiele data: sommige bedrijfsnetwerken blokkeren workers.dev.';
-  return 'Verbinden met de Orbit-server…';
+  if (e.offline) return tx('sync.isOffline');
+  if (e.attempts >= 4) return tx('sync.unreachable');
+  return tx('sync.orbitConnecting');
 }
 
 function renderSync({ status, lastSync, code } = { status: sync.status, lastSync: sync.lastSync, code: sync.code }) {
@@ -1325,22 +1362,22 @@ function renderSync({ status, lastSync, code } = { status: sync.status, lastSync
   btn.dataset.status = status;
   $('menu-btn').dataset.status = status;      // gsm: de status blijft zichtbaar als bolletje op het knopje
   // verbonden maar nog niets uitgewisseld: nog niet "gesynchroniseerd" noemen
-  const text = status === 'online' && !lastSync ? 'Verbonden' : SYNC_TEXT[status];
+  const text = status === 'online' && !lastSync ? tx('sync.connected') : SYNC_TEXT[status];
   // wijzigingen die nog naar de server moeten: zichtbaar tot de server ze bevestigt
-  $('sync-label').textContent = code && pending.n > 0 && status !== 'online' ? `${text} · ${pending.n} ${pending.n === 1 ? 'wacht' : 'wachten'}` : text;
-  btn.setAttribute('aria-label', status === 'off' ? 'Toestellen koppelen' : `Synchronisatie: ${text.toLowerCase()}`);
+  $('sync-label').textContent = code && pending.n > 0 && status !== 'online' ? `${text} · ${tx('sync.waiting', { n: pending.n })}` : text;
+  btn.setAttribute('aria-label', status === 'off' ? tx('sync.pair') : tx('sync.status', { text: text.toLowerCase() }));
   const view = syncView !== 'auto' ? syncView : code ? 'on' : 'off';
   const ids = { off: 'sync-off', confirm: 'sync-confirm', scan: 'sync-scanner', recv: 'sync-recv', on: 'sync-on' };
   for (const [v, id] of Object.entries(ids)) $(id).hidden = v !== view;
-  $('sync-title').textContent = { on: 'Versturen', scan: 'Ontvangen', recv: 'Ontvangen', confirm: 'Ontvangen' }[view] ?? 'Toestellen koppelen';
-  $('sync-kicker').textContent = view === 'off' ? 'Eenmalig' : DEVICE;
+  $('sync-title').textContent = { on: tx('sync.send'), scan: tx('sync.receive'), recv: tx('sync.receive'), confirm: tx('sync.receive') }[view] ?? tx('sync.pair');
+  $('sync-kicker').textContent = view === 'off' ? tx('sync.once') : DEVICE;
   if (code) {
     renderQr($('sync-qr'), syncLink(code));
     $('sync-code').textContent = code;
     $('sync-code').hidden = !showCode;
-    $('sync-show-code').textContent = showCode ? 'Verberg code' : 'Toon code';
+    $('sync-show-code').textContent = showCode ? tx('sync.hideCode') : tx('sync.showCode');
     $('sync-show-code').setAttribute('aria-expanded', String(showCode));
-    $('sync-meta').textContent = lastSync ? `Gekoppeld · ${text.toLowerCase()} om ${TIME_FMT.format(lastSync)}` : `Gekoppeld · ${text.toLowerCase()}`;
+    $('sync-meta').textContent = lastSync ? tx('sync.metaAt', { text: text.toLowerCase(), time: TIME_FMT.format(lastSync) }) : tx('sync.meta', { text: text.toLowerCase() });
   }
 }
 
@@ -1361,15 +1398,15 @@ function openSync(view = 'auto') {
 
 function startScan() {
   syncView = 'scan';
-  scanMessage('Richt de camera op de QR-code van het toestel dat verstuurt.');
+  scanMessage(tx('sync.aim'));
   renderSync();
   scanner.start();
 }
 
 async function copyText(text, button) {
   const label = button.textContent;
-  try { await navigator.clipboard.writeText(text); button.textContent = 'Gekopieerd'; }
-  catch { window.prompt('Kopieer:', text); }
+  try { await navigator.clipboard.writeText(text); button.textContent = tx('sync.copied'); }
+  catch { window.prompt(tx('sync.copyPrompt'), text); }
   setTimeout(() => { button.textContent = label; }, 1500);
 }
 
@@ -1381,7 +1418,7 @@ $('sync-join-form').addEventListener('submit', e => {
   e.preventDefault();
   const code = codeFromText($('sync-input').value.trim());     // een code of een geplakte koppellink
   if (!code) {
-    $('sync-error').textContent = 'Dat is geen code of koppellink van Orbit. Een code heeft 16 tekens, bv. 7K2P-Q9XD-M3TA-4HWE.';
+    $('sync-error').textContent = tx('sync.badCode');
     $('sync-error').hidden = false;
     return;
   }
@@ -1499,6 +1536,43 @@ desktop.addEventListener('change', placeMenu);
 placeMenu();
 
 
+/* ---- Begroeting: de kern zegt iets bij een bezoek (src/greet.js) ---- */
+// Een grote zin onder de scène, zes seconden; de kern kijkt er even naar. Een tik of klik ergens laat hem verdwijnen.
+let greetTimer = 0;
+function placeGreeting() {
+  if (desktop.matches) $('greeting').style.left = `${scene.centerX}px`;
+  else $('greeting').style.left = '';
+}
+function hideGreeting() {
+  clearTimeout(greetTimer);
+  $('greeting').classList.remove('is-on');
+  scene.lookAt(null);
+  greetTimer = setTimeout(() => { $('greeting').hidden = true; }, 800);
+}
+function greet() {
+  if (document.body.classList.contains('is-focus') || document.querySelector('dialog[open]')) return;
+  const real = realTasks();
+  const today = toDue(new Date());
+  const line = greeting({
+    urgent: real.filter(t => t.level === URGENT_LEVEL).length,
+    total: real.length,
+    overdue: real.filter(t => t.due && isOverdue(t.due)).length,
+    dueToday: real.filter(t => t.due === today).length,
+    stars: totalDone(done),
+  });
+  if (!line) return;
+  $('greeting-text').textContent = line;
+  placeGreeting();
+  const node = $('greeting');
+  node.hidden = false;
+  requestAnimationFrame(() => node.classList.add('is-on'));
+  scene.lookAt([0, 0.9]);
+  setTimeout(() => scene.lookAt(null), 2200);
+  greetTimer = setTimeout(hideGreeting, 6500);
+  window.addEventListener('pointerdown', hideGreeting, { once: true });
+}
+window.addEventListener('resize', () => { if (!$('greeting').hidden) placeGreeting(); });
+
 /* ---- Offline (sw.js) ---- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
@@ -1520,7 +1594,7 @@ renderSync();
 if (savedCode()) sync.start(savedCode());
 // Webapp op het beginscherm zonder koppeling: meteen zeggen, de uitleg in de lijst staat op gsm ver onderaan
 if (STANDALONE && !savedCode() && !$('tracks-pair').hidden) {
-  setTimeout(() => showToast('Deze app heeft een eigen opslag. Haal je taken binnen via Koppelen.', () => { openSync(); $('sync-manual').open = true; }, 'Koppelen'), 1500);
+  setTimeout(() => showToast(tx('toast.standalone'), () => { openSync(); $('sync-manual').open = true; }, tx('sync.off')), 1500);
 }
 readSyncHash();
 // Eerste bezoek (nog geen eigen taken bewaard, uitleg nooit gezien, niet via een koppellink): de uitleg tonen
@@ -1528,4 +1602,5 @@ readSyncHash();
   let seen = false;
   try { seen = localStorage.getItem(INTRO_KEY) === 'gezien'; } catch { /* geen opslag */ }
   if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900);
+  else setTimeout(greet, 1400);     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
 }

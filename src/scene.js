@@ -1,5 +1,6 @@
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
 import { dueLabel, isOverdue } from './deadline.js';
+import { tx } from './i18n.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */
 const TAU = Math.PI * 2;
@@ -30,7 +31,7 @@ const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
 const TWINKLE_LIFE = 1.1;   // afvinken: duur van het uitfonkelen (s)
-const CORE_RMIN = 13, CORE_RMAX = 22, CORE_SPACING = 3.1, CORE_MIN_PX = 5;
+const CORE_RMIN = 15, CORE_RMAX = 25, CORE_SPACING = 3.1, CORE_MIN_PX = 5;   // 15 % groter sinds de oogjes
 const coreGrids = new Map();
 function coreGrid(spacing) {
   const key = spacing.toFixed(2);
@@ -107,6 +108,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let introStart = performance.now(), last = performance.now();
   let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
   let pointer = { x: -1, y: -1, inside: false };
+  // Gezicht van de kern ("Uitgespaard", gekozen door Victor): twee oogvormen uitgespaard in het raster, met een pupil
+  // in inktkleur die je cursor volgt (anders rustig rondkijkt), af en toe knippert, blij kijkt bij afvinken en 's
+  // nachts slaperig is. look: kijkrichting (-1..1), lookGoal: waar hij heen wil kijken (null = vrij).
+  const face = { look: [0, 0.1], lookGoal: null, nextBlink: 0, blinkAt: -1, happyUntil: 0, last: 0 };
 
   /* ---- Kleuren ---- */
   const PALETTES = {
@@ -481,10 +486,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const t = now / 1000;
     const spacing = Math.max(CORE_SPACING, Math.round(CORE_MIN_PX / cam.s / 0.25) * 0.25);
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
+    const eyes = faceState(now, rMax, spacing, z);
     ctx.fillStyle = rgba(coreColor, intro);
     ctx.beginPath();
     for (const d of coreGrid(spacing)) {
       if (d.r > rMax) continue;
+      if (eyes.hides(d.x, d.y)) continue;
       const base = 0.25 + 1.05 * Math.pow(1 - d.r / rMax, 0.7);
       const bump = rippleAmp ? Math.exp(-(((d.r - front) / (3.2 * grow)) ** 2)) * rippleAmp : 0;
       const breathe = breatheAmp ? breatheAmp * Math.sin(t * 1.3 - d.r * 0.25) : 0;
@@ -495,6 +502,76 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.arc(pt.x, pt.y, rad, 0, TAU);
     }
     ctx.fill();
+    drawEyes(eyes, z, intro);
+  }
+
+  // Ogen: plaats en grootte volgen de kern (op gsm met grover raster wat groter, anders verdwijnt de uitsparing)
+  function faceState(now, rMax, spacing, z) {
+    const t = now / 1000, still = reducedMotion.matches;
+    const dt = Math.min(0.1, Math.max(0, (now - face.last) / 1000)); face.last = now;
+    // kijkrichting: naar de cursor, naar een gevraagd doel, of rustig rondkijken
+    let goal = face.lookGoal;
+    if (!goal && pointer.inside && project(0, 0, z, false)) {
+      const dx = pointer.x - pt.x, dy = pointer.y - pt.y, m = Math.hypot(dx, dy) || 1;
+      goal = [dx / m * Math.min(1, m / 220), dy / m * Math.min(1, m / 220)];
+    }
+    if (!goal) goal = still ? [0, 0.1] : [0.35 * Math.sin(t * 0.31), 0.1 + 0.2 * Math.sin(t * 0.19 + 1)];
+    face.look = face.look.map((v, i) => v + (goal[i] - v) * (1 - Math.exp(-6 * dt)));
+    // knipperen: elke 2,6 tot 6 s, 0,24 s lang
+    let open = 1;
+    if (!still) {
+      if (!face.nextBlink) face.nextBlink = t + 2 + Math.random() * 3;
+      if (t >= face.nextBlink) { face.blinkAt = t; face.nextBlink = t + 2.6 + Math.random() * 3.4; }
+      const b = (t - face.blinkAt) / 0.24;
+      if (b >= 0 && b < 1) open = 1 - Math.sin(b * Math.PI);
+    }
+    const hour = new Date().getHours();
+    if (hour < 6) open *= 0.45;                                   // 's nachts slaperig
+    const happy = performance.now() < face.happyUntil;
+    const h = Math.max(rMax * 0.25, spacing * 0.95);
+    const gap = Math.max(rMax * 0.36, h * 1.3);
+    const list = [[-gap, -rMax * 0.12], [gap, -rMax * 0.12]];
+    return {
+      list, h, open, happy,
+      hides(x, y) {
+        const o = Math.max(0.15, open);
+        return list.some(([ex, ey]) => (x - ex) ** 2 + ((y - ey) / o) ** 2 < h * h);
+      },
+    };
+  }
+
+  function drawEyes(eyes, z, alpha) {
+    const { list, h, open, happy } = eyes, [lx, ly] = face.look;
+    ctx.fillStyle = ctx.strokeStyle = rgba(INK, alpha);
+    ctx.lineCap = 'round';
+    for (const [ex, ey] of list) {
+      if (happy) {
+        // blij: een boogje (∩) in de uitsparing
+        ctx.lineWidth = Math.max(1.2, h * 0.32 * cam.s);
+        ctx.beginPath();
+        for (let k = 0; k <= 8; k++) {
+          const a = Math.PI * (0.12 + 0.76 * k / 8);
+          if (!project(ex - Math.cos(a) * h * 0.62, ey + h * 0.3 - Math.sin(a) * h * 0.62, z, false)) continue;
+          if (k) ctx.lineTo(pt.x, pt.y); else ctx.moveTo(pt.x, pt.y);
+        }
+        ctx.stroke();
+        continue;
+      }
+      if (open < 0.2) {
+        // dicht: een streepje
+        ctx.lineWidth = Math.max(1.2, h * 0.28 * cam.s);
+        ctx.beginPath();
+        if (project(ex - h * 0.7, ey, z, false)) ctx.moveTo(pt.x, pt.y);
+        if (project(ex + h * 0.7, ey, z, false)) ctx.lineTo(pt.x, pt.y);
+        ctx.stroke();
+        continue;
+      }
+      if (!project(ex + lx * h * 0.45, ey + ly * h * 0.4 * open, z, false)) continue;
+      const r = h * 0.42 * Math.min(1, open + 0.2) * cam.s * pt.f;
+      ctx.beginPath();
+      ctx.ellipse(pt.x, pt.y, r, r * Math.min(1, open * 1.1), 0, 0, TAU);
+      ctx.fill();
+    }
   }
 
   const isHot = o => hover.orb === o.id || external.task === o.id || pinned === o.id;
@@ -725,7 +802,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const lv = LEVEL_BY_ID.get(level);
     const count = [...orbs.values()].filter(o => o.level === level && !o.leaving).length;
     if (!project(0, -lv.ring, depthAt(lv.ring) * cam.depth, false)) return;
-    const text = isDrop ? `Naar ${lv.name.toLowerCase()}` : `${lv.name.toUpperCase()} · ${count}`;
+    const text = isDrop ? tx('scene.drop', { level: lv.name.toLowerCase() }) : `${lv.name.toUpperCase()} · ${count}`;
     pill(text, pt.x, pt.y - 16, 'center', null, { mono: !isDrop });
   }
 
@@ -869,6 +946,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   return {
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
+    // de kern kijkt even blij (bv. bij afvinken)
+    cheer(ms = 1600) { face.happyUntil = performance.now() + ms; },
+    // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
+    lookAt(goal) { face.lookGoal = goal; },
+    get centerX() { return cam.cx; },
     // linkerrand van de wijzerplaat (px) op schermhoogte y, zodat tekst ernaast tot aan de buitenste ring kan lopen
     bezelLeft(y) {
       if (!project(-BEZEL_MAJOR, 0, 0, false)) return null;

@@ -53,6 +53,8 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)`, `twinkleDot(root)` |
 | `src/quotes.js` | Bibliotheek van 223 korte, positieve Engelse quotes met gekende bron, voor de focusmodus |
 | `src/stats.js` | Statistiek: logboek van afgevinkte taken (`priority-orbit.done.v1`, gaat mee met sync), samenvatting voor de details, sterrenhemel (`priority-orbit.stars.v2`) |
+| `src/i18n.js` | Taal: woordenboeken NL en EN, `tx(key, vars)`, `LANG`, `LOCALE`, `setLang`, `applyStatic`, `reasonText`, `DEMO_TITLES` |
+| `src/greet.js` | Begroeting van de kern: `greeting(ctx)`, regels per situatie in NL en EN |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
 | `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, verbinding met de Orbit-server, samenvoegen |
@@ -86,7 +88,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Hover dimt de andere ringen licht (factor 0,32), niet weg: in het zijaanzicht moeten ze leesbaar blijven.
 - Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader), de bol krijgt een dun ringetje. Hover op een rij in de lijst doet hetzelfde voor die ene taak.
 - Slepen op een bol: bol volgt de cursor, dichtstbijzijnde ring licht op ("Naar …"), loslaten verplaatst de taak (`onReassign`). Slepen op lege ruimte: horizontaal draaien, verticaal kantelen; loslaten klikt naar het dichtste aanzicht.
-- Kern (`drawCore`): **Rasterpunt** (gekozen door Victor uit twee reeksen voorstellen, nr. 10). Een cirkel van drukpuntjes in een zeshoekig raster, zoals op een risoposter, plat in het vlak van de tip (elk puntje wordt geprojecteerd, dus een ellips in het zijaanzicht). Puntjes groter in het midden, kleiner naar de rand. Altijd rood (Nu-kleur), op vraag van Victor; `urgency` bepaalt straal (13 tot 22 + 4 eenheden) en de golf: bij elke slag (`beat`) rolt een golf van grotere puntjes naar buiten. Rustig: klein, grijs, een trage ademgolf. Stil-tempo en reduced motion: geen golf. Op kleine schermen wordt het raster grover (min. 5 px tussen puntjes, `coreGrid(spacing)` wordt gecachet), anders vervloeit het tot een vlek. Vorige kern (baken met stip en schijven) vond Victor te lakluster.
+- Kern (`drawCore`): **Rasterpunt** (gekozen door Victor uit twee reeksen voorstellen, nr. 10). Een cirkel van drukpuntjes in een zeshoekig raster, zoals op een risoposter, plat in het vlak van de tip (elk puntje wordt geprojecteerd, dus een ellips in het zijaanzicht). Puntjes groter in het midden, kleiner naar de rand. Altijd rood (Nu-kleur), op vraag van Victor; `urgency` bepaalt straal (15 tot 25 + 4 eenheden, sinds het gezicht 15 % groter) en de golf: bij elke slag (`beat`) rolt een golf van grotere puntjes naar buiten. Rustig: klein, grijs, een trage ademgolf. Stil-tempo en reduced motion: geen golf. Op kleine schermen wordt het raster grover (min. 5 px tussen puntjes, `coreGrid(spacing)` wordt gecachet), anders vervloeit het tot een vlek. Vorige kern (baken met stip en schijven) vond Victor te lakluster.
 - Intro: raster, wijzerplaat en ringen (van binnen naar buiten) faden in, bollen spiralen gestaffeld binnen. Nieuwe taken spiralen ook binnen.
 - Afvinken: **Zilver** (gekozen door Victor uit vijf fonkelvarianten, na eerst Slinger). De bol fonkelt uit waar hij stond: vaste plek in de trechter (`twinkles`, draait mee met de trechter), een vierpuntige ster met holle zijden (`star4`) in de inktkleur zwelt op, draait een kwartslag en krimpt tot niets, met de bol als gekleurde kern die meedooft. Duur `TWINKLE_LIFE` = 1,1 s. Eerder: deeltjes en een ring (te standaard), daarna Slinger (rechtdoor uit de baan). Reduced motion: geen animatie.
 - Tijdgebaseerd (dt), dus even snel op 60 en 120 Hz.
@@ -114,7 +116,7 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 - **Voorbeeldtaken** (`demo: true`) worden nooit opgeslagen of gesynchroniseerd (`realTasks()`); je eerste eigen taak vervangt ze, een hint in de lijst zegt dat.
 - **Oude opgeslagen voorbeeldtaken** (`demoIds`): titel en moment uit `DEMO`, nooit gewijzigd, en als groepje van minstens drie aangemaakt binnen 15 s. Staan ze tussen echte taken, dan ruimt `dropDemo` ze op met een afvinkmarkering (`gone`), zodat ze ook op gekoppelde toestellen verdwijnen, na een momentopname "Voor opruimen voorbeeldtaken". Dat gebeurt bij het laden én op alles wat via sync binnenkomt. Zonder echte taken blijven ze zichtbaar als voorbeeld, maar worden ze niet bewaard of gedeeld. Fout uit het verleden: het vangnet maakte ze eerst tot gewone taken, waarna sync de voorbeeldtaken van Victors gsm tussen zijn 11 eigen taken op de pc zette.
 - **Tabbladen**: `storage`-event leest de opslag opnieuw in (taken, archief, statistiek en sterren), zodat tabbladen elkaar niet overschrijven.
-- **Venster Archief** (knop rechtsboven naast Sync, toets `A`): tabbladen Afgevinkt en Momentopnames, Exporteer (JSON `orbit-JJJJ-MM-DD.json` met taken en archief) en Importeer (samenvoegen, recentste versie wint, niets verdwijnt).
+- **Venster Archief** (knop rechtsboven naast Sync, toets `A`): tabbladen Afgevinkt en Momentopnames. Bij een afgevinkte taak staan Terugzetten en Verwijder (definitief, twee tikken: de eerste toont "Zeker?", 3 s geldig); de ster en de teller blijven. Exporteer (JSON `orbit-JJJJ-MM-DD.json` met taken en archief) en Importeer (samenvoegen, recentste versie wint, niets verdwijnt).
 - Getest: bestaande taken blijven staan, voorbeeld niet bewaard, archief en terugzetten, momentopname bij overschrijven, export en import, tabbladen, sync met elders afgevinkt en terugzetten.
 
 ## Synchronisatie (`src/sync.js`)
@@ -173,6 +175,25 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 - Quote in de focusmodus als er geen Nu-taken zijn (vervangt "Niets dringend. Rustig aan.", dat Victor te standaard vond): `QUOTES` uit `src/quotes.js`, alleen quotes met gekende bron of spreekwoorden (geen foutief toegeschreven internetquotes). Om de 20 minuten een andere, in een geschudde volgorde die eerst de hele bibliotheek doorloopt (`priority-orbit.quote.v1`: `{order, i, at}`), zodat je dagenlang geen herhaling ziet. Quote 21 px (gsm 17 px), auteur in kapitaaltjes, zacht ingefade. Breedte op desktop berekend uit de echte positie van de wijzerplaat op de hoogte van de quote (`fitQuote`, `scene.bezelLeft(y)`, 32 px marge, min. 260 px, max. 760 px), ook bij resize en 1 s na het openen van de focusmodus; Victor wou dat de tekst doorloopt tot aan de buitenste schil.
 - Volgende deadline in de focusmodus (`renderFocusDue`): de vroegste `due`, ook een verstreken ("Te laat" in rood), met hetzelfde label als in de lijst.
 - Focus op gsm: één kolom die precies het scherm vult (kop, scène met flex 1, klok en max. 3 Nu-taken, knoppen); thema-schakelaar en datum rechtsboven verdwijnen. Geen vaste posities, zodat niets overlapt. Getest op 375×667, 390×844 en 430×932.
+
+## Taal (`src/i18n.js`)
+
+- Nederlands en Engels, te kiezen onder Instellingen (rij Taal, na Thema). Keuze in `priority-orbit.lang.v1`; zonder keuze volgt `navigator.language` (nl → Nederlands, anders Engels). Wisselen herlaadt de pagina.
+- Alle UI-tekst via `tx(key, vars)`; meervoud via de helper `n(one, other)` in het woordenboek. Statische HTML met `data-i` (tekst), `data-ih` (html) en `data-ia="attr:key;attr:key"`; `applyStatic()` vult ze bij het laden. Datums en getallen via `LOCALE` (`nl-BE` of `en-GB`).
+- Momentnamen worden bij het importeren van i18n op `LEVELS` gezet (Now, Today, Week, Month, Someday). Voorbeeldtaken per taal (`DEMO_TITLES`); `demoIds` herkent ze in beide talen.
+- Redenen van momentopnames worden als sleutel bewaard (`receive`, `demo`, ...) en getoond via `reasonText()`, zodat ze meevertalen. Oude Nederlandse zinnen blijven gewoon leesbaar.
+- Testen: de testbrowser staat standaard op Engels; zet in testscripts `priority-orbit.lang.v1 = 'nl'` als je Nederlandse tekst controleert.
+
+## Kerngezicht en begroeting
+
+- Idee: een goedaardige HAL 9000, maar de Rasterpunt-kern blijft zoals hij is. Kern 15 % groter (`CORE_RMIN = 15`, `CORE_RMAX = 25`).
+- **Oogjes A, Uitgespaard** (gekozen door Victor): twee ovale gaten in het puntraster (`faceState`, `hides`), met een pupil in inktkleur (in het donker licht). Ze kijken naar de cursor als die over de scène gaat, anders dwalen ze rustig rond; knipperen om de 2,6 tot 6 s; voor 06:00 slaperig (half dicht). Afvinken (`scene.cheer()`) geeft even blije boogjes (∩). `scene.lookAt([x, y])` laat de kern ergens naar kijken (de begroeting kijkt naar beneden).
+- **Begroeting, plek 4 "Grote zin onder de kern"** (gekozen door Victor): `#greeting` in `.stage`, onderaan gecentreerd onder de scène (desktop `left` = `scene.centerX`), 21 px (gsm 17 px) met klein ORBIT eronder. Verschijnt 1,4 s na het laden, verdwijnt na 6,5 s of bij de eerste tik. Niet in de focusmodus, niet bij een eerste bezoek (dan de Uitleg), en niet als de vorige begroeting minder dan 10 minuten geleden was (`priority-orbit.visit.v1`: `{at, greetedAt, milestone}`).
+- Volgorde in `greeting(ctx)`: zeldzaam paaseitje (1 op 40, "Ik kan dat wel doen, Dave."), terug na meer dan 3 dagen, verstreken deadlines, mijlpaal van sterren (elke 25), deadline vandaag, 3 of meer Nu-taken, maandagochtend, vrijdagnamiddag, geen taken, nacht, af en toe gewoon rustig, anders ochtend/middag/avond.
+
+## Iconen in het wiel
+
+- Set 3 **Afstand** (gekozen door Victor; de twee kalenders leken te veel op elkaar): Nu vizier (target), Vandaag zonsopgang, Week gestippeld pad met twee punten, Maand berg met zon, Ooit oneindig. In `ICONS` in `src/config.js`.
 
 ## Offline (`sw.js`)
 

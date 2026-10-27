@@ -4,20 +4,22 @@
 // Kwick koos (isobar:place) geldt hier ook. Anders je locatie, maar alleen als je die al eens toestond (geen
 // onverwachte vraag), en anders Brussel, zoals Kwick.
 
+import { tx, LANG } from './i18n.js';
+
 const KWICK = 'https://victorvansande.github.io/kwick/';
 const CACHE_KEY = 'priority-orbit.weather.v2';
 const FRESH_MS = 15 * 60 * 1000;
 const FALLBACK = { name: 'Brussel', lat: 50.8505, lon: 4.3488 };   // zelfde terugval als Kwick
 
 const KIND = {
-  0: ['Helder', 'clear'], 1: ['Overwegend helder', 'clear'], 2: ['Half bewolkt', 'partly'], 3: ['Bewolkt', 'cloudy'],
-  45: ['Mist', 'fog'], 48: ['Aanvriezende mist', 'fog'],
-  51: ['Lichte motregen', 'drizzle'], 53: ['Motregen', 'drizzle'], 55: ['Zware motregen', 'drizzle'],
-  56: ['Aanvriezende motregen', 'sleet'], 57: ['Aanvriezende motregen', 'sleet'],
-  61: ['Lichte regen', 'rain'], 63: ['Regen', 'rain'], 65: ['Zware regen', 'rain'], 66: ['IJzel', 'sleet'], 67: ['IJzel', 'sleet'],
-  71: ['Lichte sneeuw', 'snow'], 73: ['Sneeuw', 'snow'], 75: ['Zware sneeuw', 'snow'], 77: ['Korrelsneeuw', 'snow'],
-  80: ['Lichte buien', 'rain'], 81: ['Buien', 'rain'], 82: ['Zware buien', 'rain'], 85: ['Sneeuwbuien', 'snow'], 86: ['Zware sneeuwbuien', 'snow'],
-  95: ['Onweer', 'thunder'], 96: ['Onweer met hagel', 'thunder'], 99: ['Onweer met hagel', 'thunder'],
+  0: 'clear', 1: 'clear', 2: 'partly', 3: 'cloudy',
+  45: 'fog', 48: 'fog',
+  51: 'drizzle', 53: 'drizzle', 55: 'drizzle',
+  56: 'sleet', 57: 'sleet',
+  61: 'rain', 63: 'rain', 65: 'rain', 66: 'sleet', 67: 'sleet',
+  71: 'snow', 73: 'snow', 75: 'snow', 77: 'snow',
+  80: 'rain', 81: 'rain', 82: 'rain', 85: 'snow', 86: 'snow',
+  95: 'thunder', 96: 'thunder', 99: 'thunder',
 };
 
 function iconId(kind, day) {
@@ -44,7 +46,7 @@ async function findPlace() {
 // Naam bij een locatie, zoals Kwick dat doet (gratis, zonder sleutel); mislukt het, dan zonder naam
 async function placeName(lat, lon) {
   try {
-    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=nl`);
+    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${LANG}`);
     const j = await r.json();
     return cleanName(j.city || j.locality || '');
   } catch { return ''; }
@@ -60,12 +62,12 @@ function rainText(w, now = Date.now()) {
   const slots = w.slots.filter(s => s.end > now && s.start < now + 3600000);
   const wetAt = slots.findIndex(s => s.mm >= WET);
   if (wetAt < 0) return '';
-  const kind = slots.slice(wetAt).some(s => s.snow > 0) ? 'Sneeuw' : 'Regen';
+  const kind = slots.slice(wetAt).some(s => s.snow > 0) ? tx('rain.snow') : tx('rain.rain');
   if (slots[wetAt].start <= now) {
     const dry = slots.slice(wetAt).find(s => s.mm < WET);
-    return dry ? `${kind} tot ${dry.label}` : `${kind} het komende uur`;
+    return dry ? tx('rain.until', { kind, time: dry.label }) : tx('rain.hour', { kind });
   }
-  return `${kind} vanaf ${slots[wetAt].label}`;
+  return tx('rain.from', { kind, time: slots[wetAt].label });
 }
 
 async function fetchWeather() {
@@ -94,16 +96,16 @@ export function createWeather(link) {
   let timer = 0;
 
   function paint(w) {
-    const [label, kind] = KIND[w.code] || ['Weer', 'cloudy'];
+    const kind = KIND[w.code] || 'cloudy', label = KIND[w.code] ? tx(`wx.${w.code}`) : tx('wx.unknown');
     link.querySelector('use').setAttribute('href', '#' + iconId(kind, w.day));
     link.querySelector('.fw-temp').textContent = `${w.temp}°`;
     link.querySelector('.fw-place').textContent = cleanName(w.name);
     const rain = rainText(w);
     link.querySelector('.fw-rain').textContent = rain;
     link.querySelector('.fw-rain').hidden = !rain;
-    const where = w.name ? ` in ${w.name}` : '';
-    link.setAttribute('aria-label', `${label}${where}, ${w.temp} graden${rain ? `. ${rain}` : ''}. Open Kwick`);
-    link.title = `${label}${where} · open Kwick`;
+    const where = w.name ? tx('wx.in', { name: w.name }) : '';
+    link.setAttribute('aria-label', tx('wx.aria', { label, where, temp: w.temp, rain: rain ? `. ${rain}` : '' }));
+    link.title = tx('wx.title', { label, where });
     link.hidden = false;
   }
 
