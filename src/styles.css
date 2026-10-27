@@ -1,4 +1,4 @@
-/* Orbit. Licht, posterstijl: warm grijs papier, iriserende bollen, kleine kapitalen in de hoeken.
+/* Orbit. Licht, posterstijl: warm grijs papier, slanke taps toelopende bollen, kleine kapitalen in de hoeken.
    Desktop: lijst links, scène in het midden, wiel rechts. Onder 1000 px alles onder elkaar. */
 
 :root {
@@ -82,9 +82,6 @@ kbd {
 .views button[aria-checked="true"] { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 .slash { color: var(--line); }
 .focus-btn { display: flex; align-items: center; gap: 8px; }
-.styles { gap: 12px; padding-left: 22px; border-left: 1px solid var(--line); }
-.styles-label { display: flex; align-items: center; gap: 6px; color: var(--ink-3); }
-.styles button[aria-checked="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 
 /* ---- Takenlijst ---- */
 .tracks {
@@ -350,7 +347,6 @@ body.is-idle .controls { opacity: 0; }
   .stage canvas { touch-action: pan-y; }
   .grain { position: fixed; }
   .controls { position: relative; left: auto; bottom: auto; justify-content: center; flex-wrap: wrap; column-gap: 18px; row-gap: 0; margin-top: -4px; padding: 0 var(--pad); }
-  .styles { padding-left: 0; border-left: 0; }
   .wheel {
     position: relative; top: auto; right: auto;
     width: 100%; height: 204px;

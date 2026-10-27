@@ -1,11 +1,9 @@
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, rgbOf } from './config.js';
-import { ORB_STYLES, ORB_STYLE_BY_ID, DEFAULT_ORB_STYLE, paintOrb } from './orbs.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL } from './config.js';
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
-const STYLE_KEY = 'priority-orbit.orbstyle.v1';
 const DONE_MS = 320;          // rij vervaagt, daarna verdwijnt ze uit de lijst
 const TOAST_MS = 5000;
 const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stilstand
@@ -306,12 +304,58 @@ const composerSubmit = $('composer-submit');
 const composerOrb = $('composer-orb');
 let composerLevel = DEFAULT_LEVEL, closeTimer = 0;
 
-function paintComposerOrb() {
+// Mini-orbit in het venster: een taps bolletje rond een kern van streepjes, in kleur en tempo van het moment
+let orbRaf = 0;
+function drawComposerOrbit(now) {
   const lv = LEVEL_BY_ID.get(composerLevel);
   const g = composerOrb.getContext('2d');
-  const size = composerOrb.width;
+  const size = composerOrb.width, C = size / 2, TAU = Math.PI * 2;
+  const R = size * 0.27, head = size * 0.034, span = 1.9;
+  const period = Math.min(lv.period, 6);
+  const a = reducedMotion.matches ? -Math.PI / 2 : (now / 1000) / period * TAU;
   g.clearRect(0, 0, size, size);
-  paintOrb(g, orbStyle, rgbOf(lv.color), size / 2, size / 2, size * 0.17, { line: 5 });
+  // kern
+  g.lineCap = 'round';
+  g.lineWidth = size * 0.009;
+  g.strokeStyle = 'rgba(27, 27, 34, .22)';
+  for (let i = 0; i < 12; i++) {
+    const t = i / 12 * TAU;
+    g.beginPath();
+    g.moveTo(C + Math.cos(t) * size * 0.075, C + Math.sin(t) * size * 0.075);
+    g.lineTo(C + Math.cos(t) * size * 0.105, C + Math.sin(t) * size * 0.105);
+    g.stroke();
+  }
+  // baan
+  g.lineWidth = size * 0.003;
+  g.strokeStyle = 'rgba(27, 27, 34, .12)';
+  g.beginPath();
+  g.arc(C, C, R, 0, TAU);
+  g.stroke();
+  // taps bolletje
+  g.fillStyle = lv.color;
+  const steps = 24, left = [], right = [];
+  for (let k = 0; k <= steps; k++) {
+    const p = k / steps, t = a - p * span;
+    const w = head * (1 - p * 0.82);
+    left.push(C + Math.cos(t) * (R + w), C + Math.sin(t) * (R + w));
+    right.push(C + Math.cos(t) * (R - w), C + Math.sin(t) * (R - w));
+  }
+  g.beginPath();
+  g.moveTo(left[0], left[1]);
+  for (let k = 1; k <= steps; k++) g.lineTo(left[2 * k], left[2 * k + 1]);
+  for (let k = steps; k >= 0; k--) g.lineTo(right[2 * k], right[2 * k + 1]);
+  g.closePath();
+  g.fill();
+  g.beginPath();
+  g.arc(C + Math.cos(a) * R, C + Math.sin(a) * R, head, 0, TAU);
+  g.fill();
+  if (composer.open && !reducedMotion.matches) orbRaf = requestAnimationFrame(drawComposerOrbit);
+}
+
+function paintComposerOrb() {
+  const lv = LEVEL_BY_ID.get(composerLevel);
+  cancelAnimationFrame(orbRaf);
+  orbRaf = requestAnimationFrame(drawComposerOrbit);
   composer.style.setProperty('--c', lv.color);
   $('composer-level').textContent = lv.name;
   for (const b of $('composer-levels').children) b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));
@@ -364,7 +408,10 @@ composerTitle.addEventListener('keydown', e => {
 $('composer-cancel').addEventListener('click', closeComposer);
 composer.addEventListener('cancel', e => { e.preventDefault(); closeComposer(); });
 composer.addEventListener('click', e => { if (e.target === composer) closeComposer(); });
-composer.addEventListener('close', () => $('wheel').querySelector('.wheel-list').focus({ preventScroll: true }));
+composer.addEventListener('close', () => {
+  cancelAnimationFrame(orbRaf);
+  $('wheel').querySelector('.wheel-list').focus({ preventScroll: true });
+});
 composerForm.addEventListener('submit', e => {
   e.preventDefault();
   const title = composerTitle.value.trim();
@@ -375,33 +422,6 @@ composerForm.addEventListener('submit', e => {
   wheel.setLevel(composerLevel);
   closeComposer();
 });
-
-/* ---- Bolstijl (tijdelijke kiezer om te vergelijken) ---- */
-function readStyle() {
-  const fromUrl = new URLSearchParams(location.search).get('bollen');
-  if (ORB_STYLE_BY_ID.has(fromUrl)) return fromUrl;
-  try { const saved = localStorage.getItem(STYLE_KEY); if (ORB_STYLE_BY_ID.has(saved)) return saved; } catch { /* geen opslag */ }
-  return DEFAULT_ORB_STYLE;
-}
-let orbStyle = readStyle();
-const styleBox = $('styles');
-for (const st of ORB_STYLES) {
-  const b = el('button', '', st.name);
-  b.type = 'button';
-  b.dataset.style = st.id;
-  b.setAttribute('role', 'radio');
-  b.addEventListener('click', () => setOrbStyle(st.id));
-  styleBox.append(b);
-}
-function setOrbStyle(id) {
-  orbStyle = id;
-  scene.setStyle(id);
-  try { localStorage.setItem(STYLE_KEY, id); } catch { /* geen opslag */ }
-  for (const b of styleBox.querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.style === id));
-  if (composer.open) paintComposerOrb();
-}
-setOrbStyle(orbStyle);
-scene.setCapsuleVariant(new URLSearchParams(location.search).get('capsule') || 'a');
 
 /* ---- Aanzicht ---- */
 const viewButtons = [...document.querySelectorAll('[data-view]')];
@@ -451,7 +471,6 @@ document.addEventListener('keydown', e => {
   else if (k === '2') setView('side');
   else if (k === 'f') setFocus(!document.body.classList.contains('is-focus'));
   else if (k === 'z') undo();
-  else if (k === 'b') setOrbStyle(ORB_STYLES[(ORB_STYLES.findIndex(st => st.id === orbStyle) + 1) % ORB_STYLES.length].id);
   else if (e.key === 'Escape' && document.body.classList.contains('is-focus')) setFocus(false);
 });
 

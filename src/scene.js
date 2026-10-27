@@ -1,5 +1,4 @@
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
-import { ORB_STYLE_BY_ID, DEFAULT_ORB_STYLE, paintOrb, halftone } from './orbs.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */
 const TAU = Math.PI * 2;
@@ -13,7 +12,9 @@ const FIT = 440;                        // zoveel stage-eenheden passen in min(b
 
 const INK = [24, 24, 32];
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
-const TAIL_GAP = 7, TAIL_ALPHA = 0.42, TRAIL_STEPS = 14;
+const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
+const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
+const CORE_R = 9, CORE_DASHES = 12;
 const MERIDIANS = 8, MERIDIAN_GAP = 14, MERIDIAN_ALPHA = 0.12;
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
@@ -73,9 +74,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let introStart = performance.now(), last = performance.now();
   let pointer = { x: -1, y: -1, inside: false };
 
-  /* ---- Kleuren en stijl ---- */
-  let style = DEFAULT_ORB_STYLE;
-  let capsuleVariant = 'a';
+  /* ---- Kleuren ---- */
   const colors = new Map(LEVELS.map(l => [l.id, rgbOf(l.color)]));
   const URGENT_RGB = colors.get(URGENT_LEVEL);
 
@@ -402,105 +401,30 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return [INK[0] + (c[0] - INK[0]) * t, INK[1] + (c[1] - INK[1]) * t, INK[2] + (c[2] - INK[2]) * t];
   }
 
-  /* Kern: per stijl een eigen vorm, rood en levendig met Nu-taken, grijs en stil zonder */
+  /* Kern: ring van streepjes die rondom oplichten, rood en sneller met meer Nu-taken, grijs en stil zonder */
   function drawCore(now) {
     if (!project(0, 0, TIP_Z * cam.depth, false)) return;
     const intro = introAlpha(now, 0, 1.1);
     if (intro <= 0) return;
     const { x, y, f } = pt;
-    const u = cam.s * f;
+    const R = CORE_R * cam.s * f;
     const n = Math.min(nowCount, 4);
     const period = 2.4 / (1 + 0.3 * Math.max(0, n - 1));
-    const still = reducedMotion.matches;
-    const time = now / 1000;
-    const pulse = still ? 0.5 : 0.5 + 0.5 * Math.sin(time * TAU / period);
-    const color = mixRgb(CALM, URGENT_RGB, nowGlow);
-    const line = clamp(1.2 * cam.du * f, 1, 2.4);
-    ctx.globalAlpha = intro;
-
-    if (style === 'ring') {
-      // stip die sonarringen uitzendt
-      ctx.fillStyle = rgba(color, 1);
-      ctx.beginPath();
-      ctx.arc(x, y, 3.2 * u, 0, TAU);
-      ctx.fill();
-      ctx.lineWidth = line;
-      if (nowGlow > 0.01) {
-        for (let i = 0; i < 3; i++) {
-          const p = still ? (i + 1) / 4 : ((time / (period * 1.4)) + i / 3) % 1;
-          ctx.strokeStyle = rgba(URGENT_RGB, Math.pow(1 - p, 1.6) * 0.6 * nowGlow * intro);
-          ctx.beginPath();
-          ctx.arc(x, y, (5 + p * 30) * u, 0, TAU);
-          ctx.stroke();
-        }
-      }
-      ctx.strokeStyle = rgba(CALM, 0.45 * (1 - nowGlow) * intro);
-      ctx.beginPath();
-      ctx.arc(x, y, 8 * u, 0, TAU);
-      ctx.stroke();
-    } else if (style === 'vlak') {
-      // effen stip met een ademende ring
-      ctx.fillStyle = rgba(color, 1);
-      ctx.beginPath();
-      ctx.arc(x, y, (5 + 0.5 * pulse * nowGlow) * u, 0, TAU);
-      ctx.fill();
-      ctx.strokeStyle = rgba(color, (0.5 - 0.3 * pulse * nowGlow) * intro);
-      ctx.lineWidth = line;
-      ctx.beginPath();
-      ctx.arc(x, y, (10 + 3 * pulse * nowGlow) * u, 0, TAU);
-      ctx.stroke();
-    } else if (style === 'raster') {
-      // stippenbol die pulseert
-      halftone(ctx, color, x, y, 13 * u, 0.75 + 0.4 * pulse * nowGlow);
-    } else {
-      drawCapsuleCore(x, y, u, line, color, time, period, still, intro);
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // Capsule-kern, vier varianten (tijdelijk, om te kiezen)
-  function drawCapsuleCore(x, y, u, line, color, time, period, still, intro) {
-    const R = 9 * u;
-    const spin = still ? -Math.PI / 2 : time * TAU / (period * 1.2);
+    const head = reducedMotion.matches ? 0 : ((now / 1000) / (period * 1.2)) % 1;
     const lit = nowGlow > 0.01;
     ctx.lineCap = 'round';
-    const dot = r => { ctx.fillStyle = rgba(color, 1); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); };
-    const ring = (r, w, a) => { ctx.lineWidth = w; ctx.strokeStyle = rgba(color, a * intro); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); };
-    const seg = (r, w, from, len) => { ctx.lineWidth = w; ctx.strokeStyle = rgba(URGENT_RGB, nowGlow * intro); ctx.beginPath(); ctx.arc(x, y, r, from, from + len); ctx.stroke(); };
-    if (capsuleVariant === 'b') {
-      // dunne ring, twee segmenten die tegen elkaar in draaien
-      ring(R, line, 0.25);
-      if (lit) { seg(R, line * 1.4, spin, Math.PI * 0.4); seg(R * 1.45, line, -spin * 0.7, Math.PI * 0.3); }
-      dot(2 * u);
-    } else if (capsuleVariant === 'c') {
-      // ring van streepjes die als een loader oplichten
-      const n = 12;
-      ctx.lineWidth = line * 1.5;
-      for (let i = 0; i < n; i++) {
-        const ang = i / n * TAU;
-        const head = ((spin / TAU) % 1 + 1) % 1;
-        const p = ((i / n - head) % 1 + 1) % 1;
-        const a = lit ? 0.18 + 0.82 * Math.pow(1 - p, 3) * nowGlow : 0.3;
-        ctx.strokeStyle = rgba(lit ? URGENT_RGB : color, a * intro);
-        ctx.beginPath();
-        ctx.moveTo(x + Math.cos(ang) * R * 0.78, y + Math.sin(ang) * R * 0.78);
-        ctx.lineTo(x + Math.cos(ang) * R * 1.08, y + Math.sin(ang) * R * 1.08);
-        ctx.stroke();
-      }
-    } else if (capsuleVariant === 'd') {
-      // effen stip in een ring, een korte capsule draait er als satelliet omheen
-      dot(4 * u);
-      ring(R, line, 0.3);
-      if (lit) seg(R * 1.5, line * 2.2, spin, Math.PI * 0.22);
-    } else {
-      // ring met een draaiend segment
-      ring(R, line * 1.6, 0.22);
-      if (lit) seg(R, line * 1.6, spin, Math.PI * 0.6);
-      dot(2.4 * u);
+    ctx.lineWidth = clamp(1.8 * cam.du * f, 1.4, 3.4);
+    for (let i = 0; i < CORE_DASHES; i++) {
+      const ang = i / CORE_DASHES * TAU;
+      const p = ((i / CORE_DASHES - head) % 1 + 1) % 1;
+      const a = lit ? 0.18 + 0.82 * Math.pow(1 - p, 3) * nowGlow : 0.3;
+      ctx.strokeStyle = rgba(lit ? URGENT_RGB : CALM, a * intro);
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(ang) * R * 0.78, y + Math.sin(ang) * R * 0.78);
+      ctx.lineTo(x + Math.cos(ang) * R * 1.08, y + Math.sin(ang) * R * 1.08);
+      ctx.stroke();
     }
   }
-
-  function mixRgb(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
 
   const isHot = o => hover.orb === o.id || external.task === o.id || pinned === o.id;
 
@@ -524,8 +448,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return trailPts.length / 2;
   }
 
-  // Taps vlak langs trailPts met verloop naar transparant
-  function taper(rgb, wHead, wTail, alpha, solid = false) {
+  // Taps vlak langs trailPts: volle breedte aan de kop, dun aan het eind, effen kleur
+  function taper(wHead, wTail) {
     const n = trailPts.length / 2;
     if (n < 2) return;
     const left = [], right = [];
@@ -537,13 +461,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       left.push(trailPts[2 * k] - dy / len * w, trailPts[2 * k + 1] + dx / len * w);
       right.push(trailPts[2 * k] + dy / len * w, trailPts[2 * k + 1] - dx / len * w);
     }
-    if (solid) ctx.fillStyle = rgba(rgb, alpha);
-    else {
-      const grad = ctx.createLinearGradient(trailPts[0], trailPts[1], trailPts[2 * n - 2], trailPts[2 * n - 1]);
-      grad.addColorStop(0, rgba(rgb, alpha));
-      grad.addColorStop(1, rgba(rgb, 0));
-      ctx.fillStyle = grad;
-    }
     ctx.beginPath();
     ctx.moveTo(left[0], left[1]);
     for (let k = 1; k < n; k++) ctx.lineTo(left[2 * k], left[2 * k + 1]);
@@ -552,63 +469,22 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.fill();
   }
 
-  function drawTrail(o, it, lv, sp, line) {
-    const rgb = colors.get(o.level);
-    const span = (lv.tail + 1) * TAIL_GAP * 1.5 * sp / o.r;
-    if (style === 'raster') {
-      // stippellijn die kleiner wordt
-      const n = tracePath(o, it, it.a, span, 5);
-      ctx.fillStyle = rgba(rgb, 1);
-      for (let k = 1; k < n; k++) {
-        const p = k / 5;
-        ctx.globalAlpha = TAIL_ALPHA * (1 - p) * o.alpha;
-        ctx.beginPath();
-        ctx.arc(trailPts[2 * k], trailPts[2 * k + 1], Math.max(0.6, it.r * 0.28 * (1 - p * 0.7)), 0, TAU);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      return;
-    }
-    tracePath(o, it, it.a, span, TRAIL_STEPS);
-    if (style === 'ring') taper(rgb, line, line * 0.3, 0.55 * o.alpha);
-    else taper(rgb, it.r * 1.1, it.r * 0.1, TAIL_ALPHA * o.alpha);
-  }
-
-  // Capsule: de bol rekt uit langs de baan, lengte volgt de snelheid
-  function drawCapsule(o, it, lv, sp, rgb) {
-    const v = capsuleVariant;
-    const length = { a: 0.8, b: 1.3, c: 1.1, d: 1.5 }[v];
-    const span = (lv.tail + 1) * TAIL_GAP * length * sp / o.r;
-    const n = tracePath(o, it, it.a, span, 10);
+  // Bol: ronde kop die taps uitloopt langs de baan; lengte volgt de snelheid
+  function drawOrb(o, it, lv, sp, moving) {
     ctx.globalAlpha = o.alpha;
-    ctx.fillStyle = ctx.strokeStyle = rgba(rgb, 1);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    if (v === 'c') {
-      // taps: volle kop, dunner naar achter, effen kleur
-      taper(rgb, it.r * 2, it.r * 0.35, 1, true);
-      ctx.beginPath(); ctx.arc(it.sx, it.sy, it.r, 0, TAU); ctx.fill();
-    } else if (v === 'd') {
-      // kop + naald: ronde kop met een fijne lijn erachter
-      ctx.lineWidth = Math.max(1, it.r * 0.4);
-      ctx.globalAlpha = o.alpha * 0.7;
-      ctx.beginPath(); ctx.moveTo(it.sx, it.sy);
-      for (let k = 1; k < n; k++) ctx.lineTo(trailPts[2 * k], trailPts[2 * k + 1]);
-      ctx.stroke();
-      ctx.globalAlpha = o.alpha;
-      ctx.beginPath(); ctx.arc(it.sx, it.sy, it.r * 1.05, 0, TAU); ctx.fill();
-    } else {
-      ctx.lineWidth = it.r * (v === 'b' ? 1.2 : 2);
-      ctx.beginPath(); ctx.moveTo(it.sx, it.sy);
-      for (let k = 1; k < n; k++) ctx.lineTo(trailPts[2 * k], trailPts[2 * k + 1]);
-      if (n < 2) ctx.lineTo(it.sx + 0.01, it.sy);
-      ctx.stroke();
+    ctx.fillStyle = rgba(colors.get(o.level), 1);
+    if (moving) {
+      const span = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * sp / o.r;
+      tracePath(o, it, it.a, span, TRAIL_STEPS);
+      taper(it.r * 2, it.r * 0.35);
     }
+    ctx.beginPath();
+    ctx.arc(it.sx, it.sy, it.r, 0, TAU);
+    ctx.fill();
     ctx.globalAlpha = 1;
   }
 
   function drawOrbs() {
-    const scale = ORB_STYLE_BY_ID.get(style).scale;
     const list = [...orbs.values()].filter(o => o.wait <= 0 && o.alpha > 0.01);
     const items = [];
     for (const o of list) {
@@ -620,16 +496,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const f = pt.f, depth = pt.z;
       if (drag?.type === 'orb' && drag.id === o.id && drag.active) { sx = pointer.x; sy = pointer.y; }
       else if (o.blend) { const e = ease(o.blend.p); sx = o.blend.x + (sx - o.blend.x) * e; sy = o.blend.y + (sy - o.blend.y) * e; }
-      const r = lv.size / 2 * scale * cam.du * f * (isHot(o) ? 1.2 : 1);
+      const r = lv.size / 2 * ORB_SCALE * cam.du * f * (isHot(o) ? 1.2 : 1);
       o.sx = sx; o.sy = sy; o.sr = Math.max(r, 4);
       items.push({ o, lv, a, x: sx, y: sy, sx, sy, r, f, depth });
     }
     items.sort((p, q) => p.depth - q.depth);
     for (const it of items) {
       const { o, lv } = it;
-      const rgb = colors.get(o.level);
       const sp = speed.get(o.level);
-      const line = clamp(1.15 * cam.du * it.f, 1, 2.2);
       const free = !(drag?.type === 'orb' && drag.id === o.id && drag.active) && !o.blend;
       if (isHot(o)) {
         ctx.strokeStyle = rgba(INK, 0.35 * o.alpha);
@@ -638,9 +512,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.arc(it.sx, it.sy, it.r + 4, 0, TAU);
         ctx.stroke();
       }
-      if (style === 'capsule' && free && sp > 0.05) { drawCapsule(o, it, lv, sp, rgb); continue; }
-      if (free && sp > 0.05 && o.r > 1) drawTrail(o, it, lv, sp, line);
-      paintOrb(ctx, style, rgb, it.sx, it.sy, it.r, { alpha: o.alpha, line });
+      drawOrb(o, it, lv, sp, free && sp > 0.05 && o.r > 1);
     }
   }
 
@@ -872,8 +744,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   return {
     setTasks, complete, setView, setInsets, highlight,
-    setStyle(id) { if (ORB_STYLE_BY_ID.has(id)) style = id; },
-    setCapsuleVariant(v) { if ('abcd'.includes(v) && v.length === 1) capsuleVariant = v; },
     restartIntro() { introStart = performance.now(); },
   };
 }
