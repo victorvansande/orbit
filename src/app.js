@@ -403,10 +403,13 @@ $('stat-mini').addEventListener('click', () => {
   $('stats').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
 });
 
-// Af en toe fonkelt één stip van de teller, net als de sterren in de scène
+// Af en toe fonkelt één stip, net als de sterren in de scène: van de klok in de focusmodus, anders van de teller
 (function wink() {
   setTimeout(() => {
-    if (!reducedMotion.matches && !document.hidden && !$('stats').hidden && $('stats').offsetParent) twinkleDot($('stat-total'));
+    if (!reducedMotion.matches && !document.hidden) {
+      if (document.body.classList.contains('is-focus')) twinkleDot($('clock'));
+      else if (!$('stats').hidden && $('stats').offsetParent) twinkleDot($('stat-total'));
+    }
     wink();
   }, 7000 + Math.random() * 9000);
 })();
