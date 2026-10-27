@@ -1,13 +1,21 @@
 /* ---- Config (enige bron van waarheid) ---- */
 // ring: straal van de gestippelde ring, orbit: baanstraal van de bollen (eenheden in de 390-stage)
+// color: tint op licht papier, dark: gedempte tint voor de donkere modus (minder verzadigd, geen kleurboek-effect)
 export const LEVELS = [
-  { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#FF3B30', size: 7,   tail: 3 },
-  { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#FF8A00', size: 6,   tail: 2 },
-  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#E5B21A', size: 5.5, tail: 2 },
-  { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#22AFC6', size: 5,   tail: 1 },
-  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#6A6CF6', size: 5,   tail: 1 },
+  { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#FF3B30', dark: '#E25A52', size: 7,   tail: 3 },
+  { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#FF8A00', dark: '#D98C4A', size: 6,   tail: 2 },
+  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#E5B21A', dark: '#C8AE60', size: 5.5, tail: 2 },
+  { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#22AFC6', dark: '#5DA8B5', size: 5,   tail: 1 },
+  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#6A6CF6', dark: '#8587D2', size: 5,   tail: 1 },
 ];
 export const LEVEL_BY_ID = new Map(LEVELS.map(l => [l.id, l]));
+
+// Geeft een element beide tinten; CSS kiest via [data-tone] de juiste voor het thema
+export function toneNode(node, lv) {
+  node.dataset.tone = '';
+  node.style.setProperty('--c-l', lv.color);
+  node.style.setProperty('--c-d', lv.dark);
+}
 export const URGENT_LEVEL = 1;
 export const DEFAULT_LEVEL = 3;
 

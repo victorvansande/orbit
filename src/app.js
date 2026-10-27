@@ -1,4 +1,4 @@
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL } from './config.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './config.js';
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
@@ -142,7 +142,7 @@ const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="
 const leaving = new Set();
 
 function tone(node, lv) {
-  node.style.setProperty('--c', lv.color);
+  toneNode(node, lv);
 }
 
 function renderTracks() {
@@ -392,7 +392,7 @@ function drawComposerOrbit(now) {
   g.arc(C, C, R, 0, TAU);
   g.stroke();
   // taps bolletje
-  g.fillStyle = lv.color;
+  g.fillStyle = resolvedTheme() === 'dark' ? lv.dark : lv.color;
   const steps = 24, left = [], right = [];
   for (let k = 0; k <= steps; k++) {
     const p = k / steps, t = a - p * span;
@@ -416,7 +416,7 @@ function paintComposerOrb() {
   const lv = LEVEL_BY_ID.get(composerLevel);
   cancelAnimationFrame(orbRaf);
   orbRaf = requestAnimationFrame(drawComposerOrbit);
-  composer.style.setProperty('--c', lv.color);
+  toneNode(composer, lv);
   $('composer-level').textContent = composerDue ? `${lv.name} · deadline` : lv.name;
   for (const b of $('composer-levels').children) {
     b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));

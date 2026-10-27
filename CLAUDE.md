@@ -28,7 +28,8 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 - Schakelaar rechtsboven onder de datum: Licht / Donker / Auto (Auto volgt `prefers-color-scheme`, standaard). Toets `D` wisselt licht en donker. Keuze in localStorage `priority-orbit.theme.v1`.
 - Een inline script in `<head>` zet `data-theme` vóór de eerste weergave (geen lichte flits). `app.js` houdt het daarna bij, ook als het systeemthema wijzigt, en past `meta[name=theme-color]` aan.
 - CSS: alle kleuren zijn tokens op `:root`, herdefinieerd onder `:root[data-theme="dark"]` (papier #0F0F12, oppervlak #19191D, inkt #ECECF1). Nieuwe kleuren altijd als token toevoegen, nooit een losse `#fff` of `rgba(27, 27, 34, …)`.
-- Canvas: `scene.setTheme(name)` wisselt `THEMES` (inkt van raster, ringen en wijzerplaat, labelpillen, grijze kern). De bolkleuren blijven gelijk.
+- Momentkleuren: elk niveau heeft `color` (licht) en `dark` (gedempt: minder verzadigd, zodat de bollen in het donker niet als kleurboek ogen). DOM-elementen krijgen beide via `toneNode()` (`data-tone`, `--c-l`, `--c-d`); CSS kiest `--c` per thema.
+- Canvas: `scene.setTheme(name)` wisselt `THEMES` (inkt van raster, ringen en wijzerplaat, labelpillen, grijze kern) en het bolpalet (`PALETTES`), ook voor de kern.
 - Korrel in het donker: `filter: invert(1)` met `mix-blend-mode: screen` en lagere dekking.
 - Het wiel is op desktop maximaal `100dvh - 280px` hoog, zodat de hoeken (themaschakelaar, hint) klikbaar blijven.
 
@@ -50,13 +51,13 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 ## Niveaus
 
-| id | naam | ring | baan | omloop | kleur |
-|---|---|---:|---:|---:|---|
-| 1 | Nu | 38 | 38 | 1,1 s | #FF3B30 |
-| 2 | Vandaag | 72 | 72 | 2,8 s | #FF8A00 |
-| 3 | Week | 106 | 106 | 7 s | #E5B21A |
-| 4 | Maand | 140 | 140 | 16 s | #22AFC6 |
-| 5 | Ooit | 174 | 174 | 38 s | #6A6CF6 |
+| id | naam | ring | baan | omloop | kleur | donker |
+|---|---|---:|---:|---:|---|---|
+| 1 | Nu | 38 | 38 | 1,1 s | #FF3B30 | #E25A52 |
+| 2 | Vandaag | 72 | 72 | 2,8 s | #FF8A00 | #D98C4A |
+| 3 | Week | 106 | 106 | 7 s | #E5B21A | #C8AE60 |
+| 4 | Maand | 140 | 140 | 16 s | #22AFC6 | #5DA8B5 |
+| 5 | Ooit | 174 | 174 | 38 s | #6A6CF6 | #8587D2 |
 
 Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat oogde alsof de Nu-bollen naast hun baan zweefden).
 

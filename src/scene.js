@@ -93,9 +93,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let pointer = { x: -1, y: -1, inside: false };
 
   /* ---- Kleuren ---- */
-  const colors = new Map(LEVELS.map(l => [l.id, rgbOf(l.color)]));
-  const URGENT_RGB = colors.get(URGENT_LEVEL);
-  const TODAY_RGB = colors.get(URGENT_LEVEL + 1);
+  const PALETTES = {
+    light: new Map(LEVELS.map(l => [l.id, rgbOf(l.color)])),
+    dark: new Map(LEVELS.map(l => [l.id, rgbOf(l.dark)])),
+  };
+  let colors = PALETTES.light;
+  let URGENT_RGB = colors.get(URGENT_LEVEL);
+  let TODAY_RGB = colors.get(URGENT_LEVEL + 1);
 
   /* ---- Vaste geometrie ---- */
   const rings = LEVELS.map(lv => {
@@ -810,6 +814,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
-    setTheme(name) { theme = THEMES[name] || THEMES.light; INK = theme.ink; },
+    setTheme(name) {
+      theme = THEMES[name] || THEMES.light;
+      INK = theme.ink;
+      colors = PALETTES[name] || PALETTES.light;
+      URGENT_RGB = colors.get(URGENT_LEVEL);
+      TODAY_RGB = colors.get(URGENT_LEVEL + 1);
+    },
   };
 }

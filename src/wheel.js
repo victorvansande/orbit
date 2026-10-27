@@ -1,4 +1,4 @@
-import { LEVELS, iconSvg } from './config.js';
+import { LEVELS, iconSvg, toneNode } from './config.js';
 
 /* ---- Wiel: gebogen keuze tussen de vijf momenten ---- */
 // Verticaal (desktop): boog langs de rechterrand, middelpunt van de cirkel rechts buiten beeld.
@@ -22,7 +22,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
     li.className = 'wheel-item';
     li.id = 'wheel-' + lv.id;
     li.setAttribute('role', 'option');
-    li.style.setProperty('--c', lv.color);
+    toneNode(li, lv);
     li.innerHTML = `<span class="wi-label">${lv.name}<svg class="wi-plus" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M6 2v8M2 6h8"/></svg></span><span class="wi-pill">${iconSvg(lv.id, 22)}</span>`;
     li.addEventListener('click', () => {
       if (drag?.moved) return;
@@ -78,7 +78,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
     const hx = o === 'vertical' ? cx - g.R : cx;
     const hy = o === 'vertical' ? cy : cy - g.R;
     handle.style.transform = `translate(${hx.toFixed(1)}px, ${hy.toFixed(1)}px) rotate(${o === 'vertical' ? 0 : 90}deg)`;
-    handle.style.setProperty('--c', LEVELS[index].color);
+    toneNode(handle, LEVELS[index]);
     root.dataset.orientation = o;
   }
 
