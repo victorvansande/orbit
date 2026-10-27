@@ -370,7 +370,7 @@
   }).observe(sceneWrap);
 
   /* ---- Start ---- */
-  $('tip').style.setProperty('--z', TIP_Z);
+  $('core-layer').style.setProperty('--z', TIP_Z); // kern en tip erven de diepte van de punt
   buildRings();
   buildMeridians();
   buildLegend();

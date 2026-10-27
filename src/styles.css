@@ -151,6 +151,27 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   transform: translate3d(0, 0, calc(var(--depth) * var(--z) * 1px));
 }
 
+/* Kern: zachte rode gloed op het middelpunt (boven) of de punt (zijkant), alleen met Nu-taken */
+.core {
+  position: absolute;
+  left: 0; top: 0;
+  opacity: var(--now);
+  transform: translate3d(0, 0, calc(var(--depth) * var(--z) * 1px));
+}
+.core-glow {
+  position: absolute;
+  left: -6px; top: -6px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 69, 58, .35);
+  box-shadow: 0 0 18px 8px rgba(255, 69, 58, .22);
+  animation: core-pulse 2.4s ease-in-out infinite;
+}
+@keyframes core-pulse {
+  0%, 100% { opacity: .5; scale: .8; }
+  50%      { opacity: 1;  scale: 1.2; }
+}
+
 /* Taken: orbit (diepte) > rotor (draait) > staart + hoofd */
 .orbit { transform: translate3d(0, 0, calc(var(--depth) * var(--z) * 1px)); }
 .rotor { animation: orbit var(--period) linear infinite; animation-delay: var(--delay); }
@@ -274,6 +295,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 /* ---- Minder beweging ---- */
 @media (prefers-reduced-motion: reduce) {
   .spin, .rotor { animation-play-state: paused; }
+  .core-glow { animation: none; opacity: .8; }
   .scene { transition-duration: 0s; }
   .segmented::before, .row, .legend li { transition: none; }
   .sheet[open], .sheet[open]::backdrop, .sheet.closing, .sheet.closing::backdrop { animation-duration: .01s; }

@@ -33,10 +33,10 @@ De array `LEVELS` bovenaan `src/app.js` is de enige bron van waarheid (naam, rin
 ## Ontwerpregels
 
 - Apple HIG, alleen dark mode. Achtergrond #000, oppervlak #1C1C1E, secundaire tekst rgba(235,235,245,.6), scheidingslijnen rgba(84,84,88,.65), accent #0A84FF. Systeemfont.
-- Rustig, geen neon: geen gradients, glow alleen op het hoofd van een bolletje (`GLOW = 0.35`, blur = GLOW × 10 px = 3,5 px).
+- Rustig, geen neon: geen gradients, glow op het hoofd van een bolletje (`GLOW = 0.35`, blur = GLOW × 10 px = 3,5 px) en een zachte, pulserende gloed in de kern.
 - Ringen: 2 px stippen elke ~8 px, opacity 0,2 (kernring 0,38). Staart: stippen elke ~7 px booglengte terug, kleiner, opacity max. 0,45.
 - Touch targets minstens 44 px (segmented controls via een onzichtbare `::after`, afvinkcirkel in een 44 px knop).
-- `prefers-reduced-motion`: banen en trechter staan stil (gepauzeerd, verdeling blijft zichtbaar), cameraovergang is direct.
+- `prefers-reduced-motion`: banen, trechter en kernpulse staan stil (gepauzeerd, verdeling blijft zichtbaar), cameraovergang is direct.
 
 ## Architectuur
 
@@ -50,6 +50,7 @@ De array `LEVELS` bovenaan `src/app.js` is de enige bron van waarheid (naam, rin
   - Zijkant: depth 1, tilt 58°, zoom 0,96, shift -66 px.
 - Elke stip (`.pt`): `translate3d(var(--x), var(--y), calc(var(--depth) * var(--z) * 1px))`. `--z` komt uit het diepteprofiel `PROFILE` via `depthAt(r)` (lineaire interpolatie).
 - Meridianen (8) en de rode tip zijn er altijd, maar hun opacity is × `--depth`, dus alleen zichtbaar in het zijaanzicht. De tip ook × `--now` (1 als er Nu-taken zijn, klasse `has-now`).
+- Kern (`.core` > `.core-glow`): zachte rode gloed die pulseert (2,4 s, opacity 0,5 tot 1, scale 0,8 tot 1,2). Zit op de diepte van de punt, dus in het bovenaanzicht in het midden en in het zijaanzicht op de tip. Alleen zichtbaar met Nu-taken (× `--now`). Pulse via de losse `scale`-property, zodat ze niet botst met de `transform` van de diepte. Bij reduced motion: vaste gloed zonder pulse.
 - Ringen, meridianen en tip worden één keer opgebouwd. Taakbolletjes (`buildOrbits`) worden bij elke wijziging volledig opnieuw opgebouwd: `.orbit` (diepte) > `.rotor` (draait) > staartstippen + `.head`.
 
 ### Data
