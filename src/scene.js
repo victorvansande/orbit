@@ -1,5 +1,5 @@
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
-import { dueLabel } from './deadline.js';
+import { dueLabel, isOverdue } from './deadline.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */
 const TAU = Math.PI * 2;
@@ -21,8 +21,8 @@ const FIT = 440;                        // zoveel stage-eenheden passen in min(b
 
 // Kleuren van structuur en labels per thema; de bollen houden hun eigen kleur
 const THEMES = {
-  light: { ink: [24, 24, 32], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
-  dark:  { ink: [236, 236, 241], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
+  light: { ink: [24, 24, 32], paper: [241, 241, 239], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
+  dark:  { ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
 };
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
@@ -101,7 +101,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
   let nowCount = 0, todayCount = 0, urgency = 0, beat = 0;
   let theme = THEMES.light;
-  let INK = theme.ink;
+  let INK = theme.ink, PAPER = theme.paper;
   const coreColor = [...theme.calm];
   let introStart = performance.now(), last = performance.now();
   let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
@@ -228,6 +228,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       }
       o.title = task.title;
       o.due = task.due || null;
+      o.late = Boolean(o.due) && isOverdue(o.due);
     }
     layoutOffsets();
     for (const o of orbs.values()) if (o.fresh) { o.offset = o.targetOffset; o.fresh = false; }
@@ -563,7 +564,24 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     ctx.beginPath();
     ctx.arc(it.sx, it.sy, it.r, 0, TAU);
-    ctx.fill();
+    if (o.due) {
+      // deadline ("Holle kop", gekozen door Victor): open kop met een stip in het midden, de staart blijft effen.
+      // Verstreken: de kop vult zich met inkt, de rand houdt de eigen kleur.
+      const lw = Math.max(1, it.r * 0.28);
+      ctx.fillStyle = rgba(o.late ? INK : PAPER, 1);
+      ctx.fill();
+      ctx.strokeStyle = rgba(colors.get(o.level), 1);
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      ctx.arc(it.sx, it.sy, Math.max(0.5, it.r - lw / 2), 0, TAU);
+      ctx.stroke();
+      if (!o.late) {
+        ctx.fillStyle = rgba(colors.get(o.level), 1);
+        ctx.beginPath();
+        ctx.arc(it.sx, it.sy, Math.max(0.75, it.r * 0.28), 0, TAU);
+        ctx.fill();
+      }
+    } else ctx.fill();
     ctx.globalAlpha = 1;
   }
 
@@ -596,14 +614,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.stroke();
       }
       drawOrb(o, it, lv, sp, free && o.r > 1);
-      if (o.due) {
-        // deadline: dun ringetje in de eigen kleur, de schil volgt de datum
-        ctx.strokeStyle = rgba(colors.get(o.level), 0.55 * o.alpha);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(it.sx, it.sy, it.r + 2.5, 0, TAU);
-        ctx.stroke();
-      }
     }
   }
 
@@ -860,6 +870,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;
       INK = theme.ink;
+      PAPER = theme.paper;
       colors = PALETTES[name] || PALETTES.light;
       URGENT_RGB = colors.get(URGENT_LEVEL);
     },

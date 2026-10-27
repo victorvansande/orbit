@@ -101,7 +101,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Merkteken: een fijn streepje dwars op de boog in de kleur van het gekozen moment (de zwarte pil uit de referentie paste niet). Geen `filter: blur` op de items: dat gaf op iOS Safari roze lijnen; verre items vervagen alleen via opacity.
 
 ## Data
-- Deadlines (`src/deadline.js`): een taak met `due` heeft een vaste schil die uit de datum volgt: verstreken → Nu, vandaag → Vandaag, ≤ 7 dagen → Week, ≤ 31 dagen → Maand, later → Ooit. `applyDeadlines()` loopt bij het laden, elke minuut (ook over middernacht) en bij terugkeer naar het tabblad; een bol die van schil wisselt glijdt naar zijn nieuwe ring. Zulke taken zijn niet te slepen (cursor `pointer`), krijgen geen momentkeuze in de lijst maar een datumlabel ("over 3 dagen", "2 dagen te laat" in rood), en in de scène een dun ringetje in hun eigen kleur plus de datum in het label.
+- Deadlines (`src/deadline.js`): een taak met `due` heeft een vaste schil die uit de datum volgt: verstreken → Nu, vandaag → Vandaag, ≤ 7 dagen → Week, ≤ 31 dagen → Maand, later → Ooit. `applyDeadlines()` loopt bij het laden, elke minuut (ook over middernacht) en bij terugkeer naar het tabblad; een bol die van schil wisselt glijdt naar zijn nieuwe ring. Zulke taken zijn niet te slepen (cursor `pointer`), krijgen geen momentkeuze in de lijst maar een datumlabel ("over 3 dagen", "2 dagen te laat" in rood), en in de scène een **Holle kop** (gekozen door Victor uit zes voorstellen: Aftelboog, Maantje, Holle kop, Kralen, Kernstip, Vizier): de kop is open (papierkleur) met een rand en een stip in de eigen kleur, de staart blijft effen. Verstreken (`o.late`, berekend in `setTasks`): de kop vult zich met inkt. Rand en stip 0,28 r (min. 1 px), zodat het ook op 375 px open blijft. Plus de datum in het label.
 
 - Taken `{id, title, level, createdAt, updatedAt, due?}` in localStorage, sleutel `priority-orbit.tasks.v1`. Elke wijziging (titel, moment, deadline, ongedaan maken) zet `updatedAt` via `touch()`; een automatische schilwissel door een deadline niet (die volgt op elk toestel vanzelf uit de datum). Afgevinkte taken staan als `{id: tijdstip}` in `priority-orbit.gone.v1` (nodig voor sync, na 60 dagen opgeruimd). `due` is optioneel, een lokale datum `JJJJ-MM-DD`. Ontbreekt de sleutel, dan demotaken (2 Nu, 2 Vandaag, 3 Week, 2 Maand, 2 Ooit).
 - "Dringend" in de samenvatting = aantal Nu-taken.
@@ -205,7 +205,6 @@ Victor wou iets kleins ter motivatie; vier voorstellen tijdelijk tegelijk aan (2
 
 ## Open vragen
 
-- Markering van bollen met deadline: zes voorstellen (Aftelboog, Maantje, Holle kop, Kralen, Kernstip, Vizier) liggen bij Victor; nu nog het dunne ringetje.
 
 - Statistiek: vier vormen staan tijdelijk tegelijk aan; Victor kiest later welke blijven.
 - Sync-server staat live; nog na te gaan: werkt `workers.dev` op het werknetwerk van Victor.
