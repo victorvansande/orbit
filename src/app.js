@@ -1,6 +1,7 @@
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL } from './config.js';
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
+import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
@@ -23,7 +24,8 @@ const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString
 
 /* ---- Opslag ---- */
 const isTask = t => t && typeof t.id === 'string' && typeof t.title === 'string'
-  && LEVEL_BY_ID.has(t.level) && typeof t.createdAt === 'number';
+  && LEVEL_BY_ID.has(t.level) && typeof t.createdAt === 'number'
+  && (t.due === undefined || isDue(t.due));
 
 function loadTasks() {
   try {
@@ -53,7 +55,19 @@ function demoTasks() {
 }
 
 let tasks = loadTasks() ?? demoTasks();
+applyDeadlines();
 saveTasks();
+
+// Taken met een deadline krijgen hun schil uit de datum; geeft true als er iets opschoof
+function applyDeadlines() {
+  let moved = false;
+  for (const t of tasks) {
+    if (!t.due) continue;
+    const level = levelForDue(t.due);
+    if (level !== t.level) { t.level = level; moved = true; }
+  }
+  return moved;
+}
 
 /* ---- Scène en wiel ---- */
 const groupsEl = $('groups');
@@ -172,6 +186,17 @@ function trackRow(t) {
   title.title = 'Dubbelklik om aan te passen';
   title.addEventListener('dblclick', () => editTitle(t.id, title));
 
+  li.append(check, title);
+  if (t.due) li.append(...dueControls(t, li));
+  else li.append(...levelControls(t, li));
+
+  li.addEventListener('pointerenter', () => scene.highlight({ task: t.id }));
+  li.addEventListener('pointerleave', () => scene.highlight({}));
+  return li;
+}
+
+// Gewone taak: bolletje rechts opent een keuze van de vijf momenten
+function levelControls(t, li) {
   const levelBtn = el('button', 't-level');
   levelBtn.type = 'button';
   levelBtn.setAttribute('aria-label', `Moment wijzigen, nu ${LEVEL_BY_ID.get(t.level).name}`);
@@ -199,11 +224,37 @@ function trackRow(t) {
     levelBtn.setAttribute('aria-expanded', String(open));
     li.classList.toggle('is-picking', open);
   });
+  return [levelBtn, picker];
+}
 
-  li.addEventListener('pointerenter', () => scene.highlight({ task: t.id }));
-  li.addEventListener('pointerleave', () => scene.highlight({}));
-  li.append(check, title, levelBtn, picker);
-  return li;
+// Taak met deadline: vaste schil, de datum rechts opent een bewerker (wijzigen of wissen)
+function dueControls(t, li) {
+  li.classList.add('has-due');
+  const chip = el('button', isOverdue(t.due) ? 't-due is-late' : 't-due', dueLabel(t.due));
+  chip.type = 'button';
+  chip.setAttribute('aria-label', `Deadline ${dueLabel(t.due)}, wijzigen`);
+  chip.setAttribute('aria-expanded', 'false');
+
+  const editor = el('div', 't-due-edit');
+  editor.hidden = true;
+  const input = el('input', 'due-input');
+  input.type = 'date';
+  input.value = t.due;
+  input.setAttribute('aria-label', 'Deadline');
+  input.addEventListener('change', () => { if (isDue(input.value)) setDue(t.id, input.value); });
+  const clear = el('button', 'due-clear', 'Deadline wissen');
+  clear.type = 'button';
+  clear.addEventListener('click', () => setDue(t.id, null));
+  editor.append(input, clear);
+
+  chip.addEventListener('click', () => {
+    const open = editor.hidden;
+    editor.hidden = !open;
+    chip.setAttribute('aria-expanded', String(open));
+    li.classList.toggle('is-picking', open);
+    if (open) input.focus();
+  });
+  return [chip, editor];
 }
 
 function markHot() {
@@ -246,10 +297,25 @@ function render() {
 
 function setLevel(id, level) {
   const task = tasks.find(t => t.id === id);
-  if (!task || task.level === level) return;
+  if (!task || task.due || task.level === level) return;
   task.level = level;
   saveTasks();
   render();
+}
+
+function setDue(id, due) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  if (due) { task.due = due; task.level = levelForDue(due); }
+  else delete task.due;
+  saveTasks();
+  render();
+}
+
+// Deadlines opvolgen: elke minuut (ook over middernacht) en bij terugkeer naar het tabblad
+function followDeadlines() {
+  if (applyDeadlines()) { saveTasks(); render(); }
+  else renderTracks();
 }
 
 let lastDone = null, toastTimer = 0;
@@ -302,7 +368,7 @@ const composerForm = $('composer-form');
 const composerTitle = $('composer-title');
 const composerSubmit = $('composer-submit');
 const composerOrb = $('composer-orb');
-let composerLevel = DEFAULT_LEVEL, closeTimer = 0;
+let composerLevel = DEFAULT_LEVEL, composerDue = '', closeTimer = 0;
 
 // Mini-orbit in het venster: een taps bolletje rond een kleine kern, in kleur en tempo van het moment
 let orbRaf = 0;
@@ -351,8 +417,13 @@ function paintComposerOrb() {
   cancelAnimationFrame(orbRaf);
   orbRaf = requestAnimationFrame(drawComposerOrbit);
   composer.style.setProperty('--c', lv.color);
-  $('composer-level').textContent = lv.name;
-  for (const b of $('composer-levels').children) b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));
+  $('composer-level').textContent = composerDue ? `${lv.name} · deadline` : lv.name;
+  for (const b of $('composer-levels').children) {
+    b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));
+    b.disabled = Boolean(composerDue);
+  }
+  $('composer-levels').classList.toggle('is-locked', Boolean(composerDue));
+  $('due-hint').textContent = composerDue ? `${dueLabel(composerDue)}, komt in ${lv.name}. Schuift vanzelf mee.` : '';
   composerOrb.classList.remove('is-swap');
   void composerOrb.offsetWidth;
   composerOrb.classList.add('is-swap');
@@ -367,7 +438,7 @@ function buildComposerLevels() {
     b.setAttribute('role', 'radio');
     tone(b, lv);
     b.append(el('span', 'orb-dot'), el('span', '', lv.name));
-    b.addEventListener('click', () => { composerLevel = lv.id; paintComposerOrb(); composerTitle.focus(); });
+    b.addEventListener('click', () => { if (composerDue) return; composerLevel = wheelLevel = lv.id; paintComposerOrb(); composerTitle.focus(); });
     box.append(b);
   }
 }
@@ -376,7 +447,10 @@ function openComposer(level = wheel.level) {
   clearTimeout(closeTimer);
   composer.classList.remove('is-closing');
   composerLevel = level;
+  wheelLevel = level;
   composerForm.reset();
+  $('due-toggle').hidden = false;
+  setComposerDue('');
   composerSubmit.disabled = true;
   paintComposerOrb();
   if (!composer.open) composer.showModal();
@@ -393,12 +467,36 @@ function closeComposer() {
 composerTitle.addEventListener('input', () => { composerSubmit.disabled = composerTitle.value.trim() === ''; });
 composerTitle.addEventListener('keydown', e => {
   // pijltjes wisselen het moment zonder de muis
-  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+  if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !composerDue) {
     e.preventDefault();
-    composerLevel = Math.max(1, Math.min(LEVELS.length, composerLevel + (e.key === 'ArrowUp' ? -1 : 1)));
+    composerLevel = wheelLevel = Math.max(1, Math.min(LEVELS.length, composerLevel + (e.key === 'ArrowUp' ? -1 : 1)));
     paintComposerOrb();
   }
 });
+// Deadline in het venster: met een datum volgt het moment uit de datum en is de keuze vergrendeld
+let wheelLevel = DEFAULT_LEVEL;
+function setComposerDue(due) {
+  composerDue = isDue(due) ? due : '';
+  $('due-field').hidden = !composerDue && !$('due-toggle').hidden;
+  composerLevel = composerDue ? levelForDue(composerDue) : wheelLevel;
+  paintComposerOrb();
+}
+$('due-toggle').addEventListener('click', () => {
+  $('due-toggle').hidden = true;
+  $('due-field').hidden = false;
+  const input = $('composer-due');
+  input.min = toDue(new Date());
+  input.focus();
+  input.showPicker?.();
+});
+$('composer-due').addEventListener('change', e => setComposerDue(e.target.value));
+$('due-clear').addEventListener('click', () => {
+  $('composer-due').value = '';
+  $('due-toggle').hidden = false;
+  setComposerDue('');
+  composerTitle.focus();
+});
+
 $('composer-cancel').addEventListener('click', closeComposer);
 composer.addEventListener('cancel', e => { e.preventDefault(); closeComposer(); });
 composer.addEventListener('click', e => { if (e.target === composer) closeComposer(); });
@@ -410,7 +508,9 @@ composerForm.addEventListener('submit', e => {
   e.preventDefault();
   const title = composerTitle.value.trim();
   if (!title) return;
-  tasks.push({ id: uid(), title, level: composerLevel, createdAt: Date.now() });
+  const task = { id: uid(), title, level: composerLevel, createdAt: Date.now() };
+  if (composerDue) { task.due = composerDue; task.level = levelForDue(composerDue); }
+  tasks.push(task);
   saveTasks();
   render();
   wheel.setLevel(composerLevel);
@@ -501,6 +601,8 @@ desktop.addEventListener('change', () => { updateInsets(); renderTracks(); });
 buildComposerLevels();
 renderClock();
 setInterval(renderClock, 10000);
+setInterval(followDeadlines, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) followDeadlines(); });
 updateInsets();
 renderSummary();
 renderTracks();

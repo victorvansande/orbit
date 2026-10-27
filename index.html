@@ -82,6 +82,14 @@
     </div>
     <input class="composer-title" id="composer-title" name="title" type="text" placeholder="Wat moet er gebeuren?" autocomplete="off" enterkeyhint="done" maxlength="120" aria-label="Titel">
     <div class="composer-levels" id="composer-levels" role="radiogroup" aria-label="Moment"></div>
+    <div class="composer-due">
+      <button type="button" class="due-toggle" id="due-toggle"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>Deadline</button>
+      <div class="due-field" id="due-field" hidden>
+        <input type="date" class="due-input" id="composer-due" aria-label="Deadline">
+        <button type="button" class="due-clear" id="due-clear">Wissen</button>
+      </div>
+      <p class="due-hint" id="due-hint" aria-live="polite"></p>
+    </div>
     <div class="composer-actions">
       <button type="button" class="btn-ghost" id="composer-cancel">Annuleer</button>
       <button type="submit" class="btn-solid" id="composer-submit" disabled>Voeg toe <kbd>↵</kbd></button>

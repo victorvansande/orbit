@@ -1,4 +1,5 @@
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
+import { dueLabel } from './deadline.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */
 const TAU = Math.PI * 2;
@@ -215,6 +216,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         o.level = task.level;
       }
       o.title = task.title;
+      o.due = task.due || null;
     }
     layoutOffsets();
     for (const o of orbs.values()) if (o.fresh) { o.offset = o.targetOffset; o.fresh = false; }
@@ -546,6 +548,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.stroke();
       }
       drawOrb(o, it, lv, sp, free && sp > 0.05 && o.r > 1);
+      if (o.due) {
+        // deadline: dun ringetje in de eigen kleur, de schil volgt de datum
+        ctx.strokeStyle = rgba(colors.get(o.level), 0.55 * o.alpha);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(it.sx, it.sy, it.r + 2.5, 0, TAU);
+        ctx.stroke();
+      }
     }
   }
 
@@ -629,7 +639,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.moveTo(o.sx + dx * (o.sr + 3), o.sy + dy * (o.sr + 3));
       ctx.lineTo(ax, ay);
       ctx.stroke();
-      pill(o.title, ax + (dx >= 0 ? 2 : -2), ay, dx >= 0 ? 'left' : 'right', colors.get(o.level));
+      pill(o.due ? `${o.title} · ${dueLabel(o.due)}` : o.title, ax + (dx >= 0 ? 2 : -2), ay, dx >= 0 ? 'left' : 'right', colors.get(o.level));
     }
   }
 
@@ -710,7 +720,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     if (drag) {
       const dx = p.x - drag.x0, dy = p.y - drag.y0;
-      if (!drag.active && Math.hypot(dx, dy) > 5) drag.active = true;
+      if (!drag.active && Math.hypot(dx, dy) > 5) {
+        if (drag.fixed) return; // deadline-taak: vaste schil
+        drag.active = true;
+      }
       if (!drag.active) return;
       if (drag.type === 'orb') {
         const lv = nearestRing(p.x, p.y, 70);
@@ -726,7 +739,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     const h = pick(p.x, p.y);
     setHover(h);
-    canvas.style.cursor = h.orb ? 'grab' : 'default';
+    canvas.style.cursor = h.orb ? (orbs.get(h.orb)?.due ? 'pointer' : 'grab') : 'default';
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -742,7 +755,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const h = pick(p.x, p.y);
     if (e.pointerType !== 'mouse') setHover(h);
     canvas.setPointerCapture(e.pointerId);
-    if (h.orb) drag = { type: 'orb', id: h.orb, x0: p.x, y0: p.y, active: false };
+    if (h.orb) drag = { type: 'orb', id: h.orb, x0: p.x, y0: p.y, active: false, fixed: Boolean(orbs.get(h.orb)?.due) };
     else drag = { type: 'cam', x0: p.x, y0: p.y, t0: t, spin0: spinDrag, active: false };
   });
 

@@ -30,6 +30,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/config.js` | `LEVELS` (enige bron van waarheid: naam, ring, baan, omloop, kleur, grootte, staart), diepteprofiel, kleurhelpers, iconen voor het wiel |
 | `src/scene.js` | Canvas-renderer met eigen 3D-projectie, animatie, hit-testing, slepen, bollen en kern |
 | `src/wheel.js` | Het gebogen wiel (DOM, posities via JS) |
+| `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out |
 
 ## Niveaus
@@ -67,16 +68,19 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Merkteken: een fijn streepje dwars op de boog in de kleur van het gekozen moment (de zwarte pil uit de referentie paste niet). Geen `filter: blur` op de items: dat gaf op iOS Safari roze lijnen; verre items vervagen alleen via opacity.
 
 ## Data
+- Deadlines (`src/deadline.js`): een taak met `due` heeft een vaste schil die uit de datum volgt: verstreken → Nu, vandaag → Vandaag, ≤ 7 dagen → Week, ≤ 31 dagen → Maand, later → Ooit. `applyDeadlines()` loopt bij het laden, elke minuut (ook over middernacht) en bij terugkeer naar het tabblad; een bol die van schil wisselt glijdt naar zijn nieuwe ring. Zulke taken zijn niet te slepen (cursor `pointer`), krijgen geen momentkeuze in de lijst maar een datumlabel ("over 3 dagen", "2 dagen te laat" in rood), en in de scène een dun ringetje in hun eigen kleur plus de datum in het label.
 
-- Taken `{id, title, level, createdAt}` in localStorage, sleutel `priority-orbit.tasks.v1`. Ontbreekt de sleutel, dan demotaken (2 Nu, 2 Vandaag, 3 Week, 2 Maand, 2 Ooit).
+- Taken `{id, title, level, createdAt, due?}` in localStorage, sleutel `priority-orbit.tasks.v1`. `due` is optioneel, een lokale datum `JJJJ-MM-DD`. Ontbreekt de sleutel, dan demotaken (2 Nu, 2 Vandaag, 3 Week, 2 Maand, 2 Ooit).
 - "Dringend" in de samenvatting = aantal Nu-taken.
 
 ## Interactie in de lijst en het venster
 
 - Lijst gegroepeerd per moment. Afvinken: cirkel kleurt als bol, rij schuift weg, bol spat uiteen, toast met "Ongedaan maken" (5 s, ook `Z` of Ctrl/Cmd+Z).
+- Datumlabel bij een deadline-taak opent een bewerker: datum wijzigen of deadline wissen (dan wordt het een gewone taak in de huidige schil).
 - Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten; op apparaten met hover verschijnt het pas als je over de rij gaat.
-- Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), "Voeg toe" pas actief met een titel.
+- Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), optioneel "Deadline" (native datumveld; met een datum is de momentkeuze vergrendeld en toont een hint in welke schil de taak komt), "Voeg toe" pas actief met een titel.
 - Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `Z` ongedaan, `Esc` sluit.
+- Sneltoetsenregel onder de lijst blijft op één regel (`width: max-content`, mag voorbij de lijstbreedte lopen).
 - Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand.
 
