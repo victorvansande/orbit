@@ -169,9 +169,9 @@ kbd {
 .wheel-arc path { fill: none; stroke: rgba(27, 27, 34, .16); stroke-width: 1.2; }
 .wheel-handle {
   position: absolute; left: 0; top: 0;
-  width: 46px; height: 15px; margin: -7.5px 0 0 -23px;
-  border-radius: 8px; background: #2A2A31;
-  box-shadow: 0 4px 10px rgba(20, 20, 30, .18);
+  width: 18px; height: 2px; margin: -1px 0 0 -9px;
+  border-radius: 1px; background: var(--c, var(--ink));
+  transition: background-color .25s var(--ease);
   pointer-events: none;
 }
 .wheel-list { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; outline: none; }
@@ -186,7 +186,6 @@ kbd {
   color: var(--c);
   background: color-mix(in srgb, color-mix(in srgb, var(--c) 9%, #fff) calc(var(--sel) * 100%), var(--fill));
   border: 1.5px solid color-mix(in srgb, var(--c) calc(var(--sel) * 100%), transparent);
-  box-shadow: 0 calc(var(--sel) * 8px) calc(var(--sel) * 22px) color-mix(in srgb, var(--c) calc(var(--sel) * 22%), transparent);
   transition: background-color .2s var(--ease);
 }
 .wheel-item:hover .wi-pill { background: color-mix(in srgb, color-mix(in srgb, var(--c) 9%, #fff) calc(var(--sel) * 100%), rgba(27, 27, 34, .07)); }

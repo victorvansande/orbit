@@ -56,8 +56,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       const d = Math.abs(rel);
       const sel = Math.max(0, 1 - d * 1.6);           // 1 in het midden, 0 vanaf ~0,6 stap
       li.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`;
-      li.style.opacity = Math.max(0.12, 1 - d * 0.26).toFixed(3);
-      li.style.filter = d > 1.4 ? `blur(${((d - 1.4) * 0.9).toFixed(2)}px)` : 'none';
+      li.style.opacity = Math.max(0.1, 1 - d * 0.3).toFixed(3);
       li.style.setProperty('--sel', sel.toFixed(3));
       li.style.setProperty('--pw', (PILL.w + (PILL.selW - PILL.w) * sel).toFixed(1) + 'px');
       li.style.setProperty('--ph', (PILL.h + (PILL.selH - PILL.h) * sel).toFixed(1) + 'px');
@@ -75,9 +74,11 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       pts.push(`${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`);
     }
     arcPath.setAttribute('d', pts.join(' '));
-    const hx = o === 'vertical' ? cx - g.R - 24 : cx;
-    const hy = o === 'vertical' ? cy : cy - g.R - 24;
+    // merkstreepje dwars op de boog, in de kleur van het gekozen moment
+    const hx = o === 'vertical' ? cx - g.R : cx;
+    const hy = o === 'vertical' ? cy : cy - g.R;
     handle.style.transform = `translate(${hx.toFixed(1)}px, ${hy.toFixed(1)}px) rotate(${o === 'vertical' ? 0 : 90}deg)`;
+    handle.style.setProperty('--c', LEVELS[index].color);
     root.dataset.orientation = o;
   }
 

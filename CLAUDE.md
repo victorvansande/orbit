@@ -63,6 +63,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 - Vijf items langs een cirkelboog; `pos` (kommagetal) volgt `index` met een veer. Verticaal op desktop (middelpunt rechts buiten beeld), horizontaal op gsm (middelpunt onder het wiel).
 - Scrollen (muiswiel of trackpad, met drempel en korte vergrendeling), slepen langs de boog, pijltjestoetsen. Klik op een ander item centreert het; klik op het geselecteerde item (of Enter) opent het venster "nieuwe taak" voor dat moment.
 - Hover of selectiewissel licht de bijhorende ring in de scène kort op.
+- Merkteken: een fijn streepje dwars op de boog in de kleur van het gekozen moment (de zwarte pil uit de referentie paste niet). Geen `filter: blur` op de items: dat gaf op iOS Safari roze lijnen; verre items vervagen alleen via opacity.
 
 ## Data
 
