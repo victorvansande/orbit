@@ -354,12 +354,14 @@ kbd {
 .focus-due.is-late { color: var(--late); }
 .focus-due.is-late b { color: var(--late); }
 .focus-now { margin-top: 36px; max-width: 30ch; }
+.focus-now:has(.focus-quote) { max-width: none; }
 .focus-kicker { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--late); margin-bottom: 12px; }
 .focus-now ul { list-style: none; margin: 0; padding: 0; }
 .focus-now li { font-size: 22px; line-height: 1.35; font-weight: 400; letter-spacing: -.01em; }
 .focus-now .focus-more, .focus-calm { font-size: 15px; color: var(--ink-3); }
 /* Quote als er niets dringend is: groot genoeg om van op afstand te lezen, auteur in kapitaaltjes */
-.focus-quote { margin: 0; max-width: 34ch; animation: fade-in 1.2s var(--ease) both; }
+/* zo breed als de ruimte tot de buitenste ring toelaat (ring ≈ 41vmin van het midden), met een maximum voor de leesbaarheid */
+.focus-quote { margin: 0; width: max(260px, min(52ch, calc(50vw - 41vmin - 72px))); animation: fade-in 1.2s var(--ease) both; }
 .focus-quote blockquote { margin: 0; font-size: 21px; line-height: 1.38; font-weight: 400; letter-spacing: -.005em; color: var(--ink); text-wrap: pretty; }
 .focus-quote figcaption { margin-top: 12px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 
@@ -575,6 +577,35 @@ body.is-idle .controls { opacity: 0; }
 .arch-btn:disabled { color: var(--ink-3); background: none; cursor: default; }
 .arch-empty { padding: 16px 0; color: var(--ink-3); font-size: 13.5px; }
 .arch-foot #arch-close { margin-left: auto; }
+
+/* ---- Venster: uitleg (eerste bezoek, knop Uitleg, toets ?) ---- */
+.intro { width: min(600px, calc(100vw - 32px)); }
+.intro-card:focus { outline: none; }
+.intro-card { max-height: min(760px, calc(100dvh - 32px)); overflow-y: auto; gap: 14px; }
+.intro-title { margin: 2px 0 0; font: 600 24px/1.15 var(--font); letter-spacing: -.01em; }
+.intro-lead { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 46ch; }
+.intro-levels { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.intro-levels li { display: flex; align-items: center; gap: 7px; font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.intro-levels li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.intro-levels li + li::after { content: none; }
+.intro-grid { margin: 4px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; padding-top: 14px; border-top: 1px solid var(--line); }
+.intro-grid div { min-width: 0; }
+.intro-grid dt { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); margin-bottom: 6px; }
+.intro-grid dd { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.intro-grid kbd, .intro-keys kbd { font-size: 10px; }
+.intro-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); font: 500 10px/1.8 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.intro-keys kbd:not(:first-child) { margin-left: 6px; }
+.intro-keys kbd + kbd { margin-left: -2px; }
+.intro-foot { justify-content: space-between; }
+.intro-note { font-size: 12px; color: var(--ink-3); }
+.intro[open] .intro-card { animation: pop-in .4s var(--pop); }
+@media (max-width: 540px) {
+  .intro-grid { grid-template-columns: 1fr; gap: 12px; }
+  .intro-title { font-size: 21px; }
+  .intro-note { display: none; }
+  .intro-foot { justify-content: flex-end; }
+}
+@media (hover: none) { .intro-keys { display: none; } }
 .arch-server { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .arch-server .arch-list { min-height: 0; max-height: 30dvh; }
 
@@ -620,6 +651,7 @@ body.is-idle .controls { opacity: 0; }
   body.is-focus .focus-kicker { margin-bottom: 8px; }
   body.is-focus .focus-now li { font-size: 18px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.is-focus .focus-now .focus-more, body.is-focus .focus-calm { font-size: 14px; }
+  body.is-focus .focus-quote { width: auto; max-width: none; }
   body.is-focus .focus-quote blockquote { font-size: 17px; line-height: 1.4; }
   body.is-focus .focus-quote figcaption { margin-top: 8px; }
   body.is-focus .controls { order: 3; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }

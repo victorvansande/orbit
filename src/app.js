@@ -813,7 +813,7 @@ window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraaks
 
 /* ---- Toetsenbord ---- */
 document.addEventListener('keydown', e => {
-  if (composer.open || archiveDialog.open || syncDialog.open) return;
+  if (composer.open || archiveDialog.open || syncDialog.open || introDialog.open) return;
   if (e.repeat) return;                 // ingedrukt houden herhaalt niets (anders flitst D tussen licht en donker)
   if (e.target.closest?.('input, textarea, [contenteditable]')) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
@@ -825,6 +825,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'f') setFocus(!document.body.classList.contains('is-focus'));
   else if (k === 'z') undo();
   else if (k === 'a') openArchive();
+  else if (e.key === '?') openIntro();
   else if (k === 'd') setThemePref(resolvedTheme() === 'dark' ? 'light' : 'dark');
   else if (k === 't') setTempo(TEMPOS[(TEMPOS.indexOf(tempo) + 1) % TEMPOS.length]);
   else if (e.key === 'Escape' && document.body.classList.contains('is-focus')) setFocus(false);
@@ -1306,6 +1307,22 @@ window.addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.alt
 // Aanraakschermen beginnen zonder focuskaders (bv. een venster dat opent via een gescande link)
 if (matchMedia('(hover: none)').matches) setInput('pointer');
 
+/* ---- Uitleg: eerste bezoek, knop Uitleg, toets ? ---- */
+const introDialog = $('intro');
+const INTRO_KEY = 'priority-orbit.intro.v1';
+for (const lv of LEVELS) { const li = el('li', '', lv.name); toneNode(li, lv); $('intro-levels').append(li); }
+function openIntro() {
+  if (!introDialog.open) introDialog.showModal();
+  const card = introDialog.querySelector('.intro-card');
+  card.scrollTop = 0;
+  card.focus({ preventScroll: true });     // bovenaan beginnen, geen kader rond de knop
+}
+function closeIntro() { try { localStorage.setItem(INTRO_KEY, 'gezien'); } catch { /* geen opslag */ } introDialog.close(); }
+$('intro-btn').addEventListener('click', openIntro);
+$('intro-close').addEventListener('click', closeIntro);
+introDialog.addEventListener('click', e => { if (e.target === introDialog) closeIntro(); });
+introDialog.addEventListener('cancel', () => { try { localStorage.setItem(INTRO_KEY, 'gezien'); } catch { /* geen opslag */ } });
+
 /* ---- Sneltoetsen: openklappen met een klik (hover doet CSS) ---- */
 $('keys-toggle').addEventListener('click', () => {
   const open = !$('keys').classList.contains('is-open');
@@ -1336,3 +1353,9 @@ if (STANDALONE && !savedCode() && !$('tracks-pair').hidden) {
   setTimeout(() => showToast('Deze app heeft een eigen opslag. Haal je taken binnen via Koppelen.', () => { openSync(); $('sync-manual').open = true; }, 'Koppelen'), 1500);
 }
 readSyncHash();
+// Eerste bezoek (nog geen eigen taken bewaard, uitleg nooit gezien, niet via een koppellink): de uitleg tonen
+{
+  let seen = false;
+  try { seen = localStorage.getItem(INTRO_KEY) === 'gezien'; } catch { /* geen opslag */ }
+  if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900);
+}

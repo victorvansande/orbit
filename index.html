@@ -50,6 +50,8 @@
       <button type="button" role="radio" aria-checked="true" data-theme-pref="auto">Auto</button>
     </div>
     <div class="hud-actions">
+      <button type="button" class="sync-btn" id="intro-btn">Uitleg</button>
+      <span class="slash" aria-hidden="true">/</span>
       <button type="button" class="sync-btn" id="archive-btn">Archief</button>
       <span class="slash" aria-hidden="true">/</span>
       <button type="button" class="sync-btn" id="sync-btn" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Koppelen</span></button>
@@ -94,7 +96,7 @@
   <div class="groups" id="groups"></div>
   <div class="keys" id="keys">
     <button type="button" class="keys-toggle" id="keys-toggle" aria-expanded="false" aria-controls="keys-list">Sneltoetsen</button>
-    <p class="keys-list" id="keys-list"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief</p>
+    <p class="keys-list" id="keys-list"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
   </div>
 </section>
 
@@ -155,6 +157,28 @@
       <button type="submit" class="btn-solid" id="composer-submit" disabled>Voeg toe <kbd>↵</kbd></button>
     </div>
   </form>
+</dialog>
+
+<dialog class="sync intro" id="intro" aria-labelledby="intro-title">
+  <div class="sync-card intro-card" tabindex="-1" autofocus>
+    <div class="composer-meta"><span>Welkom bij</span><span>Uitleg</span></div>
+    <h2 class="intro-title" id="intro-title">Orbit Tasks</h2>
+    <p class="intro-lead">Je taken draaien rond een kern. Hoe dringender, hoe dichter bij het midden en hoe sneller ze draaien.</p>
+    <ul class="intro-levels" id="intro-levels" aria-label="De vijf momenten, van binnen naar buiten"></ul>
+    <dl class="intro-grid">
+      <div><dt>Toevoegen</dt><dd>Kies een moment op het wiel en tik nog eens, of druk <kbd>N</kbd>. Met een deadline schuift de taak vanzelf naar binnen naarmate de datum nadert.</dd></div>
+      <div><dt>Afvinken</dt><dd>Tik op het rondje in de lijst: de taak fonkelt uit. <kbd>Z</kbd> zet ze terug, en alles blijft 60 dagen in Archief.</dd></div>
+      <div><dt>Verplaatsen</dt><dd>Sleep een bol naar een andere ring, of tik op het bolletje rechts van een taak in de lijst.</dd></div>
+      <div><dt>Kijken</dt><dd>Boven of zijkant (<kbd>1</kbd> <kbd>2</kbd>), slepen in de scène draait mee. Focus (<kbd>F</kbd>) toont klok, weer en wat nu moet.</dd></div>
+      <div><dt>Rust</dt><dd>Te druk? Tempo (<kbd>T</kbd>) wisselt tussen normaal, zen en stil. <kbd>D</kbd> wisselt licht en donker.</dd></div>
+      <div><dt>Toestellen</dt><dd>Koppelen rechtsboven: het ene toestel toont een QR-code, het andere scant en ontvangt je taken. Daarna blijven ze gelijk, ook offline.</dd></div>
+    </dl>
+    <p class="intro-keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>F</kbd> focus <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief <kbd>Z</kbd> ongedaan <kbd>?</kbd> uitleg</p>
+    <div class="sync-row intro-foot">
+      <span class="intro-note">Deze uitleg staat altijd onder Uitleg rechtsboven.</span>
+      <button type="button" class="btn-solid" id="intro-close">Aan de slag</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog class="sync archive" id="archive" aria-labelledby="archive-title">

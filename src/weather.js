@@ -46,9 +46,12 @@ async function placeName(lat, lon) {
   try {
     const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=nl`);
     const j = await r.json();
-    return j.city || j.locality || '';
+    return cleanName(j.city || j.locality || '');
   } catch { return ''; }
 }
+
+// "Arrondissement Antwerpen" en dergelijke: alleen de plaatsnaam
+const cleanName = name => String(name || '').replace(/^(arrondissement|district|province of|provincie|kanton|canton)\s+/i, '').trim();
 
 // Neerslag in het komende uur uit de kwartierwaarden. Geeft een korte zin, of '' als het droog blijft.
 const WET = 0.1;   // mm per kwartier
@@ -94,7 +97,7 @@ export function createWeather(link) {
     const [label, kind] = KIND[w.code] || ['Weer', 'cloudy'];
     link.querySelector('use').setAttribute('href', '#' + iconId(kind, w.day));
     link.querySelector('.fw-temp').textContent = `${w.temp}°`;
-    link.querySelector('.fw-place').textContent = w.name || '';
+    link.querySelector('.fw-place').textContent = cleanName(w.name);
     const rain = rainText(w);
     link.querySelector('.fw-rain').textContent = rain;
     link.querySelector('.fw-rain').hidden = !rain;
