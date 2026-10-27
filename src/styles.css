@@ -173,6 +173,9 @@ kbd {
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
   padding-bottom: 28px;
 }
+.tracks-pair { margin: 10px 0 8px; padding: 14px; border-radius: 16px; background: var(--fill); display: flex; flex-direction: column; gap: 10px; }
+.tracks-pair p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.tracks-pair .btn-solid, .tracks-pair .btn-ghost { min-height: 38px; padding: 0 14px; font-size: 13px; }
 .tracks-demo { margin: 8px 0 4px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; max-width: 30ch; }
 .tracks-empty { margin-top: 18px; color: var(--ink-2); font-size: 13.5px; max-width: 26ch; }
 .keys { display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; width: max-content; white-space: nowrap; padding-top: 10px; font: 500 10px/1 var(--mono); letter-spacing: .04em; color: var(--ink-3); text-transform: uppercase; }
@@ -483,7 +486,7 @@ body.is-idle .controls { opacity: 0; }
 .sync-input {
   flex: 1 1 200px; min-width: 0; height: 44px; padding: 0 14px;
   border: 1px solid var(--line); border-radius: 999px; background: var(--chip); color: var(--ink);
-  font: 500 14px var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  font: 500 14px var(--mono); letter-spacing: .04em;
 }
 .sync-input::placeholder { color: var(--placeholder); }
 .sync-error { font-size: 13px; color: var(--late); }

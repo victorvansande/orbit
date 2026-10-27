@@ -86,6 +86,10 @@
     <h2 id="tracks-title">Taken</h2>
     <span id="tracks-count"></span>
   </div>
+  <div class="tracks-pair" id="tracks-pair" hidden>
+    <p>Deze app op je beginscherm heeft een eigen opslag, los van je browser. Haal je taken hierheen: kies in Orbit in je browser of op je pc Koppelen, Verstuur, en ontvang ze hier.</p>
+    <div class="sync-row"><button type="button" class="btn-solid" id="tracks-pair-go">Taken ontvangen</button><button type="button" class="btn-ghost" id="tracks-pair-no">Later</button></div>
+  </div>
   <p class="tracks-demo" id="tracks-demo" hidden>Dit zijn voorbeeldtaken. Ze verdwijnen zodra je zelf een taak toevoegt.</p>
   <div class="groups" id="groups"></div>
   <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief</p>
@@ -197,10 +201,11 @@
         </button>
       </div>
       <details class="sync-manual" id="sync-manual">
-        <summary>Code typen om te ontvangen</summary>
+        <summary>Code of link plakken om te ontvangen</summary>
         <form class="sync-join" id="sync-join-form" novalidate>
           <div class="sync-row">
-            <input class="sync-input" id="sync-input" aria-label="Code" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24">
+            <input class="sync-input" id="sync-input" aria-label="Code of koppellink" placeholder="Code of link" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200">
+            <button type="button" class="btn-ghost" id="sync-paste">Plak</button>
             <button type="submit" class="btn-ghost" id="sync-join">Ontvang</button>
           </div>
           <p class="sync-error" id="sync-error" role="alert" hidden></p>
@@ -245,7 +250,7 @@
       <p class="sync-dir"><span>Dit toestel</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M2 6h34M31 1l5 5-5 5"/></svg><span>Toestel dat scant</span></p>
       <div class="sync-qr" id="sync-qr" role="img" aria-label="QR-code om taken naar een ander toestel te versturen"></div>
       <p class="sync-status" id="sync-send-status" role="status"><span class="sync-dot" aria-hidden="true"></span><span id="sync-send-text"></span></p>
-      <p class="sync-text sync-note">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Staat Orbit daar als app op het beginscherm, scan dan vanuit de app.</p>
+      <p class="sync-text sync-note">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Naar de app op het beginscherm van deze zelfde gsm? Tik op "Kopieer link", open de app en plak de link bij Koppelen.</p>
       <div class="sync-row">
         <button type="button" class="btn-ghost" id="sync-copy-link">Kopieer link</button>
         <button type="button" class="btn-ghost" id="sync-show-code" aria-expanded="false">Toon code</button>

@@ -1139,6 +1139,7 @@ function serverHint(e) {
 }
 
 function renderSync({ status, lastSync, code } = { status: sync.status, lastSync: sync.lastSync, code: sync.code }) {
+  try { renderPairHint(); } catch { /* bij het opstarten nog niet klaar */ }
   const btn = $('sync-btn');
   btn.dataset.status = status;
   // verbonden maar nog niets uitgewisseld: nog niet "gesynchroniseerd" noemen
@@ -1196,9 +1197,9 @@ $('sync-scan').addEventListener('click', startScan);
 $('sync-scan-cancel').addEventListener('click', () => { scanner.stop(); syncView = 'auto'; renderSync(); });
 $('sync-join-form').addEventListener('submit', e => {
   e.preventDefault();
-  const code = normalizeCode($('sync-input').value);
+  const code = codeFromText($('sync-input').value.trim());     // een code of een geplakte koppellink
   if (!code) {
-    $('sync-error').textContent = 'Die code klopt niet. Een code heeft 16 tekens, bv. 7K2P-Q9XD-M3TA-4HWE.';
+    $('sync-error').textContent = 'Dat is geen code of koppellink van Orbit. Een code heeft 16 tekens, bv. 7K2P-Q9XD-M3TA-4HWE.';
     $('sync-error').hidden = false;
     return;
   }
@@ -1206,6 +1207,29 @@ $('sync-join-form').addEventListener('submit', e => {
   $('sync-manual').open = false;
   receiveFrom(code);
 });
+// Plakken: link of code van het klembord (bv. gekopieerd in de browser op dezelfde gsm)
+$('sync-paste').addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    $('sync-input').value = text.trim();
+    if (codeFromText(text.trim())) $('sync-join-form').requestSubmit();
+  } catch { $('sync-input').focus(); }
+});
+
+// Webapp op het beginscherm (eigen opslag, los van de browser) en nog niet gekoppeld: zeg dat, met een knop
+const STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const PAIR_HINT_KEY = 'priority-orbit.pairhint.v1';
+function renderPairHint() {
+  let later = false;
+  try { later = localStorage.getItem(PAIR_HINT_KEY) === 'later'; } catch { /* geen opslag */ }
+  $('tracks-pair').hidden = !STANDALONE || Boolean(sync.code) || later;
+}
+$('tracks-pair-go').addEventListener('click', () => { openSync(); $('sync-manual').open = true; });
+$('tracks-pair-no').addEventListener('click', () => {
+  try { localStorage.setItem(PAIR_HINT_KEY, 'later'); } catch { /* geen opslag */ }
+  renderPairHint();
+});
+
 $('sync-confirm-yes').addEventListener('click', () => { const c = pendingCode; pendingCode = null; if (c) receiveFrom(c); });
 $('sync-confirm-no').addEventListener('click', () => { pendingCode = null; syncDialog.close(); });
 $('sync-recv-cancel').addEventListener('click', () => { sync.stop(); syncView = 'auto'; renderSync(); });
@@ -1263,4 +1287,8 @@ renderFocusNow();
 scene.setTasks(tasks, { intro: true });
 renderSync();
 if (savedCode()) sync.start(savedCode());
+// Webapp op het beginscherm zonder koppeling: meteen zeggen, de uitleg in de lijst staat op gsm ver onderaan
+if (STANDALONE && !savedCode() && !$('tracks-pair').hidden) {
+  setTimeout(() => showToast('Deze app heeft een eigen opslag. Haal je taken binnen via Koppelen.', () => { openSync(); $('sync-manual').open = true; }, 'Koppelen'), 1500);
+}
 readSyncHash();
