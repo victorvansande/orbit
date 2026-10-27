@@ -49,6 +49,7 @@
       <span class="slash" aria-hidden="true">/</span>
       <button type="button" role="radio" aria-checked="true" data-theme-pref="auto">Auto</button>
     </div>
+    <button type="button" class="sync-btn" id="sync-btn" data-status="off"><span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Sync uit</span></button>
   </div>
 </header>
 
@@ -118,6 +119,37 @@
       <button type="submit" class="btn-solid" id="composer-submit" disabled>Voeg toe <kbd>↵</kbd></button>
     </div>
   </form>
+</dialog>
+
+<dialog class="sync" id="sync" aria-labelledby="sync-title">
+  <div class="sync-card">
+    <div class="composer-meta"><span id="sync-title">Synchroniseren</span><span>Alle toestellen</span></div>
+    <div id="sync-off">
+      <p class="sync-text">Hou je taken gelijk op al je toestellen. Maak één synccode aan en vul die in op je andere toestellen, of open daar de link.</p>
+      <button type="button" class="btn-solid" id="sync-new">Nieuwe synccode</button>
+      <form class="sync-join" id="sync-join-form" novalidate>
+        <label class="sync-label" for="sync-input">Al een code?</label>
+        <div class="sync-row">
+          <input class="sync-input" id="sync-input" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24">
+          <button type="submit" class="btn-ghost" id="sync-join">Verbinden</button>
+        </div>
+        <p class="sync-error" id="sync-error" role="alert" hidden></p>
+      </form>
+    </div>
+    <div id="sync-on" hidden>
+      <p class="sync-code" id="sync-code"></p>
+      <p class="sync-meta" id="sync-meta"></p>
+      <div class="sync-row">
+        <button type="button" class="btn-ghost" id="sync-copy-code">Kopieer code</button>
+        <button type="button" class="btn-ghost" id="sync-copy-link">Kopieer link</button>
+      </div>
+      <p class="sync-text sync-note">Je taken worden op je toestel versleuteld met deze code voor ze de cloud in gaan. Deel de code alleen met je eigen toestellen.</p>
+      <div class="sync-row sync-end">
+        <button type="button" class="btn-ghost" id="sync-stop">Stoppen op dit toestel</button>
+        <button type="button" class="btn-solid" id="sync-close">Klaar</button>
+      </div>
+    </div>
+  </div>
 </dialog>
 
 <script type="module" src="src/app.js"></script>

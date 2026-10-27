@@ -2,9 +2,11 @@ import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './co
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
+import { createSync, newCode, normalizeCode, savedCode } from './sync.js';
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
+const GONE_KEY = 'priority-orbit.gone.v1';      // afgevinkte taken (id → tijdstip), nodig voor synchronisatie
 const DONE_MS = 320;          // rij vervaagt, daarna verdwijnt ze uit de lijst
 const TOAST_MS = 5000;
 const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stilstand
@@ -32,14 +34,31 @@ function loadTasks() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
     const data = JSON.parse(raw);
-    return Array.isArray(data) ? data.filter(isTask) : null;
+    // oudere taken hebben nog geen wijzigingstijd: dan geldt de aanmaaktijd
+    return Array.isArray(data) ? data.filter(isTask).map(t => ({ ...t, updatedAt: t.updatedAt ?? t.createdAt })) : null;
   } catch {
     return null;
   }
 }
 
-function saveTasks() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); } catch { /* opslag geblokkeerd */ }
+function loadGone() {
+  try { const g = JSON.parse(localStorage.getItem(GONE_KEY)); return g && typeof g === 'object' ? g : {}; } catch { return {}; }
+}
+
+// Lokaal bewaren; met notify (standaard) ook doorgeven aan de synchronisatie
+let notifySync = () => {};
+function saveTasks({ notify = true } = {}) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    localStorage.setItem(GONE_KEY, JSON.stringify(gone));
+  } catch { /* opslag geblokkeerd */ }
+  if (notify) notifySync();
+}
+
+// Elke bewuste wijziging krijgt een nieuwe wijzigingstijd; zo wint bij synchronisatie de recentste
+function touch(task) {
+  task.updatedAt = Date.now();
+  delete task.demo;
 }
 
 function demoTasks() {
@@ -51,12 +70,16 @@ function demoTasks() {
     [5, 'Japans leren'], [5, 'Zolder opruimen'],
   ];
   const now = Date.now();
-  return demo.map(([level, title], i) => ({ id: uid(), title, level, createdAt: now - (demo.length - i) * 1000 }));
+  return demo.map(([level, title], i) => {
+    const createdAt = now - (demo.length - i) * 1000;
+    return { id: uid(), title, level, createdAt, updatedAt: createdAt, demo: true };
+  });
 }
 
 let tasks = loadTasks() ?? demoTasks();
+let gone = loadGone();
 applyDeadlines();
-saveTasks();
+saveTasks({ notify: false });
 
 // Taken met een deadline krijgen hun schil uit de datum; geeft true als er iets opschoof
 function applyDeadlines() {
@@ -278,7 +301,7 @@ function editTitle(id, span) {
     if (done) return;
     done = true;
     const value = input.value.trim();
-    if (save && value && value !== task.title) { task.title = value; saveTasks(); }
+    if (save && value && value !== task.title) { task.title = value; touch(task); saveTasks(); }
     render();
   };
   input.addEventListener('keydown', e => {
@@ -300,6 +323,7 @@ function setLevel(id, level) {
   const task = tasks.find(t => t.id === id);
   if (!task || task.due || task.level === level) return;
   task.level = level;
+  touch(task);
   saveTasks();
   render();
 }
@@ -309,13 +333,14 @@ function setDue(id, due) {
   if (!task) return;
   if (due) { task.due = due; task.level = levelForDue(due); }
   else delete task.due;
+  touch(task);
   saveTasks();
   render();
 }
 
 // Deadlines opvolgen: elke minuut (ook over middernacht) en bij terugkeer naar het tabblad
 function followDeadlines() {
-  if (applyDeadlines()) { saveTasks(); render(); }
+  if (applyDeadlines()) { saveTasks({ notify: false }); render(); }   // afgeleid uit de datum, elk toestel rekent zelf
   else renderTracks();
 }
 
@@ -327,6 +352,7 @@ function complete(id, row) {
   row.classList.add('is-done');
   scene.complete(id);
   tasks = tasks.filter(t => t.id !== id);
+  gone[id] = Date.now();
   saveTasks();
   renderSummary();
   renderFocusNow();
@@ -338,6 +364,7 @@ function complete(id, row) {
 
 function undo() {
   if (!lastDone) return;
+  touch(lastDone);          // recenter dan het afvinken, dus ook elders terug
   tasks.push(lastDone);
   lastDone = null;
   saveTasks();
@@ -511,7 +538,8 @@ composerForm.addEventListener('submit', e => {
   e.preventDefault();
   const title = composerTitle.value.trim();
   if (!title) return;
-  const task = { id: uid(), title, level: composerLevel, createdAt: Date.now() };
+  const now = Date.now();
+  const task = { id: uid(), title, level: composerLevel, createdAt: now, updatedAt: now };
   if (composerDue) { task.due = composerDue; task.level = levelForDue(composerDue); }
   tasks.push(task);
   saveTasks();
@@ -628,6 +656,90 @@ function updateInsets() {
 window.addEventListener('resize', updateInsets);
 desktop.addEventListener('change', () => { updateInsets(); renderTracks(); renderFocusNow(); });
 
+/* ---- Synchronisatie tussen toestellen ---- */
+const syncDialog = $('sync');
+const SYNC_TEXT = { off: 'Sync uit', connecting: 'Verbinden', online: 'Gesynchroniseerd', offline: 'Offline' };
+const TIME_FMT_SYNC = new Intl.DateTimeFormat('nl-BE', { hour: '2-digit', minute: '2-digit' });
+
+const sync = createSync({
+  getState: () => ({ tasks, gone }),
+  applyState(state) {
+    tasks = state.tasks.filter(isTask).map(t => ({ ...t }));
+    gone = { ...state.gone };
+    applyDeadlines();
+    saveTasks({ notify: false });
+    render();
+  },
+  onStatus: renderSync,
+});
+notifySync = () => sync.changed();
+
+function renderSync({ status, lastSync, code } = { status: sync.status, lastSync: sync.lastSync, code: sync.code }) {
+  const btn = $('sync-btn');
+  btn.dataset.status = status;
+  // verbonden maar nog niets uitgewisseld: nog niet "gesynchroniseerd" noemen
+  const text = status === 'online' && !lastSync ? 'Verbonden' : SYNC_TEXT[status];
+  $('sync-label').textContent = text;
+  btn.setAttribute('aria-label', `Synchronisatie: ${text.toLowerCase()}`);
+  $('sync-off').hidden = Boolean(code);
+  $('sync-on').hidden = !code;
+  if (code) {
+    $('sync-code').textContent = code;
+    $('sync-meta').textContent = lastSync ? `${text} · laatst om ${TIME_FMT_SYNC.format(lastSync)}` : text;
+  }
+}
+
+function syncLink(code) {
+  return `${location.origin}${location.pathname}#sync=${code.replace(/-/g, '')}`;
+}
+
+function openSync(prefill = '') {
+  $('sync-error').hidden = true;
+  $('sync-input').value = prefill;
+  renderSync();
+  if (!syncDialog.open) syncDialog.showModal();
+  if (!sync.code) (prefill ? $('sync-join') : $('sync-new')).focus();
+}
+
+async function copyText(text, button) {
+  const label = button.textContent;
+  try { await navigator.clipboard.writeText(text); button.textContent = 'Gekopieerd'; }
+  catch { window.prompt('Kopieer:', text); }
+  setTimeout(() => { button.textContent = label; }, 1500);
+}
+
+$('sync-btn').addEventListener('click', () => openSync());
+$('sync-new').addEventListener('click', () => sync.start(newCode()));
+$('sync-join-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const code = normalizeCode($('sync-input').value);
+  if (!code) {
+    $('sync-error').textContent = 'Die code klopt niet. Een synccode heeft 16 tekens, bv. 7K2P-Q9XD-M3TA-4HWE.';
+    $('sync-error').hidden = false;
+    return;
+  }
+  // Ongewijzigde voorbeeldtaken van dit toestel horen niet in je echte lijst
+  tasks = tasks.filter(t => !t.demo);
+  saveTasks({ notify: false });
+  render();
+  sync.start(code);
+});
+$('sync-copy-code').addEventListener('click', e => copyText(sync.code, e.currentTarget));
+$('sync-copy-link').addEventListener('click', e => copyText(syncLink(sync.code), e.currentTarget));
+$('sync-stop').addEventListener('click', () => sync.stop());
+$('sync-close').addEventListener('click', () => syncDialog.close());
+syncDialog.addEventListener('click', e => { if (e.target === syncDialog) syncDialog.close(); });
+
+// Link met #sync=CODE: venster openen met de code ingevuld; verbinden gebeurt pas na bevestiging
+function readSyncHash() {
+  const m = location.hash.match(/^#sync=([0-9A-Za-z-]+)$/);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  const code = normalizeCode(m[1]);
+  if (code && code !== sync.code) openSync(code);
+}
+window.addEventListener('hashchange', readSyncHash);
+
 /* ---- Invoermethode: toetsenbord of aanwijzer (bepaalt of focusmarkeringen zichtbaar zijn) ---- */
 const setInput = kind => { document.documentElement.dataset.input = kind; };
 window.addEventListener('pointerdown', () => setInput('pointer'), { capture: true, passive: true });
@@ -644,3 +756,6 @@ renderSummary();
 renderTracks();
 renderFocusNow();
 scene.setTasks(tasks, { intro: true });
+renderSync();
+if (savedCode()) sync.start(savedCode());
+readSyncHash();

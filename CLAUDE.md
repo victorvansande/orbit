@@ -48,7 +48,9 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/wheel.js` | Het gebogen wiel (DOM, posities via JS) |
 | `favicon.svg`, `favicon.ico`, `icons/`, `manifest.webmanifest` | App-icoon en favicon voor alle platformen; bron en uitleg in `icons/README.md`, opnieuw maken met `python3 icons/make_icons.py` en daarna renderen |
 | `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
-| `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out |
+| `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
+| `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, MQTT-verbinding, samenvoegen |
+| `src/vendor/mqtt.min.js` | MQTT.js 2.1.0 (zelfde bestand als in streep), pas geladen als sync aan staat |
 
 ## Niveaus
 
@@ -92,8 +94,19 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 ## Data
 - Deadlines (`src/deadline.js`): een taak met `due` heeft een vaste schil die uit de datum volgt: verstreken → Nu, vandaag → Vandaag, ≤ 7 dagen → Week, ≤ 31 dagen → Maand, later → Ooit. `applyDeadlines()` loopt bij het laden, elke minuut (ook over middernacht) en bij terugkeer naar het tabblad; een bol die van schil wisselt glijdt naar zijn nieuwe ring. Zulke taken zijn niet te slepen (cursor `pointer`), krijgen geen momentkeuze in de lijst maar een datumlabel ("over 3 dagen", "2 dagen te laat" in rood), en in de scène een dun ringetje in hun eigen kleur plus de datum in het label.
 
-- Taken `{id, title, level, createdAt, due?}` in localStorage, sleutel `priority-orbit.tasks.v1`. `due` is optioneel, een lokale datum `JJJJ-MM-DD`. Ontbreekt de sleutel, dan demotaken (2 Nu, 2 Vandaag, 3 Week, 2 Maand, 2 Ooit).
+- Taken `{id, title, level, createdAt, updatedAt, due?}` in localStorage, sleutel `priority-orbit.tasks.v1`. Elke wijziging (titel, moment, deadline, ongedaan maken) zet `updatedAt` via `touch()`; een automatische schilwissel door een deadline niet (die volgt op elk toestel vanzelf uit de datum). Afgevinkte taken staan als `{id: tijdstip}` in `priority-orbit.gone.v1` (nodig voor sync, na 60 dagen opgeruimd). `due` is optioneel, een lokale datum `JJJJ-MM-DD`. Ontbreekt de sleutel, dan demotaken (2 Nu, 2 Vandaag, 3 Week, 2 Maand, 2 Ooit).
 - "Dringend" in de samenvatting = aantal Nu-taken.
+
+## Synchronisatie (`src/sync.js`)
+
+- Zelfde aanpak als streep en Operatie-Erfpacht: MQTT over WSS naar publieke brokers (HiveMQ `wss://broker.hivemq.com:8884/mqtt`, na twee mislukte pogingen EMQX `wss://broker.emqx.io:8084/mqtt`), één bewaarde (retained) snapshot per kanaal, qos 1. Geen server, geen account, geen secrets.
+- Verschil met streep: Orbit is een openbare site met persoonlijke taken. Een synccode van 16 tekens (`XXXX-XXXX-XXXX-XXXX`, zonder 0/O/1/I/L) bepaalt het kanaal (`orbit/v1/` + SHA-256) en de sleutel (PBKDF2 150k, AES-GCM 256). Alles wordt in de browser versleuteld; de broker ziet enkel ruis. Wie de code niet heeft, vindt het kanaal niet en kan niets lezen.
+- Bediening: knop rechtsboven onder de themaschakelaar ("Sync uit", "Verbinden", "Verbonden", "Gesynchroniseerd", "Offline"). Venster: "Nieuwe synccode" of een bestaande code invullen; als het aan staat: code, laatste sync, kopieer code of link, stoppen. Een link `#sync=CODE` opent het venster met de code ingevuld en wist de hash.
+- Code in localStorage `priority-orbit.sync.v1`; bij het laden verbindt de app meteen opnieuw. Ook opnieuw bij `visibilitychange` (gsm uit de achtergrond) en `online`.
+- Samenvoegen (`mergeStates`): per taak wint de recentste `updatedAt`; een taak in `gone` blijft weg tenzij ze nadien opnieuw gewijzigd is (ongedaan maken). Na samenvoegen publiceert een toestel enkel als het iets had wat de snapshot nog niet had. Wijzigingen worden 400 ms gebundeld.
+- Bij een bestaande code invullen vallen de onaangeraakte demotaken van dat toestel weg (`demo: true`), zodat ze niet in de gedeelde lijst belanden.
+- Lokaal testen zonder internet: een eigen broker (bv. aedes met websocket) en `localStorage.setItem('priority-orbit.broker', 'ws://localhost:8899/mqtt')`. Die sleutel overschrijft de brokerlijst; nooit in productie zetten.
+- Risico: publieke brokers bieden geen garantie en kunnen bewaarde berichten wissen. Elk toestel heeft een volledige kopie en publiceert die opnieuw bij verbinden, dus er gaat pas iets verloren als alle toestellen tegelijk hun opslag kwijt zijn.
 
 ## Interactie in de lijst en het venster
 
@@ -123,5 +136,5 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 ## Open vragen
 
 - Moeten afgevinkte taken bewaard worden (geschiedenis, statistiek)?
-- Synchronisatie tussen toestellen (nu alleen localStorage van één browser).
+- Sync is enkel getest met een lokale broker; de publieke brokers waren niet bereikbaar vanuit de cloudomgeving. Eerste echte test op twee toestellen nog doen.
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.
