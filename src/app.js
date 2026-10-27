@@ -1306,6 +1306,13 @@ window.addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.alt
 // Aanraakschermen beginnen zonder focuskaders (bv. een venster dat opent via een gescande link)
 if (matchMedia('(hover: none)').matches) setInput('pointer');
 
+/* ---- Sneltoetsen: openklappen met een klik (hover doet CSS) ---- */
+$('keys-toggle').addEventListener('click', () => {
+  const open = !$('keys').classList.contains('is-open');
+  $('keys').classList.toggle('is-open', open);
+  $('keys-toggle').setAttribute('aria-expanded', String(open));
+});
+
 /* ---- Offline (sw.js) ---- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

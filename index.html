@@ -92,7 +92,10 @@
   </div>
   <p class="tracks-demo" id="tracks-demo" hidden>Dit zijn voorbeeldtaken. Ze verdwijnen zodra je zelf een taak toevoegt.</p>
   <div class="groups" id="groups"></div>
-  <p class="keys" aria-hidden="true"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief</p>
+  <div class="keys" id="keys">
+    <button type="button" class="keys-toggle" id="keys-toggle" aria-expanded="false" aria-controls="keys-list">Sneltoetsen</button>
+    <p class="keys-list" id="keys-list"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief</p>
+  </div>
 </section>
 
 <!-- Weericonen, overgenomen uit Kwick (src/weather.js) -->
