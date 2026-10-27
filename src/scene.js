@@ -862,10 +862,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     restartIntro() { introStart = performance.now(); },
     // linkerrand van de wijzerplaat (px) op schermhoogte y, zodat tekst ernaast tot aan de buitenste ring kan lopen
     bezelLeft(y) {
-      const goal = { ...cam };
       if (!project(-BEZEL_MAJOR, 0, 0, false)) return null;
-      const r = goal.cx - pt.x, dy = y - goal.cy;
-      return Math.abs(dy) >= r ? null : goal.cx - Math.sqrt(r * r - dy * dy);
+      const r = cam.cx - pt.x, dy = y - cam.cy;
+      return Math.abs(dy) >= r ? null : cam.cx - Math.sqrt(r * r - dy * dy);
     },
     setSky(list) {
       // wat er na de eerste keer bijkomt, is een nieuwe ster (bij het opstarten niet: dan staat de hemel er al)
