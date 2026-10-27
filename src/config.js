@@ -4,9 +4,9 @@
 export const LEVELS = [
   { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#FF3B30', dark: '#E25A52', size: 7,   tail: 3 },
   { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#FF8A00', dark: '#D98C4A', size: 6,   tail: 2 },
-  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#E5B21A', dark: '#C8AE60', size: 5.5, tail: 2 },
-  { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#22AFC6', dark: '#5DA8B5', size: 5,   tail: 1 },
-  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#6A6CF6', dark: '#8587D2', size: 5,   tail: 1 },
+  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#34B87A', dark: '#62AE88', size: 5.5, tail: 2 },
+  { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#2A93E0', dark: '#5F99CC', size: 5,   tail: 1 },
+  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#8A63F2', dark: '#9580D6', size: 5,   tail: 1 },
 ];
 export const LEVEL_BY_ID = new Map(LEVELS.map(l => [l.id, l]));
 

@@ -56,9 +56,11 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 |---|---|---:|---:|---:|---|---|
 | 1 | Nu | 38 | 38 | 1,1 s | #FF3B30 | #E25A52 |
 | 2 | Vandaag | 72 | 72 | 2,8 s | #FF8A00 | #D98C4A |
-| 3 | Week | 106 | 106 | 7 s | #E5B21A | #C8AE60 |
-| 4 | Maand | 140 | 140 | 16 s | #22AFC6 | #5DA8B5 |
-| 5 | Ooit | 174 | 174 | 38 s | #6A6CF6 | #8587D2 |
+| 3 | Week | 106 | 106 | 7 s | #34B87A | #62AE88 |
+| 4 | Maand | 140 | 140 | 16 s | #2A93E0 | #5F99CC |
+| 5 | Ooit | 174 | 174 | 38 s | #8A63F2 | #9580D6 |
+
+Kleuren liggen gelijk verdeeld over het spectrum (rood, oranje, groen, blauw, violet); geel naast oranje was te weinig onderscheidbaar, zeker in het donker.
 
 Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat oogde alsof de Nu-bollen naast hun baan zweefden).
 
