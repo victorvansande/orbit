@@ -27,7 +27,22 @@ const THEMES = {
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
-const CORE_R = 4.5, WAVE_R = 32, WAVES = 3;   // kern en lichtgolven (stage-eenheden)
+// Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
+// Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
+const CORE_RMIN = 13, CORE_RMAX = 22, CORE_SPACING = 3.1, CORE_MIN_PX = 5;
+const coreGrids = new Map();
+function coreGrid(spacing) {
+  const key = spacing.toFixed(2);
+  if (!coreGrids.has(key)) {
+    const pts = [], n = Math.ceil((CORE_RMAX + 6) / spacing);
+    for (let row = -n; row <= n; row++) for (let col = -n; col <= n; col++) {
+      const x = (col + (row & 1) * 0.5) * spacing, y = row * spacing * 0.866, r = Math.hypot(x, y);
+      if (r <= CORE_RMAX + 6) pts.push({ x, y, r });
+    }
+    coreGrids.set(key, pts);
+  }
+  return coreGrids.get(key);
+}
 const GRID_ALPHA = 0.13, GRID_MAX = 3600;
 const BEZEL_IN = 186, BEZEL_OUT = 191, BEZEL_MAJOR = 196;
 const ARRIVE_R = 320;
@@ -86,7 +101,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let theme = THEMES.light;
   let INK = theme.ink;
   const coreColor = [...theme.calm];
-  const waveOn = [0, 0, 0];
   let introStart = performance.now(), last = performance.now();
   let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
   let pointer = { x: -1, y: -1, inside: false };
@@ -311,8 +325,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     urgency = smooth(urgency, target, 2.5, dt);
     const goal = nowCount > 0 ? URGENT_RGB : todayCount > 0 ? TODAY_RGB : theme.calm;
     for (let i = 0; i < 3; i++) coreColor[i] = smooth(coreColor[i], goal[i], 3, dt);
-    const waveCount = nowCount > 0 ? Math.min(WAVES, 1 + Math.floor((nowCount - 1) / 1.5)) : todayCount > 0 ? 1 : 0;
-    for (let i = 0; i < WAVES; i++) waveOn[i] = smooth(waveOn[i], i < waveCount ? 1 : 0, 3, dt);
     if (motion && urgency > 0.01) beat += dt / beatPeriod() * beatScale;
   }
 
@@ -429,32 +441,37 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return urgency >= 1 ? 1.9 / (1 + 0.9 * (urgency - 1)) : 3.4;
   }
 
+  // Kern "Rasterpunt" (gekozen door Victor uit twee reeksen voorstellen): een cirkel van drukpuntjes zoals op een
+  // risoposter, plat in het vlak van de tip. Rustig: klein, grijs, een trage ademgolf. Dringend: groter, in kleur,
+  // en bij elke slag rolt een golf naar buiten door de puntjes. Effen stippen, geen verloop of gloed.
   function drawCore(now) {
-    if (!project(0, 0, TIP_Z * cam.depth, false)) return;
     const intro = introAlpha(now, 0, 1.1);
     if (intro <= 0) return;
-    const { x, y, f } = pt;
-    const u = cam.s * f;
+    const z = TIP_Z * cam.depth;
     const strength = Math.min(1, urgency / 2) * 0.6 + Math.min(1, urgency) * 0.4;   // 0..1
-    const still = reducedMotion.matches || waveVis < 0.01;
-    // golven: vlakke schijven die uitdijen en vervagen
-    if (!still) {
-      for (let i = 0; i < WAVES; i++) {
-        if (waveOn[i] < 0.01) continue;
-        const p = ((beat + i / WAVES) % 1 + 1) % 1;
-        const r = (CORE_R + p * (WAVE_R * (0.7 + 0.3 * strength) - CORE_R)) * u;
-        ctx.fillStyle = rgba(coreColor, (0.12 + 0.26 * strength) * Math.pow(1 - p, 1.5) * waveOn[i] * waveVis * intro);
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, TAU);
-        ctx.fill();
-      }
-    }
-    // stip: klopt bij elke slag
-    const p0 = ((beat % 1) + 1) % 1;
-    const thump = still ? 0 : Math.exp(-p0 * 7) * strength * beatScale;
+    const still = reducedMotion.matches;
+    const live = Math.min(1, urgency / 0.3);                // 0 = rustig, 1 = Vandaag of Nu
+    const rMax = CORE_RMIN + (CORE_RMAX - CORE_RMIN) * strength * live + 4 * live;
+    const p = ((beat % 1) + 1) % 1;
+    const front = p * (rMax + 8);   // golf rolt van het midden tot net buiten het raster
+    const rippleAmp = still ? 0 : (0.5 + 0.9 * strength) * (1 - p * 0.6) * live * waveVis * beatScale;
+    const breatheAmp = still ? 0 : 0.12 * (1 - live) * waveVis;
+    const t = now / 1000;
+    const spacing = Math.max(CORE_SPACING, Math.round(CORE_MIN_PX / cam.s / 0.25) * 0.25);
+    const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
     ctx.fillStyle = rgba(coreColor, intro);
     ctx.beginPath();
-    ctx.arc(x, y, CORE_R * u * (0.8 + 0.2 * Math.min(1, urgency) + 0.28 * thump), 0, TAU);
+    for (const d of coreGrid(spacing)) {
+      if (d.r > rMax) continue;
+      const base = 0.25 + 1.05 * Math.pow(1 - d.r / rMax, 0.7);
+      const bump = rippleAmp ? Math.exp(-(((d.r - front) / (3.2 * grow)) ** 2)) * rippleAmp : 0;
+      const breathe = breatheAmp ? breatheAmp * Math.sin(t * 1.3 - d.r * 0.25) : 0;
+      const size = base + bump + breathe;
+      if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
+      const rad = size * grow * cam.s * pt.f;
+      ctx.moveTo(pt.x + rad, pt.y);
+      ctx.arc(pt.x, pt.y, rad, 0, TAU);
+    }
     ctx.fill();
   }
 
