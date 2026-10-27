@@ -310,12 +310,29 @@ setInterval(() => {
   if (currentQuote().index !== shownQuote) renderFocusNow();
 }, 60000);
 
+// De quote loopt door tot vlak voor de buitenste ring (desktop): breedte uit de echte positie van de wijzerplaat op
+// de hoogte van de quote. Na het openen van de focusmodus schuift de scène nog even, dus ook later opnieuw.
+function fitQuote() {
+  const fig = document.querySelector('.focus-quote');
+  if (!fig || !desktop.matches || !document.body.classList.contains('is-focus')) return;
+  fig.style.width = '';
+  // twee keer: een andere breedte geeft een andere hoogte, en de quote hangt aan de onderkant
+  for (let i = 0; i < 2; i++) {
+    const box = fig.getBoundingClientRect();
+    if (!box.height) return;
+    const edges = [box.top, box.bottom].map(y => scene.bezelLeft(y)).filter(x => x !== null);
+    const edge = edges.length ? Math.min(...edges) : innerWidth / 2;
+    fig.style.width = `${Math.max(260, Math.min(760, edge - box.left - 32))}px`;
+  }
+}
+window.addEventListener('resize', () => fitQuote());
+
 function renderFocusNow() {
   renderFocusDue();
   const box = $('focus-now');
   const urgent = tasks.filter(t => t.level === URGENT_LEVEL).sort((a, b) => a.createdAt - b.createdAt);
   box.replaceChildren();
-  if (!urgent.length) { box.append(quoteNode()); return; }
+  if (!urgent.length) { box.append(quoteNode()); fitQuote(); return; }
   box.append(el('p', 'focus-kicker', 'Nu'));
   const ul = el('ul');
   const max = desktop.matches ? 4 : 3;   // op gsm minder plaats onder de scène
@@ -334,7 +351,10 @@ function renderStats() {
   scene.setSky(sky.stars);
   const total = totalDone(done);
   $('stats').hidden = total === 0;
+  $('stat-mini').hidden = total === 0;
   if (!total) return;
+  $('stat-mini-n').textContent = String(total);
+  $('stat-mini').setAttribute('aria-label', `${total} ${total === 1 ? 'ster' : 'sterren'}, toon details`);
   setMatrix($('stat-total'), String(total));
   $('stat-total').setAttribute('aria-label', `${total} afgevinkt in totaal, evenveel sterren in de hemel`);
   $('stat-stars-label').textContent = total === 1 ? 'star collected' : 'stars collected';
@@ -372,10 +392,15 @@ $('stats-reset-yes').addEventListener('click', () => {
   notifySync();
   showToast('Teller en sterren op nul');
 });
-$('stats-toggle').addEventListener('click', () => {
-  const open = $('stats-detail').hidden;
+function showStatsDetail(open) {
   $('stats-detail').hidden = !open;
   $('stats-toggle').setAttribute('aria-expanded', String(open));
+}
+$('stats-toggle').addEventListener('click', () => showStatsDetail($('stats-detail').hidden));
+// gsm: het tellertje bovenaan brengt je naar de details onderaan
+$('stat-mini').addEventListener('click', () => {
+  showStatsDetail(true);
+  $('stats').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
 });
 
 // Af en toe fonkelt één stip van de teller, net als de sterren in de scène
@@ -873,6 +898,7 @@ function setFocus(on) {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   }
   updateInsets();
+  if (on) setTimeout(fitQuote, 1000);     // de scène schuift eerst naar het midden
 }
 function bumpIdle() {
   document.body.classList.remove('is-idle');

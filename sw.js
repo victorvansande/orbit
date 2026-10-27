@@ -4,7 +4,7 @@
 // localStorage, en sync stuurt wat offline veranderde door zodra er weer verbinding is.
 // Alleen de eigen bestanden en de lettertypes; nooit de sync-server of de weerdienst.
 
-const CACHE = 'orbit-v1';
+const CACHE = 'orbit-v2';
 const TIMEOUT = 3500;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.svg', 'favicon.ico',
@@ -16,7 +16,7 @@ const SHELL = [
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -45,7 +45,9 @@ self.addEventListener('fetch', e => {
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     try {
-      const res = await fromNetwork(req);
+      // own: de http-cache van de browser overslaan (GitHub Pages laat bestanden 10 min bewaren), anders kan een
+      // toestel na een update een mengeling van oude en nieuwe bestanden laden
+      const res = await fromNetwork(own ? new Request(req, { cache: 'no-cache' }) : req);
       if (res.ok || res.type === 'opaque') cache.put(req, res.clone());
       return res;
     } catch {

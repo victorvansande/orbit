@@ -94,7 +94,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const ringHot = new Map(LEVELS.map(l => [l.id, 0]));
   const orbs = new Map();
   const twinkles = [];   // afgevinkte bollen die uitfonkelen
-  let sky = [];          // sterrenhemel van deze week
+  let sky = [];          // sterrenhemel: één ster per afgevinkte taak
+  const skyBorn = new Map();   // id → tijdstip waarop een nieuwe ster verscheen (licht even op)
+  let skyKnown = null;
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
   // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
@@ -394,8 +396,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
       const x = cam.cx + st.x * cam.s, y = cam.cy + st.y * cam.s;
-      const R = 2.6 * st.s * cam.du * dense;
-      ctx.globalAlpha = a * (0.28 + 0.42 * tw);
+      // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
+      let R = Math.max(2.6 * st.s * cam.du, 2.4 + st.s) * dense, alpha = 0.36 + 0.44 * tw;
+      // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
+      const born = skyBorn.get(st.id);
+      if (born !== undefined) {
+        const p = (now - born) / 1000 - TWINKLE_LIFE * 0.6;
+        if (p > 2.4) skyBorn.delete(st.id);
+        else if (p < 0) continue;
+        else { const k = 1 - ease(p / 2.4); R *= 1 + 1.6 * k; alpha = Math.min(1, alpha + 0.6 * k); }
+      }
+      ctx.globalAlpha = a * alpha;
       star4(x, y, R, 0);
     }
     ctx.globalAlpha = 1;
@@ -849,7 +860,20 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   return {
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
-    setSky(list) { sky = list; },
+    // linkerrand van de wijzerplaat (px) op schermhoogte y, zodat tekst ernaast tot aan de buitenste ring kan lopen
+    bezelLeft(y) {
+      const goal = { ...cam };
+      if (!project(-BEZEL_MAJOR, 0, 0, false)) return null;
+      const r = goal.cx - pt.x, dy = y - goal.cy;
+      return Math.abs(dy) >= r ? null : goal.cx - Math.sqrt(r * r - dy * dy);
+    },
+    setSky(list) {
+      // wat er na de eerste keer bijkomt, is een nieuwe ster (bij het opstarten niet: dan staat de hemel er al)
+      const now = performance.now();
+      if (skyKnown && !reducedMotion.matches) for (const st of list) if (!skyKnown.has(st.id)) skyBorn.set(st.id, now);
+      skyKnown = new Set(list.map(st => st.id));
+      sky = list;
+    },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;

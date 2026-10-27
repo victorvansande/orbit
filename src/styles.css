@@ -141,6 +141,7 @@ kbd {
 .hud-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; pointer-events: auto; }
 /* Instellingen: één knopje met een paneel. Desktop: linksonder (aanzicht, focus, tempo, thema, sneltoetsen);
    gsm: in de kop (thema, tempo, uitleg, archief, sync) */
+.stat-mini { display: none; }
 .menu-btn {
   display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 0 12px; pointer-events: auto;
   border: 1px solid var(--line); border-radius: 999px;
@@ -683,6 +684,13 @@ body.is-idle .controls { opacity: 0; }
   }
   .summary { grid-column: 1; }
   .hud-right #week { grid-column: 2; justify-self: end; }
+  /* het tellertje neemt de plaats van het weeknummer in (dat staat ook in de focusmodus) */
+  .stat-mini:not([hidden]) {
+    grid-area: 2 / 2; justify-self: end; display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; min-height: 24px;
+    font: 500 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--ink-2); pointer-events: auto;
+  }
+  .stat-mini svg { width: 11px; height: 11px; fill: currentColor; }
+  .topbar:has(.stat-mini:not([hidden])) #week { display: none; }
   .hud-right #date { display: none; }
   .menu-btn { grid-area: 1 / 2; justify-self: end; min-height: 32px; }
   .menu-btn .sync-dot { display: block; }
