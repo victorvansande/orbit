@@ -1,7 +1,7 @@
 /* ---- Config (enige bron van waarheid) ---- */
 // ring: straal van de gestippelde ring, orbit: baanstraal van de bollen (eenheden in de 390-stage)
 export const LEVELS = [
-  { id: 1, name: 'Nu',      ring: 38,  orbit: 24,  period: 1.1, color: '#FF3B30', size: 7,   tail: 3 },
+  { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#FF3B30', size: 7,   tail: 3 },
   { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#FF8A00', size: 6,   tail: 2 },
   { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#E5B21A', size: 5.5, tail: 2 },
   { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#22AFC6', size: 5,   tail: 1 },

@@ -209,7 +209,7 @@ kbd {
 .wheel-hint {
   position: absolute; right: 28px; bottom: 0;
   font: 500 10px/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
-  text-align: right; max-width: 170px;
+  text-align: right; white-space: nowrap;
   pointer-events: none;
 }
 .wheel[data-orientation="horizontal"] .wi-label {
@@ -365,7 +365,11 @@ body.is-idle .controls { opacity: 0; }
   body.is-focus .controls { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
 }
 
-@media (hover: none) { .keys { display: none; } }
+@media (hover: hover) {
+  .t-level .orb-dot { opacity: 0; transition: opacity .2s var(--ease), transform .2s var(--pop); }
+  .track:hover .t-level .orb-dot, .t-level:focus-visible .orb-dot, .track.is-picking .t-level .orb-dot, .track.is-hot .t-level .orb-dot { opacity: 1; }
+}
+@media (hover: none) { .keys, .controls kbd { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .composer-orb, .composer-orb.is-swap { animation: none; }

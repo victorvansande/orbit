@@ -36,7 +36,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 | id | naam | ring | baan | omloop | kleur |
 |---|---|---:|---:|---:|---|
-| 1 | Nu | 38 | 24 | 1,1 s | #FF3B30 |
+| 1 | Nu | 38 | 38 | 1,1 s | #FF3B30 |
 | 2 | Vandaag | 72 | 72 | 2,8 s | #FF8A00 |
 | 3 | Week | 106 | 106 | 7 s | #E5B21A |
 | 4 | Maand | 140 | 140 | 16 s | #22AFC6 |
@@ -51,6 +51,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 - Lagen van achter naar voor: raster (zwaartekrachtput, buigt in het zijaanzicht mee met het diepteprofiel), wijzerplaat (120 streepjes, statisch), meridianen (alleen zijkant), ringen, kern, bollen met staart, effecten, labels.
 - Banen draaien via een fase per niveau (`phase`), elke bol heeft een `offset` die zacht naar gelijke verdeling glijdt. Bij een niveauwissel blijft de absolute hoek behouden.
 - Bol (`drawOrb`): `tracePath` volgt de baan achter de kop, `taper` vult er een effen, taps vlak langs (breedte 2r aan de kop, 0,35r aan het eind). Lengte = (staart + 1) × 7 × `TAIL_LENGTH` × snelheid.
+- Hover dimt de andere ringen licht (factor 0,32), niet weg: in het zijaanzicht moeten ze leesbaar blijven.
 - Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader), de bol krijgt een dun ringetje. Hover op een rij in de lijst doet hetzelfde voor die ene taak.
 - Slepen op een bol: bol volgt de cursor, dichtstbijzijnde ring licht op ("Naar …"), loslaten verplaatst de taak (`onReassign`). Slepen op lege ruimte: horizontaal draaien, verticaal kantelen; loslaten klikt naar het dichtste aanzicht.
 - Kern (`drawCore`): een baken. Effen stip die klopt en effen lichtgolven uitzendt (vlakke schijven die uitdijen en vervagen, geen verloop). `urgency` glijdt naar 0 (geen Nu/Vandaag: grijs, stil), 0,5 (alleen Vandaag: oranje, traag, één golf) of 1 tot 2 (Nu: rood, tempo en aantal golven stijgen per Nu-taak, max. 3). Tempo via een opgetelde fase (`beat`), zodat een tempowissel niet springt. Ligt op de diepte van de tip.
@@ -72,7 +73,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 ## Interactie in de lijst en het venster
 
 - Lijst gegroepeerd per moment. Afvinken: cirkel kleurt als bol, rij schuift weg, bol spat uiteen, toast met "Ongedaan maken" (5 s, ook `Z` of Ctrl/Cmd+Z).
-- Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten.
+- Dubbelklik op een titel om hem aan te passen. Bolletje rechts in een rij opent een keuze van de vijf momenten; op apparaten met hover verschijnt het pas als je over de rij gaat.
 - Venster "nieuwe taak": native `<dialog>`, bovenaan een zwevende mini-orbit (taps bolletje rond een kleine kern) in kleur en tempo van het moment, alleen geanimeerd zolang het venster open is, groot tekstveld, momentkeuze (ook met ↑↓ in het tekstveld), "Voeg toe" pas actief met een titel.
 - Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `Z` ongedaan, `Esc` sluit.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand.

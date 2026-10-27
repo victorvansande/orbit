@@ -387,7 +387,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const hot = ringHot.get(lv.id);
       const base = lv.id === URGENT_LEVEL ? CORE_RING_ALPHA : RING_ALPHA;
       const intro = introAlpha(now, 0.15 + idx * 0.12, 0.8);
-      const alpha = clamp(base * (1 - 0.5 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro;
+      const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro;
       const z = ring.z * cam.depth;
       // stippen
       ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
