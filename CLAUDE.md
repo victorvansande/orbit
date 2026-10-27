@@ -15,7 +15,7 @@ Live: https://victorvansande.github.io/orbit/ (GitHub Pages, bron `main` / root)
 ## Ontwerp
 
 Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurbollen) en een gebogen wiel als kiezer (referentie: verticale boog met pillen en labels). Bewust één licht thema.
-- Bollen: zonder kleurverloop en zonder gloed, slank (Victor: verloop en glans oogden gedateerd, bollen en kern waren te dik). Vier stijlen in `src/orbs.js`, elk met een eigen kern: Ring (dunne cirkel met stip, kern zendt sonarringen uit), Vlak (effen schijf, kern met ademende ring), Raster (stippenschijf, pulserende stippenkern), Capsule (rekt uit langs de baan, kern is een ring met draaiend segment). Tijdelijke kiezer linksonder (`Bol`, toets `B`, of `?bollen=ring|vlak|raster|capsule`), keuze in localStorage `priority-orbit.orbstyle.v1`. Na Victors keuze de kiezer weghalen en de gekozen stijl als enige houden.
+- Bollen: zonder kleurverloop en zonder gloed, slank (Victor: verloop en glans oogden gedateerd, bollen en kern waren te dik). Vier stijlen in `src/orbs.js`, elk met een eigen kern: Ring (dunne cirkel met stip, kern zendt sonarringen uit), Vlak (effen schijf, kern met ademende ring), Raster (stippenschijf, pulserende stippenkern), Capsule (rekt uit langs de baan, kern is een ring met draaiend segment). Tijdelijke kiezer linksonder (`Bol`, toets `B`, of `?bollen=ring|vlak|raster|capsule`), keuze in localStorage `priority-orbit.orbstyle.v1`. Victor koos Capsule; nu nog een keuze tussen vier Capsule-varianten (`?capsule=a|b|c|d`: A capsule, B fijn, C taps, D kop + naald, elk met eigen kern). Daarna kiezer, `?capsule` en de andere stijlen weghalen.
 
 - Papier #F1F1EF met lichte korrel (`.grain`, SVG-ruis, opacity 0,14). Inkt #1B1B22, secundair #5E5E68, tertiair #9A9AA3.
 - Typografie: Geist (UI) en Geist Mono (kapitaaltjes in de hoeken, tellers), via Google Fonts, met systeemfont als terugval.
@@ -85,12 +85,13 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 ## Valkuilen
 
 - Canvas-teksten gebruiken Geist; is het font nog niet geladen, dan tekent hij met de terugval tot het binnen is (elk frame opnieuw).
+- De camera moet geldig zijn vóór de eerste pointermove: `resize()` loopt meteen bij het opstarten (anders werd alles NaN als de muis al over de scène stond).
 - Gsm: `.stage canvas` heeft `touch-action: pan-y` zodat de pagina kan scrollen; verticaal kantelen met de vinger kan daardoor niet, horizontaal draaien wel.
 
 ## Open vragen
 
 - Moeten afgevinkte taken bewaard worden (geschiedenis, statistiek)?
 - Synchronisatie tussen toestellen (nu alleen localStorage van één browser).
-- Welke bolstijl blijft (Ring, Vlak, Raster of Capsule)?
+- Welke Capsule-variant blijft (A, B, C of D)?
 - Een donkere variant voor 's avonds, of bewust alleen licht houden?
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.

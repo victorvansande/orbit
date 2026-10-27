@@ -75,6 +75,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   /* ---- Kleuren en stijl ---- */
   let style = DEFAULT_ORB_STYLE;
+  let capsuleVariant = 'a';
   const colors = new Map(LEVELS.map(l => [l.id, rgbOf(l.color)]));
   const URGENT_RGB = colors.get(URGENT_LEVEL);
 
@@ -169,6 +170,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (force && !centerReady) { center = { ...centerTarget }; centerReady = true; }
   }
   new ResizeObserver(resize).observe(canvas);
+  resize(); // camera meteen geldig, ook als de muis al beweegt voor de eerste meting
 
   /* ---- Taken ---- */
   function layoutOffsets() {
@@ -310,7 +312,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const z = g.r < RIM ? depthAt(g.r) * depth : 0;
       if (!project(g.x, g.y, z, false)) continue;
       const a = g.a * fade * Math.min(1, pt.f * pt.f);
-      if (a < 0.006) continue;
+      if (!(a >= 0.006)) continue;
       if (pt.x < -8 || pt.x > W + 8 || pt.y < -8 || pt.y > H + 8) continue;
       const k = Math.min(5, Math.floor(a / GRID_ALPHA * 6));
       buckets[k].push(pt.x, pt.y, 0.9 * cam.du * pt.f);
@@ -451,27 +453,51 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // stippenbol die pulseert
       halftone(ctx, color, x, y, 13 * u, 0.75 + 0.4 * pulse * nowGlow);
     } else {
-      // ring met een draaiend segment, sneller bij meer Nu-taken
-      const R = 9 * u;
-      ctx.lineWidth = line * 1.6;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = rgba(color, 0.22 * intro);
-      ctx.beginPath();
-      ctx.arc(x, y, R, 0, TAU);
-      ctx.stroke();
-      if (nowGlow > 0.01) {
-        const start = still ? -Math.PI / 2 : time * TAU / (period * 1.2);
-        ctx.strokeStyle = rgba(URGENT_RGB, nowGlow * intro);
-        ctx.beginPath();
-        ctx.arc(x, y, R, start, start + Math.PI * 0.6);
-        ctx.stroke();
-      }
-      ctx.fillStyle = rgba(color, 1);
-      ctx.beginPath();
-      ctx.arc(x, y, 2.4 * u, 0, TAU);
-      ctx.fill();
+      drawCapsuleCore(x, y, u, line, color, time, period, still, intro);
     }
     ctx.globalAlpha = 1;
+  }
+
+  // Capsule-kern, vier varianten (tijdelijk, om te kiezen)
+  function drawCapsuleCore(x, y, u, line, color, time, period, still, intro) {
+    const R = 9 * u;
+    const spin = still ? -Math.PI / 2 : time * TAU / (period * 1.2);
+    const lit = nowGlow > 0.01;
+    ctx.lineCap = 'round';
+    const dot = r => { ctx.fillStyle = rgba(color, 1); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); };
+    const ring = (r, w, a) => { ctx.lineWidth = w; ctx.strokeStyle = rgba(color, a * intro); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); };
+    const seg = (r, w, from, len) => { ctx.lineWidth = w; ctx.strokeStyle = rgba(URGENT_RGB, nowGlow * intro); ctx.beginPath(); ctx.arc(x, y, r, from, from + len); ctx.stroke(); };
+    if (capsuleVariant === 'b') {
+      // dunne ring, twee segmenten die tegen elkaar in draaien
+      ring(R, line, 0.25);
+      if (lit) { seg(R, line * 1.4, spin, Math.PI * 0.4); seg(R * 1.45, line, -spin * 0.7, Math.PI * 0.3); }
+      dot(2 * u);
+    } else if (capsuleVariant === 'c') {
+      // ring van streepjes die als een loader oplichten
+      const n = 12;
+      ctx.lineWidth = line * 1.5;
+      for (let i = 0; i < n; i++) {
+        const ang = i / n * TAU;
+        const head = ((spin / TAU) % 1 + 1) % 1;
+        const p = ((i / n - head) % 1 + 1) % 1;
+        const a = lit ? 0.18 + 0.82 * Math.pow(1 - p, 3) * nowGlow : 0.3;
+        ctx.strokeStyle = rgba(lit ? URGENT_RGB : color, a * intro);
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(ang) * R * 0.78, y + Math.sin(ang) * R * 0.78);
+        ctx.lineTo(x + Math.cos(ang) * R * 1.08, y + Math.sin(ang) * R * 1.08);
+        ctx.stroke();
+      }
+    } else if (capsuleVariant === 'd') {
+      // effen stip in een ring, een korte capsule draait er als satelliet omheen
+      dot(4 * u);
+      ring(R, line, 0.3);
+      if (lit) seg(R * 1.5, line * 2.2, spin, Math.PI * 0.22);
+    } else {
+      // ring met een draaiend segment
+      ring(R, line * 1.6, 0.22);
+      if (lit) seg(R, line * 1.6, spin, Math.PI * 0.6);
+      dot(2.4 * u);
+    }
   }
 
   function mixRgb(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
@@ -499,7 +525,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   // Taps vlak langs trailPts met verloop naar transparant
-  function taper(rgb, wHead, wTail, alpha) {
+  function taper(rgb, wHead, wTail, alpha, solid = false) {
     const n = trailPts.length / 2;
     if (n < 2) return;
     const left = [], right = [];
@@ -511,10 +537,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       left.push(trailPts[2 * k] - dy / len * w, trailPts[2 * k + 1] + dx / len * w);
       right.push(trailPts[2 * k] + dy / len * w, trailPts[2 * k + 1] - dx / len * w);
     }
-    const grad = ctx.createLinearGradient(trailPts[0], trailPts[1], trailPts[2 * n - 2], trailPts[2 * n - 1]);
-    grad.addColorStop(0, rgba(rgb, alpha));
-    grad.addColorStop(1, rgba(rgb, 0));
-    ctx.fillStyle = grad;
+    if (solid) ctx.fillStyle = rgba(rgb, alpha);
+    else {
+      const grad = ctx.createLinearGradient(trailPts[0], trailPts[1], trailPts[2 * n - 2], trailPts[2 * n - 1]);
+      grad.addColorStop(0, rgba(rgb, alpha));
+      grad.addColorStop(1, rgba(rgb, 0));
+      ctx.fillStyle = grad;
+    }
     ctx.beginPath();
     ctx.moveTo(left[0], left[1]);
     for (let k = 1; k < n; k++) ctx.lineTo(left[2 * k], left[2 * k + 1]);
@@ -547,18 +576,34 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   // Capsule: de bol rekt uit langs de baan, lengte volgt de snelheid
   function drawCapsule(o, it, lv, sp, rgb) {
-    const span = (lv.tail + 1) * TAIL_GAP * 0.8 * sp / o.r;
+    const v = capsuleVariant;
+    const length = { a: 0.8, b: 1.3, c: 1.1, d: 1.5 }[v];
+    const span = (lv.tail + 1) * TAIL_GAP * length * sp / o.r;
+    const n = tracePath(o, it, it.a, span, 10);
     ctx.globalAlpha = o.alpha;
-    ctx.strokeStyle = rgba(rgb, 1);
-    ctx.lineWidth = it.r * 2;
+    ctx.fillStyle = ctx.strokeStyle = rgba(rgb, 1);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(it.sx, it.sy);
-    const n = tracePath(o, it, it.a, span, 8);
-    for (let k = 1; k < n; k++) ctx.lineTo(trailPts[2 * k], trailPts[2 * k + 1]);
-    if (n < 2) ctx.lineTo(it.sx + 0.01, it.sy);
-    ctx.stroke();
+    if (v === 'c') {
+      // taps: volle kop, dunner naar achter, effen kleur
+      taper(rgb, it.r * 2, it.r * 0.35, 1, true);
+      ctx.beginPath(); ctx.arc(it.sx, it.sy, it.r, 0, TAU); ctx.fill();
+    } else if (v === 'd') {
+      // kop + naald: ronde kop met een fijne lijn erachter
+      ctx.lineWidth = Math.max(1, it.r * 0.4);
+      ctx.globalAlpha = o.alpha * 0.7;
+      ctx.beginPath(); ctx.moveTo(it.sx, it.sy);
+      for (let k = 1; k < n; k++) ctx.lineTo(trailPts[2 * k], trailPts[2 * k + 1]);
+      ctx.stroke();
+      ctx.globalAlpha = o.alpha;
+      ctx.beginPath(); ctx.arc(it.sx, it.sy, it.r * 1.05, 0, TAU); ctx.fill();
+    } else {
+      ctx.lineWidth = it.r * (v === 'b' ? 1.2 : 2);
+      ctx.beginPath(); ctx.moveTo(it.sx, it.sy);
+      for (let k = 1; k < n; k++) ctx.lineTo(trailPts[2 * k], trailPts[2 * k + 1]);
+      if (n < 2) ctx.lineTo(it.sx + 0.01, it.sy);
+      ctx.stroke();
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -752,7 +797,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   canvas.addEventListener('pointermove', e => {
     const p = local(e);
     pointer = { ...p, inside: true };
-    if (e.pointerType === 'mouse' && !reducedMotion.matches) {
+    if (e.pointerType === 'mouse' && !reducedMotion.matches && cam.s) {
       const n = Math.min(W, H) / 2;
       const nx = clamp((p.x - cam.cx) / n, -1, 1), ny = clamp((p.y - cam.cy) / n, -1, 1);
       yawTarget = nx * (3 + 3 * cam.depth);
@@ -828,6 +873,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   return {
     setTasks, complete, setView, setInsets, highlight,
     setStyle(id) { if (ORB_STYLE_BY_ID.has(id)) style = id; },
+    setCapsuleVariant(v) { if ('abcd'.includes(v) && v.length === 1) capsuleVariant = v; },
     restartIntro() { introStart = performance.now(); },
   };
 }

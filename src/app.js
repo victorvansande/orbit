@@ -401,6 +401,7 @@ function setOrbStyle(id) {
   if (composer.open) paintComposerOrb();
 }
 setOrbStyle(orbStyle);
+scene.setCapsuleVariant(new URLSearchParams(location.search).get('capsule') || 'a');
 
 /* ---- Aanzicht ---- */
 const viewButtons = [...document.querySelectorAll('[data-view]')];
