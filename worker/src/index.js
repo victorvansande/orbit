@@ -6,6 +6,7 @@
 // GET    /v1/<kanaal>         WebSocket (live) of JSON {v, d, acks} (terugval via gewone https)
 // PUT    /v1/<kanaal>         body {d}: nieuwe versleutelde lijst bewaren en doorsturen → {v}
 // POST   /v1/<kanaal>/ack     body {d}: versleutelde ontvangstbevestiging doorsturen
+// GET    /v1/<kanaal>/history  vorige versies [{v, at, d}] (versleuteld), voor noodherstel in de app
 // WebSocket-berichten: van server {t:'snap', v, d} en {t:'ack', d}; van client {t:'pub', d} → {t:'ok', v} en {t:'ack', d}
 
 const MAX_BYTES = 512 * 1024;     // ruim genoeg voor duizenden taken
@@ -34,7 +35,7 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
     const url = new URL(request.url);
     if (url.pathname === '/' || url.pathname === '/health') return json({ ok: true, app: 'orbit-sync' }, request);
-    const m = url.pathname.match(/^\/v1\/([^/]+)(\/ack)?$/);
+    const m = url.pathname.match(/^\/v1\/([^/]+)(\/ack|\/history)?$/);
     if (!m || !CHANNEL.test(m[1])) return json({ error: 'onbekend kanaal' }, request, 404);
     const stub = env.CHANNELS.get(env.CHANNELS.idFromName(m[1]));
     const res = await stub.fetch(request);
@@ -86,6 +87,13 @@ export class Channel {
   async fetch(request) {
     const url = new URL(request.url);
     const isAck = url.pathname.endsWith('/ack');
+    if (url.pathname.endsWith('/history')) {
+      if (request.method !== 'GET') return Response.json({ error: 'niet toegestaan' }, { status: 405 });
+      const snap = await this.current();
+      const history = (await this.state.storage.get('history')) || [];
+      const list = snap.d ? [{ v: snap.v, at: snap.at || null, d: snap.d }, ...history] : history;
+      return Response.json(list, { headers: { 'Cache-Control': 'no-store' } });
+    }
 
     if (request.headers.get('Upgrade') === 'websocket') {
       const pair = new WebSocketPair();

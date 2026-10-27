@@ -46,6 +46,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/config.js` | `LEVELS` (enige bron van waarheid: naam, ring, baan, omloop, kleur, grootte, staart), diepteprofiel, kleurhelpers, iconen voor het wiel |
 | `src/scene.js` | Canvas-renderer met eigen 3D-projectie, animatie, hit-testing, slepen, bollen en kern |
 | `src/wheel.js` | Het gebogen wiel (DOM, posities via JS) |
+| `sw.js` | Service worker: offline werken (netwerk eerst met time-out van 3,5 s, anders de bewaarde kopie) |
 | `favicon.svg`, `favicon.ico`, `icons/`, `manifest.webmanifest` | App-icoon en favicon voor alle platformen; bron en uitleg in `icons/README.md`, opnieuw maken met `python3 icons/make_icons.py` en daarna renderen |
 | `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
@@ -117,6 +118,7 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 
 - **Eigen server op Cloudflare** (`worker/`, live op `https://orbit-sync.victorvansande.workers.dev`). Vroeger publieke MQTT-servers zoals streep (HiveMQ 8884, EMQX 8084), maar die waren voor Victor onbereikbaar (op 27/10/2026 synchroniseerde ook streep niet) en Orbit moet op het werk werken. De Worker loopt over https (443).
   - Eén Durable Object (`Channel`, SQLite-opslag, gratis abonnement) per kanaal. Bewaart de laatste versleutelde lijst met versienummer plus de 20 vorige versies (noodherstel, nog zonder knop), en recente bevestigingen (10 min).
+  - `GET /v1/<kanaal>/history`: huidige plus 20 vorige versies, versleuteld. De app ontcijfert ze (`sync.history()`) en toont ze onder Archief → Momentopnames → "Op de Orbit-server", met "Zet n terug" (`bringBack`, voegt alleen ontbrekende taken toe).
   - API: `GET /v1/<kanaal>` als WebSocket (live, berichten `snap`, `ok`, `ack`, `pub`, keepalive `ping`/`pong` via auto-response zodat het object niet wakker hoeft) of als JSON `{v, d, acks}`; `PUT /v1/<kanaal>` met `{d}`; `POST /v1/<kanaal>/ack`. Kanaal = 32 hex-tekens, max. 512 KB, CORS alleen voor `victorvansande.github.io` en localhost.
   - Client: WebSocket; mislukt die twee keer zonder ooit te openen (proxy die WebSockets breekt), dan gewone https om de 4 s (20 s als het tabblad verborgen is). Herverbinden met oplopende wachttijd (1 tot 15 s).
   - Deploy: GitHub Action `sync-worker.yml` bij een push in `worker/` of handmatig (Actions, "Run workflow"). Repo-secrets `CLOUDFLARE_API_TOKEN` (sjabloon "Edit Cloudflare Workers") en `CLOUDFLARE_ACCOUNT_ID`, door Victor zelf ingesteld. Secrets nooit zelf invullen.
@@ -148,8 +150,16 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 - Sneltoetsenregel onder de lijst blijft op één regel (`width: max-content`, mag voorbij de lijstbreedte lopen).
 - Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
 - Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote matrixklok (stippen van 5 × 7 zoals in Kwick, onverlichte stippen als schim met `--dm-ghost`, geen gloed; alleen een gewijzigd cijfer laat zijn stippen oplichten; hoogte `min(84px, 9,4vh)`, op gsm 52 px), datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand. Een tik of muisbeweging toont ze weer; bij het verlaten wordt de timer gewist.
-- Weer in de focusmodus (`src/weather.js`): boven de matrixklok, links gelijk met de klok, een lijnicoon (zelfde iconen als Kwick, symbolen `w-*` in `index.html`) met de temperatuur, link naar https://victorvansande.github.io/kwick/. Open-Meteo (`current=temperature_2m,weather_code,is_day`), 15 min in cache (`priority-orbit.weather.v1`), alleen opgehaald zolang de focusmodus aan staat. Plaats: die van Kwick (`isobar:place`, zelfde origin dus gedeelde localStorage), anders je locatie als je die al toestond, anders Brussel. Bij een fout blijft het icoon weg of toont het de laatst bekende stand.
+- Weer in de focusmodus (`src/weather.js`): boven de matrixklok, links gelijk met de klok, een lijnicoon (zelfde iconen als Kwick, symbolen `w-*` in `index.html`) met de temperatuur, link naar https://victorvansande.github.io/kwick/. Open-Meteo (`current=temperature_2m,weather_code,is_day`), 15 min in cache (`priority-orbit.weather.v1`), alleen opgehaald zolang de focusmodus aan staat. Plaats: die van Kwick (`isobar:place`, zelfde origin dus gedeelde localStorage), anders je locatie als je die al toestond, anders Brussel. Bij een fout blijft het icoon weg of toont het de laatst bekende stand. Naast de temperatuur de plaatsnaam (bij je locatie opgezocht via bigdatacloud, zoals Kwick). Eronder neerslag in het komende uur uit `minutely_15` (vanaf 0,1 mm per kwartier): "Regen vanaf 16:45", "Regen tot 17:15", "Regen het komende uur" of "Sneeuw …"; droog = geen regel. Die zin wordt elke minuut opnieuw berekend uit de bewaarde kwartierwaarden (`rainText`).
+- Volgende deadline in de focusmodus (`renderFocusDue`): de vroegste `due`, ook een verstreken ("Te laat" in rood), met hetzelfde label als in de lijst.
 - Focus op gsm: één kolom die precies het scherm vult (kop, scène met flex 1, klok en max. 3 Nu-taken, knoppen); thema-schakelaar en datum rechtsboven verdwijnen. Geen vaste posities, zodat niets overlapt. Getest op 375×667, 390×844 en 430×932.
+
+## Offline (`sw.js`)
+
+- Service worker met scope `/orbit/`. Eigen bestanden en Google Fonts: netwerk eerst (altijd de nieuwste versie), time-out 3,5 s, dan de bewaarde kopie; paginanavigatie zonder kopie krijgt `index.html`. Nooit de sync-server, de weerdienst of Kwick.
+- Taken staan sowieso in localStorage; offline gemaakte wijzigingen gaan via sync door zodra er weer verbinding is (herverbinden bij `online` en `visibilitychange`).
+- Nieuwe bestanden in `src/` ook in `SHELL` zetten, anders zijn ze offline pas beschikbaar na een eerste online bezoek. `CACHE` verhogen hoeft niet voor gewone wijzigingen (netwerk eerst), wel als bestanden verdwijnen.
+- Getest: offline herladen toont de app met taken, offline een taak toevoegen werkt.
 
 ## Toegankelijkheid
 

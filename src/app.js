@@ -202,7 +202,19 @@ function renderClock() {
   $('clock-date').textContent = DAY_FMT.format(now);
 }
 
+// Focusmodus: de eerstvolgende deadline (ook een verstreken), met hetzelfde label als in de lijst
+function renderFocusDue() {
+  const line = $('focus-due');
+  const next = tasks.filter(t => t.due && !t.demo).sort((a, b) => a.due.localeCompare(b.due) || a.createdAt - b.createdAt)[0];
+  line.hidden = !next;
+  if (!next) return;
+  const b = el('b', '', isOverdue(next.due) ? 'Te laat' : 'Volgende deadline');
+  line.replaceChildren(b, document.createTextNode(`${next.title} · ${dueLabel(next.due)}`));
+  line.classList.toggle('is-late', isOverdue(next.due));
+}
+
 function renderFocusNow() {
+  renderFocusDue();
   const box = $('focus-now');
   const urgent = tasks.filter(t => t.level === URGENT_LEVEL).sort((a, b) => a.createdAt - b.createdAt);
   box.replaceChildren();
@@ -396,7 +408,7 @@ function setDue(id, due) {
 // Deadlines opvolgen: elke minuut (ook over middernacht) en bij terugkeer naar het tabblad
 function followDeadlines() {
   if (applyDeadlines()) { saveTasks({ notify: false }); render(); }   // afgeleid uit de datum, elk toestel rekent zelf
-  else renderTracks();
+  else { renderTracks(); renderFocusDue(); }
 }
 
 let toastAction = null, toastTimer = 0;
@@ -789,13 +801,41 @@ function renderArchive() {
     const missing = sn.tasks.filter(t => !now.has(t.id)).length;
     return archRow({
       title: sn.reason,
-      meta: `${stamp(sn.at)} · ${sn.tasks.length} ${sn.tasks.length === 1 ? 'taak' : 'taken'}${missing ? ` · ${missing} ontbreken nu` : ' · niets ontbreekt'}`,
+      meta: `${stamp(sn.at)} · ${sn.tasks.length} ${sn.tasks.length === 1 ? 'taak' : 'taken'}${missing ? ` · ${missing} ${missing === 1 ? 'ontbreekt' : 'ontbreken'} nu` : ' · niets ontbreekt'}`,
       label: missing ? `Zet ${missing} terug` : 'Volledig',
       disabled: !missing,
       action: () => bringBack(sn.tasks, 'Voor terugzetten'),
     });
   }));
   if (!snaps.length) snapList.append(el('li', 'arch-empty', 'Nog geen momentopnames.'));
+
+  // Versies op de server, alleen als dit toestel gekoppeld is
+  $('arch-server').hidden = !sync.code;
+  const srv = $('arch-server-list');
+  if (serverHistory === 'loading') srv.replaceChildren(el('li', 'arch-empty', 'Versies ophalen…'));
+  else if (serverHistory === 'error') srv.replaceChildren(el('li', 'arch-empty', 'De server is nu niet bereikbaar.'));
+  else if (Array.isArray(serverHistory)) {
+    srv.replaceChildren(...serverHistory.map(h => {
+      const missing = h.tasks.filter(t => !now.has(t.id)).length;
+      return archRow({
+        title: `Versie ${h.v}${h.from ? ` · van ${h.from}` : ''}`,
+        meta: `${h.at ? stamp(h.at) : 'onbekend'} · ${h.tasks.length} ${h.tasks.length === 1 ? 'taak' : 'taken'}${missing ? ` · ${missing} ${missing === 1 ? 'ontbreekt' : 'ontbreken'} nu` : ' · niets ontbreekt'}`,
+        label: missing ? `Zet ${missing} terug` : 'Volledig',
+        disabled: !missing,
+        action: () => bringBack(h.tasks, 'Voor terugzetten van server'),
+      });
+    }));
+    if (!serverHistory.length) srv.append(el('li', 'arch-empty', 'Nog geen versies op de server.'));
+  }
+}
+
+let serverHistory = null;
+async function loadServerHistory() {
+  if (!sync.code) return;
+  serverHistory = 'loading';
+  renderArchive();
+  try { serverHistory = await sync.history(); } catch { serverHistory = 'error'; }
+  renderArchive();
 }
 
 // Ontbrekende taken uit een momentopname of export toevoegen; bestaande taken blijven onaangeroerd
@@ -835,11 +875,12 @@ function openArchive(tab = archiveTab) {
   archiveTab = tab;
   if (!archiveDialog.open) archiveDialog.showModal();
   renderArchive();
+  if (archiveTab === 'snaps') loadServerHistory();
 }
 
 $('archive-btn').addEventListener('click', () => openArchive());
 $('arch-tab-done').addEventListener('click', () => { archiveTab = 'done'; renderArchive(); });
-$('arch-tab-snaps').addEventListener('click', () => { archiveTab = 'snaps'; renderArchive(); });
+$('arch-tab-snaps').addEventListener('click', () => { archiveTab = 'snaps'; renderArchive(); loadServerHistory(); });
 $('arch-close').addEventListener('click', () => archiveDialog.close());
 archiveDialog.addEventListener('click', e => { if (e.target === archiveDialog) archiveDialog.close(); });
 
@@ -1141,6 +1182,11 @@ window.addEventListener('pointerdown', () => setInput('pointer'), { capture: tru
 window.addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.altKey) setInput('keyboard'); }, { capture: true });
 // Aanraakschermen beginnen zonder focuskaders (bv. een venster dat opent via een gescande link)
 if (matchMedia('(hover: none)').matches) setInput('pointer');
+
+/* ---- Offline (sw.js) ---- */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 
 /* ---- Start ---- */
 buildComposerLevels();

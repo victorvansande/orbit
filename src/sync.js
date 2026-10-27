@@ -302,6 +302,21 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
     else start(code, { role: 'send' });
   }
 
+  // Vorige versies op de server (noodherstel): ontcijferd, nieuwste eerst. Leeg zonder koppeling of verbinding.
+  async function history() {
+    if (!key || !channel) return [];
+    const res = await fetch(httpUrl('/history'), { cache: 'no-store' });
+    if (!res.ok) throw new Error(res.status);
+    const out = [];
+    for (const h of await res.json()) {
+      try {
+        const state = await open(key, h.d);
+        if (Array.isArray(state?.tasks)) out.push({ v: h.v, at: h.at || null, tasks: state.tasks, from: state.from || '' });
+      } catch { /* onleesbaar: overslaan */ }
+    }
+    return out;
+  }
+
   // Venster dicht: geen verzender meer, gewoon gelijk houden
   function endSend() { if (mode === 'send') mode = 'normal'; }
 
@@ -330,7 +345,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
   window.addEventListener('offline', () => { if (code) setStatus('offline'); });
 
   return {
-    start, stop, changed, send, endSend,
+    start, stop, changed, send, endSend, history,
     get code() { return code; },
     get mode() { return mode; },
     get status() { return status; },

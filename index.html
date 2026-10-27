@@ -114,9 +114,10 @@
 </svg>
 
 <div class="focus-info">
-  <a class="focus-weather" id="focus-weather" hidden><svg class="fw-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#w-cloud"/></svg><span class="fw-temp"></span></a>
+  <a class="focus-weather" id="focus-weather" hidden><svg class="fw-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#w-cloud"/></svg><span class="fw-temp"></span><span class="fw-place"></span><span class="fw-rain" hidden></span></a>
   <div class="clock" id="clock" role="img"></div>
   <p class="clock-date" id="clock-date"></p>
+  <p class="focus-due" id="focus-due" hidden></p>
   <div class="focus-now" id="focus-now"></div>
 </div>
 
@@ -164,6 +165,11 @@
     <div class="arch-panel" id="arch-snaps" role="tabpanel" aria-labelledby="arch-tab-snaps" hidden>
       <p class="sync-text sync-note">Orbit bewaart de hele lijst vóór elke synchronisatie, import of terugzetting, en minstens één keer per dag. Terugzetten voegt enkel de ontbrekende taken toe; er verdwijnt niets.</p>
       <ul class="arch-list" id="arch-snaps-list"></ul>
+      <div class="arch-server" id="arch-server" hidden>
+        <p class="sync-label">Op de Orbit-server</p>
+        <p class="sync-text sync-note">De server bewaart de laatste 20 versies van je gedeelde lijst, ook als al je toestellen iets kwijt zijn.</p>
+        <ul class="arch-list" id="arch-server-list"></ul>
+      </div>
     </div>
     <div class="sync-row arch-foot">
       <button type="button" class="btn-ghost" id="arch-export">Exporteer</button>
