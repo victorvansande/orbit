@@ -51,10 +51,10 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
 | `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)` |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
-| `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, MQTT-verbinding, samenvoegen |
+| `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, verbinding met de Orbit-server, samenvoegen |
 | `src/pair.js` | Koppelen met een QR-code: `renderQr`, `codeFromText`, `createScanner` (camera) |
 | `src/vendor/qrcode.min.mjs`, `src/vendor/jsqr.min.js` | qrcode-generator 2.0.4 (MIT, QR maken) en jsQR 1.4.0 (Apache-2.0, QR lezen), met esbuild verkleind, pas geladen als nodig |
-| `src/vendor/mqtt.min.js` | MQTT.js 2.1.0 (zelfde bestand als in streep), pas geladen als sync aan staat |
+| `worker/` | Eigen sync-server op Cloudflare (Worker + Durable Object), deploy via `.github/workflows/sync-worker.yml` |
 
 ## Niveaus
 
@@ -113,24 +113,27 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 
 ## Synchronisatie (`src/sync.js`)
 
-- Zelfde aanpak als streep en Operatie-Erfpacht: MQTT over WSS naar publieke brokers (HiveMQ `wss://broker.hivemq.com:8884/mqtt`, na twee mislukte pogingen EMQX `wss://broker.emqx.io:8084/mqtt`), één bewaarde (retained) snapshot per kanaal, qos 1. Geen server, geen account, geen secrets.
+- **Eigen server op Cloudflare** (`worker/`, live op `https://orbit-sync.victorvansande.workers.dev`). Vroeger publieke MQTT-servers zoals streep (HiveMQ 8884, EMQX 8084), maar die waren voor Victor onbereikbaar (op 27/10/2026 synchroniseerde ook streep niet) en Orbit moet op het werk werken. De Worker loopt over https (443).
+  - Eén Durable Object (`Channel`, SQLite-opslag, gratis abonnement) per kanaal. Bewaart de laatste versleutelde lijst met versienummer plus de 20 vorige versies (noodherstel, nog zonder knop), en recente bevestigingen (10 min).
+  - API: `GET /v1/<kanaal>` als WebSocket (live, berichten `snap`, `ok`, `ack`, `pub`, keepalive `ping`/`pong` via auto-response zodat het object niet wakker hoeft) of als JSON `{v, d, acks}`; `PUT /v1/<kanaal>` met `{d}`; `POST /v1/<kanaal>/ack`. Kanaal = 32 hex-tekens, max. 512 KB, CORS alleen voor `victorvansande.github.io` en localhost.
+  - Client: WebSocket; mislukt die twee keer zonder ooit te openen (proxy die WebSockets breekt), dan gewone https om de 4 s (20 s als het tabblad verborgen is). Herverbinden met oplopende wachttijd (1 tot 15 s).
+  - Deploy: GitHub Action `sync-worker.yml` bij een push in `worker/` of handmatig (Actions, "Run workflow"). Repo-secrets `CLOUDFLARE_API_TOKEN` (sjabloon "Edit Cloudflare Workers") en `CLOUDFLARE_ACCOUNT_ID`, door Victor zelf ingesteld. Secrets nooit zelf invullen.
+  - Lokaal testen: `npx wrangler@4.153.0 dev --port 8787` in `worker/` en in de browser `localStorage.setItem('priority-orbit.server', 'http://127.0.0.1:8787')`. Die sleutel overschrijft de server; nooit in productie zetten.
 - Verschil met streep: Orbit is een openbare site met persoonlijke taken. Een synccode van 16 tekens (`XXXX-XXXX-XXXX-XXXX`, zonder 0/O/1/I/L) bepaalt het kanaal (`orbit/v1/` + SHA-256) en de sleutel (PBKDF2 150k, AES-GCM 256). Alles wordt in de browser versleuteld; de broker ziet enkel ruis. Wie de code niet heeft, vindt het kanaal niet en kan niets lezen.
 - Koppelen met een QR-code, **in één richting** (Victor: "degene die scant ontvangt, degene die gescand wordt stuurt enkel door"). Knop rechtsboven heet "Koppelen" zolang er niets gekoppeld is, daarna de status.
   - Startscherm: twee keuzes. **Verstuur van dit toestel** (toont de QR met de koppellink `…#sync=CODE`, de lijst hier blijft) of **Ontvang op dit toestel** (camera in Orbit: BarcodeDetector, anders jsQR voor Safari; de lijst hier wordt vervangen). "Code typen om te ontvangen" als terugval; zonder camera gaat het venster daar vanzelf naartoe.
   - Rollen in `sync.js`: `send` (publiceert zijn lijst als bewaarde snapshot, luistert op `<kanaal>/ack`), `receive` (publiceert niets tot er een lijst binnen is, neemt die over via `onReceive` na een momentopname "Voor ontvangen", stuurt dan een versleutelde bevestiging met toestelnaam en aantal), daarna `normal` (samenvoegen per taak, beide richtingen).
   - Verzender ziet "Dit toestel → Toestel dat scant", de QR en een statusregel: verbinden, "Klaar om te versturen: n taken", "Verstuurd naar iPhone: n taken". Een gekoppeld toestel opent het venster altijd als verzender (`sync.send()`); sluiten zet het terug op `normal` (`endSend`).
-  - Ontvanger ziet vier stappen (code ontvangen, verbinden, wachten op de lijst, taken overgenomen). Na 20 s zonder lijst: uitleg en "Opnieuw proberen"; na 4 mislukte verbindingen: server onbereikbaar, met de tip mobiele data te proberen (sommige wifi blokkeert poort 8884/8084).
+  - Ontvanger ziet vier stappen (code ontvangen, verbinden, wachten op de lijst, taken overgenomen). Na 20 s zonder lijst: uitleg en "Opnieuw proberen"; na 4 mislukte verbindingen: Orbit-server onbereikbaar, met de tip mobiele data te proberen (sommige bedrijfsnetwerken blokkeren workers.dev).
   - Een geopende link (ook via de gewone gsm-camera) vraagt één tik "Ontvang taken", met de waarschuwing dat de lijst vervangen wordt. Bewust niet automatisch.
   - `deviceName()` in `pair.js` (iPhone, iPad, Android-gsm, Mac, Windows-pc, ...) voor de bevestiging.
-  - Mislukte verbindingen telt de app via het `close`-event (MQTT.js geeft daar geen `error`).
   - Een app op het iOS-beginscherm heeft een eigen opslag, los van Safari: daar ontvangen via de scanner in de app zelf.
-  - Getest met een nep-camera in Chromium (`--use-file-for-fake-video-capture` met een mjpeg van de QR): pc verstuurt, gsm met eigen taak ontvangt (lijst vervangen, momentopname bewaard), bevestiging bij de verzender, daarna gelijk in beide richtingen, link met bevestiging, time-out, server onbereikbaar.
+  - Getest tegen de Worker in `wrangler dev`, met een nep-camera in Chromium (`--use-file-for-fake-video-capture` met een mjpeg van de QR): pc verstuurt, gsm met eigen taak ontvangt (lijst vervangen, momentopname bewaard), bevestiging bij de verzender, daarna gelijk in beide richtingen, link met bevestiging, time-out, server onbereikbaar, en alles opnieuw zonder WebSocket (https-terugval).
 - Code in localStorage `priority-orbit.sync.v1`; bij het laden verbindt de app meteen opnieuw. Ook opnieuw bij `visibilitychange` (gsm uit de achtergrond) en `online`.
 - Samenvoegen (`mergeStates`): per taak wint de recentste `updatedAt`; een taak in `gone` blijft weg tenzij ze nadien opnieuw gewijzigd is (ongedaan maken). Na samenvoegen publiceert een toestel enkel als het iets had wat de snapshot nog niet had. Wijzigingen worden 400 ms gebundeld.
 - Voorbeeldtaken gaan nooit mee (`getState` geeft `realTasks()`); er wordt bij het koppelen niets meer weggefilterd.
 - Wat sync laat verdwijnen (elders afgevinkt) gaat naar het archief, met eerst een momentopname en een toast "Terugzetten".
-- Lokaal testen zonder internet: een eigen broker (bv. aedes met websocket) en `localStorage.setItem('priority-orbit.broker', 'ws://localhost:8899/mqtt')`. Die sleutel overschrijft de brokerlijst; nooit in productie zetten.
-- Risico: publieke brokers bieden geen garantie en kunnen bewaarde berichten wissen. Elk toestel heeft een volledige kopie en publiceert die opnieuw bij verbinden, dus er gaat pas iets verloren als alle toestellen tegelijk hun opslag kwijt zijn.
+- Elk toestel heeft een volledige kopie en verstuurt eigen wijzigingen opnieuw bij verbinden; de server bewaart bovendien 20 vorige versies. Risico: een bedrijfsnetwerk dat `*.workers.dev` blokkeert; dan helpt een eigen domein op Cloudflare.
 
 ## Interactie in de lijst en het venster
 
@@ -160,5 +163,5 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 ## Open vragen
 
 - Statistiek op basis van het archief (hoeveel afgevinkt per week)?
-- Sync is enkel getest met een lokale broker; de publieke brokers waren niet bereikbaar vanuit de cloudomgeving. Victor meldde dat de eerste QR-versie "niet werkte" (details onbekend); de versie met versturen/ontvangen toont nu elke stap en de reden als iets faalt. Vraag bij problemen welke stap of melding hij ziet.
+- Sync-server is lokaal getest (wrangler dev), nog niet live: wacht op de Cloudflare-secrets in de repo. Daarna de eerste echte test pc ↔ gsm, ook op het werknetwerk.
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.

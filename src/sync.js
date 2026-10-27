@@ -1,16 +1,18 @@
 /* ---- Synchronisatie tussen toestellen ---- */
-// Zelfde aanpak als streep en Operatie-Erfpacht: MQTT over WSS naar publieke brokers (HiveMQ, EMQX als reserve)
-// met een "retained" snapshot, zodat een toestel bij verbinden meteen de laatste stand krijgt.
-// Verschil: Orbit is een openbare site met persoonlijke taken. Daarom bepaalt een synccode het kanaal én
-// versleutelt de app alles in de browser (AES-GCM, sleutel afgeleid van de code). De broker ziet enkel ruis.
+// Eigen tussenpost op Cloudflare (map worker/): https op poort 443, dus ook bruikbaar op werk- en schoolnetwerken
+// die de poorten van publieke MQTT-servers blokkeren. Live via WebSocket; lukt dat niet (sommige proxy's breken
+// WebSockets), dan gewone https-verzoeken om de paar seconden.
+// Orbit is een openbare site met persoonlijke taken: een synccode bepaalt het kanaal (hash) én de sleutel.
+// Alles wordt in de browser versleuteld (AES-GCM); de server ziet enkel ruis.
 
-const BROKERS = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt'];
+const SERVER = 'https://orbit-sync.victorvansande.workers.dev';
 const CODE_KEY = 'priority-orbit.sync.v1';
-const BROKER_OVERRIDE_KEY = 'priority-orbit.broker';   // alleen om lokaal te testen
+const SERVER_OVERRIDE_KEY = 'priority-orbit.server';   // alleen om lokaal te testen (bv. http://127.0.0.1:8787)
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';     // zonder 0/O, 1/I/L
 const GONE_DAYS = 60;                                    // zo lang onthouden we afgevinkte taken
 const PUBLISH_DELAY = 400;
-const FIRST_SNAPSHOT_WAIT = 1500;
+const POLL_MS = 4000, POLL_HIDDEN_MS = 20000;            // terugval zonder WebSocket
+const PING_MS = 25000;
 
 const enc = new TextEncoder(), dec = new TextDecoder();
 
@@ -66,9 +68,10 @@ async function deriveKey(code) {
   );
 }
 
-async function topicFor(code) {
+// Kanaal: eerste 16 bytes van een hash van de code (zelfde hash als vroeger bij MQTT, dus bestaande codes blijven geldig)
+async function channelFor(code) {
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode('orbit-topic:' + code)));
-  return 'orbit/v1/' + [...hash.slice(0, 16)].map(b => b.toString(16).padStart(2, '0')).join('');
+  return [...hash.slice(0, 16)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 const toB64 = bytes => btoa(String.fromCharCode(...bytes));
@@ -88,39 +91,28 @@ async function open(key, text) {
   return JSON.parse(dec.decode(plain));
 }
 
-/* ---- Bibliotheek pas laden als synchronisatie aan staat ---- */
-let libPromise = null;
-function loadMqtt() {
-  if (window.mqtt) return Promise.resolve(window.mqtt);
-  libPromise ??= new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = new URL('./vendor/mqtt.min.js', import.meta.url).href;
-    s.onload = () => (window.mqtt ? resolve(window.mqtt) : reject(new Error('mqtt ontbreekt')));
-    s.onerror = () => { libPromise = null; reject(new Error('mqtt kon niet laden')); };
-    document.head.append(s);
-  });
-  return libPromise;
-}
-
 /* ---- Verbinding ---- */
 // Rollen bij het koppelen, bewust in één richting:
-//   'send'    dit toestel toont de QR-code en verstuurt zijn lijst (bewaarde snapshot op het kanaal)
+//   'send'    dit toestel toont de QR-code en verstuurt zijn lijst
 //   'receive' dit toestel heeft gescand: het stuurt niets, wacht op de lijst van de verzender en neemt die over
 //   'normal'  daarna houden alle gekoppelde toestellen elkaar gelijk (samenvoegen per taak)
 // getState(): lokale toestand; applyState(state): samengevoegde toestand overnemen; onReceive(state): ontvangen lijst
 // overnemen (vervangt de lokale); onStatus({status, lastSync, code}); onPair({role, step, ...}) voor de stappen.
 const RECEIVE_TIMEOUT = 20000;
+const SERVER_NAME = 'Orbit-server';
 
 export function createSync({ getState, applyState, onReceive = applyState, onStatus = () => {}, onPair = () => {}, deviceName = '' }) {
-  let code = null, key = null, topic = null, client = null, mode = 'normal';
-  let brokerIdx = 0, failures = 0, attempts = 0, status = 'off', lastSync = null;
-  let publishTimer = 0, firstTimer = 0, waitTimer = 0, dirty = false, generation = 0;
+  let code = null, key = null, channel = null, mode = 'normal';
+  let ws = null, transport = 'ws', version = 0, wsFailures = 0, attempts = 0;
+  let status = 'off', lastSync = null, dirty = false, generation = 0;
+  let publishTimer = 0, waitTimer = 0, retryTimer = 0, pollTimer = 0, pingTimer = 0, lastAckAt = Date.now();
+  let pendingOk = null;
 
-  const brokers = () => {
-    try { const o = localStorage.getItem(BROKER_OVERRIDE_KEY); if (o) return [o]; } catch { /* geen opslag */ }
-    return BROKERS;
+  const base = () => {
+    try { const o = localStorage.getItem(SERVER_OVERRIDE_KEY); if (o) return o.replace(/\/$/, ''); } catch { /* geen opslag */ }
+    return SERVER;
   };
-  const brokerName = url => (/hivemq/.test(url) ? 'HiveMQ' : /emqx/.test(url) ? 'EMQX' : new URL(url).host);
+  const httpUrl = (suffix = '') => `${base()}/v1/${channel}${suffix}`;
 
   function setStatus(next) {
     status = next;
@@ -135,77 +127,106 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
     try { localStorage.setItem(CODE_KEY, code); } catch { /* geen opslag */ }
     mode = role;
     const gen = ++generation;
-    attempts = 0;
+    attempts = 0; wsFailures = 0; version = 0; transport = 'ws';
+    lastAckAt = Date.now();
     setStatus('connecting');
     onPair({ role: mode, step: 'connecting' });
-    [key, topic] = await Promise.all([deriveKey(code), topicFor(code)]);
-    try { await loadMqtt(); } catch {
-      if (gen === generation) { setStatus('offline'); onPair({ role: mode, step: 'error', reason: 'lib' }); }
-      return;
-    }
+    [key, channel] = await Promise.all([deriveKey(code), channelFor(code)]);
     if (gen !== generation) return;
     dirty = mode !== 'receive';      // een ontvanger stuurt niets voor hij iets ontvangen heeft
     connect(gen);
   }
 
   function connect(gen) {
-    const list = brokers();
-    const url = list[brokerIdx % list.length];
-    client = window.mqtt.connect(url, {
-      clientId: 'orbit-' + Math.random().toString(36).slice(2, 10),
-      clean: true, connectTimeout: 6000, reconnectPeriod: 4000, keepalive: 30,
-    });
-    const c = client;
-    c.on('connect', () => {
+    if (gen !== generation) return;
+    if (transport === 'http' || typeof WebSocket === 'undefined') { transport = 'http'; poll(gen, true); return; }
+    let opened = false;
+    const sock = new WebSocket(httpUrl().replace(/^http/, 'ws'));
+    ws = sock;
+    const openTimer = setTimeout(() => { if (!opened) { try { sock.close(); } catch { /* al dicht */ } } }, 8000);
+    sock.onopen = () => {
       if (gen !== generation) return;
-      failures = 0;
+      opened = true;
+      clearTimeout(openTimer);
+      wsFailures = 0; attempts = 0;
+      clearInterval(pingTimer);
+      pingTimer = setInterval(() => { try { sock.send('ping'); } catch { /* dicht */ } }, PING_MS);
+    };
+    sock.onmessage = e => {
+      if (gen !== generation || e.data === 'pong') return;
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.t === 'snap') { const first = !sock.greeted; sock.greeted = true; handleSnap(gen, msg.v, msg.d, first); }
+      else if (msg.t === 'ok') published(msg.v);
+      else if (msg.t === 'ack') receiveAck(msg.d);
+    };
+    sock.onclose = () => {
+      clearTimeout(openTimer);
+      clearInterval(pingTimer);
+      if (gen !== generation || sock !== ws) return;
+      ws = null;
+      if (!opened && ++wsFailures >= 2) transport = 'http';    // WebSocket geblokkeerd: verder via gewone https
+      failed(gen);
+    };
+  }
+
+  // Mislukte verbinding: melden en opnieuw proberen met oplopende wachttijd
+  function failed(gen) {
+    attempts++;
+    const offline = navigator.onLine === false;
+    setStatus(offline ? 'offline' : 'connecting');
+    onPair({ role: mode, step: 'retrying', attempts, server: SERVER_NAME, servers: [SERVER_NAME], offline });
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => connect(gen), Math.min(15000, 1000 * 2 ** Math.min(attempts - 1, 4)));
+  }
+
+  // Terugval: gewone https om de paar seconden
+  async function poll(gen, first = false) {
+    clearTimeout(pollTimer);
+    if (gen !== generation) return;
+    let data;
+    try {
+      const res = await fetch(httpUrl(), { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status);
+      data = await res.json();
+    } catch {
+      if (gen === generation) failed(gen);
+      return;
+    }
+    if (gen !== generation) return;
+    attempts = 0;
+    if (first || data.v > version) await handleSnap(gen, data.v, data.d, first);   // first: eerste antwoord na (her)verbinden
+    else if (status !== 'online') setStatus('online');
+    for (const a of data.acks || []) if (a.at > lastAckAt) { lastAckAt = a.at; receiveAck(a.d); }
+    pollTimer = setTimeout(() => poll(gen), document.hidden ? POLL_HIDDEN_MS : POLL_MS);
+  }
+
+  // Een stand van de server: bij (her)verbinden (eventueel leeg) en bij elke wijziging van een ander toestel
+  async function handleSnap(gen, v, d, firstOfConnection) {
+    if (gen !== generation) return;
+    if (firstOfConnection) {
       setStatus('online');
-      c.subscribe([topic, topic + '/ack'], { qos: 1 }, err => {
-        if (gen !== generation) return;
-        if (err) { onPair({ role: mode, step: 'error', reason: 'subscribe', server: brokerName(url) }); return; }
-        if (mode === 'receive') {
-          onPair({ role: 'receive', step: 'waiting', server: brokerName(url) });
+      if (mode === 'receive') {
+        if (!d) {
+          onPair({ role: 'receive', step: 'waiting', server: SERVER_NAME });
           clearTimeout(waitTimer);
           waitTimer = setTimeout(() => { if (mode === 'receive') onPair({ role: 'receive', step: 'timeout' }); }, RECEIVE_TIMEOUT);
           return;
         }
-        // Verzender: even wachten op een bewaarde stand van eerder gekoppelde toestellen, die samenvoegen, dan versturen
-        clearTimeout(firstTimer);
-        firstTimer = setTimeout(() => { if (dirty || mode === 'send') publish(); }, mode === 'send' ? 800 : FIRST_SNAPSHOT_WAIT);
-      });
-    });
-    c.on('message', (t, payload) => {
-      if (gen !== generation) return;
-      if (t === topic + '/ack') receiveAck(payload.toString());
-      else receive(payload.toString());
-    });
-    const fail = () => {
-      if (gen !== generation || c.dead) return;
-      attempts++;
-      setStatus(navigator.onLine === false ? 'offline' : 'connecting');
-      onPair({ role: mode, step: 'retrying', attempts, server: brokerName(url), servers: list.map(brokerName), offline: navigator.onLine === false });
-      if (++failures >= 2 && brokers().length > 1) {
-        // na twee mislukte pogingen naar de reservebroker
-        failures = 0;
-        brokerIdx++;
-        c.dead = true;
-        try { c.end(true); } catch { /* al dicht */ }
-        connect(gen);
       }
-    };
-    // MQTT.js meldt elke mislukte (her)verbinding als 'close'; een verbroken verbinding ook
-    c.on('close', () => {
-      if (gen !== generation || c.dead) return;
-      if (status === 'online') setStatus('connecting');
-      else fail();
-    });
+    }
+    if (d) {
+      version = Math.max(version, v);
+      await receive(d);
+    }
+    // Verzender (of een toestel met eigen wijzigingen): na de eerste stand de eigen lijst versturen
+    if (firstOfConnection && mode !== 'receive' && (dirty || mode === 'send')) publish();
   }
 
   async function receive(text) {
     let remote;
     try { remote = await open(key, text); } catch { return; }        // niet van ons of beschadigd
     if (!remote || !Array.isArray(remote.tasks)) return;
-    clearTimeout(firstTimer);
     lastSync = Date.now();
     if (mode === 'receive') {
       // Eerste lijst van de verzender: overnemen, bevestigen, en vanaf nu gewoon gelijk houden
@@ -221,15 +242,15 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
     const local = getState();
     const merged = mergeStates(local, remote);
     if (!sameState(merged, local)) applyState(merged);
-    // Had dit toestel iets wat de snapshot nog niet had, dan de samengevoegde stand terugsturen
+    // Had dit toestel iets wat de server nog niet had, dan de samengevoegde stand terugsturen
     if (!sameState(merged, remote)) changed(); else dirty = false;
     setStatus('online');
   }
 
   async function sendAck(count) {
-    if (!client?.connected) return;
-    const payload = await seal(key, { ack: true, from: deviceName, count, at: Date.now() });
-    client.publish(topic + '/ack', payload, { qos: 1 });
+    const d = await seal(key, { ack: true, from: deviceName, count, at: Date.now() });
+    if (ws?.readyState === 1) ws.send(JSON.stringify({ t: 'ack', d }));
+    else fetch(httpUrl('/ack'), { method: 'POST', body: JSON.stringify({ d }) }).catch(() => {});
   }
 
   async function receiveAck(text) {
@@ -246,24 +267,38 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
   }
 
   async function publish() {
-    if (mode === 'receive') return;
-    if (!client || !client.connected) { dirty = true; return; }
+    if (mode === 'receive' || !key) return;
+    const gen = generation;
     const state = getState();
-    const payload = await seal(key, { ...state, from: deviceName });
-    client.publish(topic, payload, { qos: 1, retain: true }, err => {
-      if (err) { if (mode === 'send') onPair({ role: 'send', step: 'error', reason: 'publish' }); return; }
-      dirty = false;
-      lastSync = Date.now();
-      setStatus('online');
-      if (mode === 'send') onPair({ role: 'send', step: 'ready', count: state.tasks.length });
-    });
+    const d = await seal(key, { ...state, from: deviceName });
+    if (gen !== generation) return;
+    pendingOk = state.tasks.length;
+    if (ws?.readyState === 1) { ws.send(JSON.stringify({ t: 'pub', d })); return; }
+    if (transport !== 'http') { dirty = true; return; }       // WebSocket komt terug: dan verstuurt handleSnap
+    try {
+      const res = await fetch(httpUrl(), { method: 'PUT', body: JSON.stringify({ d }) });
+      if (!res.ok) throw new Error(res.status);
+      published((await res.json()).v);
+    } catch {
+      dirty = true;
+      if (mode === 'send') onPair({ role: 'send', step: 'error', reason: 'publish' });
+    }
+  }
+
+  function published(v) {
+    version = Math.max(version, v || 0);
+    dirty = false;
+    lastSync = Date.now();
+    setStatus('online');
+    if (mode === 'send') onPair({ role: 'send', step: 'ready', count: pendingOk ?? getState().tasks.length });
   }
 
   // QR-code tonen op een toestel: verzender worden (nieuwe code, of de bestaande als het al gekoppeld is)
   function send(fresh) {
     if (!code) return start(fresh, { role: 'send' });
     mode = 'send';
-    if (client?.connected) { onPair({ role: 'send', step: 'connecting' }); publish(); }
+    onPair({ role: 'send', step: 'connecting' });
+    if (status === 'online') publish();
     else start(code, { role: 'send' });
   }
 
@@ -272,27 +307,26 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
 
   function stop({ keepCode = false, quiet = false } = {}) {
     generation++;
-    clearTimeout(publishTimer); clearTimeout(firstTimer); clearTimeout(waitTimer);
-    if (client) { try { client.end(true); } catch { /* al dicht */ } client = null; }
+    for (const t of [publishTimer, waitTimer, retryTimer, pollTimer]) clearTimeout(t);
+    clearInterval(pingTimer);
+    if (ws) { const s = ws; ws = null; try { s.close(); } catch { /* al dicht */ } }
     if (!keepCode) {
       code = null;
       try { localStorage.removeItem(CODE_KEY); } catch { /* geen opslag */ }
     }
-    key = topic = null;
+    key = channel = null;
     mode = 'normal';
     if (!quiet) setStatus('off');
   }
 
-  // Na een tijd in de achtergrond (gsm) meteen opnieuw verbinden en de laatste stand ophalen
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden || !code) return;
-    if (!client || !client.connected) start(code, { role: mode });
-  });
-  window.addEventListener('online', () => {
-    if (!code) return;
-    if (client && client.connected) { setStatus('online'); if (dirty) changed(); }
-    else start(code, { role: mode });
-  });
+  // Terug uit de achtergrond (gsm) of weer online: meteen de laatste stand ophalen
+  const wake = () => {
+    if (!code || document.hidden) return;
+    if (transport === 'http') poll(generation);
+    else if (!ws || ws.readyState > 1) { clearTimeout(retryTimer); connect(generation); }
+  };
+  document.addEventListener('visibilitychange', wake);
+  window.addEventListener('online', wake);
   window.addEventListener('offline', () => { if (code) setStatus('offline'); });
 
   return {
@@ -301,5 +335,6 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
     get mode() { return mode; },
     get status() { return status; },
     get lastSync() { return lastSync; },
+    get transport() { return transport; },
   };
 }

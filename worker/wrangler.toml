@@ -1,0 +1,14 @@
+# Orbit sync-server (Cloudflare Worker + Durable Object). Deploy via .github/workflows/sync-worker.yml.
+name = "orbit-sync"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "CHANNELS"
+class_name = "Channel"
+
+# SQLite-opslag: ook beschikbaar op het gratis Workers-abonnement
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Channel"]
