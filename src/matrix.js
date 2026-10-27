@@ -51,3 +51,28 @@ export function setMatrix(root, text) {
   root._chars = chars;
   root.setAttribute('aria-label', text);
 }
+
+// Knipoog naar de sterrenhemel: één verlichte stip fonkelt even uit als dezelfde vierpuntige ster (holle zijden)
+const STAR = (() => {
+  const R = 1.7, w = 0.16, p = a => `${(Math.cos(a) * R).toFixed(3)} ${(Math.sin(a) * R).toFixed(3)}`;
+  let d = `M${p(-Math.PI / 2)}`;
+  for (let i = 0; i < 4; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 2;
+    d += ` Q${(Math.cos(a + Math.PI / 4) * R * w).toFixed(3)} ${(Math.sin(a + Math.PI / 4) * R * w).toFixed(3)} ${p(a + Math.PI / 2)}`;
+  }
+  return d + 'Z';
+})();
+
+export function twinkleDot(root) {
+  const dots = root.querySelectorAll('.o:not(.is-twinkling)');
+  if (!dots.length) return;
+  const dot = dots[Math.floor(Math.random() * dots.length)];
+  const spot = document.createElementNS(NS, 'g'), star = document.createElementNS(NS, 'path');
+  spot.setAttribute('transform', `translate(${dot.getAttribute('cx')} ${dot.getAttribute('cy')})`);
+  star.setAttribute('d', STAR);
+  star.setAttribute('class', 'dm-star');
+  spot.append(star);
+  dot.classList.add('is-twinkling');
+  dot.after(spot);
+  star.addEventListener('animationend', () => { spot.remove(); dot.classList.remove('is-twinkling'); }, { once: true });
+}

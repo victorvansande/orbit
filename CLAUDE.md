@@ -52,6 +52,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
 | `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)` |
 | `src/quotes.js` | Bibliotheek van 223 korte, positieve Engelse quotes met gekende bron, voor de focusmodus |
+| `src/stats.js` | Statistiek: afgevinkt per dag (`priority-orbit.stats.v1`) en de sterrenhemel (`priority-orbit.stars.v2`) |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
 | `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, verbinding met de Orbit-server, samenvoegen |
@@ -80,7 +81,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Lagen van achter naar voor: raster (zwaartekrachtput), wijzerplaat (120 streepjes, statisch), ringen, kern, bollen met staart, effecten, labels.
 - Banen draaien via een fase per niveau (`phase`), elke bol heeft een `offset` die zacht naar gelijke verdeling glijdt. Bij een niveauwissel blijft de absolute hoek behouden.
 - Bol (`drawOrb`): `tracePath` rekent de werkelijke baan terug (hoeksnelheid inclusief herschikking `vo`, radiale snelheid `vr`), `taper` vult er een effen, taps vlak langs (breedte 2r aan de kop, 0,35r aan het eind). Zo wijst de staart ook tijdens binnenvliegen en ringwissels de goede kant op. Lengte = (staart + 1) × 7 × `TAIL_LENGTH` × (snelheid / kruissnelheid), begrensd op 2,5 keer.
-- Wijzerplaat: 120 statische streepjes (elke tiende lang), puur decor. De klok op de rand (uurstip, minutenlijn, cijfers 12/3/6/9) is weggehaald op vraag van Victor: geen meerwaarde, enkel afleiding naast de digitale klok.
+- Wijzerplaat: 120 streepjes (elke tiende lang). Vanaf 12 uur lichten er evenveel op als er deze maand taken afgevinkt zijn (max. 120), met het label "n IN MAAND" erboven (zie Statistiek). De klok op de rand (uurstip, minutenlijn, cijfers 12/3/6/9) is weggehaald op vraag van Victor: geen meerwaarde, enkel afleiding naast de digitale klok.
 - Minder drukte in het zijaanzicht (alles schaalt met `cam.depth`, dus glijdt mee met de camera): de achterkant van elke ring (van de kijker af) zakt naar ongeveer een derde dekking zodat de ellipsen niet even sterk kruisen, elke tweede ringstip vervaagt (de overige worden iets krachtiger), het raster wijkt binnen en rond de trechter terug (tot ±90 eenheden buiten de rand) en is lichter, wijzerplaat op de helft. Geen meridianen meer: de ringen tonen de vorm al.
 - Hover dimt de andere ringen licht (factor 0,32), niet weg: in het zijaanzicht moeten ze leesbaar blijven.
 - Hover over een ring of bol: die baan glijdt tot stilstand (`speed` → 0), staarten krimpen mee, labels verschijnen (witte pil met leader), de bol krijgt een dun ringetje. Hover op een rij in de lijst doet hetzelfde voor die ene taak.
@@ -141,6 +142,15 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 - Wat sync laat verdwijnen (elders afgevinkt) gaat naar het archief, met eerst een momentopname en een toast "Terugzetten".
 - Elk toestel heeft een volledige kopie en verstuurt eigen wijzigingen opnieuw bij verbinden; de server bewaart bovendien 20 vorige versies. Risico: een bedrijfsnetwerk dat `*.workers.dev` blokkeert; dan helpt een eigen domein op Cloudflare.
 
+## Statistiek (`src/stats.js`)
+
+Victor wou iets kleins ter motivatie; vier voorstellen tijdelijk tegelijk aan (2, 3, 4 en 5):
+- Telling per dag `{days: {'JJJJ-MM-DD': n}}` in `priority-orbit.stats.v1`, verloopt nooit. Bij de eerste keer aangevuld uit het archief. Afvinken telt +1 (ook elders afgevinkt via sync), ongedaan maken -1. Voorbeeldtaken tellen niet.
+- **Matrixteller** onder de lijst (`#stat-total`, zelfde stippen als de klok) met "stars collected": evenveel als er sterren aan de hemel staan. Af en toe (7 tot 16 s) fonkelt één verlichte stip uit als dezelfde vierpuntige ster (`twinkleDot` in `matrix.js`), als knipoog naar de hemel. Niet bij reduced motion of als de teller onzichtbaar is.
+- **Weekraster**: zeven rasterpuntjes ma tot zo (`rasterDot`, vol bij 5), toekomstige dagen vaag, vandaag vet.
+- **Wijzerplaat** vult zich met de maand (zie Scène).
+- **Sterrenhemel**: één ster per afgevinkte taak, voorgoed (`priority-orbit.stars.v2`, `{id, x, y, s, ph}` in stage-eenheden rond het midden, tussen straal 24 en 250). Plaatsing met best candidate (Mitchell): 14 kandidaten rond de plek waar de taak uitfonkelde (14 tot 60 eenheden weg, dus niet op de baan), anders 80 overal; de kandidaat die het verst van de rest ligt, met minimale afstand `GAPS` 11, 9, 7,5 of 6,5. Zo oogt een volle hemel natuurlijk, zonder raster en zonder overlap (getest: 400 sterren, kleinste afstand 11). `matchStars` zorgt dat er evenveel sterren als afgevinkte taken zijn. Getekend achter de wijzerplaat, los van de camera, zachtjes fonkelend; bij veel sterren iets kleiner.
+
 ## Interactie in de lijst en het venster
 
 - Lijst gegroepeerd per moment. Afvinken: cirkel kleurt als bol, rij schuift weg, bol spat uiteen, toast met "Ongedaan maken" (5 s, ook `Z` of Ctrl/Cmd+Z).
@@ -193,6 +203,6 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 
 ## Open vragen
 
-- Statistiek op basis van het archief (hoeveel afgevinkt per week)?
+- Statistiek: vier vormen staan tijdelijk tegelijk aan; Victor kiest later welke blijven.
 - Sync-server is lokaal getest (wrangler dev), nog niet live: wacht op de Cloudflare-secrets in de repo. Daarna de eerste echte test pc ↔ gsm, ook op het werknetwerk.
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.

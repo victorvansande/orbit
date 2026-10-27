@@ -4,7 +4,8 @@ import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
 import { mirror, readMirror } from './backup.js';
-import { setMatrix } from './matrix.js';
+import { setMatrix, twinkleDot } from './matrix.js';
+import { loadStats, countDone, totalDone, weekCounts, monthCount, loadStars, placeStar, removeStar, matchStars, dayKey } from './stats.js';
 import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
@@ -164,6 +165,8 @@ let gone = loadGone();
 let tasks = loadTasks();
 tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'Voor opruimen voorbeeldtaken');
 let archive = loadArchive();
+let stats = loadStats(archive);
+let sky = matchStars(loadStars(), totalDone(stats));   // één ster per afgevinkte taak
 applyDeadlines();
 saveTasks({ notify: false });
 // Vraag de browser om de opslag niet op te ruimen als er plaats tekort is
@@ -316,6 +319,58 @@ function renderFocusNow() {
   if (urgent.length > max) ul.append(el('li', 'focus-more', `en nog ${urgent.length - max}`));
   box.append(ul);
 }
+
+/* ---- Statistiek: weekraster en totaal (lijst), wijzerplaat en sterrenhemel (scène) ---- */
+const DAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
+const MONTH_FMT = new Intl.DateTimeFormat('nl-BE', { month: 'long' });
+let statsDay = '';
+function rasterDot(ctx, cx, cy, R, fill, color) {
+  const sp = R / 3.2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  for (let row = -4; row <= 4; row++) for (let c = -4; c <= 4; c++) {
+    const x = (c + (row & 1) * 0.5) * sp, y = row * sp * 0.866, r = Math.hypot(x, y);
+    if (r > R) continue;
+    const s = sp * 0.42 * Math.max(0.15, Math.min(1, fill * 1.3 - r / R * 0.6));
+    ctx.moveTo(cx + x + s, cy + y); ctx.arc(cx + x, cy + y, s, 0, Math.PI * 2);
+  }
+  ctx.fill();
+}
+function renderStats() {
+  const now = new Date();
+  statsDay = dayKey(now);
+  scene.setSky(sky.stars);
+  scene.setProgress({ month: monthCount(stats, now), label: MONTH_FMT.format(now) });
+  const week = weekCounts(stats, now), total = totalDone(stats);
+  $('stats').hidden = total === 0;
+  if (!total) return;
+  const weekSum = week.reduce((a, b) => a + (b || 0), 0);
+  $('stat-week').textContent = String(weekSum);
+  const box = $('weekdots');
+  if (box.children.length !== 7) box.replaceChildren(...DAYS.map(d => { const sp = el('span'); const cv = el('canvas'); cv.width = cv.height = 52; sp.append(cv, d); return sp; }));
+  const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+  const todayIdx = (now.getDay() + 6) % 7;
+  [...box.children].forEach((sp, i) => {
+    const n = week[i], ctx = sp.firstChild.getContext('2d');
+    ctx.clearRect(0, 0, 52, 52);
+    ctx.globalAlpha = n === null ? 0.3 : i === todayIdx ? 1 : 0.75;
+    rasterDot(ctx, 26, 26, 21, n === null ? 0 : Math.min(1, n / 5), ink);
+    sp.classList.toggle('is-today', i === todayIdx);
+    sp.title = n === null ? '' : `${n} afgevinkt`;
+  });
+  box.setAttribute('aria-label', `Deze week afgevinkt: ${week.map((n, i) => `${DAYS[i]} ${n ?? '-'}`).join(', ')}`);
+  setMatrix($('stat-total'), String(total));
+  $('stat-total').setAttribute('aria-label', `${total} afgevinkt in totaal, evenveel sterren in de hemel`);
+  $('stat-stars-label').textContent = total === 1 ? 'star collected' : 'stars collected';
+}
+
+// Af en toe fonkelt één stip van de teller, net als de sterren in de scène
+(function wink() {
+  setTimeout(() => {
+    if (!reducedMotion.matches && !document.hidden && !$('stats').hidden && $('stats').offsetParent) twinkleDot($('stat-total'));
+    wink();
+  }, 7000 + Math.random() * 9000);
+})();
 
 /* ---- Takenlijst ---- */
 const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -499,6 +554,7 @@ function setDue(id, due) {
 function followDeadlines() {
   if (applyDeadlines()) { saveTasks({ notify: false }); render(); }   // afgeleid uit de datum, elk toestel rekent zelf
   else { renderTracks(); renderFocusDue(); }
+  if (dayKey(Date.now()) !== statsDay) renderStats();   // nieuwe dag of week
 }
 
 let toastAction = null, toastTimer = 0;
@@ -507,12 +563,15 @@ function complete(id, row) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
   row.classList.add('is-done');
-  scene.complete(id);
+  const spot = scene.complete(id);
   tasks = tasks.filter(t => t.id !== id);
   if (!task.demo) {
     const now = Date.now();
     gone[id] = now;
     archive = saveArchive([{ ...task, doneAt: now }, ...archive]);
+    countDone(stats, now);
+    placeStar(sky, id, spot);
+    renderStats();
   }
   saveTasks();
   renderSummary();
@@ -530,6 +589,8 @@ function restore(ids) {
   const back = archive.filter(a => want.has(a.id) && !tasks.some(t => t.id === a.id));
   if (!back.length) return 0;
   for (const a of back) {
+    countDone(stats, a.doneAt, -1);
+    removeStar(sky, a.id);
     const { doneAt, by, ...task } = a;
     touch(task);
     delete gone[task.id];
@@ -540,6 +601,7 @@ function restore(ids) {
   saveTasks();
   render();
   renderArchive();
+  renderStats();
   return back.length;
 }
 
@@ -771,6 +833,7 @@ function applyTheme() {
   document.documentElement.dataset.theme = name;
   document.querySelector('meta[name="theme-color"]').setAttribute('content', name === 'dark' ? '#0F0F12' : '#F1F1EF');
   scene.setTheme(name);
+  try { renderStats(); } catch { /* bij het opstarten nog niet klaar */ }
   for (const b of themeButtons) b.setAttribute('aria-checked', String(b.dataset.themePref === themePref));
 }
 function setThemePref(pref) {
@@ -1042,6 +1105,11 @@ const sync = createSync({
       snapshot(tasks, 'Voor synchronisatie');
       const now = Date.now();
       archive = saveArchive([...lost.map(t => ({ ...t, doneAt: state.gone?.[t.id] || now, by: 'elders' })), ...archive]);
+      for (const t of lost) {
+        countDone(stats, state.gone?.[t.id] || now);
+        placeStar(sky, t.id, scene.complete(t.id));     // ook hier fonkelt de taak uit en blijft er een ster
+      }
+      renderStats();
     }
     tasks = incoming;
     applyDeadlines();
@@ -1346,6 +1414,7 @@ renderSummary();
 renderTracks();
 renderFocusNow();
 scene.setTasks(tasks, { intro: true });
+renderStats();
 renderSync();
 if (savedCode()) sync.start(savedCode());
 // Webapp op het beginscherm zonder koppeling: meteen zeggen, de uitleg in de lijst staat op gsm ver onderaan

@@ -178,6 +178,23 @@ kbd {
 .tracks-pair .btn-solid, .tracks-pair .btn-ghost { min-height: 38px; padding: 0 14px; font-size: 13px; }
 .tracks-demo { margin: 8px 0 4px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; max-width: 30ch; }
 .tracks-empty { margin-top: 18px; color: var(--ink-2); font-size: 13.5px; max-width: 26ch; }
+/* Statistiek onder de lijst: weekraster en totaal in matrixstippen */
+.stats { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.stats-head { display: flex; justify-content: space-between; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.stats-head span:last-child { color: var(--ink-2); }
+.weekdots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.weekdots span { display: grid; justify-items: center; gap: 5px; font: 500 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.weekdots span.is-today { color: var(--ink); }
+.weekdots canvas { width: 26px; height: 26px; }
+.stats-total { display: flex; align-items: flex-end; gap: 10px; margin-top: 2px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.stat-dm { --dm-h: 22px; display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
+.stat-dm .dm { display: block; height: 100%; width: auto; overflow: visible; }
+.stats-total span { padding-bottom: 2px; }
+.stat-dm .o { transition: fill-opacity .4s ease; }
+.stat-dm .o.is-twinkling { fill-opacity: .12; }
+.dm-star { fill: currentColor; transform-box: fill-box; transform-origin: center; animation: dm-star 1.1s cubic-bezier(.3, .6, .3, 1) both; }
+@keyframes dm-star { 0% { opacity: 0; transform: scale(.2) rotate(0); } 40% { opacity: 1; transform: scale(1) rotate(45deg); } 100% { opacity: 0; transform: scale(.1) rotate(90deg); } }
+
 /* Sneltoetsen: een klein knopje; de regel schuift open bij hover, focus of klik */
 .keys { display: flex; align-items: center; gap: 12px; width: max-content; padding-top: 10px; font: 500 10px/1 var(--mono); letter-spacing: .04em; color: var(--ink-3); text-transform: uppercase; }
 .keys-toggle { min-height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-3); font: inherit; letter-spacing: .1em; text-transform: inherit; transition: color .2s var(--ease), border-color .2s var(--ease); }

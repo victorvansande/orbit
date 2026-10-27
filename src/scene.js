@@ -94,6 +94,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const ringHot = new Map(LEVELS.map(l => [l.id, 0]));
   const orbs = new Map();
   const twinkles = [];   // afgevinkte bollen die uitfonkelen
+  let sky = [];          // sterrenhemel van deze week
+  let progress = { month: 0, label: '' };   // afgevinkt deze maand, voor de wijzerplaat
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
   // urgentie van de kern: 0 = rustig, 1 = alleen vandaag, tot 2 = veel Nu-taken
@@ -233,15 +235,18 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     todayCount = list.filter(t => t.level === URGENT_LEVEL + 1).length;
   }
 
+  // Geeft de plek terug (stage-eenheden rond het midden van het scherm) voor de sterrenhemel, of null
   function complete(id) {
     const o = orbs.get(id);
-    if (!o) return;
+    if (!o) return null;
     orbs.delete(id);
     layoutOffsets();
-    if (reducedMotion.matches || o.sx == null) return;
+    const spot = o.sx == null ? null : [(o.sx - cam.cx) / cam.s, (o.sy - cam.cy) / cam.s];
+    if (reducedMotion.matches || o.sx == null) return spot;
     // Zilver: de bol fonkelt uit waar hij stond, als een ster (vaste plek in de trechter, draait mee met de trechter)
     const [x, y, z] = orbFunnel(o, orbAngle(o));
     twinkles.push({ level: o.level, x, y, z, age: 0, alpha: o.alpha ?? 1 });
+    return spot;
   }
 
   /* ---- Weergave ---- */
@@ -364,21 +369,53 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (a <= 0) return;
     ctx.strokeStyle = rgba(INK, 1);
     ctx.lineWidth = 1;
-    for (const major of [false, true]) {
-      ctx.globalAlpha = (major ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
+    // Wijzerplaat vult zich: per afgevinkte taak deze maand licht een streepje op, met de klok mee vanaf twaalf uur
+    const lit = Math.min(120, progress.month);
+    for (const kind of ['minor', 'major', 'lit']) {
+      ctx.globalAlpha = (kind === 'lit' ? 0.85 : kind === 'major' ? 0.32 : 0.14) * a * (1 - 0.5 * cam.depth);
+      ctx.lineWidth = kind === 'lit' ? 1.6 : 1;
       ctx.beginPath();
       for (let i = 0; i < 120; i++) {
-        const isMajor = i % 10 === 0;
-        if (isMajor !== major) continue;
-        const ang = i / 120 * TAU;
+        const isMajor = i % 10 === 0, isLit = i < lit;
+        if ((isLit ? 'lit' : isMajor ? 'major' : 'minor') !== kind) continue;
+        const ang = -Math.PI / 2 + i / 120 * TAU;
         const c = Math.cos(ang), s = Math.sin(ang);
         if (!project(c * BEZEL_IN, s * BEZEL_IN, 0, false)) continue;
         const x0 = pt.x, y0 = pt.y;
-        const out = isMajor ? BEZEL_MAJOR : BEZEL_OUT;
+        const out = isMajor ? BEZEL_MAJOR : isLit ? BEZEL_OUT + 3 : BEZEL_OUT;
         if (!project(c * out, s * out, 0, false)) continue;
         ctx.moveTo(x0, y0); ctx.lineTo(pt.x, pt.y);
       }
       ctx.stroke();
+    }
+    // onderaan de wijzerplaat het aantal, alleen in het bovenaanzicht leesbaar
+    const la = 0.5 * a * (1 - cam.depth);
+    if (lit > 0 && la > 0.02 && project(0, BEZEL_MAJOR + 16, 0, false)) {
+      ctx.globalAlpha = la;
+      ctx.fillStyle = rgba(INK, 1);
+      ctx.font = `500 ${clamp(8.5 * cam.du, 8, 12).toFixed(1)}px "Geist Mono", ui-monospace, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${progress.month} IN ${progress.label}`.toUpperCase(), pt.x, pt.y);
+      ctx.textAlign = 'start';
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Sterrenhemel: één klein vierpuntig sterretje per afgevinkte taak deze week, achter de scène, zacht fonkelend
+  function drawSky(now) {
+    if (!sky.length) return;
+    const a = introAlpha(now, 0.3, 1.2);
+    if (a <= 0) return;
+    const t = now / 1000, still = reducedMotion.matches;
+    ctx.fillStyle = rgba(INK, 1);
+    const dense = clamp(1 - (sky.length - 150) / 1500, 0.65, 1);   // een volle hemel krijgt iets kleinere sterren
+    for (const st of sky) {
+      const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
+      const x = cam.cx + st.x * cam.s, y = cam.cy + st.y * cam.s;
+      const R = 2.6 * st.s * cam.du * dense;
+      ctx.globalAlpha = a * (0.28 + 0.42 * tw);
+      star4(x, y, R, 0);
     }
     ctx.globalAlpha = 1;
   }
@@ -687,6 +724,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.clearRect(0, 0, W, H);
     updateCamera();
     drawGrid(now);
+    drawSky(now);
     drawBezel(now);
     drawRings(now);
     drawCore(now);
@@ -821,6 +859,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   return {
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
+    setSky(list) { sky = list; },
+    setProgress(next) { progress = next; },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;
