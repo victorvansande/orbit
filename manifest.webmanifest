@@ -1,6 +1,6 @@
 {
-  "name": "Orbit",
-  "short_name": "Orbit",
+  "name": "Orbit Tasks",
+  "short_name": "Orbit Tasks",
   "description": "Je taken draaien als bollen rond vijf ringen. Hoe dringender, hoe dichter bij de kern.",
   "lang": "nl",
   "start_url": "./",
