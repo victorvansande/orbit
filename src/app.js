@@ -503,7 +503,9 @@ composer.addEventListener('cancel', e => { e.preventDefault(); closeComposer(); 
 composer.addEventListener('click', e => { if (e.target === composer) closeComposer(); });
 composer.addEventListener('close', () => {
   cancelAnimationFrame(orbRaf);
-  $('wheel').querySelector('.wheel-list').focus({ preventScroll: true });
+  // focus alleen terug naar het wiel voor wie met het toetsenbord werkt
+  if (document.documentElement.dataset.input === 'keyboard') $('wheel').querySelector('.wheel-list').focus({ preventScroll: true });
+  else document.activeElement?.blur?.();
 });
 composerForm.addEventListener('submit', e => {
   e.preventDefault();
@@ -625,6 +627,11 @@ function updateInsets() {
 }
 window.addEventListener('resize', updateInsets);
 desktop.addEventListener('change', () => { updateInsets(); renderTracks(); renderFocusNow(); });
+
+/* ---- Invoermethode: toetsenbord of aanwijzer (bepaalt of focusmarkeringen zichtbaar zijn) ---- */
+const setInput = kind => { document.documentElement.dataset.input = kind; };
+window.addEventListener('pointerdown', () => setInput('pointer'), { capture: true, passive: true });
+window.addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.altKey) setInput('keyboard'); }, { capture: true });
 
 /* ---- Start ---- */
 buildComposerLevels();

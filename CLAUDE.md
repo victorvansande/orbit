@@ -113,6 +113,8 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 
 ## Valkuilen
 
+- Focusmarkeringen alleen bij toetsenbordgebruik: `app.js` zet `data-input` op `<html>` (`pointer` bij pointerdown, `keyboard` bij een toets); CSS verbergt `:focus-visible` bij `pointer`. Het wiel zelf krijgt nooit een kader, enkel de gekozen pil bij toetsenbordgebruik. Na het venster gaat de focus alleen terug naar het wiel voor toetsenbordgebruikers (anders verscheen er een kader rond het hele wiel).
+
 - Canvas-teksten gebruiken Geist; is het font nog niet geladen, dan tekent hij met de terugval tot het binnen is (elk frame opnieuw).
 - De camera moet geldig zijn vóór de eerste pointermove: `resize()` loopt meteen bij het opstarten (anders werd alles NaN als de muis al over de scène stond).
 - Gsm: `.stage canvas` heeft `touch-action: pan-y` zodat de pagina kan scrollen; verticaal kantelen met de vinger kan daardoor niet, horizontaal draaien wel.

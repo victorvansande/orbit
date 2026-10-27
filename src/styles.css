@@ -78,6 +78,9 @@ body {
 p, h1, h2, h3 { margin: 0; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 button:focus-visible, [tabindex]:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+/* Focusmarkeringen alleen bij toetsenbordgebruik; met muis of vinger nooit (data-input wordt in app.js bijgehouden) */
+:root[data-input="pointer"] :focus-visible { outline: none; }
+.wheel-list:focus-visible { outline: none; }
 kbd {
   display: inline-grid; place-items: center;
   min-width: 18px; height: 18px; padding: 0 4px;
@@ -242,7 +245,7 @@ kbd {
   pointer-events: none;
 }
 .wheel-list { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; outline: none; }
-.wheel-list:focus-visible .wheel-item.is-selected .wi-pill { outline: 2px solid var(--ink); outline-offset: 4px; }
+:root:not([data-input="pointer"]) .wheel-list:focus-visible .wheel-item.is-selected .wi-pill { outline: 2px solid var(--ink); outline-offset: 4px; }
 .wheel-item { position: absolute; left: 0; top: 0; width: 0; height: 0; cursor: pointer; transform-origin: 0 0; }
 .wi-pill {
   position: absolute;
