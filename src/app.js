@@ -2,7 +2,8 @@ import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './co
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
-import { createSync, newCode, normalizeCode, savedCode } from './sync.js';
+import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
+import { mirror, readMirror } from './backup.js';
 import { setMatrix } from './matrix.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
@@ -10,7 +11,9 @@ import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STOR
 
 /* ---- Instellingen ---- */
 const STORAGE_KEY = 'priority-orbit.tasks.v1';
-const GONE_KEY = 'priority-orbit.gone.v1';      // afgevinkte taken (id → tijdstip), nodig voor synchronisatie
+const GONE_KEY = 'priority-orbit.gone.v1';
+const SAVED_KEY = 'priority-orbit.saved.v1';      // tijdstip van de laatste geslaagde bewaring in localStorage
+const PENDING_KEY = 'priority-orbit.pending.v1';  // {n, confirmedAt}: wijzigingen die de server nog niet bevestigde      // afgevinkte taken (id → tijdstip), nodig voor synchronisatie
 const DONE_MS = 320;          // rij vervaagt, daarna verdwijnt ze uit de lijst
 const TOAST_MS = 5000;
 const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stilstand
@@ -68,12 +71,37 @@ function saveTasks({ notify = true, reason = 'Voor een overschrijving' } = {}) {
     const lost = before.filter(t => !keep.has(t.id) && !gone[t.id]);
     if (lost.length) snapshot(before, reason);
   }
+  const json = JSON.stringify(real), now = Date.now();
+  let ok = true;
   try {
-    if (before || real.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(real));
+    if (before || real.length) localStorage.setItem(STORAGE_KEY, json);
     localStorage.setItem(GONE_KEY, JSON.stringify(gone));
-  } catch { /* opslag geblokkeerd */ }
+    // nalezen: staat het er echt?
+    if ((before || real.length) && localStorage.getItem(STORAGE_KEY) !== json) ok = false;
+    else localStorage.setItem(SAVED_KEY, String(now));
+  } catch { ok = false; }
+  // altijd ook de tweede kopie, los van of localStorage lukte
+  mirror({ tasks: real, gone, savedAt: now });
+  if (!ok) storageWarning();
   if (notify) notifySync();
 }
+
+// Bewaren mislukte: niet stil blijven, maar zeggen wat je kunt doen
+let warned = 0;
+function storageWarning() {
+  if (Date.now() - warned < 60000) return;
+  warned = Date.now();
+  setTimeout(() => showToast('Bewaren op dit toestel lukte niet. Je taken staan in de reservekopie; exporteer ze voor de zekerheid.',
+    () => openArchive(), 'Archief'), 0);
+}
+
+// Wijzigingen die nog niet bij de server zijn: geteld en bewaard, ook als je de app sluit
+function loadPending() {
+  try { const p = JSON.parse(localStorage.getItem(PENDING_KEY)); return p && typeof p.n === 'number' ? p : { n: 0, confirmedAt: 0 }; }
+  catch { return { n: 0, confirmedAt: 0 }; }
+}
+let pending = loadPending();
+function savePending() { try { localStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } catch { /* geen opslag */ } }
 
 // Elke bewuste wijziging krijgt een nieuwe wijzigingstijd; zo wint bij synchronisatie de recentste
 function touch(task) {
@@ -126,12 +154,37 @@ function dropDemo(list, reason) {
   return real;
 }
 
+// Reservekopie en bewaartijd lezen vóór het eerste bewaren hieronder ze overschrijft
+const mirrorAtStart = readMirror();
+const savedAtStart = Number(localStorage.getItem(SAVED_KEY) || 0);
+const lsEmptyAtStart = localStorage.getItem(STORAGE_KEY) === null;
+
 let gone = loadGone();
 let tasks = loadTasks();
 tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'Voor opruimen voorbeeldtaken');
 let archive = loadArchive();
 applyDeadlines();
 saveTasks({ notify: false });
+// Vraag de browser om de opslag niet op te ruimen als er plaats tekort is
+navigator.storage?.persist?.().catch(() => {});
+
+// Reservekopie nakijken: is ze nieuwer dan localStorage (het bewaren mislukte) of is localStorage leeg terwijl de
+// kopie taken heeft, dan worden de taken samengevoegd. Er verdwijnt niets: samenvoegen voegt enkel toe.
+mirrorAtStart.then(m => {
+  if (!m || !Array.isArray(m.tasks) || !m.tasks.length) return;
+  if (!lsEmptyAtStart && (m.savedAt || 0) <= savedAtStart) return;
+  const local = { tasks: realTasks(), gone };
+  const merged = mergeStates(local, { tasks: m.tasks.filter(isTask), gone: m.gone || {} });
+  if (sameState(merged, local)) return;
+  const added = merged.tasks.length - local.tasks.length;
+  snapshot(tasks, 'Voor herstel uit reservekopie');
+  tasks = merged.tasks; gone = merged.gone;
+  applyDeadlines();
+  saveTasks();
+  render();
+  if (added > 0) showToast(`${added} ${added === 1 ? 'taak' : 'taken'} hersteld uit de reservekopie`);
+});
+
 // Elke dag minstens één momentopname, ook als er niets misgaat
 if (Date.now() - lastSnapshotAt() > 20 * 3600000) snapshot(tasks, 'Dagelijkse kopie');
 
@@ -966,9 +1019,12 @@ const sync = createSync({
   // Ontvanger: de lijst van de verzender vervangt de eigen lijst; eerst een momentopname
   onReceive(state) {
     snapshot(tasks, 'Voor ontvangen');
+    // Eigen wijzigingen die nog niet bij de server waren (bv. offline toegevoegd op een al gekoppeld toestel) blijven
+    const unsynced = pending.n > 0 && pending.confirmedAt > 0
+      ? realTasks().filter(t => (t.updatedAt || 0) > pending.confirmedAt && !state.tasks.some(r => r.id === t.id)) : [];
     gone = { ...state.gone };
-    tasks = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken');
-    if (tasks.length < state.tasks.length) setTimeout(() => sync.changed(), 0);
+    tasks = [...dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'Voor opruimen voorbeeldtaken'), ...unsynced];
+    if (tasks.length !== state.tasks.length) setTimeout(() => sync.changed(), 0);
     applyDeadlines();
     saveTasks({ notify: false, reason: 'Voor ontvangen' });
     render();
@@ -976,8 +1032,13 @@ const sync = createSync({
   },
   onStatus: renderSync,
   onPair: renderPair,
+  // de server bevestigde een stand: alles wat wachtte is binnen
+  onPublished() { pending = { n: 0, confirmedAt: Date.now() }; savePending(); renderSync(); },
 });
-notifySync = () => sync.changed();
+notifySync = () => {
+  if (sync.code) { pending.n++; savePending(); renderSync(); }
+  sync.changed();
+};
 
 // Welk deel van het venster zichtbaar is: 'auto' (keuze of verzenden), 'confirm' (link geopend), 'scan' (camera), 'recv'
 let syncView = 'auto', pendingCode = null, showCode = false, recvCode = null;
@@ -1082,7 +1143,8 @@ function renderSync({ status, lastSync, code } = { status: sync.status, lastSync
   btn.dataset.status = status;
   // verbonden maar nog niets uitgewisseld: nog niet "gesynchroniseerd" noemen
   const text = status === 'online' && !lastSync ? 'Verbonden' : SYNC_TEXT[status];
-  $('sync-label').textContent = text;
+  // wijzigingen die nog naar de server moeten: zichtbaar tot de server ze bevestigt
+  $('sync-label').textContent = code && pending.n > 0 && status !== 'online' ? `${text} · ${pending.n} ${pending.n === 1 ? 'wacht' : 'wachten'}` : text;
   btn.setAttribute('aria-label', status === 'off' ? 'Toestellen koppelen' : `Synchronisatie: ${text.toLowerCase()}`);
   const view = syncView !== 'auto' ? syncView : code ? 'on' : 'off';
   const ids = { off: 'sync-off', confirm: 'sync-confirm', scan: 'sync-scanner', recv: 'sync-recv', on: 'sync-on' };

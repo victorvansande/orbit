@@ -51,6 +51,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/deadline.js` | Datumhulp: `levelForDue`, `daysUntil`, `dueLabel`, `isDue`, `toDue` |
 | `src/app.js` | Data, takenlijst, venster "nieuwe taak", toast, focusmodus, sneltoetsen, lay-out, koppeling met sync |
 | `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)` |
+| `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
 | `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, verbinding met de Orbit-server, samenvoegen |
 | `src/pair.js` | Koppelen met een QR-code: `renderQr`, `codeFromText`, `createScanner` (camera) |
@@ -155,6 +156,14 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 - Focus op gsm: één kolom die precies het scherm vult (kop, scène met flex 1, klok en max. 3 Nu-taken, knoppen); thema-schakelaar en datum rechtsboven verdwijnen. Geen vaste posities, zodat niets overlapt. Getest op 375×667, 390×844 en 430×932.
 
 ## Offline (`sw.js`)
+
+- **Geen taak gaat verloren** (Victor: "heel belangrijk"):
+  - Elke bewaring wordt nagelezen (`localStorage.getItem` na `setItem`); mislukt ze, dan een melding met link naar Archief (exporteren).
+  - Tweede kopie in IndexedDB (`src/backup.js`, `mirror`/`readMirror`) bij elke bewaring, met `savedAt`. Bij het opstarten wordt de kopie gelezen vóór de eerste bewaring; is ze nieuwer dan `priority-orbit.saved.v1` of is localStorage leeg, dan worden de taken samengevoegd (alleen toevoegen) met melding "n taken hersteld uit de reservekopie".
+  - `navigator.storage.persist()` zodat de browser de opslag niet opruimt.
+  - Wachtende wijzigingen (`priority-orbit.pending.v1`, `{n, confirmedAt}`): elke wijziging met sync aan telt mee, ook over het sluiten van de app heen; de knop rechtsboven toont "Offline · 2 wachten" tot de server de stand bevestigt (`onPublished`, alleen als de bevestigde verzending de laatste wijziging bevat: `changeSeq`/`sentSeq`). Bij heropenen verbindt sync opnieuw en stuurt alles wat de server niet had.
+  - Ontvangen (scannen) op een al gekoppeld toestel houdt eigen wijzigingen die de server nog niet bevestigde (`updatedAt > confirmedAt`).
+  - Getest: gekoppeld toestel zonder server, twee taken toevoegen, app sluiten en heropenen (taken en "2 wachten" blijven), server terug: het andere toestel krijgt ze en "wachten" verdwijnt; localStorage die weigert: melding, en na herladen hersteld uit de reservekopie.
 
 - Service worker met scope `/orbit/`. Eigen bestanden en Google Fonts: netwerk eerst (altijd de nieuwste versie), time-out 3,5 s, dan de bewaarde kopie; paginanavigatie zonder kopie krijgt `index.html`. Nooit de sync-server, de weerdienst of Kwick.
 - Taken staan sowieso in localStorage; offline gemaakte wijzigingen gaan via sync door zodra er weer verbinding is (herverbinden bij `online` en `visibilitychange`).

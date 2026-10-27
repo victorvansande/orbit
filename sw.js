@@ -9,7 +9,7 @@ const TIMEOUT = 3500;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.svg', 'favicon.ico',
   'src/styles.css', 'src/app.js', 'src/config.js', 'src/scene.js', 'src/wheel.js', 'src/deadline.js',
-  'src/store.js', 'src/sync.js', 'src/pair.js', 'src/matrix.js', 'src/weather.js',
+  'src/store.js', 'src/backup.js', 'src/sync.js', 'src/pair.js', 'src/matrix.js', 'src/weather.js',
   'src/vendor/qrcode.min.mjs', 'src/vendor/jsqr.min.js',
   'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];

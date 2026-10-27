@@ -101,12 +101,12 @@ async function open(key, text) {
 const RECEIVE_TIMEOUT = 20000;
 const SERVER_NAME = 'Orbit-server';
 
-export function createSync({ getState, applyState, onReceive = applyState, onStatus = () => {}, onPair = () => {}, deviceName = '' }) {
+export function createSync({ getState, applyState, onReceive = applyState, onStatus = () => {}, onPair = () => {}, onPublished = () => {}, deviceName = '' }) {
   let code = null, key = null, channel = null, mode = 'normal';
   let ws = null, transport = 'ws', version = 0, wsFailures = 0, attempts = 0;
   let status = 'off', lastSync = null, dirty = false, generation = 0;
   let publishTimer = 0, waitTimer = 0, retryTimer = 0, pollTimer = 0, pingTimer = 0, lastAckAt = Date.now();
-  let pendingOk = null;
+  let pendingOk = null, changeSeq = 0, sentSeq = -1;   // welke wijziging de server bevestigt
 
   const base = () => {
     try { const o = localStorage.getItem(SERVER_OVERRIDE_KEY); if (o) return o.replace(/\/$/, ''); } catch { /* geen opslag */ }
@@ -243,7 +243,8 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
     const merged = mergeStates(local, remote);
     if (!sameState(merged, local)) applyState(merged);
     // Had dit toestel iets wat de server nog niet had, dan de samengevoegde stand terugsturen
-    if (!sameState(merged, remote)) changed(); else dirty = false;
+    if (!sameState(merged, remote)) changed();
+    else if (!dirty) onPublished();          // de server heeft exact wat dit toestel heeft
     setStatus('online');
   }
 
@@ -260,6 +261,7 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
   }
 
   function changed() {
+    changeSeq++;
     if (!code || mode === 'receive') return;
     dirty = true;
     clearTimeout(publishTimer);
@@ -269,10 +271,11 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
   async function publish() {
     if (mode === 'receive' || !key) return;
     const gen = generation;
-    const state = getState();
+    const state = getState(), seq = changeSeq;
     const d = await seal(key, { ...state, from: deviceName });
     if (gen !== generation) return;
     pendingOk = state.tasks.length;
+    sentSeq = seq;
     if (ws?.readyState === 1) { ws.send(JSON.stringify({ t: 'pub', d })); return; }
     if (transport !== 'http') { dirty = true; return; }       // WebSocket komt terug: dan verstuurt handleSnap
     try {
@@ -287,8 +290,8 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
 
   function published(v) {
     version = Math.max(version, v || 0);
-    dirty = false;
     lastSync = Date.now();
+    if (sentSeq === changeSeq) { dirty = false; onPublished(); }   // niets nieuws sindsdien: alles staat op de server
     setStatus('online');
     if (mode === 'send') onPair({ role: 'send', step: 'ready', count: pendingOk ?? getState().tasks.length });
   }
