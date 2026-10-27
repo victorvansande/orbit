@@ -157,7 +157,8 @@ kbd {
 }
 .hud-menu.is-open { display: block; animation: menu-in .22s var(--ease); }
 @keyframes menu-in { from { opacity: 0; transform: translateY(4px); } }
-.controls .hud-menu { left: 0; bottom: calc(100% + 10px); width: 400px; }
+/* desktop: zo breed als de langste regel, niets breekt af */
+.controls .hud-menu { left: 0; bottom: calc(100% + 10px); width: max-content; min-width: 400px; white-space: nowrap; }
 .controls:has(.hud-menu.is-open) { z-index: 8; }
 /* desktop, focusmodus: focus verlaten zonder eerst het paneel te openen */
 .focus-exit { display: none; }
@@ -169,7 +170,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .menu-label { display: flex; align-items: center; gap: 6px; color: var(--ink-3); }
 .hud-menu .tempo { flex: 1; padding-left: 0; border-left: 0; }
 .hud-menu .tempo-label { margin-right: auto; }
-.menu-keys { flex-wrap: wrap; justify-content: flex-start !important; gap: 4px !important; padding: 12px 0; font-size: 10px; letter-spacing: .04em; color: var(--ink-3); }
+.menu-keys { flex-wrap: nowrap; justify-content: flex-start !important; gap: 4px !important; padding: 12px 0; font-size: 10px; letter-spacing: .04em; color: var(--ink-3); }
 .menu-keys kbd:not(:first-child) { margin-left: 8px; }
 .menu-keys kbd + kbd { margin-left: -2px; }
 .hud-menu .theme-switch { margin-top: 0; }

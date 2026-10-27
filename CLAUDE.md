@@ -155,7 +155,7 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 ## Instellingen
 
 - Eén knopje Instellingen met een paneel (`#hud-menu`, `.is-open`), dicht bij een tik ernaast of Esc. `placeMenu()` verhuist de onderdelen bij het wisselen tussen desktop en gsm.
-- **Desktop**: knopje linksonder. Paneel: Boven / Zijkant met Focus, Tempo, Thema, sneltoetsen. Uitleg / Archief / Koppelen blijven rechtsboven. In de focusmodus staat naast het knopje "Focus uit (Esc)".
+- **Desktop**: knopje linksonder. Paneel (zo breed als de langste regel, niets breekt af): Boven / Zijkant met Focus, Tempo, Thema, sneltoetsen. Uitleg / Archief / Koppelen blijven rechtsboven. In de focusmodus staat naast het knopje "Focus uit (Esc)".
 - **Gsm**: knopje rechtsboven naast de naam (met het syncbolletje). Daaronder één regel: samenvatting links ("Niets dringend · 12 taken", mono, nooit op twee regels) en rechts het tellertje ✦ n (`#stat-mini`, een tik opent de details onderaan en scrolt ernaartoe); zonder afgevinkte taken het weeknummer. De datum valt weg. Paneel zweeft over de scène: Tempo, Thema, Uitleg / Archief / Koppelen. Boven / Zijkant / Focus blijven onder de scène.
 
 ## Interactie in de lijst en het venster
