@@ -132,8 +132,9 @@ function renderFocusNow() {
   if (!urgent.length) { box.append(el('p', 'focus-calm', 'Niets dringend. Rustig aan.')); return; }
   box.append(el('p', 'focus-kicker', 'Nu'));
   const ul = el('ul');
-  for (const t of urgent.slice(0, 4)) ul.append(el('li', '', t.title));
-  if (urgent.length > 4) ul.append(el('li', 'focus-more', `en nog ${urgent.length - 4}`));
+  const max = desktop.matches ? 4 : 3;   // op gsm minder plaats onder de scène
+  for (const t of urgent.slice(0, max)) ul.append(el('li', '', t.title));
+  if (urgent.length > max) ul.append(el('li', 'focus-more', `en nog ${urgent.length - max}`));
   box.append(ul);
 }
 
@@ -331,7 +332,7 @@ function complete(id, row) {
   renderFocusNow();
   scene.setTasks(tasks);
   lastDone = task;
-  showToast(`“${task.title}” afgevinkt`);
+  showToast(`Afgevinkt · ${task.title}`);
   setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
 }
 
@@ -577,6 +578,7 @@ function setFocus(on) {
     document.documentElement.requestFullscreen?.().catch(() => {});
     bumpIdle();
   } else {
+    clearTimeout(idleTimer);
     document.body.classList.remove('is-idle');
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   }
@@ -592,6 +594,7 @@ document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement && document.body.classList.contains('is-focus')) setFocus(false);
 });
 window.addEventListener('pointermove', bumpIdle, { passive: true });
+window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraakschermen: een tik toont de knoppen weer
 
 /* ---- Toetsenbord ---- */
 document.addEventListener('keydown', e => {
@@ -621,7 +624,7 @@ function updateInsets() {
   scene.setInsets({ left: Math.max(0, left), right: Math.max(0, right) });
 }
 window.addEventListener('resize', updateInsets);
-desktop.addEventListener('change', () => { updateInsets(); renderTracks(); });
+desktop.addEventListener('change', () => { updateInsets(); renderTracks(); renderFocusNow(); });
 
 /* ---- Start ---- */
 buildComposerLevels();

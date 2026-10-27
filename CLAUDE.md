@@ -98,7 +98,8 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Sneltoetsen: `N` nieuw, `1`/`2` aanzicht, `F` focus, `T` tempo (normaal, zen, stil), `D` thema, `Z` ongedaan, `Esc` sluit.
 - Sneltoetsenregel onder de lijst blijft op één regel (`width: max-content`, mag voorbij de lijstbreedte lopen).
 - Tempo-schakelaar linksonder naast Focus; keuze in localStorage `priority-orbit.tempo.v1`.
-- Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand.
+- Focusmodus: lijst en wiel weg, volledig scherm (indien toegestaan), grote klok, datum en de Nu-taken leesbaar van op afstand. Cursor en knoppen verdwijnen na 2,5 s stilstand. Een tik of muisbeweging toont ze weer; bij het verlaten wordt de timer gewist.
+- Focus op gsm: één kolom die precies het scherm vult (kop, scène met flex 1, klok en max. 3 Nu-taken, knoppen); thema-schakelaar en datum rechtsboven verdwijnen. Geen vaste posities, zodat niets overlapt. Getest op 375×667, 390×844 en 430×932.
 
 ## Toegankelijkheid
 

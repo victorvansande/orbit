@@ -441,12 +441,23 @@ body.is-idle .controls { opacity: 0; }
   .tracks { position: relative; left: auto; top: auto; bottom: auto; width: auto; padding: 4px var(--pad) 48px; }
   .groups { overflow: visible; mask-image: none; margin-right: 0; padding-right: 0; padding-bottom: 0; }
   .keys { display: none; }
-  .focus-info { left: var(--pad); bottom: 80px; }
-  .clock { font-size: 56px; }
-  body.is-focus { overflow: hidden; }
-  body.is-focus .stage { position: fixed; inset: 0; height: auto; z-index: 0; }
-  body.is-focus .tracks, body.is-focus .wheel { display: none; }
-  body.is-focus .controls { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+  /* Focus op gsm: één kolom die precies het scherm vult (kop, scène, klok en Nu, knoppen), niets overlapt */
+  .focus-info { display: none; }
+  body.is-focus { height: 100dvh; overflow: hidden; }
+  body.is-focus .hud-right, body.is-focus .tracks, body.is-focus .wheel { display: none; }
+  body.is-focus .stage { flex: 1 1 auto; min-height: 0; height: auto; }
+  body.is-focus .focus-info {
+    display: block; order: 2; position: relative; left: auto; bottom: auto; transform: none;
+    padding: 4px var(--pad) 12px;
+  }
+  body.is-focus .clock { font-size: 52px; }
+  body.is-focus .clock-date { margin-top: 8px; }
+  body.is-focus .focus-now { margin-top: 18px; max-width: none; }
+  body.is-focus .focus-kicker { margin-bottom: 8px; }
+  body.is-focus .focus-now li { font-size: 18px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.is-focus .focus-now .focus-more, body.is-focus .focus-calm { font-size: 14px; }
+  body.is-focus .controls { order: 3; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
 }
 
 @media (hover: hover) {
