@@ -2,6 +2,8 @@
    Desktop: lijst links, scène in het midden, wiel rechts. Onder 1000 px alles onder elkaar. */
 
 :root {
+  --qr-bg: #FBFBFA;
+  --qr-ink: #1B1B22;
   --dm-ghost: .08;
   --bg: #F1F1EF;
   --surface: #FBFBFA;
@@ -455,8 +457,7 @@ body.is-idle .controls { opacity: 0; }
   box-shadow: 0 40px 90px var(--shadow-3), 0 2px 8px var(--shadow);
 }
 .sync[open] .sync-card { animation: pop-in .36s var(--pop); }
-#sync-off, #sync-on { display: flex; flex-direction: column; gap: 14px; }
-#sync-off[hidden], #sync-on[hidden] { display: none; }
+.sync-view { display: flex; flex-direction: column; gap: 14px; }
 .sync-text { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
 .sync-note { font-size: 12.5px; color: var(--ink-3); }
 .sync-label { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
@@ -472,7 +473,20 @@ body.is-idle .controls { opacity: 0; }
 .sync-error { font-size: 13px; color: var(--late); }
 .sync-code { font: 500 clamp(16px, 5.2vw, 26px)/1.2 var(--mono); letter-spacing: .08em; white-space: nowrap; text-align: center; padding: 14px 0; border: 1px dashed var(--dash); border-radius: 14px; user-select: all; }
 .sync-meta { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); text-align: center; }
-#sync-new { align-self: flex-start; }
+/* QR-code: altijd donker op licht, ook in het donkere thema (scant het best) */
+.sync-qr { align-self: center; width: min(232px, 64vw); aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--qr-bg); }
+.sync-qr svg { display: block; width: 100%; height: 100%; }
+.qr-bg { fill: var(--qr-bg); }
+.qr-ink { fill: var(--qr-ink); }
+.sync-video { position: relative; align-self: center; width: min(320px, 100%); aspect-ratio: 1; border-radius: 18px; overflow: hidden; background: var(--fill); }
+.sync-video video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sync-frame { position: absolute; inset: 16%; border: 2px solid var(--qr-bg); border-radius: 16px; opacity: .85; }
+#sync-scan-msg.is-error { color: var(--late); }
+.sync-manual summary { width: max-content; min-height: 32px; display: flex; align-items: center; cursor: pointer; list-style: none; font-size: 13px; color: var(--ink-2); }
+.sync-manual summary::-webkit-details-marker { display: none; }
+.sync-manual summary:hover { color: var(--ink); }
+.sync-manual[open] summary { margin-bottom: 8px; }
+.sync-manual .sync-join { margin-top: 0; padding-top: 0; border-top: 0; }
 
 /* ---- Venster: archief ---- */
 .archive { width: min(520px, calc(100vw - 32px)); }

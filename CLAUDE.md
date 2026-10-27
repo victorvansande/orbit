@@ -52,6 +52,8 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/matrix.js` | Matrixklok: cijfers van 5 × 7 stippen (zelfde glyphs als Kwick), `setMatrix(root, tekst)` |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
 | `src/sync.js` | Synchronisatie tussen toestellen: synccode, versleuteling, MQTT-verbinding, samenvoegen |
+| `src/pair.js` | Koppelen met een QR-code: `renderQr`, `codeFromText`, `createScanner` (camera) |
+| `src/vendor/qrcode.min.mjs`, `src/vendor/jsqr.min.js` | qrcode-generator 2.0.4 (MIT, QR maken) en jsQR 1.4.0 (Apache-2.0, QR lezen), met esbuild verkleind, pas geladen als nodig |
 | `src/vendor/mqtt.min.js` | MQTT.js 2.1.0 (zelfde bestand als in streep), pas geladen als sync aan staat |
 
 ## Niveaus
@@ -113,7 +115,13 @@ Ingebouwd nadat Victor bij het testen van sync al zijn taken kwijtraakte (oorzaa
 
 - Zelfde aanpak als streep en Operatie-Erfpacht: MQTT over WSS naar publieke brokers (HiveMQ `wss://broker.hivemq.com:8884/mqtt`, na twee mislukte pogingen EMQX `wss://broker.emqx.io:8084/mqtt`), één bewaarde (retained) snapshot per kanaal, qos 1. Geen server, geen account, geen secrets.
 - Verschil met streep: Orbit is een openbare site met persoonlijke taken. Een synccode van 16 tekens (`XXXX-XXXX-XXXX-XXXX`, zonder 0/O/1/I/L) bepaalt het kanaal (`orbit/v1/` + SHA-256) en de sleutel (PBKDF2 150k, AES-GCM 256). Alles wordt in de browser versleuteld; de broker ziet enkel ruis. Wie de code niet heeft, vindt het kanaal niet en kan niets lezen.
-- Bediening: knop rechtsboven onder de themaschakelaar ("Sync uit", "Verbinden", "Verbonden", "Gesynchroniseerd", "Offline"). Venster: "Nieuwe synccode" of een bestaande code invullen; als het aan staat: code, laatste sync, kopieer code of link, stoppen. Een link `#sync=CODE` opent het venster met de code ingevuld en wist de hash.
+- Koppelen met een QR-code (gekozen door Victor: geen account, geen code om te onthouden). Knop rechtsboven heet "Koppelen" zolang er niets gekoppeld is, daarna de status ("Verbinden", "Verbonden", "Gesynchroniseerd", "Offline").
+  - Venster "Toestellen koppelen": **Toon QR-code** (maakt een code en toont de QR met de koppellink `…#sync=CODE`) of **Scan QR-code** (camera in Orbit zelf: BarcodeDetector waar die bestaat, anders jsQR, nodig voor Safari). "Code typen" zit weggestopt als terugval; zonder cameratoegang gaat het venster daar vanzelf naartoe.
+  - Gekoppeld: QR-code (altijd donker op licht, ook in het donkere thema, tokens `--qr-bg`, `--qr-ink`) om nog een toestel te koppelen, status, "Kopieer link", "Toon code", "Ontkoppel dit toestel".
+  - Een geopende link (ook via de gewone gsm-camera) vraagt één tik "Koppel dit toestel". Bewust niet automatisch: anders kan iemand je met een link aan zijn eigen lijst hangen. De hash wordt meteen gewist.
+  - Een app op het iOS-beginscherm heeft een eigen opslag, los van Safari: daar scannen via "Scan QR-code" in de app zelf (staat in de uitleg onder de QR).
+  - Camera stopt altijd bij annuleren, koppelen of sluiten van het venster. Aanraakschermen starten met `data-input="pointer"`, zodat er geen focuskader verschijnt.
+  - Getest met een nep-camera in Chromium (`--use-file-for-fake-video-capture` met een mjpeg van de QR): scannen via jsQR, koppelen, link met bevestiging, code typen, ontkoppelen.
 - Code in localStorage `priority-orbit.sync.v1`; bij het laden verbindt de app meteen opnieuw. Ook opnieuw bij `visibilitychange` (gsm uit de achtergrond) en `online`.
 - Samenvoegen (`mergeStates`): per taak wint de recentste `updatedAt`; een taak in `gone` blijft weg tenzij ze nadien opnieuw gewijzigd is (ongedaan maken). Na samenvoegen publiceert een toestel enkel als het iets had wat de snapshot nog niet had. Wijzigingen worden 400 ms gebundeld.
 - Voorbeeldtaken gaan nooit mee (`getState` geeft `realTasks()`); er wordt bij het koppelen niets meer weggefilterd.

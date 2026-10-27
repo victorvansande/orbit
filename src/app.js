@@ -4,6 +4,7 @@ import { createWheel } from './wheel.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue } from './deadline.js';
 import { createSync, newCode, normalizeCode, savedCode } from './sync.js';
 import { setMatrix } from './matrix.js';
+import { renderQr, codeFromText, createScanner } from './pair.js';
 import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
 
 /* ---- Instellingen ---- */
@@ -854,7 +855,7 @@ window.addEventListener('storage', e => {
 
 /* ---- Synchronisatie tussen toestellen ---- */
 const syncDialog = $('sync');
-const SYNC_TEXT = { off: 'Sync uit', connecting: 'Verbinden', online: 'Gesynchroniseerd', offline: 'Offline' };
+const SYNC_TEXT = { off: 'Koppelen', connecting: 'Verbinden', online: 'Gesynchroniseerd', offline: 'Offline' };
 const TIME_FMT_SYNC = new Intl.DateTimeFormat('nl-BE', { hour: '2-digit', minute: '2-digit' });
 
 const sync = createSync({
@@ -884,17 +885,56 @@ const sync = createSync({
 });
 notifySync = () => sync.changed();
 
+// Welk deel van het venster zichtbaar is: 'auto' (uit of gekoppeld), 'confirm' (link geopend) of 'scan' (camera)
+let syncView = 'auto', pendingCode = null, showCode = false;
+const scanner = createScanner($('sync-video'), {
+  onCode(text) {
+    const code = codeFromText(text);
+    if (!code) { scanMessage('Dat is geen QR-code van Orbit. Richt op de code van je andere toestel.'); return false; }
+    syncView = 'auto';
+    if (code === sync.code) { renderSync(); showToast('Dit toestel was al gekoppeld'); return true; }
+    pair(code);
+    return true;
+  },
+  onMessage(text, failed) {
+    if (!failed) { scanMessage(text); return; }
+    // geen camera: terug naar het begin, met de andere manieren open
+    syncView = 'auto';
+    renderSync();
+    $('sync-manual').open = true;
+    $('sync-error').textContent = text;
+    $('sync-error').hidden = false;
+  },
+});
+
+function scanMessage(text, failed = false) {
+  const msg = $('sync-scan-msg');
+  msg.textContent = text;
+  msg.classList.toggle('is-error', failed);
+}
+
+function pair(code) {
+  sync.start(code);
+  syncView = 'auto';
+  renderSync();
+  showToast('Toestel gekoppeld · taken samengevoegd');
+}
+
 function renderSync({ status, lastSync, code } = { status: sync.status, lastSync: sync.lastSync, code: sync.code }) {
   const btn = $('sync-btn');
   btn.dataset.status = status;
   // verbonden maar nog niets uitgewisseld: nog niet "gesynchroniseerd" noemen
   const text = status === 'online' && !lastSync ? 'Verbonden' : SYNC_TEXT[status];
   $('sync-label').textContent = text;
-  btn.setAttribute('aria-label', `Synchronisatie: ${text.toLowerCase()}`);
-  $('sync-off').hidden = Boolean(code);
-  $('sync-on').hidden = !code;
+  btn.setAttribute('aria-label', status === 'off' ? 'Toestellen koppelen' : `Synchronisatie: ${text.toLowerCase()}`);
+  const view = syncView !== 'auto' ? syncView : code ? 'on' : 'off';
+  for (const v of ['off', 'confirm', 'scanner', 'on']) $(`sync-${v}`).hidden = v !== (view === 'scan' ? 'scanner' : view);
   if (code) {
+    renderQr($('sync-qr'), syncLink(code));
     $('sync-code').textContent = code;
+    $('sync-code').hidden = !showCode;
+    $('sync-show-code').textContent = showCode ? 'Verberg code' : 'Toon code';
+    $('sync-show-code').setAttribute('aria-expanded', String(showCode));
     $('sync-meta').textContent = lastSync ? `${text} · laatst om ${TIME_FMT_SYNC.format(lastSync)}` : text;
   }
 }
@@ -903,12 +943,26 @@ function syncLink(code) {
   return `${location.origin}${location.pathname}#sync=${code.replace(/-/g, '')}`;
 }
 
-function openSync(prefill = '') {
+function openSync(view = 'auto') {
+  syncView = view;
   $('sync-error').hidden = true;
-  $('sync-input').value = prefill;
   renderSync();
   if (!syncDialog.open) syncDialog.showModal();
-  if (!sync.code) (prefill ? $('sync-join') : $('sync-new')).focus();
+  const focus = { confirm: 'sync-confirm-yes', scan: 'sync-scan-cancel' }[view] ?? (sync.code ? 'sync-close' : 'sync-new');
+  $(focus).focus();
+}
+
+function startScan() {
+  syncView = 'scan';
+  scanMessage('Richt de camera op de QR-code van je andere toestel.');
+  renderSync();
+  scanner.start();
+}
+
+function stopScan() {
+  scanner.stop();
+  syncView = 'auto';
+  renderSync();
 }
 
 async function copyText(text, button) {
@@ -919,30 +973,42 @@ async function copyText(text, button) {
 }
 
 $('sync-btn').addEventListener('click', () => openSync());
-$('sync-new').addEventListener('click', () => sync.start(newCode()));
+$('sync-new').addEventListener('click', () => { sync.start(newCode()); renderSync(); });
+$('sync-scan').addEventListener('click', startScan);
+$('sync-scan-cancel').addEventListener('click', stopScan);
 $('sync-join-form').addEventListener('submit', e => {
   e.preventDefault();
   const code = normalizeCode($('sync-input').value);
   if (!code) {
-    $('sync-error').textContent = 'Die code klopt niet. Een synccode heeft 16 tekens, bv. 7K2P-Q9XD-M3TA-4HWE.';
+    $('sync-error').textContent = 'Die code klopt niet. Een code heeft 16 tekens, bv. 7K2P-Q9XD-M3TA-4HWE.';
     $('sync-error').hidden = false;
     return;
   }
-  sync.start(code);
+  $('sync-input').value = '';
+  $('sync-manual').open = false;
+  pair(code);
 });
-$('sync-copy-code').addEventListener('click', e => copyText(sync.code, e.currentTarget));
+$('sync-confirm-yes').addEventListener('click', () => { if (pendingCode) pair(pendingCode); pendingCode = null; });
+$('sync-confirm-no').addEventListener('click', () => { pendingCode = null; syncDialog.close(); });
+$('sync-show-code').addEventListener('click', () => { showCode = !showCode; renderSync(); });
 $('sync-copy-link').addEventListener('click', e => copyText(syncLink(sync.code), e.currentTarget));
-$('sync-stop').addEventListener('click', () => sync.stop());
+$('sync-stop').addEventListener('click', () => { showCode = false; sync.stop(); });
 $('sync-close').addEventListener('click', () => syncDialog.close());
 syncDialog.addEventListener('click', e => { if (e.target === syncDialog) syncDialog.close(); });
+// Venster dicht: camera altijd uit
+syncDialog.addEventListener('close', () => { scanner.stop(); syncView = 'auto'; pendingCode = null; });
 
-// Link met #sync=CODE: venster openen met de code ingevuld; verbinden gebeurt pas na bevestiging
+// Link met #sync=CODE (ook via de gsm-camera): één tik om dit toestel te koppelen.
+// Bewust geen automatische koppeling: anders kan iemand je met een link aan zijn eigen lijst hangen.
 function readSyncHash() {
   const m = location.hash.match(/^#sync=([0-9A-Za-z-]+)$/);
   if (!m) return;
   history.replaceState(null, '', location.pathname + location.search);
   const code = normalizeCode(m[1]);
-  if (code && code !== sync.code) openSync(code);
+  if (!code) return;
+  if (code === sync.code) { openSync(); return; }
+  pendingCode = code;
+  openSync('confirm');
 }
 window.addEventListener('hashchange', readSyncHash);
 
@@ -950,6 +1016,8 @@ window.addEventListener('hashchange', readSyncHash);
 const setInput = kind => { document.documentElement.dataset.input = kind; };
 window.addEventListener('pointerdown', () => setInput('pointer'), { capture: true, passive: true });
 window.addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.altKey) setInput('keyboard'); }, { capture: true });
+// Aanraakschermen beginnen zonder focuskaders (bv. een venster dat opent via een gescande link)
+if (matchMedia('(hover: none)').matches) setInput('pointer');
 
 /* ---- Start ---- */
 buildComposerLevels();
