@@ -190,7 +190,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const availW = Math.max(200, W - insets.left - insets.right);
     // gsm: groter in het bovenaanzicht; in het zijaanzicht iets kleiner, anders zakt de kern onder de scène
     const fit = W < 600 ? FIT_NARROW + (FIT + 20 - FIT_NARROW) * e : FIT;
-    cam.s = Math.min(availW, H) / fit;
+    const availH = Math.max(200, H - (insets.bottom || 0));   // gsm: strook onderaan voor de begroeting
+    cam.s = Math.min(availW, availH) / fit;
     cam.du = Math.pow(cam.s, 0.72);       // stippen groeien trager mee dan de geometrie
     cam.cx = center.x; cam.cy = center.y;
   }
@@ -226,7 +227,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
   let centerTarget = { x: 0, y: 0 };
   function updateCenterTarget(force) {
-    centerTarget = { x: insets.left + (W - insets.left - insets.right) / 2, y: H / 2 };
+    centerTarget = { x: insets.left + (W - insets.left - insets.right) / 2, y: (H - (insets.bottom || 0)) / 2 };
     if (force && !centerReady) { center = { ...centerTarget }; centerReady = true; }
   }
   new ResizeObserver(resize).observe(canvas);
@@ -456,7 +457,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // Op een klein of vierkant canvas (gsm) valt de buitenrand van de hemel (straal 250) buiten beeld: dan schuift de
   // hele hemel wat naar binnen, zodat elke ster zichtbaar blijft.
   function skyScale() {
-    const half = Math.min(W, H) / 2 / cam.s - 10;
+    const half = Math.min(W, H - (insets.bottom || 0)) / 2 / cam.s - 10;
     return cam.s * Math.min(1, half / 250);
   }
 

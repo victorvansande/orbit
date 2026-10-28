@@ -1161,9 +1161,11 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---- Lay-out: de scène centreert tussen lijst en wiel ---- */
+const GREET_STRIP = 62;   // px, zie .stage op gsm
 function updateInsets() {
   if (!desktop.matches || document.body.classList.contains('is-focus')) {
-    scene.setInsets({ left: 0, right: 0 });
+    // gsm: onder de ringen een eigen strook voor de begroeting, zodat ze niet tegen de ringen of de knoppen botst
+    scene.setInsets({ left: 0, right: 0, bottom: !desktop.matches && !document.body.classList.contains('is-focus') ? GREET_STRIP : 0 });
     return;
   }
   const left = $('tracks').getBoundingClientRect().right + 8;
