@@ -523,6 +523,15 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // afstand (px) van de ring van tekens tot het midden bij een nieuwe hemel, of null
   function skyWaveFront(now) { return skyWave ? (26 + (now - skyWave.t0) / 1000 * SKY_WAVE_SPEED) * cam.s * cam.zoom : null; }
 
+  // Plek van een ster op het scherm. De hemel is een verre koepel: bij het kantelen naar het zijaanzicht schuift hij
+  // mee omhoog en wordt hij wat platter, maar veel minder dan de ringen (SKY_TILT van de kanteling). Bewust alleen het
+  // aanzicht (cam.depth), niet de muis: sterren die met de aanwijzer meeschoven vond Victor storend.
+  const SKY_TILT = 0.45, SKY_LIFT = 150;
+  function skyXY(x, y, ks) {
+    const a = (VIEW.top.tilt + (VIEW.side.tilt - VIEW.top.tilt) * cam.depth) * DEG * SKY_TILT;
+    return [cam.cx + x * ks * (1 + 0.06 * cam.depth), cam.cy + (y * Math.cos(a) - SKY_LIFT * Math.sin(a)) * ks];
+  }
+
   function drawSky(now) {
     const front = skyWaveFront(now);
     if (front !== null) drawStars(now, skyWave.old, d => d > front);   // oude hemel tot de ring langskomt
@@ -540,7 +549,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const small = Math.min(W, H) < 500;   // gsm: sterren iets groter en helderder, anders vallen ze weg   // een volle hemel krijgt iets kleinere sterren
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
-      const x = cam.cx + st.x * ks, y = cam.cy + st.y * ks;
+      const [x, y] = skyXY(st.x, st.y, ks);
       if (keep && !keep(Math.hypot(st.x * ks, st.y * ks))) continue;
       // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
       let R = Math.max(2.6 * st.s * cam.du, (small ? 3 : 2.4) + st.s) * dense, alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
@@ -615,7 +624,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // lijntjes verschijnen na elkaar en groeien van de ene ster naar de andere
       const p = clamp((e / IN) * n - i, 0, 1);
       if (p <= 0) return;
-      const ks = skyScale(), ax = cam.cx + x1 * ks, ay = cam.cy + y1 * ks, bx = cam.cx + x2 * ks, by = cam.cy + y2 * ks;
+      const ks = skyScale(), [ax, ay] = skyXY(x1, y1, ks), [bx, by] = skyXY(x2, y2, ks);
       ctx.moveTo(ax, ay); ctx.lineTo(ax + (bx - ax) * p, ay + (by - ay) * p);
     });
     ctx.stroke();
