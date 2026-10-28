@@ -84,6 +84,8 @@ const NL = {
   'repeat.hint': '{repeat}, eerst {label}. Na afvinken komt hij terug.', 'task.repeat': 'Herhalen',
   'toast.repeat': 'Afgevinkt · {title}. Terug {label}.',
   'menu.sound': 'Geluid', 'sound.on': 'Aan', 'sound.off': 'Uit',
+  'menu.demo': 'Demo', 'demo.open': 'Open demo', 'demo.leave': 'Verlaat demo', 'demo.badge': 'Demo',
+  'demo.start': 'Demo: niets wordt bewaard of gedeeld.', 'demo.noSync': 'In de demo wordt niets gekoppeld.',
   'composer.due': 'Deadline', 'composer.clear': 'Wissen', 'composer.add': 'Voeg toe <kbd>↵</kbd>',
   'composer.levelDue': '{level} · deadline', 'composer.hint': '{label}, komt in {level}. Schuift vanzelf mee.',
 
@@ -232,6 +234,8 @@ const EN = {
   'repeat.hint': '{repeat}, first {label}. Comes back after you tick it off.', 'task.repeat': 'Repeat',
   'toast.repeat': 'Done · {title}. Back {label}.',
   'menu.sound': 'Sound', 'sound.on': 'On', 'sound.off': 'Off',
+  'menu.demo': 'Demo', 'demo.open': 'Open demo', 'demo.leave': 'Leave demo', 'demo.badge': 'Demo',
+  'demo.start': 'Demo: nothing is saved or shared.', 'demo.noSync': 'Nothing is paired in the demo.',
   'composer.due': 'Deadline', 'composer.clear': 'Clear', 'composer.add': 'Add <kbd>↵</kbd>',
   'composer.levelDue': '{level} · deadline', 'composer.hint': '{label}, goes into {level}. Moves along by itself.',
 

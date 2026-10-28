@@ -17,6 +17,7 @@ function db() {
 
 // state = { tasks, gone, savedAt }
 export async function mirror(state) {
+  if (window.ORBIT_DEMO) return true;   // demo: nooit een kopie, en de echte kopie niet overschrijven
   try {
     const d = await db();
     await new Promise((resolve, reject) => {
@@ -30,6 +31,7 @@ export async function mirror(state) {
 }
 
 export async function readMirror() {
+  if (window.ORBIT_DEMO) return null;   // demo: de echte kopie blijft buiten beeld
   try {
     const d = await db();
     return await new Promise((resolve, reject) => {

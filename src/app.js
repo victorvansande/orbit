@@ -1,3 +1,4 @@
+import { DEMO_MODE } from './demo.js';   // als eerste: vult in de demo de tijdelijke opslag
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './config.js';
 import { createScene } from './scene.js';
 import { createWheel } from './wheel.js';
@@ -994,6 +995,15 @@ for (const b of soundButtons) b.addEventListener('click', () => {
 });
 renderSound();
 
+/* ---- Demoversie: een losse kopie om nieuwe functies te proberen (zie src/demo.js) ---- */
+$('demo-btn').textContent = tx(DEMO_MODE ? 'demo.leave' : 'demo.open');
+$('demo-btn').addEventListener('click', () => { location.href = location.pathname + (DEMO_MODE ? '' : '?demo'); });
+if (DEMO_MODE) {
+  $('demo-badge').hidden = false;
+  document.title = `${document.title} · ${tx('demo.badge')}`;
+  setTimeout(() => showToast(tx('demo.start')), 600);
+}
+
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
@@ -1263,6 +1273,7 @@ $('arch-file').addEventListener('change', async e => {
 /* ---- Tabbladen houden elkaar bij ---- */
 // Elke wijziging wordt meteen bewaard, dus een ander tabblad mag de opslag gewoon opnieuw inlezen
 window.addEventListener('storage', e => {
+  if (DEMO_MODE) return;   // de demo leest de echte opslag nooit, ook niet als een ander tabblad schrijft
   if (e.key === STORAGE_KEY || e.key === GONE_KEY) {
     const stored = loadTasks();
     if (stored) tasks = stored;
@@ -1484,6 +1495,7 @@ function syncLink(code) {
 
 // Het venster tonen; een gekoppeld toestel opent op "Versturen" en wordt dan verzender
 function openSync(view = 'auto') {
+  if (DEMO_MODE) { showToast(tx('demo.noSync')); return; }   // de demo koppelt nooit, anders gaat ze naar je echte lijst
   syncView = view;
   $('sync-error').hidden = true;
   if (view === 'auto' && sync.code) sync.send();
@@ -1568,7 +1580,7 @@ syncDialog.addEventListener('close', () => {
 // Bewust geen automatische overname: anders kan iemand met een link je lijst vervangen.
 function readSyncHash() {
   const m = location.hash.match(/^#sync=([0-9A-Za-z-]+)$/);
-  if (!m) return;
+  if (!m || DEMO_MODE) return;
   history.replaceState(null, '', location.pathname + location.search);
   const code = normalizeCode(m[1]);
   if (!code) return;

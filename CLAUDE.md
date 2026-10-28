@@ -55,6 +55,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/stats.js` | Statistiek: logboek van afgevinkte taken (`priority-orbit.done.v1`, gaat mee met sync), samenvatting voor de details, sterrenhemel (`priority-orbit.stars.v2`) |
 | `src/i18n.js` | Taal: woordenboeken NL en EN, `tx(key, vars)`, `LANG`, `LOCALE`, `setLang`, `applyStatic`, `reasonText`, `DEMO_TITLES` |
 | `src/greet.js` | Begroeting van de kern: `greeting(ctx)` en `coreLine(ctx)` (tik op de kern), zinnen in NL en EN |
+| `src/demo.js` | Demoversie: `DEMO_MODE` en een volledige voorbeeldlijst in de tijdelijke opslag; als eerste geïmporteerd in `app.js` |
 | `src/sound.js` | Geluid bij afvinken (Web Audio, geen bestanden): `playDone`, `soundOn`, `setSound`, zes klanken in `SOUNDS`, gekozen klank `SOUND_STYLE` |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
 | `src/store.js` | Vangnet: archief (afgevinkte taken) en momentopnames in localStorage |
@@ -191,6 +192,15 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 - Quote in de focusmodus als er geen Nu-taken zijn (vervangt "Niets dringend. Rustig aan.", dat Victor te standaard vond): `QUOTES` uit `src/quotes.js`, alleen quotes met gekende bron of spreekwoorden (geen foutief toegeschreven internetquotes). Om de 20 minuten een andere, in een geschudde volgorde die eerst de hele bibliotheek doorloopt (`priority-orbit.quote.v1`: `{order, i, at}`), zodat je dagenlang geen herhaling ziet. Quote 21 px (gsm 17 px), auteur in kapitaaltjes, zacht ingefade. Breedte op desktop berekend uit de echte positie van de buitenste ring op de hoogte van de quote (`fitQuote`, `scene.edgeLeft(y)`, rand net buiten de ring Ooit (`EDGE` 180), 32 px marge, min. 260 px, max. 760 px), ook bij resize en 1 s na het openen van de focusmodus; Victor wou dat de tekst doorloopt tot aan de buitenste schil.
 - Volgende deadline in de focusmodus (`renderFocusDue`): de vroegste `due`, ook een verstreken ("Te laat" in rood), met hetzelfde label als in de lijst.
 - Focus op gsm: één kolom die precies het scherm vult (kop, scène met flex 1, klok en max. 3 Nu-taken, knoppen); thema-schakelaar en datum rechtsboven verdwijnen. Geen vaste posities, zodat niets overlapt. Getest op 375×667, 390×844 en 430×932.
+
+## Demoversie (`?demo`, `src/demo.js`)
+
+- Op vraag van Victor (28/10/2026): een losse kopie om nieuwe functies te proberen, met alle functies van de echte Orbit, die nooit iets bewaart of synchroniseert.
+- Instellingen → Demo → "Open demo" laadt `?demo`; "Verlaat demo" gaat terug naar de gewone pagina. Kenmerk "Demo" naast ORBIT TASKS, "· Demo" in de titel, bij het openen een melding.
+- Het script bovenaan `index.html` vervangt `window.localStorage` door een opslag in het geheugen, vóór elke module laadt. Thema, taal, tempo, geluid en Kwick-plaats worden overgenomen, de uitleg geldt als gezien; de rest begint leeg. Lukt het vervangen niet (`localStorage` niet aanpasbaar), dan opent gewoon de echte Orbit zonder `?demo`, nooit een demo die in de echte opslag schrijft.
+- `src/demo.js` (eerste import van `app.js`) vult die opslag met 13 taken: een taak die al 9 dagen op Nu ligt, een verstreken deadline, deadlines vandaag, deze week en later, drie herhalingen, een taak die al 40 dagen op Ooit staat; plus 23 afgevinkte taken (twee keer afvinken geeft een sterrenbeeld).
+- Afgeschermd: geen reservekopie in IndexedDB (`mirror` en `readMirror` doen niets), geen synchronisatie (geen code in de opslag, Koppelen toont "In de demo wordt niets gekoppeld.", een `#sync=`-link wordt genegeerd), het `storage`-event van andere tabbladen wordt genegeerd. Herladen begint opnieuw.
+- Getest: echte opslag en reservekopie onveranderd na afvinken en toevoegen in de demo, koppelen geblokkeerd, terug naar de echte lijst.
 
 ## Taal (`src/i18n.js`)
 

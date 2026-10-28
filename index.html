@@ -19,6 +19,29 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap">
 <link rel="stylesheet" href="src/styles.css">
 <script>
+  // Demoversie (?demo, Instellingen → Demo): alle opslag gaat naar een tijdelijke kopie in het geheugen, zodat de echte
+  // lijst nooit geraakt wordt. Lukt dat in deze browser niet, dan geen demo maar gewoon de echte Orbit.
+  (() => {
+    if (!/[?&]demo(=|&|$)/.test(location.search)) return;
+    let real = null;
+    try { real = window.localStorage; } catch { /* geen opslag */ }
+    const mem = new Map();
+    for (const k of ['priority-orbit.theme.v1', 'priority-orbit.lang.v1', 'priority-orbit.tempo.v1', 'priority-orbit.sound.v1', 'isobar:place']) {
+      try { const v = real && real.getItem(k); if (v != null) mem.set(k, v); } catch { /* geen opslag */ }
+    }
+    mem.set('priority-orbit.intro.v1', 'gezien');
+    const store = {
+      getItem: k => (mem.has(String(k)) ? mem.get(String(k)) : null),
+      setItem: (k, v) => { mem.set(String(k), String(v)); },
+      removeItem: k => { mem.delete(String(k)); },
+      clear: () => mem.clear(),
+      key: i => [...mem.keys()][i] ?? null,
+      get length() { return mem.size; },
+    };
+    try { Object.defineProperty(window, 'localStorage', { value: store, configurable: true }); } catch { /* lukt niet */ }
+    if (window.localStorage !== store) { location.replace(location.pathname); return; }
+    window.ORBIT_DEMO = true;
+  })();
   // Thema zetten vóór de eerste weergave, zodat er geen lichte flits is
   (() => {
     let pref = 'auto';
@@ -39,7 +62,7 @@
 
 <header class="topbar">
   <div class="hud-block">
-    <h1 class="brand">Orbit Tasks</h1>
+    <h1 class="brand">Orbit Tasks <span class="demo-badge" id="demo-badge" hidden data-i="demo.badge">Demo</span></h1>
     <p class="summary" id="summary" aria-live="polite"></p>
   </div>
   <div class="hud-block hud-right">
@@ -76,6 +99,12 @@
           <button type="button" role="radio" aria-checked="false" data-sound="on" data-i="sound.on">Aan</button>
           <span class="slash" aria-hidden="true">/</span>
           <button type="button" role="radio" aria-checked="true" data-sound="off" data-i="sound.off">Uit</button>
+        </div>
+      </div>
+      <div class="menu-row">
+        <span class="menu-label" data-i="menu.demo">Demo</span>
+        <div class="views demo-switch">
+          <button type="button" id="demo-btn" data-i="demo.open">Open demo</button>
         </div>
       </div>
       <p class="menu-row menu-keys" data-ih="menu.keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
