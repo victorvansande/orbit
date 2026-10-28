@@ -16,7 +16,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
-import { terminalRain, particleTitle, morphText, createWall } from './fx.js';
+import { terminalRain, particleTitle, createWall } from './fx.js';
 
 applyStatic();
 
@@ -862,7 +862,7 @@ function paintComposerOrb() {
   cancelAnimationFrame(orbRaf);
   orbRaf = requestAnimationFrame(drawComposerOrbit);
   toneNode(composer, lv);
-  morphText($('composer-level'), composerDue ? tx('composer.levelDue', { level: lv.name }) : lv.name, { reducedMotion });
+  $('composer-level').textContent = composerDue ? tx('composer.levelDue', { level: lv.name }) : lv.name;
   for (const b of $('composer-levels').children) {
     b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));
     b.disabled = Boolean(composerDue);
@@ -894,7 +894,6 @@ function openComposer(level = wheel.level) {
   composer.classList.remove('is-closing');
   composerLevel = level;
   wheelLevel = level;
-  delete $('composer-level').dataset.text;   // bij openen meteen juist, daarna vervloeit het label bij elke wissel
   composerForm.reset();
   $('due-toggle').hidden = false;
   setComposerRepeat('');

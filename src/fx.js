@@ -1,6 +1,6 @@
 /* ---- Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React) ---- */
-// Terminal rain (intro), particle text (titel in de Uitleg), text morph (moment in het venster "nieuwe taak") en
-// typographic wall (lege lijst). Zelfde taal als de scène: Geist Mono, inkt met lage dekking, rood alleen als accent.
+// Terminal rain (intro), particle text (titel in de Uitleg) en typographic wall (lege lijst).
+// Zelfde taal als de scène: Geist Mono, inkt met lage dekking, rood alleen als accent.
 // Glyph sonar, vortex en mosaic wave zitten in scene.js.
 
 const TAU = Math.PI * 2;
@@ -177,40 +177,6 @@ export function particleTitle(h, { reducedMotion }) {
     },
     stop() { running = false; cancelAnimationFrame(raf); pointer = null; },
   };
-}
-
-/* ---- Text morph: het momentlabel in het venster "nieuwe taak" ---- */
-// Het oude woord vervloeit in het nieuwe (vervagen plus een drempelfilter, #fx-morph in index.html), 0,5 s.
-export function morphText(el, text, { reducedMotion }) {
-  if (el.dataset.text === text) return;
-  const first = el.dataset.text === undefined;
-  el.dataset.text = text;
-  el.setAttribute('aria-label', text);
-  cancelAnimationFrame(el._morphRaf);
-  if (first || reducedMotion.matches) {
-    el.replaceChildren(Object.assign(document.createElement('span'), { textContent: text }));
-    el.classList.remove('is-morphing');
-    return;
-  }
-  el.classList.add('fx-morph');
-  const prev = el.lastElementChild || document.createElement('span');
-  const next = Object.assign(document.createElement('span'), { textContent: text });
-  for (const s of [prev, next]) s.setAttribute('aria-hidden', 'true');
-  el.replaceChildren(prev, next);
-  el.classList.add('is-morphing');
-  const t0 = performance.now(), DUR = 560;
-  const k = Math.min(1, parseFloat(getComputedStyle(el).fontSize) / 40);   // kleine tekst: minder vervagen, anders verdwijnt hij
-  el.classList.toggle('is-gooey', k >= 0.45);   // drempelfilter pas vanaf 18 px: kleinere tekst viel halverwege weg
-  const tick = now => {
-    const p = Math.min(1, (now - t0) / DUR), e = p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
-    next.style.filter = `blur(${Math.min(8 / Math.max(e, 0.01) - 8, 40) * k}px)`;
-    next.style.opacity = Math.pow(e, 0.4);
-    prev.style.filter = `blur(${Math.min(8 / Math.max(1 - e, 0.01) - 8, 40) * k}px)`;
-    prev.style.opacity = Math.pow(1 - e, 0.4);
-    if (p < 1) el._morphRaf = requestAnimationFrame(tick);
-    else { prev.remove(); next.style.filter = next.style.opacity = ''; el.classList.remove('is-morphing'); }
-  };
-  el._morphRaf = requestAnimationFrame(tick);
 }
 
 /* ---- Typographic wall: de lege lijst ---- */
