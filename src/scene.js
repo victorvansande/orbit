@@ -22,8 +22,8 @@ const FIT = 440;                        // zoveel stage-eenheden passen in min(b
 
 // Kleuren van structuur en labels per thema; de bollen houden hun eigen kleur
 const THEMES = {
-  light: { glow: 0.2, ink: [24, 24, 32], paper: [241, 241, 239], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
-  dark:  { glow: 0.24, ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
+  light: { glow: 0.2, grid: 1, ink: [24, 24, 32], paper: [241, 241, 239], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
+  dark:  { glow: 0.24, grid: 1.3, ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
 };
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
@@ -47,7 +47,7 @@ function coreGrid(spacing) {
   }
   return coreGrids.get(key);
 }
-const GRID_ALPHA = 0.13, GRID_MAX = 3600;
+const GRID_ALPHA = 0.18, GRID_MAX = 3600;   // 0,13 was op sommige schermen amper zichtbaar
 const EDGE = 180;   // net buiten de buitenste ring (Ooit, 174): rand van de scène voor tekst ernaast
 const ARRIVE_R = 320;
 
@@ -383,7 +383,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.fillStyle = rgba(INK, 1);
     buckets.forEach((b, k) => {
       if (!b.length) return;
-      ctx.globalAlpha = (k + 0.5) / 6 * GRID_ALPHA;
+      ctx.globalAlpha = (k + 0.5) / 6 * GRID_ALPHA * theme.grid;   // in het donker iets sterker, anders verdwijnt het
       ctx.beginPath();
       for (let i = 0; i < b.length; i += 3) { ctx.moveTo(b[i] + b[i + 2], b[i + 1]); ctx.arc(b[i], b[i + 1], b[i + 2], 0, TAU); }
       ctx.fill();
