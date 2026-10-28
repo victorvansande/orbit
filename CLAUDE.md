@@ -82,6 +82,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 
 ## Scène (`src/scene.js`)
 
+- Gsm: de scène is de hoofdzaak. `FIT_NARROW` 372 (in plaats van 440) zodat de ringen ongeveer 86 % van de breedte vullen; in het zijaanzicht glijdt dat naar 460, anders zakt de kern onder de scène. `.stage` is `min(100vw + 36px, 64svh)` hoog: de extra ruimte onderaan is voor de begroeting (15 px, `--ink-2`, zonder ORBIT eronder). Boven / Zijkant / Focus op 10 px.
 - Eén canvas over het hele venster (desktop) of in `.stage` (gsm). Stage-eenheden: dezelfde 390-stage als vroeger; `FIT = 440` eenheden passen in min(beschikbare breedte, hoogte). `setInsets({left, right})` houdt de scène gecentreerd tussen lijst en wiel (zacht geanimeerd, ook bij focusmodus).
 - Projectie per punt: spin (rond de trechteras) → rotateX (tilt) → rotateY (parallax) → zoom → shift → perspectief 1100 met oorsprong op 38 %. Zelfde waarden als de oude CSS-versie: boven tilt 0 / zoom 0,92, zijkant tilt 58° / zoom 0,96 / shift -66. Overgang 0,9 s met cubic-bezier(.4,0,.2,1), eigen implementatie.
 - Raster (zwaartekrachtput): puntjes met dekking `GRID_ALPHA` 0,18 (was 0,13, op sommige schermen amper zichtbaar), in het donker × 1,3 (`theme.grid`).
@@ -128,7 +129,7 @@ Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev (nu zes, 
 - Vijf items langs een cirkelboog; `pos` (kommagetal) volgt `index` met een veer. Verticaal op desktop (middelpunt rechts buiten beeld), horizontaal op gsm (middelpunt onder het wiel).
 - Scrollen (muiswiel of trackpad, met drempel en korte vergrendeling), slepen langs de boog, pijltjestoetsen. Klik op een ander item centreert het; klik op het geselecteerde item (of Enter) opent het venster "nieuwe taak" voor dat moment.
 - Hover of selectiewissel licht de bijhorende ring in de scène kort op.
-- Gsm (horizontaal): pillen staan dicht op de boog (`out: 50`, wiel 168 px hoog), merkstreepje op de boog zelf.
+- Gsm (horizontaal): compact (Victor, 28/10/2026: de orbit moet de hoofdzaak zijn): pillen 52 × 40 (gekozen 64 × 46, `PILLS.horizontal`), `out: 42`, `spacing: 80`, wiel 138 px hoog; alleen het gekozen moment toont zijn label ("Week +"), de andere enkel hun icoon. Merkstreepje op de boog zelf.
 - Merkteken: een fijn streepje dwars op de boog in de kleur van het gekozen moment (de zwarte pil uit de referentie paste niet). Geen `filter: blur` op de items: dat gaf op iOS Safari roze lijnen; verre items vervagen alleen via opacity.
 
 ## Data

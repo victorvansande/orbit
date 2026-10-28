@@ -5,9 +5,12 @@ import { LEVELS, iconSvg, toneNode } from './config.js';
 // Horizontaal (gsm): boog onder de scène, middelpunt onder het wiel.
 const GEOM = {
   vertical:   { R: 560, arc: 70, out: 66, spacing: 96 },
-  horizontal: { R: 620, arc: 22, out: 50, spacing: 92 },
+  horizontal: { R: 620, arc: 20, out: 42, spacing: 80 },
 };
-const PILL = { w: 62, h: 48, selW: 76, selH: 54 };
+const PILLS = {
+  vertical: { w: 62, h: 48, selW: 76, selH: 54 },
+  horizontal: { w: 52, h: 40, selW: 64, selH: 46 },   // gsm: compacter, de scène is de hoofdzaak
+};
 
 export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHover = () => {}, reducedMotion }) {
   const narrow = matchMedia('(max-width: 999px)');
@@ -39,7 +42,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
 
   function layout() {
     const o = orientation();
-    const g = GEOM[o];
+    const g = GEOM[o], PILL = PILLS[o];
     const box = root.getBoundingClientRect();
     const Ri = g.R + g.out;
     const step = g.spacing / Ri;

@@ -19,6 +19,7 @@ const TEMPO = {
   stil:    { orbit: () => 0, spin: 0, beat: 0, waves: 0 },
 };
 const FIT = 440;                        // zoveel stage-eenheden passen in min(breedte, hoogte)
+const FIT_NARROW = 372;                 // gsm: de ringen vullen bijna de hele breedte (Victor: de orbit moet de hoofdzaak zijn)
 
 // Kleuren van structuur en labels per thema; de bollen houden hun eigen kleur
 const THEMES = {
@@ -186,7 +187,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     cam.cyaw = Math.cos(yawR); cam.syaw = Math.sin(yawR);
     cam.cs = Math.cos(spin + spinDrag); cam.ss = Math.sin(spin + spinDrag);
     const availW = Math.max(200, W - insets.left - insets.right);
-    cam.s = Math.min(availW, H) / FIT;
+    // gsm: groter in het bovenaanzicht; in het zijaanzicht iets kleiner, anders zakt de kern onder de scène
+    const fit = W < 600 ? FIT_NARROW + (FIT + 20 - FIT_NARROW) * e : FIT;
+    cam.s = Math.min(availW, H) / fit;
     cam.du = Math.pow(cam.s, 0.72);       // stippen groeien trager mee dan de geometrie
     cam.cx = center.x; cam.cy = center.y;
   }
