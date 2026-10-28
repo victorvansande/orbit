@@ -29,6 +29,9 @@
   --late: #D7261C;
   --grain-blend: multiply;
   --grain-opacity: .14;
+  --warm: #FFB46A;           /* avondtint over het papier */
+  --warm-max: .07;
+  --warm-blend: multiply;
   --grain-filter: none;
   --ease: cubic-bezier(.4, 0, .2, 1);
   --pop: cubic-bezier(.2, .9, .25, 1.05);
@@ -64,6 +67,9 @@
   --late: #E8665E;
   --grain-blend: screen;
   --grain-opacity: .06;
+  --warm: #FF9F45;
+  --warm-max: .05;
+  --warm-blend: soft-light;
   --grain-filter: invert(1);
   color-scheme: dark;
 }
@@ -118,6 +124,12 @@ kbd {
 .greeting.is-on { opacity: 1; transform: translate(-50%, 0); }
 .greeting small { display: block; margin-top: 6px; font: 500 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
 body.is-focus .greeting { z-index: 4; }   /* automatische begroeting niet in focus (zie greet), een tik op de kern wel */
+.warmth {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: var(--warm); mix-blend-mode: var(--warm-blend);
+  opacity: calc(var(--warmth, 0) * var(--warm-max));
+}
+.warm-ready .warmth { transition: opacity 60s linear; }   /* bij het laden meteen juist, daarna traag mee met de klok */
 .grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
   opacity: var(--grain-opacity); mix-blend-mode: var(--grain-blend); filter: var(--grain-filter);

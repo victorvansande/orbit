@@ -27,6 +27,8 @@ const THEMES = {
 };
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
+const BEND_R = 170, BEND_PX = 18;          // raster rond de aanwijzer: straal en diepte (px)
+const SHOCK_SPEED = 300, SHOCK_LIFE = 1.1; // schokgolf bij afvinken: eenheden per s, duur (s)
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
@@ -97,6 +99,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const twinkles = [];   // afgevinkte bollen die uitfonkelen
   let sky = [];          // sterrenhemel: één ster per afgevinkte taak
   const skyBorn = new Map();   // id → tijdstip waarop een nieuwe ster verscheen (licht even op)
+  // eye candy: raster buigt naar de aanwijzer, schokgolf door de ringen bij afvinken, af en toe een vallende ster,
+  // sterrenbeeld bij elke 25e ster
+  const bend = { k: 0, x: 0, y: 0 };
+  const shocks = [];                         // tijdstippen (ms) van een schokgolf
+  let meteor = null, nextMeteor = performance.now() + (90 + Math.random() * 150) * 1000;
+  let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   let skyKnown = null;
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
@@ -254,6 +262,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // Zilver: de bol fonkelt uit waar hij stond, als een ster (vaste plek in de trechter, draait mee met de trechter)
     const [x, y, z] = orbFunnel(o, orbAngle(o));
     twinkles.push({ level: o.level, x, y, z, age: 0, alpha: o.alpha ?? 1 });
+    const now = performance.now();
+    while (shocks.length && now - shocks[0] > (SHOCK_LIFE + 1) * 1000) shocks.shift();
+    shocks.push(now + 250);
     return spot;
   }
 
@@ -321,6 +332,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (o.blend) { o.blend.p += dt / 0.45; if (o.blend.p >= 1) o.blend = null; }
     }
 
+    // raster: de put volgt de aanwijzer zacht, en verdwijnt als die de scène verlaat
+    bend.k = smooth(bend.k, motion && pointer.inside ? 1 : 0, 3, dt);
+    if (pointer.inside) { bend.x = smooth(bend.x || pointer.x, pointer.x, 8, dt); bend.y = smooth(bend.y || pointer.y, pointer.y, 8, dt); }
+
     for (let i = twinkles.length - 1; i >= 0; i--) {
       twinkles[i].age += dt;
       if (twinkles[i].age > TWINKLE_LIFE) twinkles.splice(i, 1);
@@ -353,8 +368,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const a = g.a * fade * inside * Math.min(1, pt.f * pt.f);
       if (!(a >= 0.006)) continue;
       if (pt.x < -8 || pt.x > W + 8 || pt.y < -8 || pt.y > H + 8) continue;
+      let gx = pt.x, gy = pt.y;
+      if (bend.k > 0.01) {
+        // een zachte zwaartekrachtput rond de aanwijzer: puntjes zakken een paar pixels naar binnen
+        const dx = bend.x - gx, dy = bend.y - gy, d = Math.hypot(dx, dy);
+        if (d < BEND_R && d > 0.5) {
+          const pull = BEND_PX * bend.k * (1 - d / BEND_R) ** 2 * (d / (d + 10));
+          gx += dx / d * pull; gy += dy / d * pull;
+        }
+      }
       const k = Math.min(5, Math.floor(a / GRID_ALPHA * 6));
-      buckets[k].push(pt.x, pt.y, 0.9 * cam.du * pt.f);
+      buckets[k].push(gx, gy, 0.9 * cam.du * pt.f);
     }
     ctx.fillStyle = rgba(INK, 1);
     buckets.forEach((b, k) => {
@@ -394,6 +418,70 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.globalAlpha = 1;
   }
 
+  // Vallende ster: heel af en toe (eerst na 1,5 tot 4 min, daarna om de 6 tot 14 min) een dunne streep over de hemel
+  function drawMeteor(now) {
+    if (reducedMotion.matches) return;
+    if (!meteor && now >= nextMeteor) {
+      const ang = (0.2 + Math.random() * 0.35) * (Math.random() < 0.5 ? 1 : -1) + (Math.random() < 0.5 ? 0 : Math.PI);
+      const dir = [Math.cos(ang), Math.abs(Math.sin(ang))];               // altijd een beetje naar beneden
+      meteor = { t0: now, x: W * (0.15 + Math.random() * 0.7), y: H * (0.08 + Math.random() * 0.35), dx: dir[0], dy: dir[1], dist: Math.min(W, H) * (0.35 + Math.random() * 0.2) };
+      nextMeteor = now + (360 + Math.random() * 480) * 1000;
+    }
+    if (!meteor) return;
+    const p = (now - meteor.t0) / 900;
+    if (p >= 1) { meteor = null; return; }
+    const head = ease(p) * meteor.dist, len = Math.min(head, 150 * cam.du + 40);
+    const hx = meteor.x + meteor.dx * head, hy = meteor.y + meteor.dy * head;
+    const tx = hx - meteor.dx * len, ty = hy - meteor.dy * len;
+    const a = Math.sin(p * Math.PI) * 0.55;
+    const g = ctx.createLinearGradient(hx, hy, tx, ty);
+    g.addColorStop(0, rgba(INK, a));
+    g.addColorStop(1, rgba(INK, 0));
+    ctx.strokeStyle = g;
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+  }
+
+  // Sterrenbeeld: bij elke 25e ster verbinden dunne lijntjes de laatste 25 sterren even (kortste verbindingen, Prim)
+  function makeConstellation(count) {
+    const pts = sky.slice(-count);
+    if (pts.length < 3) return null;
+    const inTree = [0], edges = [], rest = new Set(pts.map((_, i) => i).slice(1));
+    while (rest.size) {
+      let best = null, bd = Infinity;
+      for (const i of inTree) for (const j of rest) {
+        const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
+        if (d < bd) { bd = d; best = [i, j]; }
+      }
+      inTree.push(best[1]); rest.delete(best[1]);
+      edges.push([pts[best[0]].x, pts[best[0]].y, pts[best[1]].x, pts[best[1]].y]);
+    }
+    return edges;
+  }
+  function drawConstellation(now) {
+    if (!constellation) return;
+    const e = (now - constellation.t0) / 1000;
+    if (e < 0) return;
+    const IN = 1.6, HOLD = 3.2, OUT = 2;
+    if (e > IN + HOLD + OUT) { constellation = null; return; }
+    const fade = e > IN + HOLD ? 1 - (e - IN - HOLD) / OUT : 1;
+    const n = constellation.edges.length;
+    ctx.strokeStyle = rgba(INK, 1);
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.3 * fade;
+    ctx.beginPath();
+    constellation.edges.forEach(([x1, y1, x2, y2], i) => {
+      // lijntjes verschijnen na elkaar en groeien van de ene ster naar de andere
+      const p = clamp((e / IN) * n - i, 0, 1);
+      if (p <= 0) return;
+      const ax = cam.cx + x1 * cam.s, ay = cam.cy + y1 * cam.s, bx = cam.cx + x2 * cam.s, by = cam.cy + y2 * cam.s;
+      ctx.moveTo(ax, ay); ctx.lineTo(ax + (bx - ax) * p, ay + (by - ay) * p);
+    });
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
   function drawRings(now) {
     const maxHot = Math.max(...ringHot.values());
     rings.forEach((ring, idx) => {
@@ -403,6 +491,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const intro = introAlpha(now, 0.15 + idx * 0.12, 0.8);
       const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro;
       const z = ring.z * cam.depth;
+      // schokgolf na afvinken: de ring schuift een fractie naar buiten als de golf langskomt en veert terug
+      let push = 1;
+      for (const t0 of shocks) {
+        const e = (now - t0) / 1000;
+        if (e < 0 || e > SHOCK_LIFE) continue;
+        push += 3.2 * Math.exp(-(((lv.ring - e * SHOCK_SPEED) / 20) ** 2)) * (1 - e / SHOCK_LIFE) / lv.ring;
+      }
       // stippen
       ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
       // In het zijaanzicht worden de ringen platte ellipsen die elkaar kruisen. Twee ingrepen houden het rustig:
@@ -411,8 +506,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const cue = cam.depth * (1 - hot);
       const buckets = new Map();
       for (let i = 0, j = 0; i < ring.pts.length; i += 2, j++) {
-        const x = ring.pts[i], y = ring.pts[i + 1];
-        const front = (x * cam.ss + y * cam.cs) / lv.ring;          // 1 = dichtst bij de kijker, -1 = achteraan
+        const x = ring.pts[i] * push, y = ring.pts[i + 1] * push;
+        const front = (x * cam.ss + y * cam.cs) / lv.ring / push;          // 1 = dichtst bij de kijker, -1 = achteraan
         const factor = (j % 2 ? 1 - 0.8 * cue : 1 + 0.4 * cue) * (1 - 0.68 * cue * (1 - front) / 2);
         const a = Math.min(1, alpha * factor);
         if (a < 0.004 || !project(x, y, z, true)) continue;
@@ -795,6 +890,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     updateCamera();
     drawGrid(now);
     drawSky(now);
+    drawConstellation(now);
+    drawMeteor(now);
     drawRings(now);
     drawCore(now);
     drawOrbs();
@@ -934,6 +1031,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // de kern kijkt even blij (bv. bij afvinken)
     cheer(ms = 1600) { face.happyUntil = performance.now() + ms; },
     wink(ms = 650) { face.winkUntil = performance.now() + ms; },
+    // sterrenbeeld van de laatste `count` sterren, na het verschijnen van de nieuwe ster
+    constellation(count = 25) {
+      if (reducedMotion.matches) return;
+      const edges = makeConstellation(count);
+      if (edges) constellation = { edges, t0: performance.now() + 2600 };
+    },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },

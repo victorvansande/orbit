@@ -254,8 +254,17 @@ function renderSummary() {
   $('scene').setAttribute('aria-label', total ? tx('scene.label', { parts }) : tx('scene.empty'));
 }
 
+// Het papier kleurt 's avonds een tikje warmer (vanaf 17 u, vol om 21 u, tot 6 u) en 's ochtends weer neutraal (tot 9 u)
+function renderWarmth(now) {
+  const h = now.getHours() + now.getMinutes() / 60;
+  const w = h < 6 ? 1 : h < 9 ? 1 - (h - 6) / 3 : h < 17 ? 0 : h < 21 ? (h - 17) / 4 : 1;
+  document.documentElement.style.setProperty('--warmth', w.toFixed(3));
+  requestAnimationFrame(() => document.documentElement.classList.add('warm-ready'));
+}
+
 function renderClock() {
   const now = new Date();
+  renderWarmth(now);
   const dd = String(now.getDate()).padStart(2, '0');
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   $('week').textContent = tx('week', { n: isoWeek(now) });
@@ -640,6 +649,7 @@ function complete(id, row) {
     saveDone(done);
     placeStar(sky, id, spot);
     renderStats();
+    if (totalDone(done) % 25 === 0) scene.constellation(25);   // mijlpaal: de laatste 25 sterren vormen even een sterrenbeeld
     // herhalende taak: meteen de volgende, met de eerstvolgende datum na vandaag
     if (task.repeat && task.due) {
       const due = nextDue(task.due, task.repeat);
