@@ -271,6 +271,8 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 
 ## Valkuilen
 
+- Canvas-toestand lekt tussen tekenfuncties: wie `textAlign`, `font` of `globalAlpha` wijzigt, zet het terug, en `pill()` zet `textAlign = 'left'` zelf. De glyph sonar liet ooit `center` staan, waardoor de tekst uit de labelpillen schoof.
+
 - Focusmarkeringen alleen bij toetsenbordgebruik: `app.js` zet `data-input` op `<html>` (`pointer` bij pointerdown, `keyboard` bij een toets); CSS verbergt `:focus-visible` bij `pointer`. Het wiel zelf krijgt nooit een kader, enkel de gekozen pil bij toetsenbordgebruik. Na het venster gaat de focus alleen terug naar het wiel voor toetsenbordgebruikers (anders verscheen er een kader rond het hele wiel).
 
 - Canvas-teksten gebruiken Geist; is het font nog niet geladen, dan tekent hij met de terugval tot het binnen is (elk frame opnieuw).

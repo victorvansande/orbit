@@ -631,6 +631,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.globalAlpha = fade * (0.25 + 0.55 * ((k + step) % 4 === 0)) * Math.min(1, pt.f);
         ctx.fillText(GLYPHS[(k * 7 + step) % GLYPHS.length], pt.x, pt.y);
       }
+      ctx.textAlign = 'left';
     }
     // echo rond de gezochte bol, zodra het front zijn baan bereikt
     const o = sonar.target && orbs.get(sonar.target);
@@ -1068,6 +1069,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.fill();
     }
     ctx.fillStyle = opts.mono ? rgba(color || INK, 1) : theme.pillText;
+    ctx.textAlign = 'left';   // expliciet: een effect (sonar) kan het op center laten staan
     ctx.textBaseline = 'middle';
     ctx.fillText(label, left + padX + dot, top + h / 2 + 0.5);
   }
