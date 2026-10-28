@@ -392,18 +392,27 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   // Sterrenhemel: één klein vierpuntig sterretje per afgevinkte taak deze week, achter de scène, zacht fonkelend
+  // Op een klein of vierkant canvas (gsm) valt de buitenrand van de hemel (straal 250) buiten beeld: dan schuift de
+  // hele hemel wat naar binnen, zodat elke ster zichtbaar blijft.
+  function skyScale() {
+    const half = Math.min(W, H) / 2 / cam.s - 10;
+    return cam.s * Math.min(1, half / 250);
+  }
+
   function drawSky(now) {
     if (!sky.length) return;
     const a = introAlpha(now, 0.3, 1.2);
     if (a <= 0) return;
     const t = now / 1000, still = reducedMotion.matches;
     ctx.fillStyle = rgba(INK, 1);
-    const dense = clamp(1 - (sky.length - 150) / 1500, 0.65, 1);   // een volle hemel krijgt iets kleinere sterren
+    const dense = clamp(1 - (sky.length - 150) / 1500, 0.65, 1);
+    const ks = skyScale();
+    const small = Math.min(W, H) < 500;   // gsm: sterren iets groter en helderder, anders vallen ze weg   // een volle hemel krijgt iets kleinere sterren
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
-      const x = cam.cx + st.x * cam.s, y = cam.cy + st.y * cam.s;
+      const x = cam.cx + st.x * ks, y = cam.cy + st.y * ks;
       // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
-      let R = Math.max(2.6 * st.s * cam.du, 2.4 + st.s) * dense, alpha = 0.36 + 0.44 * tw;
+      let R = Math.max(2.6 * st.s * cam.du, (small ? 3 : 2.4) + st.s) * dense, alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
       // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
       const born = skyBorn.get(st.id);
       if (born !== undefined) {
@@ -475,7 +484,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // lijntjes verschijnen na elkaar en groeien van de ene ster naar de andere
       const p = clamp((e / IN) * n - i, 0, 1);
       if (p <= 0) return;
-      const ax = cam.cx + x1 * cam.s, ay = cam.cy + y1 * cam.s, bx = cam.cx + x2 * cam.s, by = cam.cy + y2 * cam.s;
+      const ks = skyScale(), ax = cam.cx + x1 * ks, ay = cam.cy + y1 * ks, bx = cam.cx + x2 * ks, by = cam.cy + y2 * ks;
       ctx.moveTo(ax, ay); ctx.lineTo(ax + (bx - ax) * p, ay + (by - ay) * p);
     });
     ctx.stroke();
