@@ -1001,7 +1001,6 @@ $('demo-btn').addEventListener('click', () => { location.href = location.pathnam
 if (DEMO_MODE) {
   $('demo-badge').hidden = false;
   document.title = `${document.title} · ${tx('demo.badge')}`;
-  setTimeout(() => showToast(tx('demo.start')), 600);
 }
 
 /* ---- Focusmodus ---- */
@@ -1759,5 +1758,5 @@ readSyncHash();
   let seen = false;
   try { seen = localStorage.getItem(INTRO_KEY) === 'gezien'; } catch { /* geen opslag */ }
   if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900);
-  else setTimeout(greet, 1400);     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
+  else setTimeout(DEMO_MODE ? () => sayLine(tx('demo.start')) : greet, 1400);   // demo: de kern zegt dat het een demo is     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
 }

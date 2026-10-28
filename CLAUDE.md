@@ -196,9 +196,9 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 ## Demoversie (`?demo`, `src/demo.js`)
 
 - Op vraag van Victor (28/10/2026): een losse kopie om nieuwe functies te proberen, met alle functies van de echte Orbit, die nooit iets bewaart of synchroniseert.
-- Instellingen → Demo → "Open demo" laadt `?demo`; "Verlaat demo" gaat terug naar de gewone pagina. Kenmerk "Demo" naast ORBIT TASKS, "· Demo" in de titel, bij het openen een melding.
+- Instellingen → Demo → "Open demo" laadt `?demo`; "Verlaat demo" gaat terug naar de gewone pagina. Kenmerk "Demo" naast ORBIT TASKS, "· Demo" in de titel; bij het openen zegt de kern in de begroetingsregel "Demo: niets wordt bewaard of gedeeld." (geen toast: die botste met de begroeting).
 - Het script bovenaan `index.html` vervangt `window.localStorage` door een opslag in het geheugen, vóór elke module laadt. Thema, taal, tempo, geluid en Kwick-plaats worden overgenomen, de uitleg geldt als gezien; de rest begint leeg. Lukt het vervangen niet (`localStorage` niet aanpasbaar), dan opent gewoon de echte Orbit zonder `?demo`, nooit een demo die in de echte opslag schrijft.
-- `src/demo.js` (eerste import van `app.js`) vult die opslag met 13 taken: een taak die al 9 dagen op Nu ligt, een verstreken deadline, deadlines vandaag, deze week en later, drie herhalingen, een taak die al 40 dagen op Ooit staat; plus 23 afgevinkte taken (twee keer afvinken geeft een sterrenbeeld).
+- `src/demo.js` (eerste import van `app.js`) vult die opslag met 26 taken, minstens vijf per schil (`DEMO_TASKS`, titels in NL en EN): een taak die al 9 dagen op Nu ligt, twee verstreken deadlines, deadlines vandaag, deze week en later, vijf herhalingen (dag, week, maand), een taak die al 40 dagen op Ooit staat; plus 23 afgevinkte taken (twee keer afvinken geeft een sterrenbeeld).
 - Afgeschermd: geen reservekopie in IndexedDB (`mirror` en `readMirror` doen niets), geen synchronisatie (geen code in de opslag, Koppelen toont "In de demo wordt niets gekoppeld.", een `#sync=`-link wordt genegeerd), het `storage`-event van andere tabbladen wordt genegeerd. Herladen begint opnieuw.
 - Getest: echte opslag en reservekopie onveranderd na afvinken en toevoegen in de demo, koppelen geblokkeerd, terug naar de echte lijst.
 
