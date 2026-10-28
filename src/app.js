@@ -1114,6 +1114,7 @@ function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
   if (on && desktop.matches && !minimalFx) fidget.start(); else fidget.stop();
+  if (on && !$('greeting').hidden) hideGreeting();   // anders botst de begroeting op gsm met de klok
   $('focus-btn').setAttribute('aria-pressed', String(on));
   if (on) {
     document.documentElement.requestFullscreen?.().catch(() => {});

@@ -782,7 +782,8 @@ body.is-idle .controls { opacity: 0; }
   .groups { overflow: visible; mask-image: none; margin-right: 0; padding-right: 0; padding-bottom: 0; }
   /* Focus op gsm: één kolom die precies het scherm vult (kop, scène, klok en Nu, knoppen), niets overlapt */
   .focus-info { display: none; }
-  body.is-focus { height: 100dvh; overflow: hidden; }
+  /* vast over het hele scherm: 100dvh viel als webapp op het beginscherm van iOS korter uit dan het scherm */
+  body.is-focus { position: fixed; inset: 0; height: auto; overflow: hidden; }
   body.is-focus .hud-right, body.is-focus .tracks, body.is-focus .wheel { display: none; }
   body.is-focus .stage { flex: 1 1 auto; min-height: 0; height: auto; }
   body.is-focus .focus-info {
@@ -792,15 +793,20 @@ body.is-idle .controls { opacity: 0; }
   body.is-focus .clock { --dm-h: 52px; }
   .focus-weather { margin-bottom: 10px; }
   .fw-icon { width: 26px; height: 26px; }
-  body.is-focus .clock-date { margin-top: 8px; }
-  body.is-focus .focus-now { margin-top: 18px; max-width: none; }
+  body.is-focus .clock-date { margin-top: 12px; }
+  body.is-focus .focus-now { margin-top: 26px; max-width: none; }
   body.is-focus .focus-kicker { margin-bottom: 8px; }
   body.is-focus .focus-now li { font-size: 18px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.is-focus .focus-now .focus-more { font-size: 14px; }
   body.is-focus .focus-quote { width: auto; max-width: none; }
   body.is-focus .focus-quote blockquote { font-size: 17px; line-height: 1.4; }
   body.is-focus .focus-quote figcaption { margin-top: 8px; }
-  body.is-focus .controls { order: 3; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  /* de knoppen liggen over de onderrand (ze verdwijnen toch na 2,5 s); de scène krijgt die ruimte, het blok met klok
+     en quote zakt naar onder en krijgt lucht */
+  body.is-focus .controls { order: 3; position: absolute; left: 0; right: 0; bottom: 0; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  body.is-focus .focus-info { padding: 12px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 58px); }
+  body.is-focus .focus-weather { margin-bottom: 14px; }
+  body.is-focus .focus-due { margin-top: 24px; }
   .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
   /* smal scherm: twee regels in plaats van afkappen (zinnen als "Nieuwe hemel. Je vorige sterren ..." vielen weg) */
   .toast { border-radius: 22px; }
