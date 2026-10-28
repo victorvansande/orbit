@@ -16,6 +16,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
+import { terminalRain, particleTitle, morphText, createWall } from './fx.js';
 
 applyStatic();
 
@@ -435,6 +436,7 @@ function showSkyConfirm(on) {
 $('sky-new').addEventListener('click', () => showSkyConfirm(true));
 $('sky-new-no').addEventListener('click', () => showSkyConfirm(false));
 $('sky-new-yes').addEventListener('click', () => {
+  scene.mosaic();   // de oude sterren gaan mee met een golf van tegeltjes
   skyCuts = cleanCuts([...skyCuts, Date.now()]);
   saveCuts(skyCuts);
   skyView = 'current';
@@ -493,9 +495,13 @@ $('stat-mini').addEventListener('click', () => {
 const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const leaving = new Set();
 
+const wall = createWall({ reducedMotion });
 function renderTracks() {
   const frag = document.createDocumentFragment();
   if (!tasks.length) {
+    // alles afgevinkt: een muur van wat je onlangs afvinkte (typographic wall), anders gewoon de uitleg
+    const recent = [...new Set(archive.slice(0, 40).map(a => a.title))];
+    if (recent.length) { wall.set(recent, tx('tracks.allDone')); frag.append(wall.el); }
     frag.append(el('p', 'tracks-empty', desktop.matches ? tx('tracks.emptyDesk') : tx('tracks.emptyMobile')));
   }
   for (const lv of LEVELS) {
@@ -856,7 +862,7 @@ function paintComposerOrb() {
   cancelAnimationFrame(orbRaf);
   orbRaf = requestAnimationFrame(drawComposerOrbit);
   toneNode(composer, lv);
-  $('composer-level').textContent = composerDue ? tx('composer.levelDue', { level: lv.name }) : lv.name;
+  morphText($('composer-level'), composerDue ? tx('composer.levelDue', { level: lv.name }) : lv.name, { reducedMotion });
   for (const b of $('composer-levels').children) {
     b.setAttribute('aria-checked', String(Number(b.dataset.level) === lv.id));
     b.disabled = Boolean(composerDue);
@@ -888,6 +894,7 @@ function openComposer(level = wheel.level) {
   composer.classList.remove('is-closing');
   composerLevel = level;
   wheelLevel = level;
+  delete $('composer-level').dataset.text;   // bij openen meteen juist, daarna vervloeit het label bij elke wissel
   composerForm.reset();
   $('due-toggle').hidden = false;
   setComposerRepeat('');
@@ -1664,13 +1671,16 @@ if (matchMedia('(hover: none)').matches) setInput('pointer');
 const introDialog = $('intro');
 const INTRO_KEY = 'priority-orbit.intro.v1';
 for (const lv of LEVELS) { const li = el('li', '', lv.name); toneNode(li, lv); $('intro-levels').append(li); }
+const introTitle = particleTitle($('intro-title'), { reducedMotion });
 function openIntro() {
   if (!introDialog.open) introDialog.showModal();
+  requestAnimationFrame(() => introTitle.start());
   const card = introDialog.querySelector('.intro-card');
   card.scrollTop = 0;
   card.focus({ preventScroll: true });     // bovenaan beginnen, geen kader rond de knop
 }
 function closeIntro() { try { localStorage.setItem(INTRO_KEY, 'gezien'); } catch { /* geen opslag */ } introDialog.close(); }
+introDialog.addEventListener('close', () => introTitle.stop());
 $('intro-btn').addEventListener('click', openIntro);
 $('intro-close').addEventListener('click', closeIntro);
 introDialog.addEventListener('click', e => { if (e.target === introDialog) closeIntro(); });
@@ -1783,6 +1793,7 @@ function tapCore() {
   const stuck = longest(list.filter(t => t.level <= 2 && !t.due && daysOn(t) >= 2));
   const next = list.filter(t => t.level === URGENT_LEVEL).sort(byAge)[0] || list.filter(t => t.level === 2).sort(byAge)[0];
   scene.cheer(900);
+  scene.sonar((late || dueToday || stuck || next)?.id ?? null);   // glyph sonar, met een echo rond de taak waarover de kern praat
   sayLine(coreLine({
     total: list.length,
     late: late && { title: late.title, days: daysLate(late.due) },
@@ -1813,6 +1824,23 @@ renderSummary();
 renderTracks();
 renderFocusNow();
 scene.setTasks(tasks, { intro: true });
+// Terminal rain: de eerste keer per dag regent het tekens, daarna wist een cirkel vanuit de kern de regen weg en
+// begint de gewone intro. Niet bij een eerste bezoek (dan de uitleg), een koppellink of minder beweging.
+const RAIN_KEY = 'priority-orbit.rain.v1';
+let rainDelay = 0;
+{
+  let last = null;
+  try { last = localStorage.getItem(RAIN_KEY); } catch { /* geen opslag */ }
+  const today = toDue(new Date());
+  if (!reducedMotion.matches && !lsEmptyAtStart && last !== today && !/^#sync=/.test(location.hash)) {
+    try { localStorage.setItem(RAIN_KEY, today); } catch { /* geen opslag */ }
+    rainDelay = 1300;
+    terminalRain({
+      center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
+      onReveal() { scene.replayIntro(tasks); },
+    });
+  }
+}
 renderStats();
 renderSync();
 if (savedCode()) sync.start(savedCode());
@@ -1826,5 +1854,5 @@ readSyncHash();
   let seen = false;
   try { seen = localStorage.getItem(INTRO_KEY) === 'gezien'; } catch { /* geen opslag */ }
   if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900);
-  else setTimeout(DEMO_MODE ? () => sayLine(tx('demo.start')) : greet, 1400);   // demo: de kern zegt dat het een demo is     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
+  else setTimeout(DEMO_MODE ? () => sayLine(tx('demo.start')) : greet, 1400 + rainDelay);   // demo: de kern zegt dat het een demo is     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
 }

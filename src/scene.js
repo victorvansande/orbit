@@ -31,6 +31,10 @@ const BEND_R = 170, BEND_PX = 18;          // raster rond de aanwijzer: straal e
 const SHOCK_SPEED = 300, SHOCK_LIFE = 1.1; // schokgolf bij afvinken: eenheden per s, duur (s)
 const WAKE = 0.7;                          // spoor op de baan: hoek (rad) achter een komeet waarin ringstippen nagloeien
 const SPARK_MS = 420;                      // afvinken vanuit de lijst: vlucht van het lichtpuntje naar de bol
+const GLYPHS = '·:+×#';                    // tekenset van de effecten (sonar, mosaic): dezelfde als het raster van Orbit
+const DUST = 560;                          // vortex: korrels in de trechter (zijaanzicht)
+const SONAR_SPEED = 230, SONAR_LIFE = 1.7; // glyph sonar na een tik op de kern: eenheden per s, duur (s)
+const MOSAIC_PX = 520, MOSAIC_BAND = 80;   // nieuwe hemel: snelheid (px/s) en breedte (px) van de mozaïekgolf
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
@@ -109,6 +113,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
   let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
+  // vortex: stof dat in het zijaanzicht langs de trechter naar de kern spiraalt; meer en sneller bij een volle lijst
+  const dust = Array.from({ length: DUST }, (_, i) => ({ r: 20 + Math.random() * 190, a: Math.random() * TAU, s: 0.55 + Math.random() * 0.9, k: i / DUST }));
+  let dustAmount = 0;
+  let sonar = null;                          // {t0, target}: ring van tekens vanuit de kern, de gezochte bol licht op
+  let mosaic = null;                         // {t0, old}: golf van tegeltjes die de oude hemel meeneemt
   let starDelay = 0, lastStarAt = 0;                         // ms tot de nieuwe ster verschijnt: pas na het uitfonkelen, nooit twee sterren tegelijk
   let skyKnown = null;
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
@@ -365,6 +374,20 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const goal = URGENT_RGB;   // de kern is altijd rood (Nu); urgentie zit in grootte en golf, niet in kleur
     for (let i = 0; i < 3; i++) coreColor[i] = smooth(coreColor[i], goal[i], 3, dt);
     if (motion && urgency > 0.01) beat += dt / beatPeriod() * beatScale;
+
+    // vortex: hoeveelheid volgt het aantal taken, tempo de urgentie en de gekozen snelheid
+    const live = [...orbs.values()].filter(o => !o.leaving).length;
+    dustAmount = smooth(dustAmount, cam.depth > 0.02 ? 0.45 + 0.55 * Math.min(1, live / 20) : 0, 1.5, dt);
+    if (motion && cam.depth > 0.02) {
+      const pace = (0.6 + 0.3 * Math.min(2, urgency)) * spinScale;
+      for (const d of dust) {
+        d.a += dt * d.s * (0.25 + 34 / (d.r + 10)) * pace;
+        d.r -= dt * d.s * (3 + 520 / (d.r + 24)) * pace;
+        if (d.r < 12) { d.r = 175 + Math.random() * 35; d.a = Math.random() * TAU; }
+      }
+    }
+    if (sonar && (now - sonar.t0) / 1000 > SONAR_LIFE + 2.4) sonar = null;
+    if (mosaic && (now - mosaic.t0) / 1000 > 4) mosaic = null;
   }
 
   /* ---- Tekenen ---- */
@@ -421,7 +444,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return cam.s * Math.min(1, half / 250);
   }
 
+  // afstand (px) van het golffront van de mozaïekgolf tot het midden, of null
+  function mosaicFront(now) { return mosaic ? (now - mosaic.t0) / 1000 * MOSAIC_PX : null; }
+
   function drawSky(now) {
+    const front = mosaicFront(now);
+    if (front !== null) drawStars(now, mosaic.old, d => d > front - MOSAIC_BAND * 0.5);   // oude hemel tot de golf langskomt
+    drawStars(now, sky, front === null ? null : d => d < front - MOSAIC_BAND);             // nieuwe hemel achter de golf
+  }
+
+  function drawStars(now, sky, keep) {
     if (!sky.length) return;
     const a = introAlpha(now, 0.3, 1.2);
     if (a <= 0) return;
@@ -433,6 +465,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
       const x = cam.cx + st.x * ks, y = cam.cy + st.y * ks;
+      if (keep && !keep(Math.hypot(st.x * ks, st.y * ks))) continue;
       // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
       let R = Math.max(2.6 * st.s * cam.du, (small ? 3 : 2.4) + st.s) * dense, alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
       // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
@@ -510,6 +543,111 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.moveTo(ax, ay); ctx.lineTo(ax + (bx - ax) * p, ay + (by - ay) * p);
     });
     ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // Vortex (naar React Bits): in het zijaanzicht spiraalt fijn stof langs de wand van de trechter naar de kern.
+  // Inkt, heel licht, dichter en donkerder naar de bodem; het laatste stukje kleurt naar de kern.
+  function drawVortex() {
+    const amount = dustAmount * cam.depth;
+    if (amount < 0.01) return;
+    const n = Math.round(DUST * Math.min(1, dustAmount));
+    const buckets = Array.from({ length: 8 }, () => []), red = [];
+    for (let i = 0; i < n; i++) {
+      const d = dust[i];
+      if (!project(Math.cos(d.a) * d.r, Math.sin(d.a) * d.r, depthAt(d.r) * cam.depth, true)) continue;
+      const near = 1 - d.r / 210;
+      const fadeIn = smoothstep(210, 168, d.r);                 // zacht verschijnen aan de rand
+      const back = (Math.sin(d.a + spin + spinDrag) + 1) / 2;   // achterkant van de trechter iets zwakker
+      const a = (0.2 + 0.6 * near * near) * fadeIn * (0.55 + 0.45 * back) * amount;
+      const size = (1 + 0.7 * near) * cam.du * pt.f;
+      if (d.r < 34) red.push(pt.x, pt.y, size, a * smoothstep(34, 16, d.r));
+      buckets[Math.min(7, Math.floor(a * 14))].push(pt.x, pt.y, size);
+    }
+    ctx.fillStyle = rgba(INK, 1);
+    buckets.forEach((b, k) => {
+      if (!b.length) return;
+      ctx.globalAlpha = (k + 0.5) / 14;
+      ctx.beginPath();
+      for (let i = 0; i < b.length; i += 3) ctx.rect(b[i] - b[i + 2] / 2, b[i + 1] - b[i + 2] / 2, b[i + 2], b[i + 2]);
+      ctx.fill();
+    });
+    ctx.fillStyle = rgba(URGENT_RGB, 1);
+    for (let i = 0; i < red.length; i += 4) {
+      ctx.globalAlpha = red[i + 3];
+      ctx.fillRect(red[i] - red[i + 2] / 2, red[i + 1] - red[i + 2] / 2, red[i + 2], red[i + 2]);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Mosaic wave (naar React Bits): bij een nieuwe hemel rolt vanuit de kern een band van tegeltjes over het scherm;
+  // wat ze passeert, neemt ze mee (de oude sterren), daarachter begint de nieuwe hemel.
+  function drawMosaic(now) {
+    const front = mosaicFront(now);
+    if (front === null || reducedMotion.matches) return;
+    const T = Math.max(7, Math.round(8 * cam.du)), maxD = Math.hypot(W, H);
+    if (front - MOSAIC_BAND > maxD) return;
+    ctx.fillStyle = rgba(INK, 1);
+    const buckets = Array.from({ length: 6 }, () => []);
+    const x0 = cam.cx % T - T, y0 = cam.cy % T - T;
+    for (let y = y0; y < H + T; y += T) {
+      for (let x = x0; x < W + T; x += T) {
+        const d = Math.hypot(x + T / 2 - cam.cx, y + T / 2 - cam.cy), band = (front - d) / MOSAIC_BAND;
+        if (band <= 0 || band >= 1) continue;
+        // tegeltjes groeien op aan de voorkant en vallen uiteen naar achter, met een korrel van ruis
+        const k = Math.sin(band * Math.PI) * (0.7 + 0.3 * Math.sin(x * 12.9898 + y * 78.233));
+        if (k < 0.08) continue;
+        const sz = T * (0.18 + 0.62 * k);
+        buckets[Math.min(5, Math.floor(k * 6))].push(x + (T - sz) / 2, y + (T - sz) / 2, sz);
+      }
+    }
+    const fade = 1 - smoothstep(maxD * 0.6, maxD, front);
+    buckets.forEach((b, k) => {
+      if (!b.length) return;
+      ctx.globalAlpha = (0.02 + 0.09 * (k + 0.5) / 6) * fade * theme.grid;
+      ctx.beginPath();
+      for (let i = 0; i < b.length; i += 3) ctx.rect(b[i], b[i + 1], b[i + 2], b[i + 2]);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // Glyph sonar (naar React Bits): een tik op de kern zendt een ring van tekens uit langs de trechter. Waar hij de
+  // taak raakt waar de kern over praat, kaatst een echo terug: twee dunne ringen rond die bol.
+  function drawSonar(now) {
+    if (!sonar || reducedMotion.matches) return;
+    const e = (now - sonar.t0) / 1000;
+    const R = 26 + e * SONAR_SPEED;
+    if (e < SONAR_LIFE && R < EDGE + 40) {
+      const n = 84, fade = (1 - e / SONAR_LIFE) * (1 - smoothstep(EDGE - 10, EDGE + 40, R));
+      const z = (R < RIM ? depthAt(R) : 0) * cam.depth;
+      ctx.font = `500 ${Math.max(8, 9 * cam.du)}px "Geist Mono", ui-monospace, monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = rgba(INK, 1);
+      const step = Math.floor(e * 24);
+      for (let k = 0; k < n; k++) {
+        const a = k / n * TAU;
+        if (!project(Math.cos(a) * R, Math.sin(a) * R, z, true)) continue;
+        ctx.globalAlpha = fade * (0.25 + 0.55 * ((k + step) % 4 === 0)) * Math.min(1, pt.f);
+        ctx.fillText(GLYPHS[(k * 7 + step) % GLYPHS.length], pt.x, pt.y);
+      }
+    }
+    // echo rond de gezochte bol, zodra het front zijn baan bereikt
+    const o = sonar.target && orbs.get(sonar.target);
+    if (o && o.sx != null) {
+      const hit = sonar.t0 + Math.max(0, (o.r - 26) / SONAR_SPEED) * 1000;
+      const q = (now - hit) / 1000;
+      if (q > 0 && q < 2.4) {
+        ctx.strokeStyle = rgba(INK, 1);
+        ctx.lineWidth = 1;
+        for (const lag of [0, 0.35]) {
+          const p = (q - lag) / 1.2;
+          if (p <= 0 || p >= 1) continue;
+          ctx.globalAlpha = 0.55 * (1 - p) * o.alpha;
+          ctx.beginPath(); ctx.arc(o.sx, o.sy, o.sr + 3 + 14 * ease(p), 0, TAU); ctx.stroke();
+        }
+      }
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -978,10 +1116,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawSky(now);
     drawConstellation(now);
     drawMeteor(now);
+    drawMosaic(now);
     drawRings(now);
+    drawVortex();
     drawCore(now);
     drawOrbs();
     drawEffects();
+    drawSonar(now);
     drawSparks(now);
     drawLabels();
   }
@@ -1123,6 +1264,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   return {
     setTasks, complete, setView, setInsets, highlight,
     restartIntro() { introStart = performance.now(); },
+    // intro opnieuw, ook de bollen (na de terminal rain)
+    replayIntro(list) { orbs.clear(); introStart = performance.now(); setTasks(list, { intro: true }); },
     // de kern kijkt even blij (bv. bij afvinken)
     cheer(ms = 1600) { face.happyUntil = performance.now() + ms; },
     wink(ms = 650) { face.winkUntil = performance.now() + ms; },
@@ -1133,6 +1276,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (edges) constellation = { edges, t0: Math.max(performance.now(), lastStarAt) + 1200 };   // na de nieuwe ster
     },
     clearSelection,
+    // glyph sonar vanuit de kern; target: id van de taak waar de kern over praat (die bol krijgt een echo)
+    sonar(target = null) { if (!reducedMotion.matches) sonar = { t0: performance.now(), target }; },
+    // nieuwe hemel: een mozaïekgolf neemt de huidige sterren mee (roep vóór setSky)
+    mosaic() { if (!reducedMotion.matches) mosaic = { t0: performance.now(), old: sky.slice() }; },
     wake() { wakeUntil = performance.now() + 20000; },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken

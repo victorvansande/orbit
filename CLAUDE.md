@@ -56,6 +56,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/i18n.js` | Taal: woordenboeken NL en EN, `tx(key, vars)`, `LANG`, `LOCALE`, `setLang`, `applyStatic`, `reasonText`, `DEMO_TITLES` |
 | `src/greet.js` | Begroeting van de kern: `greeting(ctx)` en `coreLine(ctx)` (tik op de kern), zinnen in NL en EN |
 | `src/demo.js` | Demoversie: `DEMO_MODE` en een volledige voorbeeldlijst in de tijdelijke opslag; als eerste geïmporteerd in `app.js` |
+| `src/fx.js` | Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React): `terminalRain`, `particleTitle`, `morphText`, `createWall`. Zie Effecten |
 | `src/fidget.js` | Vijver: rustig fidget-venster in de focusmodus (liquid ascii), `createFidget(box, {reducedMotion})` met `start`/`stop` |
 | `src/sound.js` | Geluid bij afvinken (Web Audio, geen bestanden): `playDone`, `soundOn`, `setSound`, zes klanken in `SOUNDS`, gekozen klank `SOUND_STYLE` |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
@@ -109,6 +110,17 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
   - Avondtint: `.warmth` over de pagina (token `--warm`, `--warm-max` 0,07 licht met multiply, 0,05 donker met soft-light), sterkte `--warmth` uit `renderWarmth()`: 0 overdag, stijgt van 17 tot 21 u, vol tot 6 u, weer neutraal tegen 9 u. Bij het laden meteen juist, daarna 60 s overgang (`.warm-ready`).
 - Tijdgebaseerd (dt), dus even snel op 60 en 120 Hz.
 - Tempo (`TEMPO`, `setTempo`): normaal; zen (omlooptijd Nu 8 s, de rest op een samengedrukte schaal `8 × (omloop / 1,1)^0,55`, zodat Nu het snelst blijft; trechter draait aan 35 %, kern klopt half zo snel); stil (banen en trechter glijden tot stilstand, kern zonder golven). Wissels glijden via `speed`, `spinScale`, `beatScale` en `waveVis`. Staarten volgen de snelheid en worden in zen vanzelf korte druppels.
+
+## Effecten (naar React Bits Pro)
+
+Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev, nagebouwd zonder React of build-stap (de site was vanuit de cloud geblokkeerd; het zijn eigen versies op basis van de namen). Afgestemd op elkaar: Geist Mono, inkt met lage dekking, rood (`--core`, de kern) alleen als accent, dezelfde tekenset `·:+×#`. Alles uit bij reduced motion.
+- **Terminal rain** (`terminalRain`, intro): de eerste keer per dag (`priority-orbit.rain.v1` = datum), niet bij een eerste bezoek, een koppellink of reduced motion. Ongeveer de helft van de kolommen regent tekens (af en toe een rode kop); na 1,15 s wist een zachte cirkel vanuit de kern de regen weg en speelt de scène haar intro opnieuw (`scene.replayIntro(tasks)`, ook de bollen). Klaar na 2,5 s, een tik of toets slaat over. De begroeting wacht 1,3 s langer.
+- **Vortex** (`drawVortex` in de scène): in het zijaanzicht spiraalt fijn stof (560 korrels, vierkantjes) langs de wand van de trechter naar de kern; het laatste stukje kleurt rood. Hoeveelheid volgt het aantal taken (45 tot 100 %), tempo de urgentie en het gekozen tempo (stil: staat stil). Glijdt mee met `cam.depth`, dus weg in het bovenaanzicht.
+- **Glyph sonar** (`scene.sonar(id)`, vanuit `tapCore`): een ring van tekens loopt van de kern naar buiten langs de trechter (1,7 s); waar hij de taak raakt waarover de kern praat, kaatsen twee dunne ringen terug rond die bol.
+- **Mosaic wave** (`scene.mosaic()`, bij "Nieuwe hemel", vóór `setSky`): een band van tegeltjes rolt vanuit de kern over het scherm; de oude sterren verdwijnen pas als de golf langskomt, de nieuwe hemel begint erachter.
+- **Particle text** (`particleTitle`, titel in de Uitleg, 34 px, gsm 28 px): de letters bestaan uit puntjes in een zeshoekig raster; bij het openen draaien ze binnen (op tijd, 1,1 s), de aanwijzer duwt ze opzij en kleurt ze even rood. De echte tekst blijft in de `h2` (doorzichtig) voor schermlezers.
+- **Text morph** (`morphText`, momentlabel in het venster "nieuwe taak"): het oude woord vervaagt in het nieuwe (0,56 s). Het drempelfilter `#fx-morph` (in `index.html`) alleen vanaf 18 px: kleinere tekst viel er halverwege door weg. Bij openen meteen juist (`delete dataset.text`).
+- **Typographic wall** (`createWall`, lege lijst): als alles afgevinkt is en het archief iets bevat, een muur van recent afgevinkte titels in kapitaaltjes (dekking 0,06) met "Alles afgevinkt." in het midden; rond de aanwijzer (of een zacht rondzwervend licht) worden de woorden leesbaar. Loopt alleen als de muur in beeld is.
 
 ## Wiel (`src/wheel.js`)
 

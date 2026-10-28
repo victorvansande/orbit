@@ -27,6 +27,7 @@
   --backdrop: rgba(241, 241, 239, .6);
   --placeholder: #BDBDC3;
   --late: #D7261C;
+  --core: #E70049;           /* kleur van de kern (Nu), accent in de effecten */
   --grain-blend: multiply;
   --grain-opacity: .14;
   --warm: #FFB46A;           /* avondtint over het papier */
@@ -44,6 +45,7 @@
 /* Donker: zelfde posterstijl, bijna zwart papier met lichte inkt. data-theme wordt vóór de eerste weergave gezet. */
 :root[data-theme="dark"] {
   --dm-ghost: .1;
+  --core: #F0306A;
   --bg: #0F0F12;
   --surface: #19191D;
   --ink: #ECECF1;
@@ -801,3 +803,19 @@ body.is-idle .controls { opacity: 0; }
   .track, .tracks, .wheel, .focus-info, .toast { transition-duration: .01s; }
   .dm .o { animation: none; }
 }
+
+/* ---- Effecten (src/fx.js) ---- */
+/* Terminal rain: intro bij het eerste bezoek van de dag, over alles heen; een tik slaat over */
+.fx-rain { position: fixed; inset: 0; z-index: 60; }
+/* Particle text: titel in de Uitleg uit puntjes; de echte tekst blijft voor schermlezers */
+.intro-title.has-fx { position: relative; font-size: 34px; color: transparent; }
+.fx-title { position: absolute; cursor: crosshair; touch-action: none; }
+/* Text morph: twee woorden in één cel, tijdens de wissel een drempelfilter zodat ze in elkaar vervloeien */
+.fx-morph { display: inline-grid; }
+.fx-morph > span { grid-area: 1 / 1; white-space: nowrap; }
+.fx-morph.is-morphing.is-gooey { filter: url(#fx-morph); }
+/* Typographic wall: lege lijst na het afvinken */
+.fx-wall { position: relative; height: 230px; margin-top: 14px; -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent); mask-image: radial-gradient(closest-side, #000 62%, transparent); }
+.fx-wall canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fx-wall-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; padding: 6px 14px; border-radius: 999px; background: var(--bg); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; }
+@media (max-width: 999px) { .intro-title.has-fx { font-size: 28px; } }
