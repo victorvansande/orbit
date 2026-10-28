@@ -222,6 +222,7 @@ const scene = createScene($('scene'), {
 // Een tik of klik buiten de scène (lijst, wiel, kop, lege pagina) zet een vastgezette bol of opgelichte ring terug.
 // Wat je daarna aanwijst (een rij, een moment op het wiel), licht gewoon opnieuw op.
 document.addEventListener('pointerdown', e => {
+  scene.wake();
   if (e.target instanceof Element && e.target.closest('#scene')) return;
   clearTimeout(flashTimer);
   scene.clearSelection();
@@ -645,7 +646,8 @@ function complete(id, row) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
   row.classList.add('is-done');
-  const spot = scene.complete(id);
+  const box = row.querySelector('.t-check')?.getBoundingClientRect();
+  const spot = scene.complete(id, box && box.width ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : null);
   scene.cheer();
   tasks = tasks.filter(t => t.id !== id);
   let next = null;

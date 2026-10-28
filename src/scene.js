@@ -29,6 +29,9 @@ const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const BEND_R = 170, BEND_PX = 18;          // raster rond de aanwijzer: straal en diepte (px)
 const SHOCK_SPEED = 300, SHOCK_LIFE = 1.1; // schokgolf bij afvinken: eenheden per s, duur (s)
+const WAKE = 0.7;                          // spoor op de baan: hoek (rad) achter een komeet waarin ringstippen nagloeien
+const SPARK_MS = 420;                      // afvinken vanuit de lijst: vlucht van het lichtpuntje naar de bol
+const SKY_PARALLAX = 2.4;                  // sterrenhemel schuift per graad camerahoek zoveel px tegen de ringen in
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
@@ -105,6 +108,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const shocks = [];                         // tijdstippen (ms) van een schokgolf
   let meteor = null, nextMeteor = performance.now() + (90 + Math.random() * 150) * 1000;
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
+  const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
+  let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
   let skyKnown = null;
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
@@ -252,7 +257,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   // Geeft de plek terug (stage-eenheden rond het midden van het scherm) voor de sterrenhemel, of null
-  function complete(id) {
+  function complete(id, from = null) {
     const o = orbs.get(id);
     if (!o) return null;
     orbs.delete(id);
@@ -261,10 +266,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (reducedMotion.matches || o.sx == null) return spot;
     // Zilver: de bol fonkelt uit waar hij stond, als een ster (vaste plek in de trechter, draait mee met de trechter)
     const [x, y, z] = orbFunnel(o, orbAngle(o));
-    twinkles.push({ level: o.level, x, y, z, age: 0, alpha: o.alpha ?? 1 });
+    // afgevinkt in de lijst: eerst vliegt een lichtpuntje van de rij naar de bol, dan fonkelt die uit
+    let wait = 0;
+    if (from) {
+      const r = canvas.getBoundingClientRect();
+      sparks.push({ x0: from.x - r.left, y0: from.y - r.top, x1: o.sx, y1: o.sy, t0: performance.now(), level: o.level });
+      wait = SPARK_MS / 1000;
+    }
+    twinkles.push({ level: o.level, x, y, z, age: -wait, alpha: o.alpha ?? 1 });
     const now = performance.now();
     while (shocks.length && now - shocks[0] > (SHOCK_LIFE + 1) * 1000) shocks.shift();
-    shocks.push(now + 250);
+    shocks.push(now + 250 + wait * 1000);
     return spot;
   }
 
@@ -341,6 +353,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (twinkles[i].age > TWINKLE_LIFE) twinkles.splice(i, 1);
     }
 
+    // slapende kern: geen taken, of 's nachts (23 tot 6 u) zonder iets dringends; een aanwijzer maakt hem 20 s wakker
+    const hr = new Date().getHours();
+    const asleep = nowCount === 0 && todayCount === 0 && (orbs.size === 0 || hr >= 23 || hr < 6) && now > wakeUntil;
+    sleepK = motion ? smooth(sleepK, asleep ? 1 : 0, asleep ? 0.6 : 4, dt) : (asleep ? 1 : 0);
+
     // kern: urgentie, kleur, tempo en aantal golven glijden mee met de taken
     const target = nowCount > 0 ? 1 + Math.min(nowCount - 1, 3) / 3 : todayCount > 0 ? 0.5 : 0;
     urgency = smooth(urgency, target, 2.5, dt);
@@ -360,12 +377,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const fade = introAlpha(now, 0, 1.4) * (0.5 + 0.2 * depth);
     if (fade <= 0) return;
     const buckets = Array.from({ length: 6 }, () => []);
+    // het raster klopt mee: bij elke slag van de kern rolt een zwakke rimpeling naar buiten
+    const live = Math.min(1, urgency / 0.3) * waveVis * beatScale * (1 - sleepK);
+    const bp = ((beat % 1) + 1) % 1, front = bp * 240, rip = reducedMotion.matches ? 0 : live * (1 - bp) * 0.9;
     for (const g of grid) {
       const z = g.r < RIM ? depthAt(g.r) * depth : 0;
       if (!project(g.x, g.y, z, false)) continue;
       // in het zijaanzicht wijkt het raster binnen en rond de trechter terug: de ringen tonen de vorm al
       const inside = 1 - depth * (1 - smoothstep(RIM - 24, RIM + 90, g.r));
-      const a = g.a * fade * inside * Math.min(1, pt.f * pt.f);
+      const bump = rip > 0.01 ? rip * Math.exp(-(((g.r - front) / 16) ** 2)) : 0;
+      const a = g.a * fade * inside * Math.min(1, pt.f * pt.f) * (1 + bump);
       if (!(a >= 0.006)) continue;
       if (pt.x < -8 || pt.x > W + 8 || pt.y < -8 || pt.y > H + 8) continue;
       let gx = pt.x, gy = pt.y;
@@ -378,7 +399,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         }
       }
       const k = Math.min(5, Math.floor(a / GRID_ALPHA * 6));
-      buckets[k].push(gx, gy, 0.9 * cam.du * pt.f);
+      buckets[k].push(gx, gy, 0.9 * cam.du * pt.f * (1 + 0.5 * bump));
     }
     ctx.fillStyle = rgba(INK, 1);
     buckets.forEach((b, k) => {
@@ -394,6 +415,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // Sterrenhemel: één klein vierpuntig sterretje per afgevinkte taak deze week, achter de scène, zacht fonkelend
   // Op een klein of vierkant canvas (gsm) valt de buitenrand van de hemel (straal 250) buiten beeld: dan schuift de
   // hele hemel wat naar binnen, zodat elke ster zichtbaar blijft.
+  // diepte: de hemel schuift iets tegen de ringen in als de camera met de muis meedraait
+  const skyShift = () => [-yaw * SKY_PARALLAX * cam.du, pitch * SKY_PARALLAX * cam.du];
+
   function skyScale() {
     const half = Math.min(W, H) / 2 / cam.s - 10;
     return cam.s * Math.min(1, half / 250);
@@ -406,11 +430,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const t = now / 1000, still = reducedMotion.matches;
     ctx.fillStyle = rgba(INK, 1);
     const dense = clamp(1 - (sky.length - 150) / 1500, 0.65, 1);
-    const ks = skyScale();
+    const ks = skyScale(), [shx, shy] = skyShift();
     const small = Math.min(W, H) < 500;   // gsm: sterren iets groter en helderder, anders vallen ze weg   // een volle hemel krijgt iets kleinere sterren
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
-      const x = cam.cx + st.x * ks, y = cam.cy + st.y * ks;
+      const x = cam.cx + st.x * ks + shx, y = cam.cy + st.y * ks + shy;
       // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
       let R = Math.max(2.6 * st.s * cam.du, (small ? 3 : 2.4) + st.s) * dense, alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
       // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
@@ -484,7 +508,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // lijntjes verschijnen na elkaar en groeien van de ene ster naar de andere
       const p = clamp((e / IN) * n - i, 0, 1);
       if (p <= 0) return;
-      const ks = skyScale(), ax = cam.cx + x1 * ks, ay = cam.cy + y1 * ks, bx = cam.cx + x2 * ks, by = cam.cy + y2 * ks;
+      const ks = skyScale(), [shx, shy] = skyShift(), ax = cam.cx + x1 * ks + shx, ay = cam.cy + y1 * ks + shy, bx = cam.cx + x2 * ks + shx, by = cam.cy + y2 * ks + shy;
       ctx.moveTo(ax, ay); ctx.lineTo(ax + (bx - ax) * p, ay + (by - ay) * p);
     });
     ctx.stroke();
@@ -530,6 +554,30 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         for (let i = 0; i < list.length; i += 3) { ctx.moveTo(list[i] + list[i + 2], list[i + 1]); ctx.arc(list[i], list[i + 1], list[i + 2], 0, TAU); }
         ctx.fill();
       }
+      // spoor op de baan: de stippen net achter een komeet gloeien even na in zijn kleur
+      if (!reducedMotion.matches) {
+        const heads = [];
+        for (const o of orbs.values()) if (o.level === lv.id && !o.leaving && o.alpha > 0.5 && Math.abs(o.r - lv.orbit) < 3) heads.push(orbAngle(o));
+        const sp = speed.get(lv.id);
+        if (heads.length && sp > 0.15) {
+          const n = ring.pts.length / 2;
+          ctx.fillStyle = rgba(colors.get(lv.id), 1);
+          for (let j = 0; j < n; j++) {
+            let glow = 0;
+            for (const a of heads) {
+              const behind = wrapAngle(a - j / n * TAU);
+              if (behind > 0 && behind < WAKE) glow = Math.max(glow, (1 - behind / WAKE) ** 2);
+            }
+            if (glow < 0.04) continue;
+            const x = ring.pts[2 * j] * push, y = ring.pts[2 * j + 1] * push;
+            if (!project(x, y, z, true)) continue;
+            ctx.globalAlpha = 0.55 * glow * Math.min(1, sp) * intro;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, r * pt.f * (1 + 0.6 * glow), 0, TAU);
+            ctx.fill();
+          }
+        }
+      }
       // monsterpunten voor hit-testing
       for (let k = 0; k < 48; k++) {
         const a = k / 48 * TAU;
@@ -553,7 +601,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // risoposter, plat in het vlak van de tip. Rustig: klein, grijs, een trage ademgolf. Dringend: groter, in kleur,
   // en bij elke slag rolt een golf naar buiten door de puntjes. Effen stippen, geen verloop of gloed.
   function drawCore(now) {
-    const intro = introAlpha(now, 0, 1.1);
+    const intro = introAlpha(now, 0, 1.1) * (1 - 0.55 * sleepK);   // slapend: bijna uitgedoofd
     if (intro <= 0) return;
     const z = TIP_Z * cam.depth;
     const strength = Math.min(1, urgency / 2) * 0.6 + Math.min(1, urgency) * 0.4;   // 0..1
@@ -563,7 +611,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const p = ((beat % 1) + 1) % 1;
     const front = p * (rMax + 8);   // golf rolt van het midden tot net buiten het raster
     const rippleAmp = still ? 0 : (0.5 + 0.9 * strength) * (1 - p * 0.6) * live * waveVis * beatScale;
-    const breatheAmp = still ? 0 : 0.12 * (1 - live) * waveVis;
+    const breatheAmp = still ? 0 : (0.12 + 0.1 * sleepK) * (1 - live) * waveVis;
     const t = now / 1000;
     const spacing = Math.max(CORE_SPACING, Math.round(CORE_MIN_PX / cam.s / 0.25) * 0.25);
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
@@ -576,7 +624,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (d.r > rMax) continue;
       const base = 0.25 + 1.05 * Math.pow(1 - d.r / rMax, 0.7);
       const bump = rippleAmp ? Math.exp(-(((d.r - front) / (3.2 * grow)) ** 2)) * rippleAmp : 0;
-      const breathe = breatheAmp ? breatheAmp * Math.sin(t * 1.3 - d.r * 0.25) : 0;
+      const breathe = breatheAmp ? breatheAmp * Math.sin(t * (1.3 - 0.85 * sleepK) - d.r * 0.25) : 0;
       const size = base + bump + breathe;
       if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
       paths[Math.round(eyes.ink(d.x, d.y) * 3)].push(pt.x, pt.y, size * grow * cam.s * pt.f);
@@ -616,6 +664,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     const sleepy = new Date().getHours() < 6;                     // 's nachts slaperig: half zo hoog, bovenkant zakt
     if (sleepy) open *= 0.42;
+    open *= 1 - 0.95 * sleepK;                                    // slapend: ogen dicht
     const happy = performance.now() < face.happyUntil;
     const h = Math.max(rMax * 0.25, spacing * 0.95);
     const gap = Math.max(rMax * 0.36, h * 1.3), ey = -rMax * 0.12;
@@ -803,8 +852,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const q of twinkles) {
       if (!project(q.x, q.y, q.z, true)) continue;
       const lv = LEVEL_BY_ID.get(q.level);
-      const p = Math.min(1, q.age / TWINKLE_LIFE);
       const r = lv.size / 2 * ORB_SCALE * cam.du * pt.f;
+      if (q.age < 0) {
+        // wacht op het lichtpuntje: de bol blijft even staan waar hij was
+        ctx.globalAlpha = q.alpha;
+        ctx.fillStyle = rgba(colors.get(q.level), 1);
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      const p = Math.min(1, q.age / TWINKLE_LIFE);
       const grow = p < 0.3 ? ease(p / 0.3) : 1 - Math.pow((p - 0.3) / 0.7, 2.2);
       const shrink = p < 0.3 ? 1 : 1 - Math.pow((p - 0.3) / 0.7, 2.2) * 0.9;
       const R = (r * 1.4 + 11 * cam.du * pt.f * grow) * shrink;
@@ -816,6 +873,28 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.arc(pt.x, pt.y, Math.max(0, r * 0.8 * (1 - p)), 0, TAU);
       ctx.fill();
       ctx.globalAlpha = 1;
+    }
+  }
+
+  // Lichtpuntje van de rij in de lijst naar de bol: een korte boog met een staartje
+  function drawSparks(now) {
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i], p = (now - s.t0) / SPARK_MS;
+      if (p >= 1) { sparks.splice(i, 1); continue; }
+      const at = q => {
+        const e = ease(Math.max(0, Math.min(1, q)));
+        const mx = (s.x0 + s.x1) / 2, my = Math.min(s.y0, s.y1) - 60;   // boogje omhoog
+        const u = 1 - e;
+        return [u * u * s.x0 + 2 * u * e * mx + e * e * s.x1, u * u * s.y0 + 2 * u * e * my + e * e * s.y1];
+      };
+      const [hx, hy] = at(p), [tx, ty] = at(p - 0.18);
+      const c = colors.get(s.level);
+      const g = ctx.createLinearGradient(hx, hy, tx, ty);
+      g.addColorStop(0, rgba(c, 0.9)); g.addColorStop(1, rgba(c, 0));
+      ctx.strokeStyle = g; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.fillStyle = rgba(INK, 0.85);
+      ctx.beginPath(); ctx.arc(hx, hy, 2.4, 0, TAU); ctx.fill();
     }
   }
 
@@ -905,6 +984,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawCore(now);
     drawOrbs();
     drawEffects();
+    drawSparks(now);
     drawLabels();
   }
 
@@ -961,6 +1041,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   canvas.addEventListener('pointermove', e => {
+    wakeUntil = performance.now() + 20000;
     const p = local(e);
     pointer = { ...p, inside: true };
     if (e.pointerType === 'mouse' && !reducedMotion.matches && cam.s) {
@@ -1000,6 +1081,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   });
 
   canvas.addEventListener('pointerdown', e => {
+    wakeUntil = performance.now() + 20000;
     if (e.button !== 0) return;
     const p = local(e);
     pointer = { ...p, inside: true };
@@ -1053,6 +1135,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (edges) constellation = { edges, t0: performance.now() + 2600 };
     },
     clearSelection,
+    wake() { wakeUntil = performance.now() + 20000; },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },
