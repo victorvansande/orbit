@@ -1848,7 +1848,8 @@ let rainDelay = 0;
   let last = null;
   try { last = localStorage.getItem(RAIN_KEY); } catch { /* geen opslag */ }
   const today = toDue(new Date());
-  if (!reducedMotion.matches && !lsEmptyAtStart && last !== today && !/^#sync=/.test(location.hash)) {
+  if (lsEmptyAtStart) { try { localStorage.setItem(RAIN_KEY, today); } catch { /* geen opslag */ } }   // eerste bezoek: pas morgen regen
+  else if (!reducedMotion.matches && last !== today && !/^#sync=/.test(location.hash)) {
     try { localStorage.setItem(RAIN_KEY, today); } catch { /* geen opslag */ }
     rainDelay = 1300;
     terminalRain({

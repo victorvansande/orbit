@@ -459,7 +459,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // onzichtbaar; rond de aanwijzer (of een zacht rondzwervend licht) worden ze leesbaar.
   const WALL_LH = 15, WALL_R = 130, WALL_FONT = '500 9.5px "Geist Mono", ui-monospace, monospace';
   function layoutWall() {
-    const key = `${W}x${H}:${Math.round(cam.cx / 8)}:${wallWords.length}:${wallWords[0] || ''}:${theme === THEMES.dark}:${document.fonts?.status}`;
+    const key = `${W}x${H}:${Math.round(cam.cx / 40)}:${wallWords.length}:${wallWords[0] || ''}:${theme === THEMES.dark}:${document.fonts?.status}`;
     if (key === wallKey) return;
     wallKey = key;
     ctx.save();

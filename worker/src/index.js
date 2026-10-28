@@ -78,7 +78,10 @@ export class Channel {
   }
 
   // Oude opslag (alle versies samen onder 'history') eenmalig omzetten
+  // Eén keer per leven van het object: daarna kost het geen extra lees-operatie per bewaring meer
   async migrate() {
+    if (this.migrated) return;
+    this.migrated = true;
     const old = await this.state.storage.get('history');
     if (!Array.isArray(old)) return;
     const put = {};
@@ -155,7 +158,7 @@ export class Channel {
     if (typeof msg?.d !== 'string' || !msg.d) return;
     if (msg.t === 'pub') {
       const snap = await this.store(msg.d);
-      ws.send(JSON.stringify({ t: 'ok', v: snap.v }));
+      try { ws.send(JSON.stringify({ t: 'ok', v: snap.v })); } catch { /* verbinding al weg; de lijst is wel bewaard */ }
       this.broadcast({ t: 'snap', v: snap.v, d: msg.d }, ws);
     } else if (msg.t === 'ack') {
       await this.addAck(msg.d);
