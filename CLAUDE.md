@@ -246,7 +246,7 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 
 ## Uitleg (eerste bezoek)
 
-- Venster "Uitleg" (`#intro`): naam, één zin over de kern, de vijf momenten in hun kleur, acht korte blokken (Toevoegen met herhalen, Afvinken met het lichtpuntje, Sterren: elke taak spaart een ster en een nieuwe hemel bewaart de oude, Verplaatsen, Kijken, Rust, De kern: gezicht, begroeting, tik, dutje, Toestellen) en een regel sneltoetsen (verborgen op touchscreens). Knop "Aan de slag".
+- Venster "Uitleg" (`#intro`): naam, één zin over de kern, de vijf momenten in hun kleur, acht korte blokken in twee kolommen, per rij ongeveer even lang (anders gaapte er een gat naast een lang blok): Toevoegen met herhalen | Afvinken met het lichtpuntje, Sterren (elke taak spaart een ster, een nieuwe hemel bewaart de oude) | De kern (gezicht, begroeting, tik, dutje), Verplaatsen | Kijken, Rust | Toestellen en een regel sneltoetsen (verborgen op touchscreens). Knop "Aan de slag".
 - Opent vanzelf bij een eerste bezoek: nog geen taken bewaard (`lsEmptyAtStart`), uitleg nooit gezien (`priority-orbit.intro.v1`) en niet geopend via een koppellink. Altijd terug via "Uitleg" rechtsboven of `?`.
 - Start bovenaan zonder focuskader (focus op de kaart zelf, `preventScroll`).
 
