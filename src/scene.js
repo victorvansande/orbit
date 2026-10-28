@@ -31,7 +31,6 @@ const BEND_R = 170, BEND_PX = 18;          // raster rond de aanwijzer: straal e
 const SHOCK_SPEED = 300, SHOCK_LIFE = 1.1; // schokgolf bij afvinken: eenheden per s, duur (s)
 const WAKE = 0.7;                          // spoor op de baan: hoek (rad) achter een komeet waarin ringstippen nagloeien
 const SPARK_MS = 420;                      // afvinken vanuit de lijst: vlucht van het lichtpuntje naar de bol
-const SKY_PARALLAX = 2.4;                  // sterrenhemel schuift per graad camerahoek zoveel px tegen de ringen in
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
@@ -415,9 +414,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // Sterrenhemel: één klein vierpuntig sterretje per afgevinkte taak deze week, achter de scène, zacht fonkelend
   // Op een klein of vierkant canvas (gsm) valt de buitenrand van de hemel (straal 250) buiten beeld: dan schuift de
   // hele hemel wat naar binnen, zodat elke ster zichtbaar blijft.
-  // diepte: de hemel schuift iets tegen de ringen in als de camera met de muis meedraait
-  const skyShift = () => [-yaw * SKY_PARALLAX * cam.du, pitch * SKY_PARALLAX * cam.du];
-
   function skyScale() {
     const half = Math.min(W, H) / 2 / cam.s - 10;
     return cam.s * Math.min(1, half / 250);
@@ -430,11 +426,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const t = now / 1000, still = reducedMotion.matches;
     ctx.fillStyle = rgba(INK, 1);
     const dense = clamp(1 - (sky.length - 150) / 1500, 0.65, 1);
-    const ks = skyScale(), [shx, shy] = skyShift();
+    const ks = skyScale();
     const small = Math.min(W, H) < 500;   // gsm: sterren iets groter en helderder, anders vallen ze weg   // een volle hemel krijgt iets kleinere sterren
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
-      const x = cam.cx + st.x * ks + shx, y = cam.cy + st.y * ks + shy;
+      const x = cam.cx + st.x * ks, y = cam.cy + st.y * ks;
       // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
       let R = Math.max(2.6 * st.s * cam.du, (small ? 3 : 2.4) + st.s) * dense, alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
       // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
@@ -508,7 +504,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // lijntjes verschijnen na elkaar en groeien van de ene ster naar de andere
       const p = clamp((e / IN) * n - i, 0, 1);
       if (p <= 0) return;
-      const ks = skyScale(), [shx, shy] = skyShift(), ax = cam.cx + x1 * ks + shx, ay = cam.cy + y1 * ks + shy, bx = cam.cx + x2 * ks + shx, by = cam.cy + y2 * ks + shy;
+      const ks = skyScale(), ax = cam.cx + x1 * ks, ay = cam.cy + y1 * ks, bx = cam.cx + x2 * ks, by = cam.cy + y2 * ks;
       ctx.moveTo(ax, ay); ctx.lineTo(ax + (bx - ax) * p, ay + (by - ay) * p);
     });
     ctx.stroke();
