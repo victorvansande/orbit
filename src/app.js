@@ -219,6 +219,14 @@ const scene = createScene($('scene'), {
   onCore() { tapCore(); },
 });
 
+// Een tik of klik buiten de scène (lijst, wiel, kop, lege pagina) zet een vastgezette bol of opgelichte ring terug.
+// Wat je daarna aanwijst (een rij, een moment op het wiel), licht gewoon opnieuw op.
+document.addEventListener('pointerdown', e => {
+  if (e.target instanceof Element && e.target.closest('#scene')) return;
+  clearTimeout(flashTimer);
+  scene.clearSelection();
+}, true);
+
 let flashTimer = 0;
 const wheel = createWheel($('wheel'), {
   reducedMotion,

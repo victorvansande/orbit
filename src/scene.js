@@ -946,6 +946,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return { orb: null, level: nearestRing(x, y, 12) };
   }
 
+  function clearSelection() {
+    pinned = null;
+    external = { task: null, level: null };
+    setHover({ orb: null, level: null });
+  }
+
   const onCoreSpot = p => coreHit && Math.hypot(p.x - coreHit.x, p.y - coreHit.y) < coreHit.r;
 
   function setHover(next) {
@@ -1024,8 +1030,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       setView(name);
       onView(name);
     } else {
-      pinned = null;
-      if (e?.pointerType !== 'mouse') setHover({ orb: null, level: null });
+      // een tik op lege ruimte zet alles terug: geen vastgezette bol, geen opgelichte ring
+      clearSelection();
       if (!cancelled && e && onCoreSpot(local(e))) onCore();
     }
   }
@@ -1046,6 +1052,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const edges = makeConstellation(count);
       if (edges) constellation = { edges, t0: performance.now() + 2600 };
     },
+    clearSelection,
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },
