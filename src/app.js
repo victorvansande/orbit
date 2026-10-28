@@ -15,6 +15,7 @@ import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STOR
 import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './i18n.js';
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
+import { createFidget } from './fidget.js';
 
 applyStatic();
 
@@ -1062,9 +1063,11 @@ if (DEMO_MODE) {
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
+const fidget = createFidget($('fidget'), { reducedMotion });   // vijver, alleen op desktop zichtbaar
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
+  if (on && desktop.matches) fidget.start(); else fidget.stop();
   $('focus-btn').setAttribute('aria-pressed', String(on));
   if (on) {
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -1800,7 +1803,11 @@ buildComposerLevels();
 renderClock();
 setInterval(renderClock, 10000);
 setInterval(followDeadlines, 60000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) followDeadlines(); });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) followDeadlines();
+  if (document.hidden) fidget.stop();
+  else if (document.body.classList.contains('is-focus') && desktop.matches) fidget.start();
+});
 updateInsets();
 renderSummary();
 renderTracks();
