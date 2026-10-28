@@ -118,6 +118,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let dustAmount = 0;
   let sonar = null;                          // {t0, target}: ring van tekens vanuit de kern, de gezochte bol licht op
   let mosaic = null;                         // {t0, old}: golf van tegeltjes die de oude hemel meeneemt
+  // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
+  let wallWords = [], wallOn = false, wallK = 0, wallLayout = null, wallBase = null, wallKey = '';
+  const lamp = { x: 0, y: 0 };
   let starDelay = 0, lastStarAt = 0;                         // ms tot de nieuwe ster verschijnt: pas na het uitfonkelen, nooit twee sterren tegelijk
   let skyKnown = null;
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
@@ -387,6 +390,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       }
     }
     if (sonar && (now - sonar.t0) / 1000 > SONAR_LIFE + 2.4) sonar = null;
+    wallK = motion ? smooth(wallK, wallOn && wallWords.length ? 1 : 0, 3, dt) : (wallOn && wallWords.length ? 1 : 0);
+    if (wallK > 0.001) {
+      // licht: rond de aanwijzer, anders zwerft het traag rond
+      const t = now / 1000;
+      const gx = pointer.inside ? pointer.x : W / 2 + Math.cos(t / 3.1) * W * 0.3, gy = pointer.inside ? pointer.y : H / 2 + Math.sin(t / 2.3) * H * 0.3;
+      lamp.x = motion ? smooth(lamp.x || gx, gx, pointer.inside ? 10 : 1.5, dt) : gx;
+      lamp.y = motion ? smooth(lamp.y || gy, gy, pointer.inside ? 10 : 1.5, dt) : gy;
+    }
     if (mosaic && (now - mosaic.t0) / 1000 > 4) mosaic = null;
   }
 
@@ -442,6 +453,64 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   function skyScale() {
     const half = Math.min(W, H) / 2 / cam.s - 10;
     return cam.s * Math.min(1, half / 250);
+  }
+
+  // Typographic wall (naar React Bits): de titels van wat je afvinkte, in kapitaaltjes over de hele scène, bijna
+  // onzichtbaar; rond de aanwijzer (of een zacht rondzwervend licht) worden ze leesbaar.
+  const WALL_LH = 15, WALL_R = 130, WALL_FONT = '500 9.5px "Geist Mono", ui-monospace, monospace';
+  function layoutWall() {
+    const key = `${W}x${H}:${Math.round(cam.cx / 8)}:${wallWords.length}:${wallWords[0] || ''}:${theme === THEMES.dark}:${document.fonts?.status}`;
+    if (key === wallKey) return;
+    wallKey = key;
+    ctx.save();
+    ctx.font = WALL_FONT;
+    const items = [];
+    for (let row = 0, i = 0; row * WALL_LH < H + WALL_LH; row++) {
+      let x = -((row * 41) % 90);
+      while (x < W) {
+        const word = `${wallWords[(i++ * 7 + row) % wallWords.length]}  ✦  `;
+        const w = ctx.measureText(word).width;
+        items.push({ word, x, y: row * WALL_LH + 8, w });
+        x += w;
+      }
+    }
+    ctx.restore();
+    wallLayout = items;
+    // basislaag één keer tekenen
+    wallBase = wallBase || document.createElement('canvas');
+    wallBase.width = Math.round(W * DPR); wallBase.height = Math.round(H * DPR);
+    const g = wallBase.getContext('2d');
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.font = WALL_FONT; g.textBaseline = 'middle'; g.textAlign = 'left';
+    g.fillStyle = rgba(INK, 1);
+    for (const it of items) g.fillText(it.word, it.x, it.y);
+    // alleen rond de scène, niet achter de lijst en het wiel: zacht uitdoven naar de rand
+    const R = wallRadius();
+    g.globalCompositeOperation = 'destination-in';
+    const grad = g.createRadialGradient(cam.cx, cam.cy, R * 0.45, cam.cx, cam.cy, R);
+    grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+  }
+  function wallRadius() { return Math.min(Math.max(200, W - insets.left - insets.right), H) * 0.62; }
+  function drawWall() {
+    if (wallK < 0.005 || !wallWords.length) return;
+    layoutWall();
+    ctx.globalAlpha = 0.035 * theme.grid * wallK;
+    const R = wallRadius();
+    ctx.drawImage(wallBase, 0, 0, W, H);
+    ctx.font = WALL_FONT; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.fillStyle = rgba(INK, 1);
+    for (const it of wallLayout) {
+      if (Math.abs(it.y - lamp.y) > WALL_R || it.x > lamp.x + WALL_R || it.x + it.w < lamp.x - WALL_R) continue;
+      const d = Math.hypot(Math.max(0, Math.abs(it.x + it.w / 2 - lamp.x) - it.w / 2), it.y - lamp.y), lit = Math.max(0, 1 - d / WALL_R);
+      const fade = 1 - smoothstep(R * 0.45, R, Math.hypot(it.x + it.w / 2 - cam.cx, it.y - cam.cy));
+      if (lit * fade < 0.02) continue;
+      ctx.globalAlpha = 0.45 * lit * lit * fade * wallK;
+      ctx.fillText(it.word, it.x, it.y);
+    }
+    ctx.globalAlpha = 1;
   }
 
   // afstand (px) van het golffront van de mozaïekgolf tot het midden, of null
@@ -1115,6 +1184,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.clearRect(0, 0, W, H);
     updateCamera();
     drawGrid(now);
+    drawWall();
     drawSky(now);
     drawConstellation(now);
     drawMeteor(now);
@@ -1302,6 +1372,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       skyKnown = new Set(list.map(st => st.id));
       sky = list;
     },
+    // muur van afgevinkte taken achter de hemel: woorden (titels) en aan/uit
+    setWall(words, on) { wallWords = words.map(w => w.toUpperCase()); wallOn = on; wallKey = ''; },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;

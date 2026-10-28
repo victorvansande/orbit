@@ -66,6 +66,7 @@ const NL = {
   'stats.resetYes': 'Op nul', 'stats.resetDone': 'Teller en sterren op nul',
   'skies.title': 'Hemels', 'skies.current': 'Deze hemel', 'skies.currentSince': 'Deze hemel, sinds {date}', 'skies.all': 'Alle sterren',
   'skies.until': 'Tot {date}', 'skies.range': '{from} tot {to}', 'skies.new': 'Nieuwe hemel',
+  'wall.label': 'Muur', 'wall.title': 'Muur van afgevinkte taken achter de hemel',
   'skies.ask': 'Een nieuwe, lege hemel? Je sterren verdwijnen van het scherm maar blijven bewaard; je kunt ze hier altijd terug tonen. Dat geldt ook op je gekoppelde toestellen.',
   'skies.yes': 'Nieuwe hemel', 'skies.done': 'Nieuwe hemel. Je vorige sterren staan onder Hemels.',
 
@@ -227,6 +228,7 @@ const EN = {
   'stats.resetYes': 'Reset', 'stats.resetDone': 'Counter and stars reset',
   'skies.title': 'Skies', 'skies.current': 'This sky', 'skies.currentSince': 'This sky, since {date}', 'skies.all': 'All stars',
   'skies.until': 'Until {date}', 'skies.range': '{from} to {to}', 'skies.new': 'New sky',
+  'wall.label': 'Wall', 'wall.title': 'Wall of completed tasks behind the sky',
   'skies.ask': 'A new, empty sky? Your stars leave the screen but are kept; you can always show them again here. This also applies to your paired devices.',
   'skies.yes': 'New sky', 'skies.done': 'New sky. Your earlier stars are under Skies.',
 

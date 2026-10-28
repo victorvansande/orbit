@@ -371,8 +371,25 @@ function renderFocusNow() {
 const MONTH_FMT = new Intl.DateTimeFormat(LOCALE, { month: 'long' });
 const LONG_DAY = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 let statsDay = '';
+// Muur van afgevinkte taken achter de sterrenhemel, aan of uit met het knopje naast de teller (per toestel)
+const WALL_KEY = 'priority-orbit.wall.v1';
+let wallOn = false;
+try { wallOn = localStorage.getItem(WALL_KEY) === 'on'; } catch { /* geen opslag */ }
+function renderWall() {
+  const words = [...new Set(archive.slice(0, 80).map(a => a.title))];
+  scene.setWall(words, wallOn);
+  $('wall-toggle').setAttribute('aria-pressed', String(wallOn));
+  $('wall-toggle').hidden = !words.length;
+}
+$('wall-toggle').addEventListener('click', () => {
+  wallOn = !wallOn;
+  try { localStorage.setItem(WALL_KEY, wallOn ? 'on' : 'off'); } catch { /* geen opslag */ }
+  renderWall();
+});
+
 function renderStats({ quiet = false } = {}) {
   const now = new Date();
+  renderWall();
   statsDay = dayKey(now);
   scene.setSky(sky.stars.filter(s => starVisible(s.id)), { quiet });
   const all = totalDone(done);

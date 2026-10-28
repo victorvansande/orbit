@@ -240,7 +240,12 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .tracks-demo { margin: 8px 0 4px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; max-width: 30ch; }
 .tracks-empty { margin-top: 18px; color: var(--ink-2); font-size: 13.5px; max-width: 26ch; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
-.stats { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.stats { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.stats .stats-detail { flex-basis: 100%; }
+/* knopje: muur van afgevinkte taken achter de sterrenhemel */
+.wall-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 2px; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); transition: color .2s var(--ease); }
+.wall-toggle:hover { color: var(--ink-2); }
+.wall-toggle[aria-pressed="true"] { color: var(--ink); }
 .stats-total {
   display: flex; align-items: flex-end; gap: 10px; min-height: 32px; text-align: left;
   font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);

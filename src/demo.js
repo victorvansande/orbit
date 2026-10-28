@@ -12,6 +12,14 @@ const dueIn = days => { const d = new Date(Date.now() + days * DAY); return `${d
 
 // [titel nl, titel en, moment, extra]: per schil minstens vijf taken, met alles wat Orbit kan tonen: een taak die al
 // lang ligt, deadlines (te laat, vandaag, deze week, later), herhalingen
+// afgevinkte voorbeeldtaken (titels voor het archief en de muur)
+const DEMO_DONE = [
+  ['Tandarts bellen', 'Call the dentist'], ['Winterbanden laten steken', 'Fit the winter tyres'], ['Cadeau voor mama', 'Present for mum'],
+  ['Belastingaangifte', 'Tax return'], ['Vuilnis buiten', 'Take out the bins'], ['Kapper boeken', 'Book the barber'],
+  ['Fiets laten herstellen', 'Get the bike fixed'], ['Presentatie oefenen', 'Rehearse the talk'], ['Pakje ophalen', 'Pick up the parcel'],
+  ['Mail aan Sarah', 'Email Sarah'], ['Verzekering vergelijken', 'Compare insurance'], ['Boek terugbrengen', 'Return the book'],
+];
+
 const DEMO_TASKS = [
   ['Huur overschrijven', 'Pay the rent', 1, { levelAt: -9 }],
   ['Offerte terugsturen', 'Send back the quote', 1, {}],
@@ -56,10 +64,16 @@ function seed() {
     return t;
   });
   // 23 afgevinkte taken over de voorbije weken: teller en sterren gevuld, twee keer afvinken geeft een sterrenbeeld
-  const done = {};
-  for (let i = 0; i < 23; i++) done[`demo-done-${i}`] = now - (i * 19 + 2) * 3600000;
+  const done = {}, archive = [];
+  for (let i = 0; i < 23; i++) {
+    const at = now - (i * 19 + 2) * 3600000, id = `demo-done-${i}`, [nl, en] = DEMO_DONE[i % DEMO_DONE.length];
+    done[id] = at;
+    // ook in het archief, met titel: zo heeft de muur achter de hemel iets te tonen
+    archive.push({ id, title: lang === 'en' ? en : nl, level: 1 + (i % 5), createdAt: at - DAY, updatedAt: at - DAY, doneAt: at });
+  }
   try {
     localStorage.setItem('priority-orbit.tasks.v1', JSON.stringify(tasks));
     localStorage.setItem('priority-orbit.done.v1', JSON.stringify(done));
+    localStorage.setItem('priority-orbit.archive.v1', JSON.stringify(archive));
   } catch { /* geen opslag */ }
 }
