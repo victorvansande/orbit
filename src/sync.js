@@ -54,7 +54,9 @@ export function mergeStates(a, b) {
   for (const t of tasks) if (done[t.id] && (t.updatedAt || 0) > done[t.id]) delete done[t.id];
   const doneReset = Math.max(a.doneReset || 0, b.doneReset || 0);
   for (const [id, t] of Object.entries(done)) if (t <= doneReset) delete done[id];
-  return { tasks, gone, done, doneReset };
+  // nieuwe hemels: alle sneden van beide kanten
+  const skyCuts = [...new Set([...(a.skyCuts || []), ...(b.skyCuts || [])].filter(Number.isFinite))].sort((x, y) => x - y);
+  return { tasks, gone, done, doneReset, skyCuts };
 }
 
 // Twee toestanden zijn gelijk als dezelfde taken met dezelfde wijzigingstijd bestaan, dezelfde taken afgevinkt zijn
@@ -65,6 +67,7 @@ export function sameState(a, b) {
     Object.keys(s.gone || {}).sort(),
     Object.entries(s.done || {}).map(([id, t]) => `${id}:${t}`).sort(),
     s.doneReset || 0,
+    (s.skyCuts || []).join(','),
   ]);
   return sig(a) === sig(b);
 }

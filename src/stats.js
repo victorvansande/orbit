@@ -6,8 +6,10 @@
 const DONE_KEY = 'priority-orbit.done.v1';     // {id: tijdstip van afvinken}
 const STARS_KEY = 'priority-orbit.stars.v2';   // {stars: [{id, x, y, s, ph}]}: één ster per afgevinkte taak
 const RESET_KEY = 'priority-orbit.doneReset.v1';   // tijdstip waarop de teller op nul ging (gaat mee met de sync)
+const SKIES_KEY = 'priority-orbit.skies.v1';  // [tijdstip, ...]: elke "nieuwe hemel" begint op zo'n tijdstip (gaat mee met de sync)
+const VIEW_KEY = 'priority-orbit.skyview.v1'; // welke hemel dit toestel toont: 'current', 'all' of het begin van een vorige hemel
 const LEGACY_KEY = 'priority-orbit.stats.v1';  // vroegere telling per dag, alleen nog om over te zetten
-export const STATS_KEYS = { DONE_KEY, STARS_KEY, RESET_KEY };
+export const STATS_KEYS = { DONE_KEY, STARS_KEY, RESET_KEY, SKIES_KEY };
 
 const pad = n => String(n).padStart(2, '0');
 export const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -41,6 +43,36 @@ export const loadReset = () => { try { return Number(localStorage.getItem(RESET_
 export const saveReset = t => { try { localStorage.setItem(RESET_KEY, String(t)); } catch { /* geen opslag */ } };
 
 export const totalDone = done => Object.keys(done).length;
+
+/* ---- Hemels ---- */
+// Een nieuwe hemel wist de sterren niet: ze verdwijnen enkel van het scherm. Elke snede is een tijdstip; een ster hoort
+// bij de hemel waarin haar taak afgevinkt werd. Teruggeroepen kan altijd (een vorige hemel, of alle sterren samen).
+export const cleanCuts = cuts => [...new Set((Array.isArray(cuts) ? cuts : []).filter(Number.isFinite))].sort((a, b) => a - b);
+export const loadCuts = () => cleanCuts(readObj(SKIES_KEY));
+export const saveCuts = cuts => writeObj(SKIES_KEY, cleanCuts(cuts));
+export const loadSkyView = () => { try { return localStorage.getItem(VIEW_KEY) || 'current'; } catch { return 'current'; } };
+export const saveSkyView = v => { try { localStorage.setItem(VIEW_KEY, String(v)); } catch { /* geen opslag */ } };
+
+// Alle hemels, oudste eerst: {from, to, n}; de laatste is de huidige (to = Infinity)
+export function skyPeriods(done, cuts) {
+  const bounds = [0, ...cleanCuts(cuts), Infinity];
+  const times = Object.values(done);
+  const out = [];
+  for (let i = 0; i < bounds.length - 1; i++) {
+    const from = bounds[i], to = bounds[i + 1];
+    out.push({ from, to, n: times.filter(t => t >= from && t < to).length });
+  }
+  return out;
+}
+
+// Hoort de ster van deze taak (afgevinkt op t) bij de getoonde hemel?
+export function inView(t, view, cuts) {
+  if (view === 'all') return true;
+  const c = cleanCuts(cuts);
+  if (view === 'current' || !Number.isFinite(Number(view))) return t >= (c[c.length - 1] || 0);
+  const from = Number(view), next = c.find(x => x > from) ?? Infinity;
+  return t >= from && t < next;
+}
 
 function perDay(done) {
   const days = {};
@@ -102,9 +134,10 @@ export function syncStars(sky, done) {
 // Best candidate (Mitchell): een paar willekeurige kandidaten rond de plek waar de taak uitfonkelde (niet op het pad
 // zelf), en daarvan de kandidaat die het verst van alle bestaande sterren ligt. Geeft een natuurlijke, gelijkmatige
 // spreiding zonder raster en zonder klonters. Lukt het niet in de buurt, dan ergens anders aan de hemel.
-export function placeStar(sky, id, near, save = true) {
+export function placeStar(sky, id, near, save = true, visible = null) {
   if (sky.stars.some(s => s.id === id)) return sky;
-  const stars = sky.stars;
+  // een nieuwe hemel: alleen de sterren die nu op het scherm staan tellen voor de spreiding
+  const stars = visible ? sky.stars.filter(s => visible(s.id)) : sky.stars;
   const nearest = (x, y) => stars.reduce((m, s) => Math.min(m, Math.hypot(s.x - x, s.y - y)), Infinity);
   const inSky = (x, y) => { const r = Math.hypot(x, y); return r >= SKY_MIN && r <= SKY_MAX; };
   const pick = (gen, tries, gap) => {
@@ -131,7 +164,7 @@ export function placeStar(sky, id, near, save = true) {
     if (spot) break;
   }
   if (!spot) return sky;                                  // hemel echt vol: niets meer bij
-  stars.push({ id, x: +spot[0].toFixed(1), y: +spot[1].toFixed(1), s: +(0.75 + Math.random() * 0.5).toFixed(2), ph: +(Math.random() * 6.28).toFixed(2) });
+  sky.stars.push({ id, x: +spot[0].toFixed(1), y: +spot[1].toFixed(1), s: +(0.75 + Math.random() * 0.5).toFixed(2), ph: +(Math.random() * 6.28).toFixed(2) });
   if (save) writeObj(STARS_KEY, sky);
   return sky;
 }

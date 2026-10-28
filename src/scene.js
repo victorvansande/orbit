@@ -109,6 +109,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
   let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
+  let starDelay = 0, lastStarAt = 0;                         // ms tot de nieuwe ster verschijnt: pas na het uitfonkelen, nooit twee sterren tegelijk
   let skyKnown = null;
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
   let drag = null, dropLevel = null;
@@ -273,6 +274,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       wait = SPARK_MS / 1000;
     }
     twinkles.push({ level: o.level, x, y, z, age: -wait, alpha: o.alpha ?? 1 });
+    starDelay = (wait + TWINKLE_LIFE) * 1000 + 120;
     const now = performance.now();
     while (shocks.length && now - shocks[0] > (SHOCK_LIFE + 1) * 1000) shocks.shift();
     shocks.push(now + 250 + wait * 1000);
@@ -436,7 +438,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
       const born = skyBorn.get(st.id);
       if (born !== undefined) {
-        const p = (now - born) / 1000 - TWINKLE_LIFE * 0.6;
+        const p = (now - born) / 1000;
         if (p > 2.4) skyBorn.delete(st.id);
         else if (p < 0) continue;
         else { const k = 1 - ease(p / 2.4); R *= 1 + 1.6 * k; alpha = Math.min(1, alpha + 0.6 * k); }
@@ -1128,7 +1130,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     constellation(count = 25) {
       if (reducedMotion.matches) return;
       const edges = makeConstellation(count);
-      if (edges) constellation = { edges, t0: performance.now() + 2600 };
+      if (edges) constellation = { edges, t0: Math.max(performance.now(), lastStarAt) + 1200 };   // na de nieuwe ster
     },
     clearSelection,
     wake() { wakeUntil = performance.now() + 20000; },
@@ -1142,10 +1144,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const r = cam.cx - pt.x, dy = y - cam.cy;
       return Math.abs(dy) >= r ? null : cam.cx - Math.sqrt(r * r - dy * dy);
     },
-    setSky(list) {
+    setSky(list, { quiet = false } = {}) {
       // wat er na de eerste keer bijkomt, is een nieuwe ster (bij het opstarten niet: dan staat de hemel er al)
       const now = performance.now();
-      if (skyKnown && !reducedMotion.matches) for (const st of list) if (!skyKnown.has(st.id)) skyBorn.set(st.id, now);
+      // de nieuwe ster verschijnt pas als de afgevinkte taak helemaal uitgefonkeld is; een andere hemel tonen gebeurt stil
+      if (skyKnown && !quiet && !reducedMotion.matches) for (const st of list) if (!skyKnown.has(st.id)) { skyBorn.set(st.id, now + starDelay); lastStarAt = now + starDelay; }
+      starDelay = 0;
       skyKnown = new Set(list.map(st => st.id));
       sky = list;
     },

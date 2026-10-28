@@ -6,7 +6,8 @@ import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './deadl
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
 import { mirror, readMirror } from './backup.js';
 import { setMatrix, twinkleDot } from './matrix.js';
-import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, clearStars, dayKey, STATS_KEYS } from './stats.js';
+import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, clearStars, dayKey, STATS_KEYS,
+  loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView } from './stats.js';
 import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
@@ -171,6 +172,9 @@ tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'demo');
 let archive = loadArchive();
 let done = loadDone(archive);                    // logboek van afgevinkte taken, gaat mee met de sync
 let doneReset = loadReset();                      // teller op nul gezet op dit tijdstip
+let skyCuts = loadCuts();                         // begin van elke nieuwe hemel (gaat mee met de sync)
+let skyView = loadSkyView();                      // getoonde hemel: 'current', 'all' of het begin van een vorige
+const starVisible = id => done[id] !== undefined && inView(done[id], skyView, skyCuts);
 let sky = syncStars(loadStars(), done);           // één ster per afgevinkte taak
 applyDeadlines();
 saveTasks({ notify: false });
@@ -365,19 +369,22 @@ function renderFocusNow() {
 const MONTH_FMT = new Intl.DateTimeFormat(LOCALE, { month: 'long' });
 const LONG_DAY = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 let statsDay = '';
-function renderStats() {
+function renderStats({ quiet = false } = {}) {
   const now = new Date();
   statsDay = dayKey(now);
-  scene.setSky(sky.stars);
-  const total = totalDone(done);
-  $('stats').hidden = total === 0;
-  $('stat-mini').hidden = total === 0;
-  if (!total) return;
+  scene.setSky(sky.stars.filter(s => starVisible(s.id)), { quiet });
+  const all = totalDone(done);
+  $('stats').hidden = all === 0;
+  $('stat-mini').hidden = all === 0;
+  if (!all) return;
+  // de teller telt de sterren van de getoonde hemel; de details hieronder blijven over alles gaan
+  const total = Object.keys(done).filter(starVisible).length;
   $('stat-mini-n').textContent = String(total);
   $('stat-mini').setAttribute('aria-label', tx('stars.mini', { n: total }));
   setMatrix($('stat-total'), String(total));
   $('stat-total').setAttribute('aria-label', tx('stats.total', { n: total }));
   $('stat-stars-label').textContent = total === 1 ? tx('stats.label1') : tx('stats.label');
+  renderSkies();
   const sum = doneSummary(done, now);
   const day = ts => LONG_DAY.format(ts);
   const bestDay = sum.best ? (([y, m, d]) => new Date(y, m - 1, d))(sum.best.day.split('-').map(Number)) : null;
@@ -390,6 +397,53 @@ function renderStats() {
   ];
   $('stats-rows').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', '', k), el('dd', '', String(v))]));
 }
+// Hemels: een nieuwe, lege hemel zonder iets te wissen; vorige hemels of alle sterren samen kun je terug tonen
+const SKY_DATE = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' });
+const skyDate = t => SKY_DATE.format(t).replace(/\./g, '');
+function renderSkies() {
+  const list = $('skies-list');
+  $('skies-title').hidden = !skyCuts.length;
+  if (!skyCuts.length) { list.replaceChildren(); return; }
+  const periods = skyPeriods(done, skyCuts);
+  const cur = periods[periods.length - 1];
+  const opt = (value, label, n) => {
+    const b = el('button', 'sky-opt');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(String(skyView) === String(value)));
+    b.append(el('span', '', label), el('span', '', String(n)));
+    b.addEventListener('click', () => setSkyView(value));
+    return b;
+  };
+  const rows = [opt('current', tx('skies.currentSince', { date: skyDate(cur.from) }), cur.n)];
+  for (const p of periods.slice(0, -1).reverse()) {
+    rows.push(opt(p.from, p.from ? tx('skies.range', { from: skyDate(p.from), to: skyDate(p.to) }) : tx('skies.until', { date: skyDate(p.to) }), p.n));
+  }
+  rows.push(opt('all', tx('skies.all'), totalDone(done)));
+  list.replaceChildren(...rows);
+}
+function setSkyView(value) {
+  skyView = value;
+  saveSkyView(value);
+  renderStats({ quiet: true });
+}
+function showSkyConfirm(on) {
+  $('sky-confirm').hidden = !on;
+  $('sky-new').hidden = on;
+  if (on) $('sky-new-no').focus();
+}
+$('sky-new').addEventListener('click', () => showSkyConfirm(true));
+$('sky-new-no').addEventListener('click', () => showSkyConfirm(false));
+$('sky-new-yes').addEventListener('click', () => {
+  skyCuts = cleanCuts([...skyCuts, Date.now()]);
+  saveCuts(skyCuts);
+  skyView = 'current';
+  saveSkyView(skyView);
+  showSkyConfirm(false);
+  renderStats({ quiet: true });
+  notifySync();
+  showToast(tx('skies.done'));
+});
+
 // Teller en sterren op nul, na bevestiging. Het tijdstip gaat mee met de sync, zodat gekoppelde toestellen volgen
 // en de oude sterren niet terugbrengen.
 function showResetConfirm(on) {
@@ -658,9 +712,11 @@ function complete(id, row) {
     archive = saveArchive([{ ...task, doneAt: now }, ...archive]);
     done[id] = now;
     saveDone(done);
-    placeStar(sky, id, spot);
+    if (skyView !== 'current' && skyView !== 'all') { skyView = 'current'; saveSkyView(skyView); }   // een nieuwe ster hoort bij deze hemel
+    placeStar(sky, id, spot, true, starVisible);
     renderStats();
-    if (totalDone(done) % 25 === 0) scene.constellation(25);   // mijlpaal: de laatste 25 sterren vormen even een sterrenbeeld
+    const shown = Object.keys(done).filter(starVisible).length;
+    if (shown % 25 === 0) scene.constellation(25);   // mijlpaal: de laatste 25 sterren vormen even een sterrenbeeld
     // herhalende taak: meteen de volgende, met de eerstvolgende datum na vandaag
     if (task.repeat && task.due) {
       const due = nextDue(task.due, task.repeat);
@@ -1287,6 +1343,7 @@ window.addEventListener('storage', e => {
     // anders overschrijft dit tabblad bij de volgende afgevinkte taak de telling van het andere
     done = loadDone(archive);
     doneReset = loadReset();
+    skyCuts = loadCuts();
     sky = loadStars();
     renderStats();
   }
@@ -1301,7 +1358,7 @@ const DEVICE = deviceName();
 
 const sync = createSync({
   deviceName: DEVICE,
-  getState: () => ({ tasks: realTasks(), gone, done, doneReset }),
+  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts }),
   applyState(state) {
     gone = { ...state.gone };
     const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo');
@@ -1317,6 +1374,8 @@ const sync = createSync({
     // logboek van het andere toestel (een oudere versie van Orbit stuurt er geen: dan zelf aanvullen)
     done = cleanDone(state.done || done);
     doneReset = Math.max(doneReset, state.doneReset || 0);
+    skyCuts = cleanCuts([...skyCuts, ...(state.skyCuts || [])]);
+    saveCuts(skyCuts);
     for (const t of lost) if (!done[t.id] && (state.gone?.[t.id] || Date.now()) > doneReset) done[t.id] = state.gone?.[t.id] || Date.now();
     saveDone(done);
     saveReset(doneReset);
@@ -1342,13 +1401,15 @@ const sync = createSync({
     gone = { ...state.gone };
     tasks = [...dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo'), ...unsynced];
     // het logboek van beide toestellen samen: niemand verliest zijn telling
-    ({ done, doneReset } = mergeStates({ tasks: [], gone: {}, done, doneReset }, { tasks, gone: {}, done: cleanDone(state.done), doneReset: state.doneReset }));
+    ({ done, doneReset, skyCuts } = mergeStates({ tasks: [], gone: {}, done, doneReset, skyCuts }, { tasks, gone: {}, done: cleanDone(state.done), doneReset: state.doneReset, skyCuts: state.skyCuts }));
     saveDone(done);
     saveReset(doneReset);
+    saveCuts(skyCuts);
     syncStars(sky, done);
     renderStats();
     // had dit toestel iets wat de verzender niet had (eigen taken of afgevinkte), dan terugsturen
-    if (tasks.length !== state.tasks.length || totalDone(done) !== totalDone(cleanDone(state.done)) || doneReset !== (state.doneReset || 0)) setTimeout(() => sync.changed(), 0);
+    if (tasks.length !== state.tasks.length || totalDone(done) !== totalDone(cleanDone(state.done)) || doneReset !== (state.doneReset || 0)
+      || skyCuts.length !== cleanCuts(state.skyCuts).length) setTimeout(() => sync.changed(), 0);
     applyDeadlines();
     saveTasks({ notify: false, reason: 'receive' });
     render();

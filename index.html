@@ -161,6 +161,15 @@
     </button>
     <div class="stats-detail" id="stats-detail" hidden>
       <dl id="stats-rows"></dl>
+      <div class="skies">
+        <p class="skies-title" id="skies-title" data-i="skies.title" hidden>Hemels</p>
+        <div class="skies-list" id="skies-list" role="group" aria-labelledby="skies-title"></div>
+        <button type="button" class="stats-reset-btn sky-new" id="sky-new" data-i="skies.new">Nieuwe hemel</button>
+        <div class="stats-confirm" id="sky-confirm" hidden>
+          <p data-i="skies.ask">Een nieuwe, lege hemel?</p>
+          <div class="sync-row"><button type="button" class="btn-solid" id="sky-new-yes" data-i="skies.yes">Nieuwe hemel</button><button type="button" class="btn-ghost" id="sky-new-no" data-i="cancel">Annuleer</button></div>
+        </div>
+      </div>
       <div class="stats-reset">
         <button type="button" class="stats-reset-btn" id="stats-reset" data-i="stats.reset">Teller op nul</button>
         <div class="stats-confirm" id="stats-confirm" hidden>
@@ -246,10 +255,12 @@
     <ul class="intro-levels" id="intro-levels" aria-label="De vijf momenten, van binnen naar buiten" data-ia="aria-label:intro.levels"></ul>
     <dl class="intro-grid">
       <div><dt data-i="intro.add">Toevoegen</dt><dd data-ih="intro.addText">Kies een moment op het wiel en tik nog eens, of druk <kbd>N</kbd>. Met een deadline schuift de taak vanzelf naar binnen naarmate de datum nadert.</dd></div>
-      <div><dt data-i="intro.done">Afvinken</dt><dd data-ih="intro.doneText">Tik op het rondje in de lijst: de taak fonkelt uit en wordt een ster aan de hemel. <kbd>Z</kbd> zet ze terug, en alles blijft 60 dagen in Archief.</dd></div>
+      <div><dt data-i="intro.done">Afvinken</dt><dd data-ih="intro.doneText">Tik op het rondje in de lijst.</dd></div>
+      <div><dt data-i="intro.stars">Sterren</dt><dd data-ih="intro.starsText">Elke afgevinkte taak spaart een ster.</dd></div>
       <div><dt data-i="intro.move">Verplaatsen</dt><dd data-ih="intro.moveText">Sleep een bol naar een andere ring, of tik op het bolletje rechts van een taak in de lijst.</dd></div>
       <div><dt data-i="intro.look">Kijken</dt><dd data-ih="intro.lookText">Boven of zijkant (<kbd>1</kbd> <kbd>2</kbd>), slepen in de scène draait mee. Focus (<kbd>F</kbd>) toont klok, weer en wat nu moet.</dd></div>
       <div><dt data-i="intro.calm">Rust</dt><dd data-ih="intro.calmText">Te druk? Onder Instellingen wissel je het tempo (<kbd>T</kbd>: normaal, zen, stil) en licht of donker (<kbd>D</kbd>).</dd></div>
+      <div><dt data-i="intro.core">De kern</dt><dd data-ih="intro.coreText">De kern heeft een gezicht.</dd></div>
       <div><dt data-i="intro.devices">Toestellen</dt><dd data-ih="intro.devicesText">Koppelen (rechtsboven, op gsm onder Instellingen): het ene toestel toont een QR-code, het andere scant en ontvangt je taken. Daarna blijven ze gelijk, ook offline.</dd></div>
     </dl>
     <p class="intro-keys" data-ih="intro.keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>F</kbd> focus <kbd>T</kbd> tempo <kbd>D</kbd> thema <kbd>A</kbd> archief <kbd>Z</kbd> ongedaan <kbd>?</kbd> uitleg</p>
