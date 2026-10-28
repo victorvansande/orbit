@@ -26,7 +26,7 @@
     let real = null;
     try { real = window.localStorage; } catch { /* geen opslag */ }
     const mem = new Map();
-    for (const k of ['priority-orbit.theme.v1', 'priority-orbit.lang.v1', 'priority-orbit.tempo.v1', 'priority-orbit.sound.v1', 'isobar:place']) {
+    for (const k of ['priority-orbit.theme.v1', 'priority-orbit.lang.v1', 'priority-orbit.tempo.v1', 'priority-orbit.sound.v1', 'priority-orbit.fx.v1', 'priority-orbit.wall.v1', 'isobar:place']) {
       try { const v = real && real.getItem(k); if (v != null) mem.set(k, v); } catch { /* geen opslag */ }
     }
     mem.set('priority-orbit.intro.v1', 'gezien');
@@ -99,6 +99,14 @@
           <button type="button" role="radio" aria-checked="true" data-sound="on" data-i="sound.on">Aan</button>
           <span class="slash" aria-hidden="true">/</span>
           <button type="button" role="radio" aria-checked="false" data-sound="off" data-i="sound.off">Uit</button>
+        </div>
+      </div>
+      <div class="menu-row">
+        <span class="menu-label" data-i="menu.fx">Effecten</span>
+        <div class="views fx-switch" role="radiogroup" aria-label="Effecten" data-ia="aria-label:menu.fx">
+          <button type="button" role="radio" aria-checked="true" data-fx="all" data-i="fx.all">Alle</button>
+          <span class="slash" aria-hidden="true">/</span>
+          <button type="button" role="radio" aria-checked="false" data-fx="min" data-i="fx.min">Minimaal</button>
         </div>
       </div>
       <div class="menu-row">

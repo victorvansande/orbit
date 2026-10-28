@@ -16,7 +16,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
-import { terminalRain, particleTitle, createWall } from './fx.js';
+import { softReveal, particleTitle, createWall } from './fx.js';
 
 applyStatic();
 
@@ -453,7 +453,7 @@ function showSkyConfirm(on) {
 $('sky-new').addEventListener('click', () => showSkyConfirm(true));
 $('sky-new-no').addEventListener('click', () => showSkyConfirm(false));
 $('sky-new-yes').addEventListener('click', () => {
-  scene.mosaic();   // de oude sterren gaan mee met een golf van tegeltjes
+  scene.newSky();   // de ring van tekens uit de kern neemt de oude sterren mee
   skyCuts = cleanCuts([...skyCuts, Date.now()]);
   saveCuts(skyCuts);
   skyView = 'current';
@@ -500,7 +500,7 @@ $('stat-mini').addEventListener('click', () => {
 // Af en toe fonkelt één stip, net als de sterren in de scène: van de klok in de focusmodus, anders van de teller
 (function wink() {
   setTimeout(() => {
-    if (!reducedMotion.matches && !document.hidden) {
+    if (!reducedMotion.matches && !document.hidden && !minimalFx) {
       if (document.body.classList.contains('is-focus')) twinkleDot($('clock'));
       else if (!$('stats').hidden && $('stats').offsetParent) twinkleDot($('stat-total'));
     }
@@ -518,7 +518,7 @@ function renderTracks() {
   if (!tasks.length) {
     // alles afgevinkt: een muur van wat je onlangs afvinkte (typographic wall), anders gewoon de uitleg
     const recent = [...new Set(archive.slice(0, 40).map(a => a.title))];
-    if (recent.length) { wall.set(recent, tx('tracks.allDone')); frag.append(wall.el); }
+    if (recent.length && !minimalFx) { wall.set(recent, tx('tracks.allDone')); frag.append(wall.el); }
     frag.append(el('p', 'tracks-empty', desktop.matches ? tx('tracks.emptyDesk') : tx('tracks.emptyMobile')));
   }
   for (const lv of LEVELS) {
@@ -1075,6 +1075,29 @@ for (const b of soundButtons) b.addEventListener('click', () => {
 });
 renderSound();
 
+/* ---- Effecten: Alle of Minimaal ---- */
+// Minimaal zet alle extra effecten uit (intro, gloed, raster dat buigt en klopt, schokgolf, vallende ster,
+// sterrenbeeld, spoor op de baan, lichtpuntje, vortex, sonar, muur, avondtint, vijver, puntjestitel, fonkelende klok).
+// Wat blijft: de scène zelf (ringen, kometen, kern met gezicht, sterren) en het uitfonkelen bij afvinken.
+const FX_KEY = 'priority-orbit.fx.v1';
+let minimalFx = false;
+try { minimalFx = localStorage.getItem(FX_KEY) === 'min'; } catch { /* geen opslag */ }
+const fxButtons = [...document.querySelectorAll('[data-fx]')];
+function applyFx() {
+  document.body.classList.toggle('is-minimal', minimalFx);
+  scene.setMinimal(minimalFx);
+  introTitle.setEnabled(!minimalFx);
+  for (const b of fxButtons) b.setAttribute('aria-checked', String((b.dataset.fx === 'min') === minimalFx));
+  if (minimalFx) fidget.stop();
+  else if (document.body.classList.contains('is-focus') && desktop.matches) fidget.start();
+}
+for (const b of fxButtons) b.addEventListener('click', () => {
+  minimalFx = b.dataset.fx === 'min';
+  try { localStorage.setItem(FX_KEY, minimalFx ? 'min' : 'all'); } catch { /* geen opslag */ }
+  applyFx();
+  renderTracks();
+});
+
 /* ---- Demoversie: een losse kopie om nieuwe functies te proberen (zie src/demo.js) ---- */
 $('demo-btn').textContent = tx(DEMO_MODE ? 'demo.leave' : 'demo.open');
 $('demo-btn').addEventListener('click', () => { location.href = location.pathname + (DEMO_MODE ? '' : '?demo'); });
@@ -1090,7 +1113,7 @@ const fidget = createFidget($('fidget'), { reducedMotion });   // vijver, alleen
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
-  if (on && desktop.matches) fidget.start(); else fidget.stop();
+  if (on && desktop.matches && !minimalFx) fidget.start(); else fidget.stop();
   $('focus-btn').setAttribute('aria-pressed', String(on));
   if (on) {
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -1833,30 +1856,23 @@ setInterval(followDeadlines, 60000);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) followDeadlines();
   if (document.hidden) fidget.stop();
-  else if (document.body.classList.contains('is-focus') && desktop.matches) fidget.start();
+  else if (document.body.classList.contains('is-focus') && desktop.matches && !minimalFx) fidget.start();
 });
 updateInsets();
 renderSummary();
 renderTracks();
 renderFocusNow();
 scene.setTasks(tasks, { intro: true });
-// Terminal rain: de eerste keer per dag regent het tekens, daarna wist een cirkel vanuit de kern de regen weg en
-// begint de gewone intro. Niet bij een eerste bezoek (dan de uitleg), een koppellink of minder beweging.
-const RAIN_KEY = 'priority-orbit.rain.v1';
-let rainDelay = 0;
-{
-  let last = null;
-  try { last = localStorage.getItem(RAIN_KEY); } catch { /* geen opslag */ }
-  const today = toDue(new Date());
-  if (lsEmptyAtStart) { try { localStorage.setItem(RAIN_KEY, today); } catch { /* geen opslag */ } }   // eerste bezoek: pas morgen regen
-  else if (!reducedMotion.matches && last !== today && !/^#sync=/.test(location.hash)) {
-    try { localStorage.setItem(RAIN_KEY, today); } catch { /* geen opslag */ }
-    rainDelay = 1300;
-    terminalRain({
-      center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
-      onReveal() { scene.replayIntro(tasks); },
-    });
-  }
+applyFx();
+// Intro: een zachte cirkel vanuit de kern wist het papier weg en de ringen verschijnen van binnen naar buiten.
+// Bij elk openen, behalve met Minimaal, minder beweging of een koppellink.
+let revealDelay = 0;
+if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
+  revealDelay = 300;
+  softReveal({
+    center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
+    onReveal() { scene.replayIntro(tasks); },
+  });
 }
 renderStats();
 renderSync();
@@ -1871,5 +1887,5 @@ readSyncHash();
   let seen = false;
   try { seen = localStorage.getItem(INTRO_KEY) === 'gezien'; } catch { /* geen opslag */ }
   if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900);
-  else setTimeout(DEMO_MODE ? () => sayLine(tx('demo.start')) : greet, 1400 + rainDelay);   // demo: de kern zegt dat het een demo is     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
+  else setTimeout(DEMO_MODE ? () => sayLine(tx('demo.start')) : greet, 1400 + revealDelay);   // demo: de kern zegt dat het een demo is     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
 }

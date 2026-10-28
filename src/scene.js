@@ -32,10 +32,10 @@ const BEND_R = 170, BEND_PX = 18;          // raster rond de aanwijzer: straal e
 const SHOCK_SPEED = 300, SHOCK_LIFE = 1.1; // schokgolf bij afvinken: eenheden per s, duur (s)
 const WAKE = 0.7;                          // spoor op de baan: hoek (rad) achter een komeet waarin ringstippen nagloeien
 const SPARK_MS = 420;                      // afvinken vanuit de lijst: vlucht van het lichtpuntje naar de bol
-const GLYPHS = '·:+×#';                    // tekenset van de effecten (sonar, mosaic): dezelfde als het raster van Orbit
+const GLYPHS = '·:+×#';                    // tekenset van de glyph sonar
 const DUST = 560;                          // vortex: korrels in de trechter (zijaanzicht)
 const SONAR_SPEED = 230, SONAR_LIFE = 1.7; // glyph sonar na een tik op de kern: eenheden per s, duur (s)
-const MOSAIC_PX = 520, MOSAIC_BAND = 80;   // nieuwe hemel: snelheid (px/s) en breedte (px) van de mozaïekgolf
+const SKY_WAVE_SPEED = 330;                // nieuwe hemel: de ring van tekens loopt tot buiten beeld (eenheden per s)
 const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
@@ -118,7 +118,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const dust = Array.from({ length: DUST }, (_, i) => ({ r: 20 + Math.random() * 190, a: Math.random() * TAU, s: 0.55 + Math.random() * 0.9, k: i / DUST }));
   let dustAmount = 0;
   let sonar = null;                          // {t0, target}: ring van tekens vanuit de kern, de gezochte bol licht op
-  let mosaic = null;                         // {t0, old}: golf van tegeltjes die de oude hemel meeneemt
+  let skyWave = null;                        // {t0, old}: nieuwe hemel, de ring van tekens neemt de oude sterren mee
+  let minimal = false;                       // Minimaal (Instellingen → Effecten): alle extra effecten uit
   // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
   let wallWords = [], wallOn = false, wallK = 0, wallLayout = null, wallBase = null, wallKey = '';
   const lamp = { x: 0, y: 0 };
@@ -283,7 +284,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const [x, y, z] = orbFunnel(o, orbAngle(o));
     // afgevinkt in de lijst: eerst vliegt een lichtpuntje van de rij naar de bol, dan fonkelt die uit
     let wait = 0;
-    if (from) {
+    if (from && !minimal) {
       const r = canvas.getBoundingClientRect();
       sparks.push({ x0: from.x - r.left, y0: from.y - r.top, x1: o.sx, y1: o.sy, t0: performance.now(), level: o.level });
       wait = SPARK_MS / 1000;
@@ -292,7 +293,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     starDelay = (wait + TWINKLE_LIFE) * 1000 + 120;
     const now = performance.now();
     while (shocks.length && now - shocks[0] > (SHOCK_LIFE + 1) * 1000) shocks.shift();
-    shocks.push(now + 250 + wait * 1000);
+    if (!minimal) shocks.push(now + 250 + wait * 1000);
     return spot;
   }
 
@@ -361,7 +362,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
 
     // raster: de put volgt de aanwijzer zacht, en verdwijnt als die de scène verlaat
-    bend.k = smooth(bend.k, motion && pointer.inside ? 1 : 0, 3, dt);
+    bend.k = smooth(bend.k, motion && !minimal && pointer.inside ? 1 : 0, 3, dt);
     if (pointer.inside) { bend.x = smooth(bend.x || pointer.x, pointer.x, 8, dt); bend.y = smooth(bend.y || pointer.y, pointer.y, 8, dt); }
 
     for (let i = twinkles.length - 1; i >= 0; i--) {
@@ -383,7 +384,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
     // vortex: hoeveelheid volgt het aantal taken, tempo de urgentie en de gekozen snelheid
     const live = [...orbs.values()].filter(o => !o.leaving).length;
-    dustAmount = smooth(dustAmount, cam.depth > 0.02 ? 0.45 + 0.55 * Math.min(1, live / 20) : 0, 1.5, dt);
+    dustAmount = smooth(dustAmount, cam.depth > 0.02 && !minimal ? 0.45 + 0.55 * Math.min(1, live / 20) : 0, 1.5, dt);
     if (motion && cam.depth > 0.02) {
       const pace = (0.6 + 0.3 * Math.min(2, urgency)) * spinScale;
       for (const d of dust) {
@@ -392,8 +393,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         if (d.r < 12) { d.r = 175 + Math.random() * 35; d.a = Math.random() * TAU; }
       }
     }
-    if (sonar && (now - sonar.t0) / 1000 > SONAR_LIFE + 2.4) sonar = null;
-    wallK = motion ? smooth(wallK, wallOn && wallWords.length ? 1 : 0, 3, dt) : (wallOn && wallWords.length ? 1 : 0);
+    if (sonar && (now - sonar.t0) / 1000 > (sonar.far ? 6 : SONAR_LIFE + 2.4)) sonar = null;
+    const wallWant = wallOn && wallWords.length && !minimal ? 1 : 0;
+    wallK = motion ? smooth(wallK, wallWant, 3, dt) : wallWant;
     if (wallK > 0.001) {
       // licht: rond de aanwijzer, anders zwerft het traag rond
       const t = now / 1000;
@@ -401,7 +403,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       lamp.x = motion ? smooth(lamp.x || gx, gx, pointer.inside ? 10 : 1.5, dt) : gx;
       lamp.y = motion ? smooth(lamp.y || gy, gy, pointer.inside ? 10 : 1.5, dt) : gy;
     }
-    if (mosaic && (now - mosaic.t0) / 1000 > 4) mosaic = null;
+    if (skyWave && skyWaveFront(now) > Math.hypot(W, H) + 60) skyWave = null;
   }
 
   /* ---- Tekenen ---- */
@@ -416,7 +418,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (fade <= 0) return;
     const buckets = Array.from({ length: 6 }, () => []);
     // het raster klopt mee: bij elke slag van de kern rolt een zwakke rimpeling naar buiten
-    const live = Math.min(1, urgency / 0.3) * waveVis * beatScale * (1 - sleepK);
+    const live = minimal ? 0 : Math.min(1, urgency / 0.3) * waveVis * beatScale * (1 - sleepK);
     const bp = ((beat % 1) + 1) % 1, front = bp * 240, rip = reducedMotion.matches ? 0 : live * (1 - bp) * 0.9;
     for (const g of grid) {
       const z = g.r < RIM ? depthAt(g.r) * depth : 0;
@@ -517,12 +519,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   // afstand (px) van het golffront van de mozaïekgolf tot het midden, of null
-  function mosaicFront(now) { return mosaic ? (now - mosaic.t0) / 1000 * MOSAIC_PX : null; }
+  // afstand (px) van de ring van tekens tot het midden bij een nieuwe hemel, of null
+  function skyWaveFront(now) { return skyWave ? (26 + (now - skyWave.t0) / 1000 * SKY_WAVE_SPEED) * cam.s * cam.zoom : null; }
 
   function drawSky(now) {
-    const front = mosaicFront(now);
-    if (front !== null) drawStars(now, mosaic.old, d => d > front - MOSAIC_BAND * 0.5);   // oude hemel tot de golf langskomt
-    drawStars(now, sky, front === null ? null : d => d < front - MOSAIC_BAND);             // nieuwe hemel achter de golf
+    const front = skyWaveFront(now);
+    if (front !== null) drawStars(now, skyWave.old, d => d > front);   // oude hemel tot de ring langskomt
+    drawStars(now, sky, front === null ? null : d => d < front - 30);   // nieuwe hemel achter de ring
   }
 
   function drawStars(now, sky, keep) {
@@ -556,7 +559,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   // Vallende ster: heel af en toe (eerst na 1,5 tot 4 min, daarna om de 6 tot 14 min) een dunne streep over de hemel
   function drawMeteor(now) {
-    if (reducedMotion.matches) return;
+    if (reducedMotion.matches || minimal) return;
     if (!meteor && now >= nextMeteor) {
       const ang = (0.2 + Math.random() * 0.35) * (Math.random() < 0.5 ? 1 : -1) + (Math.random() < 0.5 ? 0 : Math.PI);
       const dir = [Math.cos(ang), Math.abs(Math.sin(ang))];               // altijd een beetje naar beneden
@@ -652,46 +655,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.globalAlpha = 1;
   }
 
-  // Mosaic wave (naar React Bits): bij een nieuwe hemel rolt vanuit de kern een band van tegeltjes over het scherm;
-  // wat ze passeert, neemt ze mee (de oude sterren), daarachter begint de nieuwe hemel.
-  function drawMosaic(now) {
-    const front = mosaicFront(now);
-    if (front === null || reducedMotion.matches) return;
-    const T = Math.max(7, Math.round(8 * cam.du)), maxD = Math.hypot(W, H);
-    if (front - MOSAIC_BAND > maxD) return;
-    ctx.fillStyle = rgba(INK, 1);
-    const buckets = Array.from({ length: 6 }, () => []);
-    const x0 = cam.cx % T - T, y0 = cam.cy % T - T;
-    for (let y = y0; y < H + T; y += T) {
-      for (let x = x0; x < W + T; x += T) {
-        const d = Math.hypot(x + T / 2 - cam.cx, y + T / 2 - cam.cy), band = (front - d) / MOSAIC_BAND;
-        if (band <= 0 || band >= 1) continue;
-        // tegeltjes groeien op aan de voorkant en vallen uiteen naar achter, met een korrel van ruis
-        const k = Math.sin(band * Math.PI) * (0.7 + 0.3 * Math.sin(x * 12.9898 + y * 78.233));
-        if (k < 0.08) continue;
-        const sz = T * (0.18 + 0.62 * k);
-        buckets[Math.min(5, Math.floor(k * 6))].push(x + (T - sz) / 2, y + (T - sz) / 2, sz);
-      }
-    }
-    const fade = 1 - smoothstep(maxD * 0.6, maxD, front);
-    buckets.forEach((b, k) => {
-      if (!b.length) return;
-      ctx.globalAlpha = (0.02 + 0.09 * (k + 0.5) / 6) * fade * theme.grid;
-      ctx.beginPath();
-      for (let i = 0; i < b.length; i += 3) ctx.rect(b[i], b[i + 1], b[i + 2], b[i + 2]);
-      ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-  }
-
   // Glyph sonar (naar React Bits): een tik op de kern zendt een ring van tekens uit langs de trechter. Waar hij de
   // taak raakt waar de kern over praat, kaatst een echo terug: twee dunne ringen rond die bol.
   function drawSonar(now) {
     if (!sonar || reducedMotion.matches) return;
     const e = (now - sonar.t0) / 1000;
-    const R = 26 + e * SONAR_SPEED;
-    if (e < SONAR_LIFE && R < EDGE + 40) {
-      const n = 84, fade = (1 - e / SONAR_LIFE) * (1 - smoothstep(EDGE - 10, EDGE + 40, R));
+    // gewone tik: tot net buiten de ringen; nieuwe hemel (far): sneller en tot buiten beeld, en neemt de sterren mee
+    const R = 26 + e * (sonar.far ? SKY_WAVE_SPEED : SONAR_SPEED);
+    const reach = sonar.far ? Math.hypot(W, H) / (cam.s * cam.zoom) : EDGE + 40;
+    if (sonar.far ? R < reach : e < SONAR_LIFE && R < reach) {
+      const n = sonar.far ? Math.max(84, Math.round(R * 0.5)) : 84;
+      const fade = sonar.far ? 0.85 * (1 - smoothstep(reach * 0.55, reach, R)) : (1 - e / SONAR_LIFE) * (1 - smoothstep(EDGE - 10, EDGE + 40, R));
       const z = (R < RIM ? depthAt(R) : 0) * cam.depth;
       ctx.font = `500 ${Math.max(8, 9 * cam.du)}px "Geist Mono", ui-monospace, monospace`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -764,7 +738,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.fill();
       }
       // spoor op de baan: de stippen net achter een komeet gloeien even na in zijn kleur
-      if (!reducedMotion.matches) {
+      if (!reducedMotion.matches && !minimal) {
         const heads = [];
         for (const o of orbs.values()) if (o.level === lv.id && !o.leaving && o.alpha > 0.5 && Math.abs(o.r - lv.orbit) < 3) heads.push(orbAngle(o));
         const sp = speed.get(lv.id);
@@ -958,7 +932,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.globalAlpha = o.alpha;
     // heel zachte gloed rond de kop (op vraag van Victor): een radiaal verloop van de eigen kleur naar niets,
     // in het donker iets sterker. Geen schaduwfilter: dat is traag op gsm.
-    {
+    if (!minimal) {
       const c = colors.get(o.level), R = it.r * 3.2;
       const g = ctx.createRadialGradient(it.sx, it.sy, it.r * 0.6, it.sx, it.sy, R);
       g.addColorStop(0, rgba(c, theme.glow));
@@ -1191,7 +1165,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawSky(now);
     drawConstellation(now);
     drawMeteor(now);
-    drawMosaic(now);
     drawRings(now);
     drawVortex();
     drawCore(now);
@@ -1346,15 +1319,22 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     wink(ms = 650) { face.winkUntil = performance.now() + ms; },
     // sterrenbeeld van de laatste `count` sterren, na het verschijnen van de nieuwe ster
     constellation(count = 25) {
-      if (reducedMotion.matches) return;
+      if (reducedMotion.matches || minimal) return;
       const edges = makeConstellation(count);
       if (edges) constellation = { edges, t0: Math.max(performance.now(), lastStarAt) + 1200 };   // na de nieuwe ster
     },
     clearSelection,
     // glyph sonar vanuit de kern; target: id van de taak waar de kern over praat (die bol krijgt een echo)
-    sonar(target = null) { if (!reducedMotion.matches) sonar = { t0: performance.now(), target }; },
+    sonar(target = null) { if (!reducedMotion.matches && !minimal) sonar = { t0: performance.now(), target }; },
     // nieuwe hemel: een mozaïekgolf neemt de huidige sterren mee (roep vóór setSky)
-    mosaic() { if (!reducedMotion.matches) mosaic = { t0: performance.now(), old: sky.slice() }; },
+    newSky() {
+      if (reducedMotion.matches || minimal) return;
+      const t0 = performance.now();
+      skyWave = { t0, old: sky.slice() };
+      sonar = { t0, target: null, far: true };
+    },
+    // Minimaal: alle extra effecten uit; wat overblijft is de scène zelf (ringen, kometen, kern, sterren)
+    setMinimal(on) { minimal = on; if (on) { sonar = null; skyWave = null; meteor = null; constellation = null; sparks.length = 0; shocks.length = 0; } },
     wake() { wakeUntil = performance.now() + 20000; },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
@@ -1370,7 +1350,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // wat er na de eerste keer bijkomt, is een nieuwe ster (bij het opstarten niet: dan staat de hemel er al)
       const now = performance.now();
       // de nieuwe ster verschijnt pas als de afgevinkte taak helemaal uitgefonkeld is; een andere hemel tonen gebeurt stil
-      if (skyKnown && !quiet && !reducedMotion.matches) for (const st of list) if (!skyKnown.has(st.id)) { skyBorn.set(st.id, now + starDelay); lastStarAt = now + starDelay; }
+      if (skyKnown && !quiet && !reducedMotion.matches && !minimal) for (const st of list) if (!skyKnown.has(st.id)) { skyBorn.set(st.id, now + starDelay); lastStarAt = now + starDelay; }
       starDelay = 0;
       skyKnown = new Set(list.map(st => st.id));
       sky = list;

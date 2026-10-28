@@ -56,7 +56,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/i18n.js` | Taal: woordenboeken NL en EN, `tx(key, vars)`, `LANG`, `LOCALE`, `setLang`, `applyStatic`, `reasonText`, `DEMO_TITLES` |
 | `src/greet.js` | Begroeting van de kern: `greeting(ctx)` en `coreLine(ctx)` (tik op de kern), zinnen in NL en EN |
 | `src/demo.js` | Demoversie: `DEMO_MODE` en een volledige voorbeeldlijst in de tijdelijke opslag; als eerste geïmporteerd in `app.js` |
-| `src/fx.js` | Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React): `terminalRain`, `particleTitle`, `createWall`. Zie Effecten |
+| `src/fx.js` | Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React): `softReveal`, `particleTitle`, `createWall`. Zie Effecten |
 | `src/fidget.js` | Vijver: bakje water in de focusmodus (liquid ascii, deeltjesvloeistof), `createFidget(box, {reducedMotion})` met `start`/`stop` |
 | `src/sound.js` | Geluid bij afvinken (Web Audio, geen bestanden): `playDone`, `soundOn`, `setSound`, zes klanken in `SOUNDS`, gekozen klank `SOUND_STYLE` |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
@@ -114,15 +114,22 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 
 ## Effecten (naar React Bits Pro)
 
-Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev (nu zes, zie Text morph), nagebouwd zonder React of build-stap (de site was vanuit de cloud geblokkeerd; het zijn eigen versies op basis van de namen). Afgestemd op elkaar: Geist Mono, inkt met lage dekking, rood (`--core`, de kern) alleen als accent, dezelfde tekenset `·:+×#`. Alles uit bij reduced motion.
-- **Terminal rain** (`terminalRain`, intro): de eerste keer per dag (`priority-orbit.rain.v1` = datum), niet bij een eerste bezoek (die dag telt dan als gezien, anders regende het bij het eerste herladen na de uitleg), een koppellink of reduced motion. Ongeveer de helft van de kolommen regent tekens (af en toe een rode kop); na 1,15 s wist een zachte cirkel vanuit de kern de regen weg en speelt de scène haar intro opnieuw (`scene.replayIntro(tasks)`, ook de bollen). Klaar na 2,5 s, een tik of toets slaat over. De begroeting wacht 1,3 s langer.
+Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev (text morph, terminal rain en mosaic wave zijn weer weg), nagebouwd zonder React of build-stap (de site was vanuit de cloud geblokkeerd; het zijn eigen versies op basis van de namen). Afgestemd op elkaar: Geist Mono, inkt met lage dekking, rood (`--core`, de kern) alleen als accent, dezelfde tekenset `·:+×#`. Alles uit bij reduced motion.
+- **Intro, zachte cirkel** (`softReveal`): bij elk openen ligt er even effen papier over de pagina en een zachte cirkel vanuit de kern wist het weg (1,35 s); meteen speelt de scène haar intro opnieuw (`scene.replayIntro(tasks)`, ook de bollen). Niet met Minimaal, reduced motion of een koppellink; een tik of toets slaat over; de begroeting wacht 0,3 s langer. Vroeger regenden er eerst tekens (terminal rain, eerste keer per dag): op vraag van Victor weggehaald (28/10/2026), alleen de cirkel bleef.
 - **Vortex** (`drawVortex` in de scène): in het zijaanzicht spiraalt fijn stof (560 korrels, vierkantjes) langs de wand van de trechter naar de kern; het laatste stukje kleurt rood. Hoeveelheid volgt het aantal taken (45 tot 100 %), tempo de urgentie en het gekozen tempo (stil: staat stil). Glijdt mee met `cam.depth`, dus weg in het bovenaanzicht.
 - **Glyph sonar** (`scene.sonar(id)`, vanuit `tapCore`): een ring van tekens loopt van de kern naar buiten langs de trechter (1,7 s); waar hij de taak raakt waarover de kern praat, kaatsen twee dunne ringen terug rond die bol.
-- **Mosaic wave** (`scene.mosaic()`, bij "Nieuwe hemel", vóór `setSky`): een band van tegeltjes rolt vanuit de kern over het scherm; de oude sterren verdwijnen pas als de golf langskomt, de nieuwe hemel begint erachter.
+- **Nieuwe hemel** (`scene.newSky()`, vóór `setSky`): dezelfde ring van tekens als de glyph sonar, maar sneller (`SKY_WAVE_SPEED` 330) en tot buiten beeld; de oude sterren verdwijnen pas als de ring langskomt, de nieuwe hemel begint erachter. Eerder een mozaïekgolf van tegeltjes: weggehaald, twee verschillende golven uit de kern was te veel (Victor, 28/10/2026).
 - **Particle text** (`particleTitle`, titel in de Uitleg, 34 px, gsm 28 px): de letters bestaan uit puntjes in een zeshoekig raster; bij het openen draaien ze binnen (op tijd, 1,1 s), de aanwijzer duwt ze opzij en kleurt ze even rood. De echte tekst blijft in de `h2` (doorzichtig) voor schermlezers.
 - Text morph (momentlabel in het venster "nieuwe taak") is op vraag van Victor weer weggehaald (28/10/2026).
 - **Typographic wall** (`createWall`, lege lijst): als alles afgevinkt is en het archief iets bevat, een muur van recent afgevinkte titels in kapitaaltjes (dekking 0,06) met "Alles afgevinkt." in het midden; rond de aanwijzer (of een zacht rondzwervend licht) worden de woorden leesbaar. Loopt alleen als de muur in beeld is.
 - **Muur achter de hemel** (op vraag van Victor: met herhalende taken is de lijst nooit leeg): knopje **Muur** naast de teller (`#wall-toggle`, `aria-pressed`, keuze per toestel in `priority-orbit.wall.v1`, verborgen zonder archief) zet dezelfde muur in de scène, achter de sterrenhemel (`scene.setWall(woorden, aan)`, `drawWall` tussen raster en hemel). Titels uit het archief (laatste 80, uniek). Basislaag één keer getekend op een eigen canvas (`wallBase`, opnieuw bij nieuwe maat, woorden, thema, font of verschoven middelpunt), dekking 0,035, uitdovend rond de scène (straal 0,62 × min(breedte, hoogte)) zodat de lijst en het wiel rustig blijven; alleen woorden rond het licht (straal 130 px, aanwijzer of rondzwervend) worden apart getekend. De demo heeft daarvoor ook 23 afgevinkte taken met titel in het archief.
+
+## Effecten: Alle of Minimaal
+
+- Instellingen → **Effecten**: Alle / Minimaal (`priority-orbit.fx.v1` = `min` of `all`, gaat mee naar de demo). Op vraag van Victor (28/10/2026): een rustige, sobere weergave. Bewust niet "zen" genoemd: dat is al een tempo.
+- Minimaal zet uit: de intro (zachte cirkel), gloed rond de kometen, raster dat buigt en meeklopt, schokgolf en lichtpuntje bij afvinken, vallende ster, sterrenbeeld, spoor op de baan, vortex, glyph sonar (de kern praat nog wel), golf bij een nieuwe hemel, de opvallende geboorte van een nieuwe ster, muur (knopje verborgen) en muur in de lege lijst, avondtint, vijver, puntjestitel in de Uitleg (gewone tekst), fonkelende klok en teller.
+- Blijft: ringen, kometen, kern met gezicht en hartslag, sterren, het uitfonkelen bij afvinken, geluid (eigen instelling).
+- Code: `scene.setMinimal(on)`, `body.is-minimal` (CSS verbergt `.warmth`, `.fidget`, `.wall-toggle`), `applyFx()` in `app.js`, `introTitle.setEnabled()`.
 
 ## Wiel (`src/wheel.js`)
 

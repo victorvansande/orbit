@@ -1,10 +1,9 @@
 /* ---- Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React) ---- */
-// Terminal rain (intro), particle text (titel in de Uitleg) en typographic wall (lege lijst).
+// Zachte intro vanuit de kern, particle text (titel in de Uitleg) en typographic wall (lege lijst).
 // Zelfde taal als de scène: Geist Mono, inkt met lage dekking, rood alleen als accent.
 // Glyph sonar, vortex en mosaic wave zitten in scene.js.
 
 const TAU = Math.PI * 2;
-const RAIN_GLYPHS = 'ORBITNUVANDAGWEKMOI·:+×#0123456789';
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
@@ -17,60 +16,32 @@ function fitCanvas(cv, w, h) {
   return g;
 }
 
-/* ---- Terminal rain: intro bij het eerste bezoek van de dag ---- */
-// Kolommen van tekens regenen over het papier; daarna wist een cirkel vanuit de kern de regen weg en verschijnen de
-// ringen van binnen naar buiten (de gewone intro van de scène). Een tik of toets slaat over.
-export function terminalRain({ center, onReveal, done = () => {} }) {
+/* ---- Intro: een zachte cirkel vanuit de kern ---- */
+// Bij het openen ligt er even effen papier over de pagina; een zachte cirkel vanuit de kern wist het weg en de ringen
+// verschijnen van binnen naar buiten (de gewone intro van de scène). Een tik of toets slaat over. Vroeger regende er
+// eerst tekens (terminal rain); Victor hield alleen de cirkel.
+export function softReveal({ center, onReveal, done = () => {} }) {
   const cv = document.createElement('canvas');
-  cv.className = 'fx-rain';
+  cv.className = 'fx-reveal';
   cv.setAttribute('aria-hidden', 'true');
   document.body.append(cv);
   const W = innerWidth, H = innerHeight, g = fitCanvas(cv, W, H);
-  const CELL = W < 600 ? 13 : 15, cols = Math.ceil(W / CELL), rows = Math.ceil(H / CELL);
-  const colInfo = Array.from({ length: cols }, (_, c) => ({
-    speed: (0.9 + Math.random() * 0.8) * H,            // px per s
-    start: -Math.random() * H * 0.9,
-    red: Math.random() < 0.06,                          // af en toe een rode kop, de kleur van de kern
-    on: Math.random() < 0.55,                           // niet elke kolom regent: luchtiger
-    seed: Math.floor(Math.random() * 97),
-  }));
-  const ink = css('--ink'), bg = css('--bg'), red = css('--core');
-  const REVEAL = 1.15, END = 2.5;
+  const bg = css('--bg'), maxR = Math.hypot(W, H);
+  const START = 0.08, END = 1.35;
   let t0 = performance.now(), revealed = false, skipAt = 0, raf = 0;
-  const maxR = Math.hypot(W, H);
 
   function frame(now) {
     let t = (now - t0) / 1000;
-    if (skipAt) t = Math.max(t, END - 0.35 + (now - skipAt) / 1000);
-    if (t >= REVEAL && !revealed) { revealed = true; onReveal(); }
+    if (skipAt) t = Math.max(t, END - 0.25 + (now - skipAt) / 1000);
+    if (t >= START && !revealed) { revealed = true; onReveal(); }
     if (t >= END) { cv.remove(); removeEventListener('pointerdown', skip, true); removeEventListener('keydown', skip, true); done(); return; }
     g.globalCompositeOperation = 'source-over';
-    g.globalAlpha = 1;
     g.fillStyle = bg;
     g.fillRect(0, 0, W, H);
-    g.font = `500 ${CELL - 3}px "Geist Mono", ui-monospace, monospace`;
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    const step = Math.floor(t * 14);
-    for (let c = 0; c < cols; c++) {
-      const ci = colInfo[c], head = ci.start + t * ci.speed, x = c * CELL + CELL / 2;
-      if (!ci.on) continue;
-      for (let r = 0; r < rows; r++) {
-        const y = r * CELL + CELL / 2, tail = head - y;
-        if (tail < 0 || tail > H * 0.35) continue;
-        const a = Math.pow(1 - tail / (H * 0.35), 1.8);
-        const isHead = tail < CELL;
-        g.globalAlpha = isHead ? 0.75 : 0.04 + 0.24 * a;
-        g.fillStyle = isHead && ci.red ? red : ink;
-        const h = (Math.imul(r + 1 + (isHead ? step : step >> 3), 374761393) ^ Math.imul(ci.seed + 7, 668265263)) >>> 0;   // geen herhalend patroon per kolom
-        g.fillText(RAIN_GLYPHS[h % RAIN_GLYPHS.length], x, y);
-      }
-    }
-    // de onthulling: een zachte cirkel vanuit de kern wist alles weg
-    if (t > REVEAL) {
+    if (t > START) {
       const [cx, cy] = center();
-      const p = smoothstep(REVEAL, END, t), R = maxR * p * 1.05;
+      const p = smoothstep(START, END, t), R = maxR * p * 1.05;
       g.globalCompositeOperation = 'destination-out';
-      g.globalAlpha = 1;
       const grad = g.createRadialGradient(cx, cy, Math.max(0, R - 140), cx, cy, R + 1);
       grad.addColorStop(0, 'rgba(0,0,0,1)');
       grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -168,9 +139,12 @@ export function particleTitle(h, { reducedMotion }) {
   cv.addEventListener('pointerdown', e => { pointer = local(e); });
   cv.addEventListener('pointerleave', () => { pointer = null; });
 
+  let enabled = true;
   return {
+    // uit (Minimaal): gewone tekst in de titel, geen puntjes
+    setEnabled(on) { enabled = on; h.classList.toggle('has-fx', on); cv.hidden = !on; if (!on) this.stop(); },
     start() {
-      if (running) return;
+      if (running || !enabled) return;
       if (!build()) return;
       running = true; t0 = performance.now();
       raf = requestAnimationFrame(draw);
