@@ -1,5 +1,5 @@
 /* ---- Geluid bij afvinken ---- */
-// Klein en zacht, met Web Audio opgewekt (geen bestanden). Standaard uit; aan in Instellingen. De toonhoogte volgt
+// Klein en zacht, met Web Audio opgewekt (geen bestanden). Standaard aan; uit te zetten in Instellingen. De toonhoogte volgt
 // het moment: Nu het hoogst, Ooit het laagst, telkens een noot uit dezelfde pentatonische toonladder.
 
 const SOUND_KEY = 'priority-orbit.sound.v1';   // 'on' of 'off'
@@ -19,7 +19,7 @@ function audio() {
 }
 
 export function soundOn() {
-  try { return localStorage.getItem(SOUND_KEY) === 'on'; } catch { return false; }
+  try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; }   // standaard aan (Victor miste het geluid)
 }
 export function setSound(on) {
   try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* geen opslag */ }

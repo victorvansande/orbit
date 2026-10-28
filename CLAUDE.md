@@ -220,7 +220,7 @@ Klein en motiverend. Victor koos uiteindelijk: alleen de teller en de sterren (w
 
 ## Geluid (`src/sound.js`)
 
-- Standaard uit; Instellingen → Geluid Aan / Uit (`priority-orbit.sound.v1`). Aanzetten speelt meteen een voorbeeld (en start de AudioContext in de klik, nodig voor iOS).
+- Standaard aan (28/10/2026; eerst standaard uit, waardoor Victor geen geluid hoorde); Instellingen → Geluid Aan / Uit (`priority-orbit.sound.v1`, alleen `off` zet het uit). Op een iPhone met de stilteschakelaar aan blijft Web Audio stil, zoals bij andere apps. Aanzetten speelt meteen een voorbeeld (en start de AudioContext in de klik, nodig voor iOS).
 - Bij afvinken één korte tik (0,1 tot 0,2 s; een eerste versie klonk tot 1,3 s na, Victor wou gewoon een afvinktik), toonhoogte per moment uit één pentatonische reeks (Nu E6, Vandaag C6, Week A5, Maand G5, Ooit E5).
 - Zes klanken in `SOUNDS`: glas (FM-bel), raster (versnellende tikjes zoals de golf in de kern), komeet (zoef en stip), melodie (elke ster de volgende noot van een vast deuntje), kalimba (Karplus-Strong), baken (twee tonen, kwint omhoog). Victor koos **Baken** (`SOUND_STYLE = 'baken'`): twee blipjes, een kwint omhoog. De andere vijf blijven in de code staan.
 
