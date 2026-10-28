@@ -22,8 +22,8 @@ const FIT = 440;                        // zoveel stage-eenheden passen in min(b
 
 // Kleuren van structuur en labels per thema; de bollen houden hun eigen kleur
 const THEMES = {
-  light: { ink: [24, 24, 32], paper: [241, 241, 239], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
-  dark:  { ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
+  light: { glow: 0.2, ink: [24, 24, 32], paper: [241, 241, 239], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
+  dark:  { glow: 0.24, ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
 };
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
@@ -594,6 +594,19 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // Lengte volgt de snelheid: op kruissnelheid de gewone staart, sneller (binnenvliegen) tot 2,5 keer zo lang.
   function drawOrb(o, it, lv, sp, moving) {
     ctx.globalAlpha = o.alpha;
+    // heel zachte gloed rond de kop (op vraag van Victor): een radiaal verloop van de eigen kleur naar niets,
+    // in het donker iets sterker. Geen schaduwfilter: dat is traag op gsm.
+    {
+      const c = colors.get(o.level), R = it.r * 3.2;
+      const g = ctx.createRadialGradient(it.sx, it.sy, it.r * 0.6, it.sx, it.sy, R);
+      g.addColorStop(0, rgba(c, theme.glow));
+      g.addColorStop(0.45, rgba(c, theme.glow * 0.35));
+      g.addColorStop(1, rgba(c, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(it.sx, it.sy, R, 0, TAU);
+      ctx.fill();
+    }
     ctx.fillStyle = rgba(colors.get(o.level), 1);
     if (moving) {
       const omega = TAU / lv.period * sp + (o.vo || 0);
