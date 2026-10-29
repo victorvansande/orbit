@@ -1109,7 +1109,7 @@ if (DEMO_MODE) {
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
-const fidget = createFidget($('fidget'), { reducedMotion });   // bakje water, alleen op desktop zichtbaar
+const fidget = createFidget($('fidget'), { reducedMotion, label: m => tx(`fidget.${m}`) });   // bakje water, alleen op desktop zichtbaar
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
