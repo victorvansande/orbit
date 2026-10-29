@@ -16,7 +16,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
-import { softReveal, spotlight, particleTitle, createWall } from './fx.js';
+import { softReveal, particleTitle, createWall } from './fx.js';
 
 applyStatic();
 
@@ -706,18 +706,6 @@ function followDeadlines() {
   if (dayKey(Date.now()) !== statsDay) renderStats();   // nieuwe dag of week
 }
 
-// Spotlicht bij afvinken: alles even donker (licht in het donker) behalve de nieuwe ster. Niet met Minimaal of minder
-// beweging, niet als er al een loopt, en niet als de ster buiten beeld staat (bv. op gsm onderaan in de lijst).
-let spotFx = null;
-function spotlightStar(id) {
-  if (minimalFx || reducedMotion.matches || spotFx?.active) return;
-  const born = scene.bornStar();
-  if (!born || born.id !== id) return;
-  const p = scene.starPoint(id);
-  if (!p || p.x < 0 || p.y < 0 || p.x > innerWidth || p.y > innerHeight) return;
-  spotFx = spotlight({ point: () => scene.starPoint(id), bornAt: born.at, dark: resolvedTheme() === 'dark' });
-}
-
 let toastAction = null, toastTimer = 0;
 function complete(id, row) {
   const task = tasks.find(t => t.id === id);
@@ -738,7 +726,6 @@ function complete(id, row) {
     if (skyView !== 'current' && skyView !== 'all') { skyView = 'current'; saveSkyView(skyView); }   // een nieuwe ster hoort bij deze hemel
     placeStar(sky, id, spot, true, starVisible);
     renderStats();
-    spotlightStar(id);
     const shown = Object.keys(done).filter(starVisible).length;
     if (shown % 25 === 0) scene.constellation(25);   // mijlpaal: de laatste 25 sterren vormen even een sterrenbeeld
     // herhalende taak: meteen de volgende, met de eerstvolgende datum na vandaag
