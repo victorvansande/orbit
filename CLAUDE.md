@@ -119,7 +119,7 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - **Eye candy** (gekozen door Victor, 28/10/2026), alles uit bij reduced motion:
   - Raster buigt naar de aanwijzer: een zachte zwaartekrachtput (`BEND_R` 170 px, `BEND_PX` 18 px) die de muis of vinger volgt (`bend`), alleen waar het canvas de aanwijzer krijgt (niet boven lijst of wiel).
   - Schokgolf bij afvinken en de rimpeling die met de kern meeklopte door het raster: weggehaald (Victor, 28/10/2026). Afvinken had zes reacties tegelijk, en de kern en het raster klopten dubbel.
-  - Vallende ster (`drawMeteor`): eerst na 1,5 tot 4 min, daarna om de 6 tot 14 min een dunne inktstreep van 0,9 s over de hemel, achter de ringen.
+  - Vallende ster (`drawMeteor`): eerst na 1,5 tot 4 min, daarna om de 6 tot 14 min, achter de ringen. Verfijnd op vraag van Victor (29/10/2026: ze doofde in haar geheel uit, een echte vallende ster doet dat niet): de kop (een stipje) gloeit op, vertraagt, flakkert vlak voor het einde nog even op en brandt dan op (krimpt tot niets) na `METEOR_FLY` 820 ms; het spoor blijft daarna `METEOR_FADE` 420 ms hangen en lost van achteren naar het eindpunt op. Spoor taps (breed aan de kop, niets aan het eind), zoals de kometen. Bewust geen realisme verder dan dat.
   - Sterrenbeeld (`scene.constellation(25)`, vanuit `complete()` bij elke 25e ster): de laatste 25 sterren verbonden met hun kortste verbindingen (Prim), lijntjes groeien na elkaar (1,6 s), blijven 3,2 s, vervagen in 2 s; start nadat de nieuwe ster verschenen is.
   - Spoor op de baan (tweede ronde, 28/10/2026): de ringstippen tot `WAKE` 0,7 rad achter een komeet gloeien na in zijn kleur (dekking tot 0,55, iets groter), alleen als de komeet op zijn ring draait en zijn baan beweegt.
   - Afvinken vanuit de lijst: een lichtpuntje met kleurstaartje vliegt in een boogje van het afvinkrondje naar de bol (`sparks`, `SPARK_MS` 420 ms); de bol wacht zolang (twinkle met negatieve `age`) en fonkelt dan uit. `scene.complete(id, from)` met `from` in schermcoördinaten.
@@ -347,3 +347,4 @@ Op vraag van Victor (30/10/2026): "een achievement-systeem om me blijvend te mot
 Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 
 - 29/10/2026, Claude Code: notitie in het venster "nieuwe taak" (met klad), papier vanaf de eerste weergave voor de intro, afspraken voor samenwerking met Antigravity (`AGENTS.md`, `GEMINI.md`, `.agent/rules/orbit.md`). Niets openstaand.
+- 29/10/2026, Claude Code: vallende ster verfijnd (kop brandt op, spoor lost van achteren op). Niets openstaand.

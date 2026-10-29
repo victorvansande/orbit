@@ -555,7 +555,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.globalAlpha = 1;
   }
 
-  // Vallende ster: heel af en toe (eerst na 1,5 tot 4 min, daarna om de 6 tot 14 min) een dunne streep over de hemel
+  // Vallende ster: heel af en toe (eerst na 1,5 tot 4 min, daarna om de 6 tot 14 min) een dunne streep over de hemel.
+  // Zoals een echte: de kop gloeit op, vertraagt, flakkert nog even op en brandt dan op; het spoor blijft daarna kort
+  // hangen en lost van achteren naar het eindpunt op. Taps (breed aan de kop, niets aan het eind), zoals de kometen.
+  const METEOR_FLY = 820, METEOR_FADE = 420;
+  const meteorOut = cubicBezier(0.3, 0.6, 0.5, 1);   // snel binnen, vertraagt naar het einde
   function drawMeteor(now) {
     if (reducedMotion.matches || minimal) return;
     if (!meteor && now >= nextMeteor) {
@@ -565,19 +569,40 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       nextMeteor = now + (360 + Math.random() * 480) * 1000;
     }
     if (!meteor) return;
-    const p = (now - meteor.t0) / 900;
-    if (p >= 1) { meteor = null; return; }
-    const head = ease(p) * meteor.dist, len = Math.min(head, 150 * cam.du + 40);
-    const hx = meteor.x + meteor.dx * head, hy = meteor.y + meteor.dy * head;
-    const tx = hx - meteor.dx * len, ty = hy - meteor.dy * len;
-    const a = Math.sin(p * Math.PI) * 0.55;
-    const g = ctx.createLinearGradient(hx, hy, tx, ty);
-    g.addColorStop(0, rgba(INK, a));
-    g.addColorStop(1, rgba(INK, 0));
-    ctx.strokeStyle = g;
-    ctx.lineWidth = 1.2;
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+    const ms = now - meteor.t0;
+    if (ms >= METEOR_FLY + METEOR_FADE) { meteor = null; return; }
+    const f = Math.min(1, ms / METEOR_FLY);                     // vlucht van de kop
+    const q = ms > METEOR_FLY ? (ms - METEOR_FLY) / METEOR_FADE : 0;   // nagloei van het spoor
+    const head = meteorOut(f) * meteor.dist, L = 150 * cam.du + 40;
+    // het eind van het spoor volgt de kop op afstand L; na het opbranden schuift het naar het eindpunt
+    const tail = Math.max(0, head - L) + (q > 0 ? (head - Math.max(0, head - L)) * ease(q) : 0);
+    const len = head - tail;
+    // helderheid: opgloeien, kleine opflakkering vlak voor het einde, het spoor dooft na
+    const base = smoothstep(0, 0.14, f), flare = Math.exp(-(((f - 0.86) / 0.07) ** 2));
+    const glow = base * (1 + 0.45 * flare);
+    const a = 0.55 * glow * (1 - q) ** 1.6;
+    if (len > 0.5 && a > 0.004) {
+      const hx = meteor.x + meteor.dx * head, hy = meteor.y + meteor.dy * head;
+      const tx = meteor.x + meteor.dx * tail, ty = meteor.y + meteor.dy * tail;
+      const nx = -meteor.dy, ny = meteor.dx, w = 1.1 * (1 - 0.5 * q);
+      const g = ctx.createLinearGradient(hx, hy, tx, ty);
+      g.addColorStop(0, rgba(INK, a));
+      g.addColorStop(0.35, rgba(INK, a * 0.45));
+      g.addColorStop(1, rgba(INK, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(hx + nx * w, hy + ny * w);
+      ctx.lineTo(tx, ty);
+      ctx.lineTo(hx - nx * w, hy - ny * w);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // de kop zelf: een stipje dat met de opflakkering even zwelt en bij het opbranden krimpt tot niets
+    const hr = base * (1.2 + 0.8 * flare) * (1 - smoothstep(0.9, 1, f));
+    if (hr > 0.05 && q === 0) {
+      ctx.fillStyle = rgba(INK, Math.min(0.85, 0.62 * glow));
+      ctx.beginPath(); ctx.arc(meteor.x + meteor.dx * head, meteor.y + meteor.dy * head, hr, 0, Math.PI * 2); ctx.fill();
+    }
   }
 
   // Sterrenbeeld: bij elke 25e ster verbinden dunne lijntjes de laatste 25 sterren even (kortste verbindingen, Prim)
