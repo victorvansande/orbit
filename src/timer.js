@@ -1,11 +1,12 @@
 /* ---- Zandloper: focustimer in de focusmodus ---- */
 // Een vak boven het bakje, in dezelfde ingelaten stijl. De zandloper is één silhouet van rasterpunten, zoals een
 // risoposter en zoals de kern (Halftoon, gekozen door Victor): zand zijn volle punten, leeg glas zijn speldenprikjes, en
-// het oppervlak is een zacht verloop van puntgroottes. Boven zakt het zand met een kuiltje, door de hals loopt een dun
-// straaltje in het accent, onder groeit een heuveltje. Geen omtrek of platen (een echte glazen versie oogde te antiek).
-// Ernaast of eronder de resterende tijd in de stippencijfers van de klok, 15 / 25 / 50 minuten en Start / Pauze. Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
+// het oppervlak is een zacht verloop van puntgroottes, met volume zoals de kern. Boven zakt het zand met een kuiltje,
+// door de hals vallen kalme korrels in inkt, onder groeit een kegel. Geen omtrek of platen (glas oogde te antiek).
+// Ernaast of eronder de resterende tijd in de stippencijfers van de klok, 15 / 25 / 50 minuten en Start / Pauze.
+// Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
 // De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de pagina herlaadt.
-// Klaar: een paar stippen fonkelen uit als de vierpuntige ster, en de afvinktik klinkt (als geluid aan staat).
+// Klaar: een golf door het zand, een paar stippen fonkelen uit als de vierpuntige ster en de afvinktik klinkt.
 import { setMatrix, twinkleDot } from './matrix.js';
 
 const KEY = 'priority-orbit.timer.v1';
@@ -53,12 +54,11 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   let open = false;
   try { open = localStorage.getItem(UI_KEY) === 'open'; } catch { /* geen opslag */ }
 
-  let raf = 0, running = false, shownText = '', ink = '#1B1B22', accent = '#E70049', colAt = 0;
+  let raf = 0, running = false, shownText = '', ink = '#1B1B22', colAt = 0;
   function readColors(now) {
     if (now - colAt < 1000) return;
     const css = getComputedStyle(document.documentElement);
     ink = css.getPropertyValue('--ink').trim() || ink;
-    accent = css.getPropertyValue('--core').trim() || accent;
     colAt = now;
   }
 
@@ -111,6 +111,12 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     if (st.endAt && left <= 0) finish();
   }
 
+  // korrels die door de hals vallen (Inkt, gekozen door Victor uit zes varianten: rood en druk was te veel): om de 70 ms
+  // een kans van 75 %, trage val, in de kleur van het zand; na de landing stuiteren ze even opzij en vervagen
+  const EVERY = 70, KEEP = 0.75, GRAV = 600, LAND = 260;
+  const rnd = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+  let pausedAt = -1e9, doneAt = -1e9;
+
   function drawGlass(q, live, now) {
     const { top, bot, bulb, cx, neckTop, neckBot, area, sp } = glass;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -118,10 +124,18 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     const vol = area[Math.round(FILL * STEPS)];
     const uTop = levelFor(q * vol);                       // zandhoogte boven (vanaf de hals)
     const vBot = levelFor(area[STEPS] - (1 - q) * vol);   // onder: zand van de rand tot hier (vanaf de hals gemeten)
-    const flowing = live && q > 0.001;
-    const dip = flowing ? Math.min(uTop, 0.08) : 0;       // kuiltje boven waar het zand wegloopt
-    const mound = 1 - vBot > 0.02 ? 0.12 : 0;             // heuveltje onder
+    const still = reducedMotion.matches;
+    // zachte pauze: er vallen geen nieuwe korrels meer, wat al valt landt nog
+    const settling = !live && now - pausedAt < 1500 && q > 0.001 && q < 1;
+    const flowing = (live || settling) && q > 0.001;
+    const dip = live ? Math.min(uTop, 0.08) : 0;          // kuiltje boven waar het zand wegloopt
+    // onder groeit een kegel (met af en toe een klein lawinetje); de rand ligt dan iets lager, zelfde inhoud
+    let cone = 1 - q > 0.002 ? Math.min(0.42, 0.06 + (1 - q) * 0.5) : 0;
+    if (live && !still) { const ph = (now / 2600) % 1; if (ph < 0.25) cone *= 1 - 0.1 * Math.sin(ph / 0.25 * Math.PI); }
+    const vBase = Math.min(1, vBot + cone * 0.45);
     const soft = 0.07;                                    // breedte van het verloop aan het oppervlak (in u)
+    // golf door het zand als het laatste korreltje gevallen is
+    const waveAge = (now - doneAt) / 1000, waving = !still && waveAge >= 0 && waveAge < 1.1, waveR = waveAge * 320;
     g.fillStyle = ink;
     for (let row = 0, y = top + sp / 2; y < bot; row++, y += sp * 0.866) {
       const up = y < neckTop;
@@ -131,38 +145,42 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
         const dx = Math.abs(x - cx);
         if (dx > hw - 1) continue;
         const k = 1 - dx / hw, edge = smooth(0, sp, hw - dx);
-        // hoeveel zand er op deze plek is (0..1), met een zacht verloop aan het oppervlak
-        const f = up ? smooth(uTop - dip * k * k + soft, uTop - dip * k * k - soft, u)
-          : smooth(vBot - mound * Math.pow(k, 1.5) - soft, vBot - mound * Math.pow(k, 1.5) + soft, u);
-        const r = sp * (0.09 + 0.39 * f) * (0.55 + 0.45 * edge);
+        // hoeveel zand er op deze plek is (0..1), met een zacht verloop aan het oppervlak, en hoe diep onder het oppervlak
+        let f, depth;
+        if (up) { const sfc = uTop - dip * k * k; f = smooth(sfc + soft, sfc - soft, u); depth = sfc - u; }
+        else { const sfc = vBase - cone * k; f = smooth(sfc - soft, sfc + soft, u); depth = u - sfc; }
+        let r = sp * (0.09 + 0.39 * f) * (0.55 + 0.45 * edge);
+        // volume, zoals de kern: grotere punten in het midden, kleiner naar de wand en naar het oppervlak
+        if (f > 0.05) r *= (0.74 + 0.26 * Math.sqrt(k)) * (0.82 + 0.18 * smooth(0, 0.25, depth));
+        if (waving && !up && f > 0.3) { const d = Math.hypot(x - cx, y - neckBot); r *= 1 + 0.22 * Math.exp(-(((d - waveR) / 14) ** 2)) * (1 - waveAge / 1.1); }
         g.globalAlpha = 0.18 + 0.82 * Math.max(f, 0.05);
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
     }
-    // vallende korrels door de hals tot op het heuveltje, in het accent: ze komen dicht op elkaar uit de hals, versnellen
-    // (zwaartekracht), spreiden een beetje en stuiteren na de landing nog even opzij voor ze in het heuveltje opgaan
+    // de hals: een paar piepkleine punten, zodat het één vorm is
+    g.globalAlpha = 0.5;
+    const nr = Math.max(0.7, sp * 0.15);
+    for (let y = neckTop - 1; y <= neckBot + 1; y += nr * 2.8) { g.beginPath(); g.arc(cx, y, nr, 0, Math.PI * 2); g.fill(); }
     if (flowing) {
-      const end = neckBot + (vBot - mound) * bulb, drop = Math.max(4, end - neckTop);
-      const GRAV = 1500, EVERY = 16, fall = Math.sqrt(2 * drop / GRAV) * 1000, LAND = 180;   // px/s², ms
-      const rnd = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
-      const t = reducedMotion.matches ? 0 : now, last = Math.floor(t / EVERY);
-      g.fillStyle = accent;
+      const end = neckBot + (vBase - cone) * bulb, drop = Math.max(4, end - neckTop);
+      const fall = Math.sqrt(2 * drop / GRAV) * 1000, t = still ? 0 : now, last = Math.floor(t / EVERY);
       for (let i = last; i > last - (fall + LAND) / EVERY - 1; i--) {
-        if (rnd(i, 9) < 0.3) continue;                     // niet elke tik een korrel: een onregelmatig straaltje
-        const age = t - i * EVERY, r = sp * (0.15 + 0.15 * rnd(i, 1));
+        if (rnd(i, 9) > KEEP) continue;
+        const born = i * EVERY, age = t - born;
+        if (age < 0 || (!live && born > pausedAt)) continue;
+        const rr = sp * (0.17 + 0.17 * rnd(i, 1));
         let x, y, a = 1;
         if (age < fall) {
-          const s = age / 1000, d = 0.5 * GRAV * s * s;
+          const sec = age / 1000, d = 0.5 * GRAV * sec * sec;
           x = cx + (rnd(i, 2) - 0.5) * Math.min(sp * 1.8, d * 0.07);
           y = neckTop - 2 + d;
         } else {
           const k = Math.min(1, (age - fall) / LAND), side = rnd(i, 3) < 0.5 ? -1 : 1;
-          x = cx + (rnd(i, 2) - 0.5) * Math.min(sp * 1.8, drop * 0.07) + side * k * sp * (0.6 + rnd(i, 4) * 1.4);
-          y = neckTop - 2 + drop - Math.sin(k * Math.PI) * sp * (0.3 + 0.5 * rnd(i, 5));
+          x = cx + (rnd(i, 2) - 0.5) * Math.min(sp * 1.8, drop * 0.07) + side * k * sp * (0.5 + rnd(i, 4) * 1.1);
+          y = neckTop - 2 + drop - Math.sin(k * Math.PI) * sp * (0.25 + 0.4 * rnd(i, 5));
           a = 1 - k;
         }
-        if (age < 0) continue;
-        g.globalAlpha = a; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+        g.globalAlpha = a; g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2); g.fill();
       }
     }
     g.globalAlpha = 1;
@@ -172,6 +190,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     st = { ...st, endAt: 0, left: 0, done: true };
     save();
     if (quiet) return;
+    doneAt = performance.now();
     if (!reducedMotion.matches) [0, 260, 520].forEach(ms => setTimeout(() => twinkleDot(digits), ms));
     onDone(st.dur);
   }
@@ -184,7 +203,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
 
   function toggle() {
     if (st.done) return;
-    if (st.endAt) st = { ...st, left: remaining(), endAt: 0 };          // pauze
+    if (st.endAt) { st = { ...st, left: remaining(), endAt: 0 }; pausedAt = performance.now(); }   // pauze
     else st = { ...st, endAt: Date.now() + st.left };                 // start of verder
     save();
     schedule();
