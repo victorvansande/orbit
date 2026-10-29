@@ -276,7 +276,6 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .sky-opt[aria-pressed="true"] span:first-child::before { content: "✦ "; }
 .sky-opt span:last-child { font-variant-numeric: tabular-nums; }
 .sky-new:hover { color: var(--ink); }
-.stats-reset { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .stats-reset-btn { min-height: 30px; font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); transition: color .2s var(--ease); }
 .stats-reset-btn:hover { color: var(--late); }
 .stats-confirm p { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }

@@ -18,7 +18,9 @@ function readObj(key) { try { const v = JSON.parse(localStorage.getItem(key)); r
 function writeObj(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* geen opslag */ } }
 
 /* ---- Logboek ---- */
-export const cleanDone = done => Object.fromEntries(Object.entries(done || {}).filter(([, t]) => Number.isFinite(t)));
+// 'handmatig-…' waren opvulsterren van een eenmalig consolescript (teller op 3, 28/10/2026), geen echte taken: weg ermee
+export const isFiller = id => id.startsWith('handmatig-');
+export const cleanDone = done => Object.fromEntries(Object.entries(done || {}).filter(([id, t]) => Number.isFinite(t) && !isFiller(id)));
 
 // Eerste keer: opbouwen uit het archief (echte taken) en de vroegere telling per dag. Wat de telling meer had dan
 // het archief nog kent (ouder dan 60 dagen), krijgt een eigen id per toestel, zodat het ook elders meetelt.

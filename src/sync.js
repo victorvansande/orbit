@@ -36,8 +36,8 @@ export function savedCode() {
 /* ---- Samenvoegen ---- */
 // state = { tasks: [{id, updatedAt, ...}], gone: { id: tijdstip van afvinken }, done: { id: tijdstip } }
 // Per taak wint de recentste wijziging; een afgevinkte taak komt pas terug als ze nadien opnieuw gewijzigd is (ongedaan maken).
-// done is het logboek voor de statistiek: alles van beide kanten, behalve taken die na het afvinken teruggezet zijn
-// en alles van vóór de laatste keer dat de teller op nul ging (doneReset).
+// done is het logboek voor de statistiek: alles van beide kanten, behalve taken die na het afvinken teruggezet zijn.
+// doneReset (vroeger "Teller op nul") wordt nog doorgegeven maar filtert niets meer: elke afgevinkte taak telt.
 export function mergeStates(a, b) {
   const gone = { ...a.gone };
   for (const [id, t] of Object.entries(b.gone || {})) gone[id] = Math.max(gone[id] || 0, t);
@@ -49,11 +49,10 @@ export function mergeStates(a, b) {
   const tasks = [...byId.values()].filter(t => !(gone[t.id] >= (t.updatedAt || 0)));
   const limit = Date.now() - GONE_DAYS * 86400000;
   for (const [id, t] of Object.entries(gone)) if (t < limit) delete gone[id];
-  const done = { ...a.done };
-  for (const [id, t] of Object.entries(b.done || {})) if (Number.isFinite(t)) done[id] = Math.max(done[id] || 0, t);
+  const done = {};
+  for (const src of [a.done, b.done]) for (const [id, t] of Object.entries(src || {})) if (Number.isFinite(t) && !id.startsWith('handmatig-')) done[id] = Math.max(done[id] || 0, t);
   for (const t of tasks) if (done[t.id] && (t.updatedAt || 0) > done[t.id]) delete done[t.id];
   const doneReset = Math.max(a.doneReset || 0, b.doneReset || 0);
-  for (const [id, t] of Object.entries(done)) if (t <= doneReset) delete done[id];
   // nieuwe hemels: alle sneden van beide kanten
   const skyCuts = [...new Set([...(a.skyCuts || []), ...(b.skyCuts || [])].filter(Number.isFinite))].sort((x, y) => x - y);
   return { tasks, gone, done, doneReset, skyCuts };

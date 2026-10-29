@@ -173,6 +173,14 @@ let tasks = loadTasks();
 tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'demo');
 let archive = loadArchive();
 let done = loadDone(archive);                    // logboek van afgevinkte taken, gaat mee met de sync
+// Elke afgevinkte taak in het archief telt als ster; ontbreekt ze in het logboek (bv. door de vroegere "Teller op nul"),
+// dan komt ze erbij. Geeft true als er iets bijkwam.
+function archiveIntoDone() {
+  let added = false;
+  for (const a of archive) if (Number.isFinite(a.doneAt) && done[a.id] === undefined) { done[a.id] = a.doneAt; added = true; }
+  return added;
+}
+if (archiveIntoDone()) saveDone(done);
 let doneReset = loadReset();                      // teller op nul gezet op dit tijdstip
 let skyCuts = loadCuts();                         // begin van elke nieuwe hemel (gaat mee met de sync)
 let skyView = loadSkyView();                      // getoonde hemel: 'current', 'all' of het begin van een vorige
@@ -389,6 +397,7 @@ $('wall-toggle').addEventListener('click', () => {
 
 function renderStats({ quiet = false } = {}) {
   const now = new Date();
+  if (archiveIntoDone()) { saveDone(done); syncStars(sky, done); notifySync(); }
   renderWall();
   statsDay = dayKey(now);
   scene.setSky(sky.stars.filter(s => starVisible(s.id)), { quiet });
@@ -396,8 +405,8 @@ function renderStats({ quiet = false } = {}) {
   $('stats').hidden = all === 0;
   $('stat-mini').hidden = all === 0;
   if (!all) return;
-  // de teller telt de sterren van de getoonde hemel; de details hieronder blijven over alles gaan
-  const total = Object.keys(done).filter(starVisible).length;
+  // de teller telt alle verzamelde sterren; de gekozen hemel bepaalt enkel welke sterren in de scène staan
+  const total = all;
   $('stat-mini-n').textContent = String(total);
   $('stat-mini').setAttribute('aria-label', tx('stars.mini', { n: total }));
   setMatrix($('stat-total'), String(total));
@@ -464,28 +473,6 @@ $('sky-new-yes').addEventListener('click', () => {
   showToast(tx('skies.done'));
 });
 
-// Teller en sterren op nul, na bevestiging. Het tijdstip gaat mee met de sync, zodat gekoppelde toestellen volgen
-// en de oude sterren niet terugbrengen.
-function showResetConfirm(on) {
-  $('stats-confirm').hidden = !on;
-  $('stats-reset').hidden = on;
-  if (on) $('stats-reset-no').focus();
-}
-$('stats-reset').addEventListener('click', () => showResetConfirm(true));
-$('stats-reset-no').addEventListener('click', () => showResetConfirm(false));
-$('stats-reset-yes').addEventListener('click', () => {
-  doneReset = Date.now();
-  done = {};
-  saveReset(doneReset);
-  saveDone(done);
-  clearStars(sky);
-  showResetConfirm(false);
-  $('stats-detail').hidden = true;
-  $('stats-toggle').setAttribute('aria-expanded', 'false');
-  renderStats();
-  notifySync();
-  showToast(tx('stats.resetDone'));
-});
 function showStatsDetail(open) {
   $('stats-detail').hidden = !open;
   $('stats-toggle').setAttribute('aria-expanded', String(open));
