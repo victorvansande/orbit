@@ -1,8 +1,9 @@
 /* ---- Zandloper: focustimer in de focusmodus ---- */
-// Een vak boven het bakje, in dezelfde ingelaten stijl. Een glazen zandloper (dunne omtrek, twee ronde bollen, platen
-// boven en onder) met zand als fijn stippelwerk, zoals de kern: boven zakt het zand en vormt het een kuiltje, door de hals
-// loopt een dun straaltje, onder groeit een heuveltje. Ernaast of eronder de resterende tijd in de stippencijfers van de
-// klok, 15 / 25 / 50 minuten en Start / Pauze. Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
+// Een vak boven het bakje, in dezelfde ingelaten stijl. De zandloper is één silhouet van rasterpunten, zoals een
+// risoposter en zoals de kern (Halftoon, gekozen door Victor): zand zijn volle punten, leeg glas zijn speldenprikjes, en
+// het oppervlak is een zacht verloop van puntgroottes. Boven zakt het zand met een kuiltje, door de hals loopt een dun
+// straaltje in het accent, onder groeit een heuveltje. Geen omtrek of platen (een echte glazen versie oogde te antiek).
+// Ernaast of eronder de resterende tijd in de stippencijfers van de klok, 15 / 25 / 50 minuten en Start / Pauze. Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
 // De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de pagina herlaadt.
 // Klaar: een paar stippen fonkelen uit als de vierpuntige ster, en de afvinktik klinkt (als geluid aan staat).
 import { setMatrix, twinkleDot } from './matrix.js';
@@ -13,8 +14,8 @@ const DURATIONS = [15, 25, 50];
 const FILL = 0.8;                                 // tot waar de bovenste bol bij de start gevuld is
 const STEPS = 240;                                // stappen voor de inhoudstabel van een bol
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-// vorm van één bol: halve breedte (0..1) op hoogte u, van de hals (0) naar de plaat (1); rond, bovenaan iets ingesnoerd
-const shape = u => Math.pow(Math.sin(Math.min(u / 0.74, 1) * Math.PI / 2), 0.85) * (1 - 0.16 * smooth(0.74, 1, u));
+// vorm van één bol: halve breedte (0..1) op hoogte u, van de hals (0) naar de rand (1); strak en rond
+const shape = u => Math.pow(Math.sin(Math.min(u / 0.8, 1) * Math.PI / 2), 0.75);
 
 const ICON_OPEN = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>';
 const ICON_CLOSE = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"/></svg>';
@@ -52,12 +53,12 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   let open = false;
   try { open = localStorage.getItem(UI_KEY) === 'open'; } catch { /* geen opslag */ }
 
-  let raf = 0, running = false, shownText = '', ink = '#1B1B22', ghost = 0.08, colAt = 0;
+  let raf = 0, running = false, shownText = '', ink = '#1B1B22', accent = '#E70049', colAt = 0;
   function readColors(now) {
     if (now - colAt < 1000) return;
     const css = getComputedStyle(document.documentElement);
     ink = css.getPropertyValue('--ink').trim() || ink;
-    ghost = parseFloat(css.getPropertyValue('--dm-ghost')) || ghost;
+    accent = css.getPropertyValue('--core').trim() || accent;
     colAt = now;
   }
 
@@ -68,8 +69,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     if (!w || !h || (w === W && h === H)) return;
     W = w; H = h; dpr = Math.min(2, devicePixelRatio || 1);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    const plate = Math.max(1.8, H * 0.02);                   // platen boven en onder
-    const top = plate + 2, bot = H - plate - 2;
+    const top = 3, bot = H - 3;
     const neckLen = Math.max(2, (bot - top) * 0.025);
     const bulb = (bot - top - neckLen) / 2;
     const R = Math.min(W / 2 - 4, bulb * 0.62);             // halve breedte van een bol
@@ -81,8 +81,8 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
       const w0 = neck + (R - neck) * shape(u0), w1 = neck + (R - neck) * shape(u1);
       area[i] = area[i - 1] + (w0 + w1) * bulb / STEPS;     // 2 × gemiddelde halve breedte × hoogte van de stap
     }
-    const sp = Math.max(2.4, Math.min(5, W / 42));           // afstand tussen de zandkorrels (stippelraster)
-    glass = { top, bot, plate, neckLen, bulb, R, neck, area, sp, cx: W / 2, neckTop: top + bulb, neckBot: top + bulb + neckLen };
+    const sp = Math.max(3.6, Math.min(6.5, W / 30));         // afstand tussen de rasterpunten
+    glass = { top, bot, neckLen, bulb, R, neck, area, sp, cx: W / 2, neckTop: top + bulb, neckBot: top + bulb + neckLen };
   }
   const halfAt = u => glass.neck + (glass.R - glass.neck) * shape(Math.min(1, Math.max(0, u)));
   // u waarop de inhoud van hals tot u gelijk is aan a
@@ -112,62 +112,42 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   }
 
   function drawGlass(q, live, now) {
-    const { top, bot, plate, bulb, R, cx, neckTop, neckBot, area, sp } = glass;
+    const { top, bot, bulb, cx, neckTop, neckBot, area, sp } = glass;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
     const vol = area[Math.round(FILL * STEPS)];
-    const upper = q * vol, lower = (1 - q) * vol;
-    const uTop = levelFor(upper);                         // zandhoogte boven (vanaf de hals)
-    const vBot = levelFor(area[STEPS] - lower);           // onder: zand van de plaat tot hier (vanaf de hals gemeten)
+    const uTop = levelFor(q * vol);                       // zandhoogte boven (vanaf de hals)
+    const vBot = levelFor(area[STEPS] - (1 - q) * vol);   // onder: zand van de rand tot hier (vanaf de hals gemeten)
     const flowing = live && q > 0.001;
-    const dip = flowing ? Math.min(uTop, 0.09) : 0;       // kuiltje boven waar het zand wegloopt
-    const mound = lower > 0 ? Math.min(0.13, (1 - vBot) * 0.9) : 0;   // heuveltje onder
-    // zand: stippels in een zeshoekig raster, zoals de kern
-    const rr = sp * 0.36;
+    const dip = flowing ? Math.min(uTop, 0.08) : 0;       // kuiltje boven waar het zand wegloopt
+    const mound = 1 - vBot > 0.02 ? 0.12 : 0;             // heuveltje onder
+    const soft = 0.07;                                    // breedte van het verloop aan het oppervlak (in u)
     g.fillStyle = ink;
-    const ghostPath = new Path2D(), sandPath = new Path2D();
-    for (let row = 0, y = top + sp * 0.5; y < bot; row++, y += sp * 0.866) {
-      const inUpper = y < neckTop, inLower = y > neckBot;
-      if (!inUpper && !inLower) continue;
-      const u = inUpper ? (neckTop - y) / bulb : (y - neckBot) / bulb;
-      const hw = halfAt(u) - rr * 1.6;
-      if (hw <= 0) continue;
-      const off = (row % 2) * sp * 0.5;
-      for (let x = cx - Math.floor(hw / sp) * sp - off; x <= cx + hw; x += sp) {
+    for (let row = 0, y = top + sp / 2; y < bot; row++, y += sp * 0.866) {
+      const up = y < neckTop;
+      if (!up && y <= neckBot) continue;
+      const u = up ? (neckTop - y) / bulb : (y - neckBot) / bulb, hw = halfAt(u);
+      for (let x = cx - Math.ceil(hw / sp) * sp + (row % 2) * sp / 2; x <= cx + hw; x += sp) {
         const dx = Math.abs(x - cx);
-        if (dx > hw) continue;
-        const k = 1 - dx / Math.max(hw, 1);
-        const sand = inUpper ? u <= uTop - dip * k * k : u >= vBot - mound * Math.pow(k, 1.4);
-        const path = sand ? sandPath : ghostPath, r = sand ? rr : rr * 0.8;
-        path.moveTo(x + r, y); path.arc(x, y, r, 0, Math.PI * 2);
+        if (dx > hw - 1) continue;
+        const k = 1 - dx / hw, edge = smooth(0, sp, hw - dx);
+        // hoeveel zand er op deze plek is (0..1), met een zacht verloop aan het oppervlak
+        const f = up ? smooth(uTop - dip * k * k + soft, uTop - dip * k * k - soft, u)
+          : smooth(vBot - mound * Math.pow(k, 1.5) - soft, vBot - mound * Math.pow(k, 1.5) + soft, u);
+        const r = sp * (0.09 + 0.39 * f) * (0.55 + 0.45 * edge);
+        g.globalAlpha = 0.18 + 0.82 * Math.max(f, 0.05);
+        g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
     }
-    g.globalAlpha = ghost * 0.9; g.fill(ghostPath);
-    g.globalAlpha = 1; g.fill(sandPath);
-    // straaltje door de hals tot op het heuveltje
+    // straaltje door de hals tot op het heuveltje, in het accent
     if (flowing) {
-      const end = neckBot + (vBot - mound) * bulb;          // de top van het heuveltje (of de bodem)
-      const step = Math.max(2.2, sp * 0.7), shift = reducedMotion.matches ? 0 : (now / 1000 * 60) % step;
-      g.beginPath();
-      for (let y = neckTop - 2 + shift; y < end; y += step) { g.moveTo(cx + rr * 0.7, y); g.arc(cx, y, rr * 0.7, 0, Math.PI * 2); }
-      g.globalAlpha = 0.85; g.fill();
+      const end = neckBot + (vBot - mound) * bulb, step = Math.max(3, sp * 0.8), r = Math.max(0.9, sp * 0.22);
+      const shift = reducedMotion.matches ? 0 : (now / 1000 * 40) % step;
+      g.fillStyle = accent; g.globalAlpha = 1; g.beginPath();
+      for (let y = neckTop - 3 + shift; y < end; y += step) { g.moveTo(cx + r, y); g.arc(cx, y, r, 0, Math.PI * 2); }
+      g.fill();
     }
-    // glas: dunne omtrek van beide bollen en de hals
-    g.globalAlpha = 0.42; g.strokeStyle = ink; g.lineWidth = 1.1; g.lineJoin = 'round';
-    for (const side of [-1, 1]) {
-      g.beginPath();
-      for (let i = 0; i <= 60; i++) { const u = 1 - i / 60; g.lineTo(cx + side * halfAt(u), neckTop - u * bulb); }
-      g.lineTo(cx + side * glass.neck, neckBot);
-      for (let i = 0; i <= 60; i++) { const u = i / 60; g.lineTo(cx + side * halfAt(u), neckBot + u * bulb); }
-      g.stroke();
-    }
-    // platen boven en onder, iets breder dan het glas, met twee dunne staanders
-    g.globalAlpha = 0.5; g.lineWidth = plate; g.lineCap = 'round';
-    const pw = R * 1.16;
-    for (const y of [top - plate * 0.6, bot + plate * 0.6]) { g.beginPath(); g.moveTo(cx - pw, y); g.lineTo(cx + pw, y); g.stroke(); }
-    g.globalAlpha = 0.22; g.lineWidth = 1;
-    for (const side of [-1, 1]) { g.beginPath(); g.moveTo(cx + side * pw * 0.94, top); g.lineTo(cx + side * pw * 0.94, bot); g.stroke(); }
-    g.globalAlpha = 1; g.lineCap = 'butt';
+    g.globalAlpha = 1;
   }
 
   function finish(quiet = false) {
