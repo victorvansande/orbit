@@ -12,6 +12,20 @@ Live: https://victorvansande.github.io/orbit/ (GitHub Pages, bron `main` / root)
 - Elke wijziging nakijken op desktop (1440×900) én gsm (375 px). Console foutloos, geen horizontale scroll.
 - Lokaal testen: `python3 -m http.server 3000` in deze map (modules werken niet via `file://`).
 
+## Samenwerking (Claude Code en Antigravity)
+
+Victor werkt afwisselend met Claude Code (cloud) en Google Antigravity (lokaal) aan Orbit, onder meer als de weeklimiet van een tool op is. Er gaat niets verloren zolang iedereen deze regels volgt. Ze gelden voor elke tool, ook voor Claude Code.
+
+- **CLAUDE.md is de enige bron van waarheid.** `AGENTS.md`, `GEMINI.md` en `.agent/rules/orbit.md` (regel voor Antigravity, altijd aan) verwijzen enkel hierheen en herhalen de harde regels. Nieuwe afspraken komen hier, niet in die bestanden.
+- **Eén tool tegelijk.** Begin altijd met `git pull origin main`, stop altijd met commit en push. Nooit twee tools tegelijk op `main` laten werken.
+- **Bij het starten**: CLAUDE.md lezen, de laatste regels onder "Overdracht" lezen en `git log` sinds de vorige eigen commit nalopen. Staat er iets in de commits dat niet in CLAUDE.md staat, dan eerst CLAUDE.md aanvullen (uit de diff).
+- **Alles in CLAUDE.md**: elke wijziging komt in de sectie waar ze thuishoort (wat, waarom, keuze van Victor met datum, bestanden, functies, opslagsleutels, tokens, hoe getest). CLAUDE.md wordt aangevuld, nooit ingekort of herschreven zonder vraag van Victor.
+- **Bij het stoppen**: één regel onder "Overdracht" (datum, tool, wat af is, wat openstaat), dan committen en pushen.
+- **Nooit geschiedenis herschrijven**: geen force push, rebase, reset of amend op gepushte commits. Ongedaan maken = `git revert`.
+- **Nooit secrets beheren** en nooit gegevens laten verdwijnen (zie Vangnet). Opslagsleutels (`priority-orbit.*.v1`) en het formaat van de synctoestand blijven compatibel: oudere versies van de app op andere toestellen moeten blijven werken.
+- **Zelfde huisstijl**: Nederlands, geen em dashes, geen marketingtaal, geen emoji, kleuren als tokens, UI-tekst in NL en EN (`src/i18n.js`), geen build-stap of dependencies.
+- **Zelfde tests**: 1440×900 en 375 px, licht en donker, console foutloos, geen horizontale scroll.
+
 ## Ontwerp
 
 Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurbollen) en een gebogen wiel als kiezer (referentie: verticale boog met pillen en labels). Licht thema als basis, met een donkere variant (zie Thema).
@@ -327,3 +341,9 @@ Op vraag van Victor (30/10/2026): "een achievement-systeem om me blijvend te mot
 
 - Sync-server staat live; nog na te gaan: werkt `workers.dev` op het werknetwerk van Victor.
 - Het wiel toont nu vijf items; als er ooit meer momenten bijkomen, werkt de boog al met meer items.
+
+## Overdracht
+
+Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
+
+- 29/10/2026, Claude Code: notitie in het venster "nieuwe taak" (met klad), papier vanaf de eerste weergave voor de intro, afspraken voor samenwerking met Antigravity (`AGENTS.md`, `GEMINI.md`, `.agent/rules/orbit.md`). Niets openstaand.
