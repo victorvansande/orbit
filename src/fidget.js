@@ -256,27 +256,45 @@ function lava() {
   const FRAG = `#extension GL_OES_standard_derivatives : enable
 precision highp float;
 uniform vec2 uRes; uniform vec4 uBalls[16]; uniform vec3 uColor; uniform float uGoo; uniform float uTime;
-const vec3 BULB = vec3(1.0, 0.46, 0.12);              // warm oranje, de gloeilamp onder de vloeistof
+const vec3 DEEP = vec3(0.62, 0.12, 0.04);              // diep oranjerood: licht dat door dikke was valt
+const vec3 HOT = vec3(1.0, 0.62, 0.22);                // warm oranje aan de belichte rand
+const vec2 LAMP = vec2(${(W / 2).toFixed(1)}, ${(HH + 26).toFixed(1)});   // de gloeilamp, net onder de bodem
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes * vec2(${W.toFixed(1)}, ${HH.toFixed(1)});
   float f = 0.0;
+  vec2 grad = vec2(0.0);
   for (int i = 0; i < 16; i++) {
     vec4 b = uBalls[i];
     if (b.z <= 0.0) continue;
     vec2 d = p - b.xy;
-    f += b.z * b.z / (dot(d, d) + 0.0001);
+    float q = dot(d, d) + 0.0001;
+    f += b.z * b.z / q;
+    grad -= 2.0 * b.z * b.z * d / (q * q);
   }
-  f = min(f, 4.0);                                   // midden van een bol: het veld schiet weg, de rand niet
-  float w = clamp(fwidth(f), 0.0001, 0.6) * (1.0 + uGoo);
-  float a = smoothstep(1.0 - w, 1.0 + w, f);
-  // gloed van de lamp: breed en warm aan de onderkant, flakkert heel licht
-  vec2 q = vec2((p.x - ${(W / 2).toFixed(1)}) / ${(W * 0.62).toFixed(1)}, (${(HH + 18).toFixed(1)} - p.y) / ${(HH * 0.7).toFixed(1)});
-  float flick = 0.93 + 0.04 * sin(uTime * 7.3) + 0.03 * sin(uTime * 2.1 + 1.3);
-  float g = exp(-dot(q, q) * 1.5) * 0.62 * flick;
-  // de was kleurt warm aan waar hij dicht bij de lamp komt
-  vec3 col = mix(uColor, BULB, clamp(g * 1.15, 0.0, 0.8));
-  vec3 rgb = col * a + BULB * g * (1.0 - a);
-  gl_FragColor = vec4(rgb, a + g * (1.0 - a));
+  float fc = min(f, 4.0);                            // midden van een bol: het veld schiet weg, de rand niet
+  float w = clamp(fwidth(fc), 0.0001, 0.6) * (1.0 + uGoo);
+  float a = smoothstep(1.0 - w, 1.0 + w, fc);
+  // licht van de lamp: valt snel af met de afstand en flakkert heel licht
+  vec2 toL = LAMP - p;
+  float dist = length(toL);
+  float flick = 0.94 + 0.035 * sin(uTime * 6.1) + 0.025 * sin(uTime * 1.7 + 1.3);
+  float heat = exp(-dist * dist / ${(HH * HH * 0.55).toFixed(1)}) * flick;
+  // vorm van de was: buitennormaal uit het veld; de kant naar de lamp licht op (rand), dik midden laat minder door
+  vec2 n = -grad / max(length(grad), 1e-4);
+  float facing = max(dot(n, toL / dist), 0.0);
+  // afstand tot de rand (px) via 1/√f: voor één bol precies r − |d|, glad over samengesmolten klonten, ook in de middelpunten
+  float sf = inversesqrt(max(f, 1e-6));
+  float inside = (1.0 - sf) / max(0.5 * sf * sf * sf * length(grad), 0.045);
+  float edge = 1.0 - smoothstep(0.0, 5.0, inside);   // dicht bij de rand van een klont
+  float slope = 0.5 * sf * sf * sf * length(grad);   // ongeveer 1/r (ondergrens 0,045 hierboven: in een hals schoot de afstand uit); bijna 0 in de hals tussen twee klonten, waar de richting wegvalt
+  float rim = facing * edge * smoothstep(0.008, 0.03, slope);
+  float thin = 1.0 - smoothstep(0.0, 12.0, inside);  // dunne was laat meer licht door
+  vec3 wax = mix(uColor, DEEP, heat * (0.35 + 0.45 * thin));
+  wax = mix(wax, HOT, clamp(heat * rim * 1.4, 0.0, 0.9));
+  // de vloeistof eromheen krijgt alleen een zweem, vlak boven de lamp
+  float haze = exp(-dot(toL / vec2(${(W * 0.32).toFixed(1)}, ${(HH * 0.38).toFixed(1)}), toL / vec2(${(W * 0.32).toFixed(1)}, ${(HH * 0.38).toFixed(1)}))) * 0.22 * flick;
+  vec3 rgb = wax * a + DEEP * haze * (1.0 - a);
+  gl_FragColor = vec4(rgb, a + haze * (1.0 - a));
 }`;
   function step({ gx, gy, ax, ay }) {
     t += 1 / 60;
