@@ -30,6 +30,7 @@
   --core: #E70049;           /* kleur van de kern (Nu), accent in de effecten */
   /* bakje: verloop van stil naar woelig, in de kleuren van de Grainient dusk (#BE123C, #FB923C, #FDE68A) */
   --water-calm: #5E5E68; --water-mid: #BE123C; --water-hot: #FB923C;   /* kleuren van de Grainient dusk */
+  --well: #E9E9E6; --well-shade: rgba(27, 27, 34, .16); --well-shade-2: rgba(27, 27, 34, .07); --well-lip: rgba(255, 255, 255, .85);   /* bakje, ingelaten in het papier */
   --grain-blend: multiply;
   --grain-opacity: .14;
   --warm: #FFB46A;           /* avondtint over het papier */
@@ -49,6 +50,7 @@
   --dm-ghost: .1;
   --core: #F0306A;
   --water-calm: #A3A3AD; --water-mid: #BE123C; --water-hot: #FDE68A;
+  --well: #0A0A0D; --well-shade: rgba(0, 0, 0, .7); --well-shade-2: rgba(0, 0, 0, .4); --well-lip: rgba(255, 255, 255, .07);
   --bg: #0F0F12;
   --surface: #19191D;
   --ink: #ECECF1;
@@ -420,7 +422,9 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* Bakje water: rustig fidget-venster rechtsonder in de focusmodus (alleen desktop) */
 .fidget {
   position: fixed; z-index: 2; right: var(--pad); bottom: 92px;
-  padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface);
+  /* Ingelaten (gekozen door Victor): een paar millimeter in het papier gedrukt, schaduw binnen de bovenrand, lichtrandje onderaan */
+  padding: 12px 14px; border-radius: 16px; background: var(--well);
+  box-shadow: inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2), 0 1px 0 var(--well-lip);
   opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none;
   transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
 }
