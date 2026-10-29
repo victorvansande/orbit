@@ -1000,11 +1000,42 @@ function openComposer(level = wheel.level) {
   $('due-toggle').hidden = false;
   setComposerRepeat('');
   setComposerDue('');
+  setComposerNote(false);
   composerSubmit.disabled = true;
+  // klad van de vorige keer (venster gesloten zonder toe te voegen): titel en notitie terug, zodat niets verloren gaat
+  if (composerDraft && Date.now() - composerDraft.at < DRAFT_MS) {
+    composerTitle.value = composerDraft.title;
+    composerNote.value = composerDraft.note;
+    if (composerDraft.note) setComposerNote(true, false);
+    composerSubmit.disabled = composerTitle.value.trim() === '';
+  }
+  composerDraft = null;
+  submitted = false;
   paintComposerOrb();
   if (!composer.open) composer.showModal();
   composerTitle.focus();
 }
+
+// Notitie bij een nieuwe taak: knop Notitie naast Deadline en Herhaal toont een tekstvak dat meegroeit
+const composerNote = $('composer-note');
+const DRAFT_MS = 30 * 60000;
+let composerDraft = null, submitted = false;
+function fitComposerNote() { composerNote.style.height = 'auto'; composerNote.style.height = `${composerNote.scrollHeight}px`; }
+function setComposerNote(open, focus = true) {
+  composerNote.hidden = !open;
+  $('note-toggle').setAttribute('aria-expanded', String(open));
+  if (open) { requestAnimationFrame(fitComposerNote); if (focus) composerNote.focus(); }
+}
+$('note-toggle').addEventListener('click', () => {
+  // dichtklappen kan enkel als er nog niets in staat, anders zou je tekst onzichtbaar meegaan
+  if (!composerNote.hidden && !composerNote.value.trim()) setComposerNote(false);
+  else setComposerNote(true);
+});
+composerNote.addEventListener('input', fitComposerNote);
+composerNote.addEventListener('keydown', e => {
+  // Enter is een nieuwe regel; Ctrl/Cmd+Enter voegt de taak toe
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); composerForm.requestSubmit(); }
+});
 
 function closeComposer() {
   if (!composer.open || composer.classList.contains('is-closing')) return;
@@ -1071,6 +1102,8 @@ composer.addEventListener('cancel', e => { e.preventDefault(); closeComposer(); 
 composer.addEventListener('click', e => { if (e.target === composer) closeComposer(); });
 composer.addEventListener('close', () => {
   cancelAnimationFrame(orbRaf);
+  // gesloten zonder toe te voegen: titel en notitie bewaren als klad voor de volgende keer
+  if (!submitted && (composerTitle.value.trim() || composerNote.value.trim())) composerDraft = { title: composerTitle.value, note: composerNote.value, at: Date.now() };
   // focus alleen terug naar het wiel voor wie met het toetsenbord werkt
   if (document.documentElement.dataset.input === 'keyboard') $('wheel').querySelector('.wheel-list').focus({ preventScroll: true });
   else document.activeElement?.blur?.();
@@ -1083,6 +1116,10 @@ composerForm.addEventListener('submit', e => {
   const task = { id: uid(), title, level: composerLevel, createdAt: now, updatedAt: now, levelAt: now };
   if (composerDue) { task.due = composerDue; task.level = levelForDue(composerDue); }
   if (composerDue && composerRepeat) task.repeat = composerRepeat;
+  const note = composerNote.value.replace(/\s+$/, '');
+  if (note.trim()) task.note = note;
+  submitted = true;
+  composerDraft = null;
   tasks = tasks.filter(t => !t.demo);     // je eerste eigen taak vervangt het voorbeeld
   tasks.push(task);
   saveTasks();
