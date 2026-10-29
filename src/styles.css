@@ -458,30 +458,46 @@ body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointe
 .fidget-color-reset { margin-left: auto; min-height: 22px; font: inherit; letter-spacing: 0; color: inherit; cursor: pointer; }
 .fidget-color-reset:hover { color: var(--ink-2); }
 .fidget-color-reset[hidden] + .fidget-color { margin-left: auto; }
-/* Zandloper: focustimer boven het bakje, zelfde ingelaten vak; zandloper van stippen links, tijd en knoppen rechts */
+/* Zandloper: focustimer boven het bakje, zelfde ingelaten vak. Ingeklapt: glas links, tijd en knoppen rechts.
+   Uitgeklapt: het vak vult de ruimte boven het bakje, met een groot glas en de tijd eronder. */
 .timer {
-  position: fixed; z-index: 2; right: var(--pad); bottom: calc(92px + 227px + 14px); width: 326px;
-  display: flex; align-items: center; gap: 22px; padding: 16px 18px;
+  --timer-bottom: calc(92px + 227px + 14px);
+  position: fixed; z-index: 2; right: var(--pad); bottom: var(--timer-bottom); width: 326px; height: 132px;
+  display: grid; grid-template-columns: 66px 1fr; grid-template-rows: 100%; align-items: center; gap: 22px; padding: 16px 44px 16px 22px;
   border-radius: 16px; background: var(--well);
   box-shadow: inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2), 0 1px 0 var(--well-lip);
   opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none;
-  transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
+  transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s, height .55s var(--ease);
 }
 body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
-.timer-glass { display: block; flex-shrink: 0; }
-.timer-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.timer-digits { display: flex; gap: 5px; height: 34px; color: var(--ink); }
+.timer.is-open {
+  height: max(260px, calc(100dvh - var(--timer-bottom) - 40px));   /* tot op de hoogte van ORBIT TASKS */
+  grid-template-columns: 100%; grid-template-rows: minmax(0, 1fr) auto; gap: 22px; padding: 30px 26px 24px;
+}
+.timer-glass { position: relative; height: 100%; min-height: 0; cursor: pointer; }
+.timer-glass canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.timer-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.timer.is-open .timer-side { align-items: center; gap: 16px; }
+.timer-digits { display: flex; gap: 5px; height: 30px; color: var(--ink); }
+.timer.is-open .timer-digits { height: 50px; gap: 8px; }
 .timer-digits .dm { display: block; height: 100%; width: auto; overflow: visible; }
 .timer-digits .dm .o { animation: none; }   /* elke seconde opnieuw oplichten was te onrustig */
-.timer-row { display: flex; align-items: center; gap: 6px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-.timer-row button { min-height: 22px; color: inherit; letter-spacing: inherit; text-transform: inherit; font: inherit; cursor: pointer; transition: color .2s var(--ease); }
+.timer-row { display: flex; align-items: center; gap: 14px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.timer-row button { min-height: 22px; color: inherit; letter-spacing: inherit; text-transform: inherit; font: inherit; cursor: pointer; transition: color .2s var(--ease), opacity .2s var(--ease); }
 .timer-row button:hover:not(:disabled) { color: var(--ink-2); }
-.timer-row button:disabled { cursor: default; opacity: .45; }
-.timer-dur[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-.timer-row .slash { opacity: .5; }
-.timer-go { margin-left: 8px; color: var(--ink) !important; }
-.timer-go:disabled { opacity: 1 !important; }
-.timer-reset { letter-spacing: 0 !important; }
+.timer-durs { display: flex; align-items: baseline; gap: 8px; }
+.timer-dur:disabled { cursor: default; opacity: .4; }
+.timer-dur[aria-pressed="true"] { color: var(--ink); }
+.timer-dur[aria-pressed="true"]:disabled { opacity: 1; }
+.timer-unit { opacity: .6; letter-spacing: .1em; text-transform: lowercase; }
+/* start/pauze als klein pilletje, het enige dat echt een knop is */
+.timer-go { padding: 0 11px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
+.timer-go:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ink-3); }
+.timer.is-running .timer-go { box-shadow: none; padding: 0; }
+.timer-go:disabled { cursor: default; box-shadow: none; padding: 0; }
+.timer-reset { margin-left: -6px; letter-spacing: 0 !important; font-size: 12px !important; }
+.timer-expand { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease), background .2s var(--ease); }
+.timer-expand:hover { color: var(--ink); background: var(--fill); }
 @media (max-width: 999px) { .fidget, .timer { display: none; } }
 .focus-info {
   position: fixed; z-index: 2;

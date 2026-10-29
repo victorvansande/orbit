@@ -1,48 +1,46 @@
 /* ---- Zandloper: focustimer in de focusmodus ---- */
-// Een vakje boven het bakje, in dezelfde ingelaten stijl: links een zandloper van stippen die in 15, 25 of 50 minuten
-// leegloopt, rechts de resterende tijd in de stippencijfers van de klok. Een tik op de zandloper of op Start begint,
-// nog een tik pauzeert. De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de
-// pagina herlaadt. Klaar: een paar stippen fonkelen uit als de vierpuntige ster, en de afvinktik klinkt (als geluid aan staat).
+// Een vak boven het bakje, in dezelfde ingelaten stijl. Een glazen zandloper (dunne omtrek, twee ronde bollen, platen
+// boven en onder) met zand als fijn stippelwerk, zoals de kern: boven zakt het zand en vormt het een kuiltje, door de hals
+// loopt een dun straaltje, onder groeit een heuveltje. Ernaast of eronder de resterende tijd in de stippencijfers van de
+// klok, 15 / 25 / 50 minuten en Start / Pauze. Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
+// De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de pagina herlaadt.
+// Klaar: een paar stippen fonkelen uit als de vierpuntige ster, en de afvinktik klinkt (als geluid aan staat).
 import { setMatrix, twinkleDot } from './matrix.js';
 
 const KEY = 'priority-orbit.timer.v1';
+const UI_KEY = 'priority-orbit.timer.ui.v1';     // uitgeklapt of niet, per toestel
 const DURATIONS = [15, 25, 50];
-const ROWS = [11, 9, 7, 5, 3, 1, 3, 5, 7, 9, 11];   // breedte per rij: bovenste bol, hals, onderste bol
-const NECK = 5, COLS = 11, GAP = 9;                 // px tussen stippen
-const SIZE = COLS * GAP;
+const FILL = 0.8;                                 // tot waar de bovenste bol bij de start gevuld is
+const STEPS = 240;                                // stappen voor de inhoudstabel van een bol
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+// vorm van één bol: halve breedte (0..1) op hoogte u, van de hals (0) naar de plaat (1); rond, bovenaan iets ingesnoerd
+const shape = u => Math.pow(Math.sin(Math.min(u / 0.74, 1) * Math.PI / 2), 0.85) * (1 - 0.16 * smooth(0.74, 1, u));
 
-// stippen van de zandloper, met de volgorde waarin het zand boven verdwijnt en onder bijkomt
-const cells = [];
-ROWS.forEach((w, r) => { for (let i = 0; i < w; i++) cells.push({ r, c: (COLS - w) / 2 + i, off: Math.abs(i - (w - 1) / 2) }); });
-// boven: de bovenste laag eerst, van het midden naar buiten (het oppervlak zakt eerst in het midden)
-const TOP = cells.filter(d => d.r < NECK).sort((a, b) => a.r - b.r || a.off - b.off);
-// onder: de onderste laag eerst, van het midden naar buiten (het hoopje groeit)
-const BOTTOM = cells.filter(d => d.r > NECK).sort((a, b) => b.r - a.r || a.off - b.off);
-const GRAINS = TOP.length;
+const ICON_OPEN = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>';
+const ICON_CLOSE = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"/></svg>';
 
 export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
+  const wrap = Object.assign(document.createElement('div'), { className: 'timer-glass' });
   const cv = document.createElement('canvas');
-  cv.className = 'timer-glass';
   cv.setAttribute('aria-hidden', 'true');
-  const side = document.createElement('div');
-  side.className = 'timer-side';
-  const digits = document.createElement('div');
-  digits.className = 'timer-digits';
+  wrap.append(cv);
+  const side = Object.assign(document.createElement('div'), { className: 'timer-side' });
+  const digits = Object.assign(document.createElement('div'), { className: 'timer-digits' });
   digits.setAttribute('role', 'timer');
-  const row = document.createElement('div');
-  row.className = 'timer-row';
+  const row = Object.assign(document.createElement('div'), { className: 'timer-row' });
   const durs = DURATIONS.map(m => Object.assign(document.createElement('button'), { type: 'button', textContent: String(m), className: 'timer-dur' }));
-  const toggle = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-go' });
+  const unit = Object.assign(document.createElement('span'), { className: 'timer-unit', textContent: 'min' });
+  const go = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-go' });
   const reset = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-reset', textContent: '↺' });
   reset.setAttribute('aria-label', tx('timer.reset')); reset.title = tx('timer.reset');
-  durs.forEach((b, i) => { if (i) row.append(Object.assign(document.createElement('span'), { className: 'slash', textContent: '/', ariaHidden: 'true' })); row.append(b); });
-  row.append(toggle, reset);
+  const durWrap = Object.assign(document.createElement('div'), { className: 'timer-durs' });
+  durWrap.setAttribute('role', 'group');
+  durs.forEach(b => durWrap.append(b));
+  durWrap.append(unit);
+  row.append(durWrap, go, reset);
   side.append(digits, row);
-  box.append(cv, side);
-
-  const dpr = Math.min(2, devicePixelRatio || 1);
-  cv.width = Math.round(SIZE * dpr); cv.height = Math.round(SIZE * dpr);
-  cv.style.width = cv.style.height = `${SIZE}px`;
+  const expand = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-expand' });
+  box.append(wrap, side, expand);
   const g = cv.getContext('2d');
 
   // toestand: duur (min), en ofwel een eindtijd (loopt), ofwel de resterende tijd (gepauzeerd of nog niet gestart)
@@ -51,53 +49,125 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* geen opslag */ } };
   const remaining = (now = Date.now()) => st.endAt ? Math.max(0, st.endAt - now) : st.left;
 
-  let raf = 0, running = false, shownText = '', inkCol = '', ghost = 0.08, colAt = 0;
+  let open = false;
+  try { open = localStorage.getItem(UI_KEY) === 'open'; } catch { /* geen opslag */ }
 
+  let raf = 0, running = false, shownText = '', ink = '#1B1B22', ghost = 0.08, colAt = 0;
   function readColors(now) {
-    if (now - colAt < 1000 && inkCol) return;
+    if (now - colAt < 1000) return;
     const css = getComputedStyle(document.documentElement);
-    inkCol = css.getPropertyValue('--ink').trim() || '#1B1B22';
-    ghost = parseFloat(css.getPropertyValue('--dm-ghost')) || 0.08;
+    ink = css.getPropertyValue('--ink').trim() || ink;
+    ghost = parseFloat(css.getPropertyValue('--dm-ghost')) || ghost;
     colAt = now;
+  }
+
+  /* ---- Glas: maat, vorm en inhoud ---- */
+  let W = 0, H = 0, dpr = 1, glass = null;
+  function measure() {
+    const w = Math.round(wrap.clientWidth), h = Math.round(wrap.clientHeight);
+    if (!w || !h || (w === W && h === H)) return;
+    W = w; H = h; dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const plate = Math.max(1.8, H * 0.02);                   // platen boven en onder
+    const top = plate + 2, bot = H - plate - 2;
+    const neckLen = Math.max(2, (bot - top) * 0.025);
+    const bulb = (bot - top - neckLen) / 2;
+    const R = Math.min(W / 2 - 4, bulb * 0.62);             // halve breedte van een bol
+    const neck = Math.max(1.4, R * 0.075);
+    // inhoud van een bol van de hals tot hoogte u (in px², halve breedtes × 2)
+    const area = new Float64Array(STEPS + 1);
+    for (let i = 1; i <= STEPS; i++) {
+      const u0 = (i - 1) / STEPS, u1 = i / STEPS;
+      const w0 = neck + (R - neck) * shape(u0), w1 = neck + (R - neck) * shape(u1);
+      area[i] = area[i - 1] + (w0 + w1) * bulb / STEPS;     // 2 × gemiddelde halve breedte × hoogte van de stap
+    }
+    const sp = Math.max(2.4, Math.min(5, W / 42));           // afstand tussen de zandkorrels (stippelraster)
+    glass = { top, bot, plate, neckLen, bulb, R, neck, area, sp, cx: W / 2, neckTop: top + bulb, neckBot: top + bulb + neckLen };
+  }
+  const halfAt = u => glass.neck + (glass.R - glass.neck) * shape(Math.min(1, Math.max(0, u)));
+  // u waarop de inhoud van hals tot u gelijk is aan a
+  function levelFor(a) {
+    const t = glass.area;
+    if (a <= 0) return 0;
+    if (a >= t[STEPS]) return 1;
+    let lo = 0, hi = STEPS;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (t[m] < a) lo = m; else hi = m; }
+    return (lo + (a - t[lo]) / (t[hi] - t[lo])) / STEPS;
   }
 
   function draw(now = performance.now()) {
     readColors(now);
-    const total = st.dur * 60000, left = remaining(), p = 1 - left / total;
-    const fallen = Math.min(GRAINS, p * GRAINS), whole = Math.floor(fallen), frac = fallen - whole;
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, SIZE, SIZE);
-    g.fillStyle = inkCol;
-    const dot = (d, a, r = 2.6) => { g.globalAlpha = a; g.beginPath(); g.arc(d.c * GAP + GAP / 2, d.r * GAP + GAP / 2, r, 0, Math.PI * 2); g.fill(); };
-    const goneTop = new Set(TOP.slice(0, whole)), filled = new Set(BOTTOM.slice(0, whole));
-    for (const d of cells) {
-      const lit = d.r < NECK ? !goneTop.has(d) : filled.has(d);
-      dot(d, lit ? 1 : ghost, lit ? 2.6 : 2.2);
-    }
-    // de hals en een korrel die valt, zolang de tijd loopt
-    const live = st.endAt && left > 0;
-    if (live && whole < GRAINS) {
-      dot({ r: NECK, c: (COLS - 1) / 2 }, 0.5 + 0.5 * Math.abs(Math.sin(now / 600)), 2.4);
-      if (!reducedMotion.matches) {
-        const to = BOTTOM[whole], k = Math.min(1, frac / 0.35);   // de korrel valt in het eerste stuk van zijn tijd
-        if (k < 1) {
-          const x = ((COLS - 1) / 2 + (to.c - (COLS - 1) / 2) * k * k) * GAP + GAP / 2;
-          const y = (NECK + (to.r - NECK) * k * k) * GAP + GAP / 2;
-          g.globalAlpha = 1; g.beginPath(); g.arc(x, y, 2.4, 0, Math.PI * 2); g.fill();
-        }
-      }
-    }
-    g.globalAlpha = 1;
+    measure();
+    const total = st.dur * 60000, left = remaining(), live = Boolean(st.endAt && left > 0);
+    if (glass) drawGlass(left / total, live, now);
     // tijd en knoppen
     const s = Math.ceil(left / 1000), text = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
     if (text !== shownText) { setMatrix(digits, text); shownText = text; }
-    toggle.textContent = tx(st.done ? 'timer.done' : st.endAt ? 'timer.pause' : left < total ? 'timer.resume' : 'timer.start');
-    toggle.disabled = st.done;
+    go.textContent = tx(st.done ? 'timer.done' : st.endAt ? 'timer.pause' : left < total ? 'timer.resume' : 'timer.start');
+    go.disabled = st.done;
     durs.forEach(b => { b.setAttribute('aria-pressed', String(Number(b.textContent) === st.dur)); b.disabled = Boolean(st.endAt); });   // een lopend blok wissel je niet per ongeluk
     reset.hidden = !st.done && !st.endAt && left >= total;
     box.classList.toggle('is-running', Boolean(st.endAt));
-    // klaar
     if (st.endAt && left <= 0) finish();
+  }
+
+  function drawGlass(q, live, now) {
+    const { top, bot, plate, bulb, R, cx, neckTop, neckBot, area, sp } = glass;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    const vol = area[Math.round(FILL * STEPS)];
+    const upper = q * vol, lower = (1 - q) * vol;
+    const uTop = levelFor(upper);                         // zandhoogte boven (vanaf de hals)
+    const vBot = levelFor(area[STEPS] - lower);           // onder: zand van de plaat tot hier (vanaf de hals gemeten)
+    const flowing = live && q > 0.001;
+    const dip = flowing ? Math.min(uTop, 0.09) : 0;       // kuiltje boven waar het zand wegloopt
+    const mound = lower > 0 ? Math.min(0.13, (1 - vBot) * 0.9) : 0;   // heuveltje onder
+    // zand: stippels in een zeshoekig raster, zoals de kern
+    const rr = sp * 0.36;
+    g.fillStyle = ink;
+    const ghostPath = new Path2D(), sandPath = new Path2D();
+    for (let row = 0, y = top + sp * 0.5; y < bot; row++, y += sp * 0.866) {
+      const inUpper = y < neckTop, inLower = y > neckBot;
+      if (!inUpper && !inLower) continue;
+      const u = inUpper ? (neckTop - y) / bulb : (y - neckBot) / bulb;
+      const hw = halfAt(u) - rr * 1.6;
+      if (hw <= 0) continue;
+      const off = (row % 2) * sp * 0.5;
+      for (let x = cx - Math.floor(hw / sp) * sp - off; x <= cx + hw; x += sp) {
+        const dx = Math.abs(x - cx);
+        if (dx > hw) continue;
+        const k = 1 - dx / Math.max(hw, 1);
+        const sand = inUpper ? u <= uTop - dip * k * k : u >= vBot - mound * Math.pow(k, 1.4);
+        const path = sand ? sandPath : ghostPath, r = sand ? rr : rr * 0.8;
+        path.moveTo(x + r, y); path.arc(x, y, r, 0, Math.PI * 2);
+      }
+    }
+    g.globalAlpha = ghost * 0.9; g.fill(ghostPath);
+    g.globalAlpha = 1; g.fill(sandPath);
+    // straaltje door de hals tot op het heuveltje
+    if (flowing) {
+      const end = neckBot + (vBot - mound) * bulb;          // de top van het heuveltje (of de bodem)
+      const step = Math.max(2.2, sp * 0.7), shift = reducedMotion.matches ? 0 : (now / 1000 * 60) % step;
+      g.beginPath();
+      for (let y = neckTop - 2 + shift; y < end; y += step) { g.moveTo(cx + rr * 0.7, y); g.arc(cx, y, rr * 0.7, 0, Math.PI * 2); }
+      g.globalAlpha = 0.85; g.fill();
+    }
+    // glas: dunne omtrek van beide bollen en de hals
+    g.globalAlpha = 0.42; g.strokeStyle = ink; g.lineWidth = 1.1; g.lineJoin = 'round';
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      for (let i = 0; i <= 60; i++) { const u = 1 - i / 60; g.lineTo(cx + side * halfAt(u), neckTop - u * bulb); }
+      g.lineTo(cx + side * glass.neck, neckBot);
+      for (let i = 0; i <= 60; i++) { const u = i / 60; g.lineTo(cx + side * halfAt(u), neckBot + u * bulb); }
+      g.stroke();
+    }
+    // platen boven en onder, iets breder dan het glas, met twee dunne staanders
+    g.globalAlpha = 0.5; g.lineWidth = plate; g.lineCap = 'round';
+    const pw = R * 1.16;
+    for (const y of [top - plate * 0.6, bot + plate * 0.6]) { g.beginPath(); g.moveTo(cx - pw, y); g.lineTo(cx + pw, y); g.stroke(); }
+    g.globalAlpha = 0.22; g.lineWidth = 1;
+    for (const side of [-1, 1]) { g.beginPath(); g.moveTo(cx + side * pw * 0.94, top); g.lineTo(cx + side * pw * 0.94, bot); g.stroke(); }
+    g.globalAlpha = 1; g.lineCap = 'butt';
   }
 
   function finish(quiet = false) {
@@ -114,7 +184,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     raf = requestAnimationFrame(loop);
   }
 
-  function go() {
+  function toggle() {
     if (st.done) return;
     if (st.endAt) st = { ...st, left: remaining(), endAt: 0 };          // pauze
     else st = { ...st, endAt: Date.now() + st.left };                 // start of verder
@@ -122,15 +192,27 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     schedule();
     draw();
   }
-  toggle.addEventListener('click', go);
-  cv.addEventListener('click', go);
-  cv.style.cursor = 'pointer';
+  go.addEventListener('click', toggle);
+  wrap.addEventListener('click', toggle);
   reset.addEventListener('click', () => { st = { dur: st.dur, endAt: 0, left: st.dur * 60000, done: false }; save(); schedule(); draw(); });
   durs.forEach(b => b.addEventListener('click', () => {
     const m = Number(b.textContent);
     st = { dur: m, endAt: 0, left: m * 60000, done: false };
     save(); draw();
   }));
+
+  // uitklappen: het vak vult de ruimte boven het bakje
+  function setOpen(on) {
+    open = on;
+    box.classList.toggle('is-open', on);
+    expand.innerHTML = on ? ICON_CLOSE : ICON_OPEN;
+    expand.setAttribute('aria-label', tx(on ? 'timer.collapse' : 'timer.expand'));
+    expand.title = tx(on ? 'timer.collapse' : 'timer.expand');
+    expand.setAttribute('aria-expanded', String(on));
+    try { localStorage.setItem(UI_KEY, on ? 'open' : 'closed'); } catch { /* geen opslag */ }
+  }
+  expand.addEventListener('click', () => setOpen(!open));
+  new ResizeObserver(() => { W = 0; draw(); }).observe(wrap);
 
   // het einde ook opmerken als de focus dicht is (geluid op tijd); wat lang geleden afliep, eindigt stil
   let endTimer = 0;
@@ -139,6 +221,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     if (st.endAt) endTimer = setTimeout(() => draw(), Math.max(0, st.endAt - Date.now()) + 50);
   }
   if (st.endAt && Date.now() - st.endAt > 60000) finish(true);
+  setOpen(open);
   draw();
   schedule();
   return {
