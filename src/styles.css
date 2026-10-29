@@ -429,8 +429,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
 }
 body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
-.fidget { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
-.fidget.is-dragging { cursor: grabbing; }
+.fidget { touch-action: none; user-select: none; -webkit-user-select: none; }   /* staat vast: niet meer te slepen */
 .fidget canvas { display: block; }
 .fidget-gl { border-radius: 10px; }
 .fidget-own { position: relative; overflow: hidden; border-radius: 10px; }   /* topo: eigen canvas van de React Bits-component */

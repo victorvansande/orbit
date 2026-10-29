@@ -9,8 +9,6 @@ const CW = 7.4, CH = 12.6;        // maat van één teken (px), Geist Mono 11 px
 const W = COLS * CW, HH = ROWS * CH;
 const CELLS = COLS * ROWS;
 const STEP_MS = 1000 / 60;
-const TILT = 0.3;                 // graden kanteling per px uitwijking van het bakje
-const MAX_SHIFT = 26;             // px, zo ver volgt het bakje je sleepbeweging
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
 const MODE_KEY = 'priority-orbit.fidget.v1';
@@ -230,7 +228,7 @@ const hexRgb = v => {
 function lava() {
   const COUNT = 10, POOL = 5, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
   const balls = [];
-  const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, r: 0, on: false };
+  const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, vx: 0, vy: 0, r: 0, on: false };
   let t = 0, intro = 0, prog = null, color = [1, 1, 1], colorAt = -1e9;
   for (let i = 0; i < COUNT; i++) {
     const T = Math.random();
@@ -243,7 +241,7 @@ function lava() {
     });
   }
   // de plas op de bodem: vijf brede bollen die overlappen, half onder de rand liggen en traag deinen
-  const pool = Array.from({ length: POOL }, (_, i) => ({ x: W * (0.1 + 0.2 * i), y: HH + 10, s: 22 + (i % 2) * 3, ph: i * 1.7 }));
+  const pool = Array.from({ length: POOL }, (_, i) => ({ x: W * (0.1 + 0.2 * i), y: HH + 14, s: 19 + (i % 2) * 2, ph: i * 1.7 }));   // laag en doorlopend: de was verzamelt zich vooral bovenaan (Victor)
   const data = new Float32Array(16 * 4);
   const FRAG = `#extension GL_OES_standard_derivatives : enable
 precision highp float;
@@ -265,7 +263,9 @@ void main() {
   function step({ gx, gy, ax, ay }) {
     t += 1 / 60;
     intro = Math.min(1, intro + 1 / 60 / 1.3);
+    const px = cur.x, py = cur.y;
     cur.x += (cur.tx - cur.x) * SMOOTH; cur.y += (cur.ty - cur.y) * SMOOTH;
+    cur.vx = cur.x - px; cur.vy = cur.y - py;
     cur.r += ((cur.on ? 5.5 * CURSOR * 0.75 : 0) - cur.r) * 0.08;
     // zwaartekracht in het bakje (kantelt mee); opwaartse kracht werkt er recht tegenin
     const gl = Math.hypot(gx, gy) || 1, ux = gx / gl, uy = gy / gl;
@@ -273,7 +273,7 @@ void main() {
       // warmte: de plas onderaan warmt op, bovenaan koelt de was af, in het midden houdt hij zijn warmte lang vast
       const depth = b.y / HH;
       if (depth > 0.78) b.T = Math.min(1, b.T + 0.0035 * b.heat);
-      else if (depth < 0.3) b.T = Math.max(0, b.T - 0.004 * b.heat);
+      else if (depth < 0.3) b.T = Math.max(0, b.T - 0.0011 * b.heat);   // traag afkoelen: de was blijft bovenaan hangen en vloeit daar samen
       else b.T += (0.5 - b.T) * 0.0006;
       if (cur.r > 1) {
         const d = Math.hypot(cur.x - b.x, cur.y - b.y);
@@ -285,10 +285,14 @@ void main() {
       fx += Math.sin(t * 0.35 + b.ph) * 0.0045;
       // klotsen: de vloeistof blijft achter bij een schok van het bakje
       fx -= ax * 0.5; fy -= ay * 0.5;
-      // kleverig: de cursor-bol trekt was aan
+      // de cursor-bol duwt elke klont die hij raakt opzij en sleept hem mee in zijn beweging (Victor)
       if (cur.r > 1) {
-        const ex = cur.x - b.x, ey = cur.y - b.y, d = Math.hypot(ex, ey);
-        if (d < 90 && d > 1) { const f = STICKY * 0.02 * (1 - d / 90); fx += ex / d * f; fy += ey / d * f; }
+        const ex = b.x - cur.x, ey = b.y - cur.y, d = Math.hypot(ex, ey) || 0.01, reach = cur.r + b.s + 8;
+        if (d < reach) {
+          const f = (1 - d / reach);
+          fx += ex / d * f * 0.35 + cur.vx * f * STICKY * 0.5;
+          fy += ey / d * f * 0.35 + cur.vy * f * STICKY * 0.5;
+        }
       }
       b.vx = (b.vx + fx) * 0.965; b.vy = (b.vy + fy) * 0.965;
     }
@@ -304,14 +308,14 @@ void main() {
     }
     for (const b of balls) {
       const sp = Math.hypot(b.vx, b.vy);
-      if (sp > 1.1) { b.vx *= 1.1 / sp; b.vy *= 1.1 / sp; }
+      if (sp > 2.5) { b.vx *= 2.5 / sp; b.vy *= 2.5 / sp; }   // stijgen en zakken blijft traag door de demping; de cursor mag sneller duwen
       const nx = b.x + b.vx, ny = b.y + b.vy;
       b.dx = nx - b.x; b.dy = ny - b.y; b.x = nx; b.y = ny;
       // wanden: zacht terugduwen; onderaan mag een klont in de plas zakken
       const r = b.s;
       if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx) * 0.3; }
       if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx) * 0.3; }
-      if (b.y < r * 0.8) { b.y = r * 0.8; b.vy = Math.abs(b.vy) * 0.2; b.T = Math.max(0, b.T - 0.01); }
+      if (b.y < r * 0.45) { b.y = r * 0.45; b.vy = Math.abs(b.vy) * 0.1; b.T = Math.max(0, b.T - 0.0025); }   // tegen het plafond plat
       if (b.y > HH + r * 0.2) { b.y = HH + r * 0.2; b.vy = -Math.abs(b.vy) * 0.2; }
     }
   }
@@ -528,8 +532,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   const chr = new Array(CELLS).fill(''), want = new Float32Array(CELLS), agit = new Float32Array(CELLS), pos = new Float32Array(CELLS * 2);
   let palette = null, paletteAt = 0;
   let raf = 0, running = false, acc = 0, last = 0;
-  const shift = { x: 0, y: 0, vx: 0, vy: 0, goalX: 0, goalY: 0 };
-  let drag = null, nudgeAt = 0;
+  let press = null, nudgeAt = 0, kick = 0;   // het bakje staat vast (Victor); een duwtje is een korte schok op de inhoud
 
   let modeName = 'lava';   // standaard (Victor); zonder WebGL valt renderBar terug op water
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) modeName = m; } catch { /* geen opslag */ }
@@ -586,26 +589,12 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     });
   }
 
-  // het bakje volgt je sleepbeweging en veert terug; zijn versnelling is wat de inhoud voelt
-  function moveBox() {
-    const dragging = drag?.moved, k = dragging ? 0.25 : 0.06, damp = dragging ? 0.6 : 0.82;
-    const ax = (shift.goalX - shift.x) * k, ay = (shift.goalY - shift.y) * k;
-    const nvx = (shift.vx + ax) * damp, nvy = (shift.vy + ay) * damp;
-    const accX = nvx - shift.vx, accY = nvy - shift.vy;
-    shift.vx = nvx; shift.vy = nvy;
-    shift.x += shift.vx; shift.y += shift.vy;
-    if (!dragging) { shift.goalX = 0; shift.goalY = 0; }
-    return [accX, accY];
-  }
-
   function render(now = 0) {
     const m = mode();
     cv.hidden = Boolean(m.gl || m.own); cvGL.hidden = !m.gl; own.hidden = !m.own;
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
     if (m.own) {
       m.mount(own);
-      box.style.translate = `${shift.x.toFixed(1)}px ${shift.y.toFixed(1)}px`;
-      box.style.rotate = `${(shift.x * TILT).toFixed(2)}deg`;
       return;
     }
     if (m.gl) {
@@ -616,8 +605,6 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
         ctx.enable(ctx.BLEND); ctx.blendFunc(ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
         m.render(ctx, now);
       }
-      box.style.translate = `${shift.x.toFixed(1)}px ${shift.y.toFixed(1)}px`;
-      box.style.rotate = `${(shift.x * TILT).toFixed(2)}deg`;
       return;
     }
     pos.fill(0);
@@ -645,8 +632,6 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
       g.fillStyle = palette[lv];
       for (let i = 0; i < list.length; i += 3) g.fillText(list[i], list[i + 1], list[i + 2]);
     });
-    box.style.translate = `${shift.x.toFixed(1)}px ${shift.y.toFixed(1)}px`;
-    box.style.rotate = `${(shift.x * TILT).toFixed(2)}deg`;
   }
 
   function frame(now) {
@@ -654,16 +639,16 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     acc += Math.min(100, now - (last || now));
     last = now;
     // af en toe een zacht duwtje, zodat het nooit lang helemaal stil ligt
-    if (now > nudgeAt && !drag) {
-      shift.vx += (Math.random() < 0.5 ? -1 : 1) * (0.6 + 0.5 * Math.random());
+    if (now > nudgeAt) {
+      kick = (Math.random() < 0.5 ? -1 : 1) * (0.25 + 0.2 * Math.random());
       nudgeAt = now + 9000 + Math.random() * 7000;
     }
     let n = 0;
     while (acc >= STEP_MS && n < 3) {
-      const [ax, ay] = moveBox(), m = mode();
-      // zwaartekracht in het assenstelsel van het gekantelde bakje, plus de schok van het bakje zelf
-      const tilt = -shift.x * TILT * Math.PI / 180;
-      m.step({ gx: Math.sin(tilt) - ax / GRAVITY, gy: Math.cos(tilt) - ay / GRAVITY, ax, ay });
+      const ax = kick, m = mode();
+      kick *= 0.8;
+      // zwaartekracht recht naar onder, plus de korte schok van een duwtje
+      m.step({ gx: -ax / GRAVITY, gy: 1, ax, ay: 0 });
       acc -= STEP_MS; n++;
     }
     if (n === 3) acc = 0;
@@ -671,37 +656,24 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     raf = requestAnimationFrame(frame);
   }
 
-  // scherm naar het assenstelsel van het bakje (zonder de kanteling, die is klein)
+  // scherm naar het assenstelsel van het bakje
   const local = e => { const r = [cv, cvGL, own].find(el => !el.hidden).getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * HH }; };
+  // een tik is indrukken en loslaten zonder veel te bewegen; bewegen (ook ingedrukt) roert in de inhoud
   box.addEventListener('pointerdown', e => {
     if (reducedMotion.matches) return;
-    drag = { x0: e.clientX, y0: e.clientY, moved: false };
-    box.setPointerCapture(e.pointerId);
-    box.classList.add('is-dragging');
+    press = { x0: e.clientX, y0: e.clientY };
   });
   box.addEventListener('pointermove', e => {
     if (reducedMotion.matches) return;
-    const p = local(e);
-    if (drag) {
-      const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-      if (!drag.moved && Math.hypot(dx, dy) > 4) drag.moved = true;
-      if (drag.moved) {
-        const lim = v => MAX_SHIFT * Math.tanh(v / MAX_SHIFT);   // zacht begrensd
-        shift.goalX = lim(dx); shift.goalY = lim(dy) * 0.6;
-      }
-      return;
-    }
-    mode().move(p);
+    mode().move(local(e));
   });
-  const endDrag = e => {
-    if (!drag) return;
-    if (!drag.moved) mode().tap(local(e));
-    drag = null;
-    box.classList.remove('is-dragging');
+  const release = e => {
+    if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) < 6) mode().tap(local(e));
+    press = null;
   };
-  box.addEventListener('pointerup', endDrag);
-  box.addEventListener('pointercancel', endDrag);
-  box.addEventListener('pointerleave', () => { if (!drag) mode().leave(); });
+  box.addEventListener('pointerup', release);
+  box.addEventListener('pointercancel', () => { press = null; });
+  box.addEventListener('pointerleave', () => { press = null; mode().leave(); });
 
   return {
     start() {
@@ -713,10 +685,8 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     },
     stop() {
       running = false; cancelAnimationFrame(raf);
-      drag = null; mode().leave();
+      press = null; kick = 0; mode().leave();
       for (const m of Object.values(modes)) m.unmount?.();   // topo: eigen lus en WebGL-context opruimen
-      Object.assign(shift, { x: 0, y: 0, vx: 0, vy: 0, goalX: 0, goalY: 0 });
-      box.style.translate = box.style.rotate = '';
     },
   };
 }
