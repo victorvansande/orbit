@@ -30,6 +30,7 @@
   --core: #E70049;           /* kleur van de kern (Nu), accent in de effecten */
   /* bakje: verloop van stil naar woelig, in de kleuren van de Grainient dusk (#BE123C, #FB923C, #FDE68A) */
   --water-calm: #5E5E68; --water-mid: #BE123C; --water-hot: #FB923C;   /* kleuren van de Grainient dusk */
+  --fidget-on-dark: rgba(255, 255, 255, .6); --fidget-on-dark-strong: #FFFFFF;   /* keuzerij boven het donkere verloop van gloed */
   --well: #E9E9E6; --well-shade: rgba(27, 27, 34, .16); --well-shade-2: rgba(27, 27, 34, .07); --well-lip: rgba(255, 255, 255, .85);   /* bakje, ingelaten in het papier */
   --grain-blend: multiply;
   --grain-opacity: .14;
@@ -423,23 +424,30 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .fidget {
   position: fixed; z-index: 2; right: var(--pad); bottom: 92px;
   /* Ingelaten (gekozen door Victor): een paar millimeter in het papier gedrukt, schaduw binnen de bovenrand, lichtrandje onderaan */
-  padding: 12px 14px; border-radius: 16px; background: var(--well);
-  box-shadow: inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2), 0 1px 0 var(--well-lip);
+  /* de effecten vullen het hele afgeronde vak (Victor: geen kader in het kader); de keuzerij ligt erbovenop */
+  border-radius: 16px; overflow: hidden; background: var(--well);
+  box-shadow: 0 1px 0 var(--well-lip);
   opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none;
   transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
 }
 body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+/* de schaduw binnen de bovenrand ligt over het effect, zodat ook een vol verloop (gloed) ingelaten blijft */
+.fidget::after { content: ''; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2); }
 .fidget { touch-action: none; user-select: none; -webkit-user-select: none; }   /* staat vast: niet meer te slepen */
 .fidget canvas { display: block; }
-.fidget-gl { border-radius: 10px; }
-.fidget-own { position: relative; overflow: hidden; border-radius: 10px; }   /* topo: eigen canvas van de React Bits-component */
+.fidget-gl { border-radius: 0; }
+.fidget-own { position: relative; overflow: hidden; }   /* topo: eigen canvas van de React Bits-component */
 .fidget-own .topography-canvas { display: block; width: 100%; height: 100%; }   /* lava en gloed: echte WebGL, zoals hun bron bij React Bits */
 /* keuze bovenin: zelfde kapitaaltjes als Boven / Zijkant, klein en rustig */
-.fidget-modes { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.fidget-modes { position: absolute; z-index: 2; top: 12px; left: 14px; right: 14px; display: flex; align-items: center; gap: 6px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 .fidget-modes button { min-height: 22px; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; transition: color .2s var(--ease); }
 .fidget-modes button:hover { color: var(--ink-2); }
 .fidget-modes button[aria-checked="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
 .fidget-modes .slash { opacity: .5; }
+/* topo en lava lopen tot bovenaan: een zachte overgang in de kleur van het bakje houdt de keuzerij leesbaar */
+.fidget.is-gl:not(.on-dark)::before { content: ''; position: absolute; z-index: 1; inset: 0 0 auto; height: 62px; pointer-events: none; background: linear-gradient(var(--well) 52%, transparent); }
+.fidget.on-dark .fidget-modes { color: var(--fidget-on-dark); }
+.fidget.on-dark .fidget-modes button:hover, .fidget.on-dark .fidget-modes button[aria-checked="true"] { color: var(--fidget-on-dark-strong); }
 /* kleurkiezer rechts in de rij: een rondje in de gekozen kleur, een kleurwieltje zolang elke soort zijn eigen kleuren heeft */
 .fidget-color { position: relative; width: 14px; height: 14px; border-radius: 50%; background: var(--pick); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; flex-shrink: 0; }
 .fidget-color.is-default { background: conic-gradient(var(--water-mid), var(--water-hot), var(--ink-3), var(--water-mid)); }

@@ -4,10 +4,11 @@
 // regels: sleep het bakje en het volgt je, kantelt mee en veert terug, en de inhoud voelt die schok; de kleur volgt hoe hard er iets beweegt, van grijze inkt
 // naar het rode korrelverloop van de Bierfeesten. Loopt alleen zolang de focusmodus aan staat en het tabblad zichtbaar is.
 
-const COLS = 40, ROWS = 14;
+const COLS = 44, ROWS = 18;      // het hele afgeronde vak, ook onder de keuzerij (Victor: geen kader in het kader)
 const CW = 7.4, CH = 12.6;        // maat van één teken (px), Geist Mono 11 px
 const W = COLS * CW, HH = ROWS * CH;
 const CELLS = COLS * ROWS;
+const TOP = 34, TOP_ROWS = 3;     // de keuzerij ligt bovenop: tekens beginnen eronder, lava hangt eronder
 const STEP_MS = 1000 / 60;
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
@@ -29,7 +30,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 /* ---- Water: deeltjesvloeistof (dubbele dichtheidsrelaxatie, Clavet e.a. 2005) ---- */
 // Het oppervlak blijft waterpas als het bakje kantelt; bewegen erover roert, een tik geeft een plons.
 function water() {
-  const N = 760, H = 13;
+  const N = 840, H = 13;
   const REST = 2.2, K = 0.06, K_NEAR = 0.15;   // rustdichtheid en stijfheid (dimensieloos, schaalt met H)
   const SIGMA = 0.035, BETA = 0.01;            // viscositeit: laag, zodat het water vloeit en nadeint zonder te spatten
   const x = new Float32Array(N), y = new Float32Array(N), px = new Float32Array(N), py = new Float32Array(N);
@@ -351,7 +352,7 @@ void main() {
       const r = b.s;
       if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx) * 0.3; }
       if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx) * 0.3; }
-      if (b.y < r * 0.45) { b.y = r * 0.45; b.vy = Math.abs(b.vy) * 0.1; b.T = Math.max(0, b.T - 0.0025); }   // tegen het plafond plat
+      if (b.y < TOP + r * 0.45) { b.y = TOP + r * 0.45; b.vy = Math.abs(b.vy) * 0.1; b.T = Math.max(0, b.T - 0.0025); }   // tegen het plafond plat
       if (b.y > HH + r * 0.2) { b.y = HH + r * 0.2; b.vy = -Math.abs(b.vy) * 0.2; }
     }
   }
@@ -656,6 +657,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     const m = mode();
     cv.hidden = Boolean(m.gl || m.own); cvGL.hidden = !m.gl; own.hidden = !m.own;
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
+    box.classList.toggle('on-dark', modeName === 'grain');   // gloed vult het vak met een donker verloop: lichte keuzerij
     if (m.own) {
       m.mount(own);
       return;
@@ -678,7 +680,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     for (let k = 0; k < CELLS; k++) {
       // woeligheid: snel aan en traag uit, zodat de kleur nadeint
       agit[k] += (want[k] - agit[k]) * (want[k] > agit[k] ? 0.35 : 0.06);
-      if (!chr[k]) continue;
+      if (!chr[k] || k < TOP_ROWS * COLS) continue;   // niet onder de keuzerij
       // korrel: elk teken wijkt een beetje af van het verloop, meer naarmate het woeliger is
       const h = (Math.imul(k + 1, 374761393) ^ Math.imul(tick + 7, 668265263)) >>> 0;
       const grain = ((h % 1000) / 1000 - 0.5) * (0.08 + 0.22 * agit[k]);
