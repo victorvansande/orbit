@@ -1098,18 +1098,25 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   /* Labels: witte pil, zoals in het wiel */
-  function pill(text, x, y, align, color, opts = {}) {
+  // Eerst meten (`pillBox`), dan tekenen (`drawPill`): zo kan `drawLabels` ze schikken zodat ze elkaar nooit overlappen.
+  const PILL_H = 26, PILL_GAP = 5;
+  function pillBox(text, x, y, align, color, opts = {}) {
     ctx.font = opts.mono ? '500 10.5px "Geist Mono", ui-monospace, monospace' : '500 12.5px Geist, system-ui, sans-serif';
     let label = text;
     const maxW = 220;
     while (ctx.measureText(label).width > maxW && label.length > 4) label = label.slice(0, -2);
     if (label !== text) label = label.trimEnd() + '…';
     const tw = ctx.measureText(label).width;
-    const padX = 10, h = 26, dot = color ? 12 : 0;
+    const padX = 10, h = PILL_H, dot = color ? 12 : 0;
     const w = tw + padX * 2 + dot;
     let left = align === 'right' ? x - w : align === 'center' ? x - w / 2 : x;
     left = clamp(left, 8, W - w - 8);
     const top = clamp(y - h / 2, 8, H - h - 8);
+    return { label, left, top, w, h, padX, dot, color, opts };
+  }
+  function drawPill(b) {
+    const { label, left, top, w, h, padX, dot, color, opts } = b;
+    ctx.font = opts.mono ? '500 10.5px "Geist Mono", ui-monospace, monospace' : '500 12.5px Geist, system-ui, sans-serif';
     ctx.save();
     ctx.shadowColor = theme.shadow;
     ctx.shadowBlur = 14;
@@ -1135,6 +1142,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.textBaseline = 'middle';
     ctx.fillText(label, left + padX + dot, top + h / 2 + 0.5);
   }
+  const hits = (a, b) => a.left < b.left + b.w + PILL_GAP && b.left < a.left + a.w + PILL_GAP && a.top < b.top + b.h + PILL_GAP && b.top < a.top + a.h + PILL_GAP;
 
   function drawLabels() {
     if (drag?.type === 'orb' && drag.active) {
@@ -1146,31 +1154,57 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const single = hover.orb ?? external.task ?? pinned;
     if (single && orbs.has(single)) shown = [orbs.get(single)];
     else if (hot) shown = [...orbs.values()].filter(o => o.level === hot && !o.leaving);
-    if (hot) ringLabel(hot, false);
+    // het ringlabel staat vast; elk taaklabel dat ergens tegenaan botst, schuift op tot het vrij is (eerst naar buiten)
+    const placed = [];
+    const ring = hot ? ringBox(hot, false) : null;
+    if (ring) placed.push(ring);
+    const items = [];
     for (const o of shown) {
       if (o.sx == null) continue;
       let dx = o.sx - cam.cx, dy = o.sy - cam.cy;
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
       const gap = o.sr + 14;
-      const ax = o.sx + dx * gap, ay = o.sy + dy * gap;
+      items.push({ o, dx, dy, ax: o.sx + dx * gap, ay: o.sy + dy * gap });
+    }
+    items.sort((a, b) => Math.abs(b.dy) - Math.abs(a.dy));   // wie het verst boven of onder ligt, eerst: die kan naar buiten uitwijken
+    for (const it of items) {
+      const { o, dx, dy, ax, ay } = it;
+      const text = o.due ? `${o.title} · ${dueLabel(o.due)}` : o.title;
+      const out = dy < 0 ? -1 : 1, step = PILL_H + PILL_GAP;
+      let box = null;
+      for (let k = 0; k <= 12 && !box; k++) {
+        const off = k === 0 ? 0 : Math.ceil(k / 2) * step * (k % 2 ? out : -out);
+        const b = pillBox(text, ax + (dx >= 0 ? 2 : -2), ay + off, dx >= 0 ? 'left' : 'right', colors.get(o.level));
+        if (!placed.some(p => hits(p, b))) box = b;
+      }
+      box ||= pillBox(text, ax + (dx >= 0 ? 2 : -2), ay, dx >= 0 ? 'left' : 'right', colors.get(o.level));
+      placed.push(box);
+      it.box = box;
+    }
+    for (const { o, dx, dy, ax, ay, box } of items) {
+      // lijntje van de bol naar de pil; is de pil opgeschoven, dan plooit het mee naar haar zijkant
+      const py = box.top + box.h / 2, px = dx >= 0 ? box.left : box.left + box.w;
       ctx.strokeStyle = theme.leader;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(o.sx + dx * (o.sr + 3), o.sy + dy * (o.sr + 3));
       ctx.lineTo(ax, ay);
+      if (Math.abs(py - ay) > 1 || Math.abs(px - ax) > 4) ctx.lineTo(px, py);
       ctx.stroke();
-      pill(o.due ? `${o.title} · ${dueLabel(o.due)}` : o.title, ax + (dx >= 0 ? 2 : -2), ay, dx >= 0 ? 'left' : 'right', colors.get(o.level));
     }
+    if (ring) drawPill(ring);
+    for (const it of items) drawPill(it.box);
   }
 
-  function ringLabel(level, isDrop) {
+  function ringBox(level, isDrop) {
     const lv = LEVEL_BY_ID.get(level);
     const count = [...orbs.values()].filter(o => o.level === level && !o.leaving).length;
-    if (!project(0, -lv.ring, depthAt(lv.ring) * cam.depth, false)) return;
+    if (!project(0, -lv.ring, depthAt(lv.ring) * cam.depth, false)) return null;
     const text = isDrop ? tx('scene.drop', { level: lv.name.toLowerCase() }) : `${lv.name.toUpperCase()} · ${count}`;
-    pill(text, pt.x, pt.y - 16, 'center', null, { mono: !isDrop });
+    return pillBox(text, pt.x, pt.y - 16, 'center', null, { mono: !isDrop });
   }
+  function ringLabel(level, isDrop) { const b = ringBox(level, isDrop); if (b) drawPill(b); }
 
   function draw(now) {
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
