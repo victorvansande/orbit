@@ -29,7 +29,6 @@ const THEMES = {
 const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const BEND_R = 170, BEND_PX = 18;          // raster rond de aanwijzer: straal en diepte (px)
-const SHOCK_SPEED = 300, SHOCK_LIFE = 1.1; // schokgolf bij afvinken: eenheden per s, duur (s)
 const WAKE = 0.7;                          // spoor op de baan: hoek (rad) achter een komeet waarin ringstippen nagloeien
 const SPARK_MS = 420;                      // afvinken vanuit de lijst: vlucht van het lichtpuntje naar de bol
 const GLYPHS = '·:+×#';                    // tekenset van de glyph sonar
@@ -109,7 +108,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // eye candy: raster buigt naar de aanwijzer, schokgolf door de ringen bij afvinken, af en toe een vallende ster,
   // sterrenbeeld bij elke 25e ster
   const bend = { k: 0, x: 0, y: 0 };
-  const shocks = [];                         // tijdstippen (ms) van een schokgolf
   let meteor = null, nextMeteor = performance.now() + (90 + Math.random() * 150) * 1000;
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
@@ -292,9 +290,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     twinkles.push({ level: o.level, x, y, z, age: -wait, alpha: o.alpha ?? 1 });
     starDelay = (wait + TWINKLE_LIFE) * 1000 + 120;
-    const now = performance.now();
-    while (shocks.length && now - shocks[0] > (SHOCK_LIFE + 1) * 1000) shocks.shift();
-    if (!minimal) shocks.push(now + 250 + wait * 1000);
     return spot;
   }
 
@@ -418,16 +413,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const fade = introAlpha(now, 0, 1.4) * (0.5 + 0.2 * depth);
     if (fade <= 0) return;
     const buckets = Array.from({ length: 6 }, () => []);
-    // het raster klopt mee: bij elke slag van de kern rolt een zwakke rimpeling naar buiten
-    const live = minimal ? 0 : Math.min(1, urgency / 0.3) * waveVis * beatScale * (1 - sleepK);
-    const bp = ((beat % 1) + 1) % 1, front = bp * 240, rip = reducedMotion.matches ? 0 : live * (1 - bp) * 0.9;
     for (const g of grid) {
       const z = g.r < RIM ? depthAt(g.r) * depth : 0;
       if (!project(g.x, g.y, z, false)) continue;
       // in het zijaanzicht wijkt het raster binnen en rond de trechter terug: de ringen tonen de vorm al
       const inside = 1 - depth * (1 - smoothstep(RIM - 24, RIM + 90, g.r));
-      const bump = rip > 0.01 ? rip * Math.exp(-(((g.r - front) / 16) ** 2)) : 0;
-      const a = g.a * fade * inside * Math.min(1, pt.f * pt.f) * (1 + bump);
+      const a = g.a * fade * inside * Math.min(1, pt.f * pt.f);
       if (!(a >= 0.006)) continue;
       if (pt.x < -8 || pt.x > W + 8 || pt.y < -8 || pt.y > H + 8) continue;
       let gx = pt.x, gy = pt.y;
@@ -440,7 +431,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         }
       }
       const k = Math.min(5, Math.floor(a / GRID_ALPHA * 6));
-      buckets[k].push(gx, gy, 0.9 * cam.du * pt.f * (1 + 0.5 * bump));
+      buckets[k].push(gx, gy, 0.9 * cam.du * pt.f);
     }
     ctx.fillStyle = rgba(INK, 1);
     buckets.forEach((b, k) => {
@@ -717,13 +708,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const intro = introAlpha(now, 0.15 + idx * 0.12, 0.8);
       const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro;
       const z = ring.z * cam.depth;
-      // schokgolf na afvinken: de ring schuift een fractie naar buiten als de golf langskomt en veert terug
-      let push = 1;
-      for (const t0 of shocks) {
-        const e = (now - t0) / 1000;
-        if (e < 0 || e > SHOCK_LIFE) continue;
-        push += 3.2 * Math.exp(-(((lv.ring - e * SHOCK_SPEED) / 20) ** 2)) * (1 - e / SHOCK_LIFE) / lv.ring;
-      }
       // stippen
       ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
       // In het zijaanzicht worden de ringen platte ellipsen die elkaar kruisen. Twee ingrepen houden het rustig:
@@ -732,8 +716,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const cue = cam.depth * (1 - hot);
       const buckets = new Map();
       for (let i = 0, j = 0; i < ring.pts.length; i += 2, j++) {
-        const x = ring.pts[i] * push, y = ring.pts[i + 1] * push;
-        const front = (x * cam.ss + y * cam.cs) / lv.ring / push;          // 1 = dichtst bij de kijker, -1 = achteraan
+        const x = ring.pts[i], y = ring.pts[i + 1];
+        const front = (x * cam.ss + y * cam.cs) / lv.ring;          // 1 = dichtst bij de kijker, -1 = achteraan
         const factor = (j % 2 ? 1 - 0.8 * cue : 1 + 0.4 * cue) * (1 - 0.68 * cue * (1 - front) / 2);
         const a = Math.min(1, alpha * factor);
         if (a < 0.004 || !project(x, y, z, true)) continue;
@@ -762,7 +746,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
               if (behind > 0 && behind < WAKE) glow = Math.max(glow, (1 - behind / WAKE) ** 2);
             }
             if (glow < 0.04) continue;
-            const x = ring.pts[2 * j] * push, y = ring.pts[2 * j + 1] * push;
+            const x = ring.pts[2 * j], y = ring.pts[2 * j + 1];
             if (!project(x, y, z, true)) continue;
             ctx.globalAlpha = 0.55 * glow * Math.min(1, sp) * intro;
             ctx.beginPath();
@@ -1344,7 +1328,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       sonar = { t0, target: null, far: true };
     },
     // Minimaal: alle extra effecten uit; wat overblijft is de scène zelf (ringen, kometen, kern, sterren)
-    setMinimal(on) { minimal = on; if (on) { sonar = null; skyWave = null; meteor = null; constellation = null; sparks.length = 0; shocks.length = 0; } },
+    setMinimal(on) { minimal = on; if (on) { sonar = null; skyWave = null; meteor = null; constellation = null; sparks.length = 0; } },
     wake() { wakeUntil = performance.now() + 20000; },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken

@@ -100,13 +100,12 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Afvinken: **Zilver** (gekozen door Victor uit vijf fonkelvarianten, na eerst Slinger). De bol fonkelt uit waar hij stond: vaste plek in de trechter (`twinkles`, draait mee met de trechter), een vierpuntige ster met holle zijden (`star4`) in de inktkleur zwelt op, draait een kwartslag en krimpt tot niets, met de bol als gekleurde kern die meedooft. Duur `TWINKLE_LIFE` = 1,1 s. Eerder: deeltjes en een ring (te standaard), daarna Slinger (rechtdoor uit de baan). Reduced motion: geen animatie.
 - **Eye candy** (gekozen door Victor, 28/10/2026), alles uit bij reduced motion:
   - Raster buigt naar de aanwijzer: een zachte zwaartekrachtput (`BEND_R` 170 px, `BEND_PX` 18 px) die de muis of vinger volgt (`bend`), alleen waar het canvas de aanwijzer krijgt (niet boven lijst of wiel).
-  - Schokgolf bij afvinken: 0,25 s na het uitfonkelen loopt een golf van de kern naar buiten; elke ring schuift even een fractie op en veert terug (`shocks`, `SHOCK_SPEED` 300 eenheden/s, `SHOCK_LIFE` 1,1 s).
+  - Schokgolf bij afvinken en de rimpeling die met de kern meeklopte door het raster: weggehaald (Victor, 28/10/2026). Afvinken had zes reacties tegelijk, en de kern en het raster klopten dubbel.
   - Vallende ster (`drawMeteor`): eerst na 1,5 tot 4 min, daarna om de 6 tot 14 min een dunne inktstreep van 0,9 s over de hemel, achter de ringen.
   - Sterrenbeeld (`scene.constellation(25)`, vanuit `complete()` bij elke 25e ster): de laatste 25 sterren verbonden met hun kortste verbindingen (Prim), lijntjes groeien na elkaar (1,6 s), blijven 3,2 s, vervagen in 2 s; start nadat de nieuwe ster verschenen is.
   - Spoor op de baan (tweede ronde, 28/10/2026): de ringstippen tot `WAKE` 0,7 rad achter een komeet gloeien na in zijn kleur (dekking tot 0,55, iets groter), alleen als de komeet op zijn ring draait en zijn baan beweegt.
   - Afvinken vanuit de lijst: een lichtpuntje met kleurstaartje vliegt in een boogje van het afvinkrondje naar de bol (`sparks`, `SPARK_MS` 420 ms); de bol wacht zolang (twinkle met negatieve `age`) en fonkelt dan uit. `scene.complete(id, from)` met `from` in schermcoördinaten.
   - Diepte in de hemel (sterren die met de muis tegen de ringen in schoven) is weer weggehaald: Victor wil dat de sterren stil blijven staan.
-  - Raster klopt mee: bij elke slag van de kern rolt een zwakke rimpeling door het raster (puntjes tot 1,9 keer zo zichtbaar en iets groter rond het golffront, tot 240 eenheden), alleen als de kern leeft (Nu of Vandaag).
   - Slapende kern (`sleepK`): geen taken, of tussen 23 en 6 u zonder Nu- of Vandaag-taken: de kern dooft tot ongeveer de helft, ademt trager en sluit de ogen. Elke aanwijzer op de pagina (`scene.wake()`, ook vanuit `app.js`) maakt hem 20 s wakker.
   - Avondtint: `.warmth` over de pagina (token `--warm`, `--warm-max` 0,07 licht met multiply, 0,05 donker met soft-light), sterkte `--warmth` uit `renderWarmth()`: 0 overdag, stijgt van 17 tot 21 u, vol tot 6 u, weer neutraal tegen 9 u. Bij het laden meteen juist, daarna 60 s overgang (`.warm-ready`).
 - Tijdgebaseerd (dt), dus even snel op 60 en 120 Hz.
@@ -127,7 +126,7 @@ Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev (text mor
 ## Effecten: Alle of Minimaal
 
 - Instellingen → **Effecten**: Alle / Minimaal (`priority-orbit.fx.v1` = `min` of `all`, gaat mee naar de demo). Op vraag van Victor (28/10/2026): een rustige, sobere weergave. Bewust niet "zen" genoemd: dat is al een tempo.
-- Minimaal zet uit: de intro (zachte cirkel), gloed rond de kometen, raster dat buigt en meeklopt, schokgolf en lichtpuntje bij afvinken, vallende ster, sterrenbeeld, spoor op de baan, vortex, glyph sonar (de kern praat nog wel), golf bij een nieuwe hemel, de opvallende geboorte van een nieuwe ster, muur (knopje verborgen) en muur in de lege lijst, avondtint, vijver, puntjestitel in de Uitleg (gewone tekst), fonkelende klok en teller.
+- Minimaal zet uit: de intro (zachte cirkel), gloed rond de kometen, raster dat buigt, lichtpuntje bij afvinken, vallende ster, sterrenbeeld, spoor op de baan, vortex, glyph sonar (de kern praat nog wel), golf bij een nieuwe hemel, de opvallende geboorte van een nieuwe ster, muur (knopje verborgen) en muur in de lege lijst, avondtint, vijver, puntjestitel in de Uitleg (gewone tekst), fonkelende klok en teller.
 - Blijft: ringen, kometen, kern met gezicht en hartslag, sterren, het uitfonkelen bij afvinken, geluid (eigen instelling).
 - Code: `scene.setMinimal(on)`, `body.is-minimal` (CSS verbergt `.warmth`, `.fidget`, `.wall-toggle`), `applyFx()` in `app.js`, `introTitle.setEnabled()`.
 
