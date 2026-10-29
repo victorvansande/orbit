@@ -12,6 +12,16 @@ const STEP_MS = 1000 / 60;
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
 const MODE_KEY = 'priority-orbit.fidget.v1';
+const COLOR_KEY = 'priority-orbit.fidgetcolor.v1';
+// Eigen kleur voor alle soorten (kleurkiezer in het bakje), of null: dan heeft elke soort zijn eigen standaardkleuren.
+// Elke soort maakt er zijn eigen verloop uit (zie accentRamp).
+let ACCENT = null;
+const mixRgb = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
+// vijf stappen van bijna zwart over de kleur naar bijna wit, zoals het dusk-verloop van Gloed
+function accentRamp(hex) {
+  const c = hexRgb(hex), dark = hexRgb('#120f17');
+  return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
+}
 export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo'];
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -322,7 +332,7 @@ void main() {
   function render(gl, now) {
     if (!prog) prog = program(gl, FRAG);
     if (!prog) return;
-    if (now - colorAt > 1000) { color = hexRgb(getComputedStyle(document.documentElement).getPropertyValue('--ink')); colorAt = now; }
+    if (now - colorAt > 1000) { color = ACCENT ? hexRgb(ACCENT) : hexRgb(getComputedStyle(document.documentElement).getPropertyValue('--ink')); colorAt = now; }
     const grow = Math.min(1, intro * 1.4);
     balls.forEach((b, i) => {
       // uitrekken in de bewegingsrichting (een stijgende klont wordt een druppel) en zacht ademen
@@ -347,6 +357,7 @@ void main() {
     gl: true,
     init() { intro = 0; for (let i = 0; i < 400; i++) step({ gx: 0, gy: 1, ax: 0, ay: 0 }); intro = 0; },   // vooraf laten lopen: de lamp brandt al
     step, render,
+    recolor() { colorAt = -1e9; },
     move(p) { cur.on = true; cur.tx = p.x; cur.ty = p.y; },
     leave() { cur.on = false; },
     tap(p) {
@@ -448,7 +459,7 @@ void main() {
     gl.useProgram(prog.prog);
     gl.uniform2f(prog.loc('uRes'), gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.uniform1f(prog.loc('uTime'), t);
-    gl.uniform3fv(prog.loc('uCol'), COLORS);
+    gl.uniform3fv(prog.loc('uCol'), ACCENT ? accentRamp(ACCENT).flat() : COLORS);
     gl.uniform1f(prog.loc('uAngle'), ANGLE);
     gl.uniform1f(prog.loc('uSilk'), SILK);
     gl.uniform3f(prog.loc('uPtr'), ptr.x, ptr.y, ptr.k);
@@ -487,10 +498,12 @@ function topo() {
       loading = true;
       import('./vendor/topography.js').then(({ createTopography }) => {
         loading = false;
-        if (wanted && !destroy) destroy = createTopography(el, TOPO);
+        if (wanted && !destroy) destroy = createTopography(el, ACCENT ? { ...TOPO, color: ACCENT } : TOPO);
       }).catch(() => { loading = false; });
     },
     unmount() { wanted = false; destroy?.(); destroy = null; },
+    // de component leest zijn kleur één keer: opnieuw opbouwen
+    recolor(el) { if (destroy) { this.unmount(); this.mount(el); } },
   };
 }
 let gl2;
@@ -557,9 +570,30 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
       b.textContent = label(m);
       frag.append(b);
       return frag;
-    }));
+    }), reset, pick);
   }
-  bar.addEventListener('pointerdown', e => e.stopPropagation());   // de knopjes slepen het bakje niet mee
+  bar.addEventListener('pointerdown', e => e.stopPropagation());   // de knopjes tellen niet als tik in het bakje
+  // kleurkiezer rechts in de rij: een rondje in de gekozen kleur (native kiezer), en terug naar de standaardkleuren
+  try { const c = localStorage.getItem(COLOR_KEY); if (/^#[0-9a-f]{6}$/i.test(c || '')) ACCENT = c; } catch { /* geen opslag */ }
+  const pick = document.createElement('label');
+  pick.className = 'fidget-color';
+  const input = Object.assign(document.createElement('input'), { type: 'color', value: ACCENT || '#cc3022' });
+  input.setAttribute('aria-label', label('color'));
+  const reset = Object.assign(document.createElement('button'), { type: 'button', className: 'fidget-color-reset', textContent: '↺' });
+  reset.setAttribute('aria-label', label('colorReset')); reset.title = label('colorReset');
+  pick.append(input);
+  function setAccent(c) {
+    ACCENT = c;
+    try { if (c) localStorage.setItem(COLOR_KEY, c); else localStorage.removeItem(COLOR_KEY); } catch { /* geen opslag */ }
+    pick.style.setProperty('--pick', c || 'transparent');
+    pick.classList.toggle('is-default', !c);
+    reset.hidden = !c;
+    palette = null;
+    for (const m of Object.values(modes)) m.recolor?.(own);
+    if (!running) render(performance.now());
+  }
+  input.addEventListener('input', () => setAccent(input.value));
+  reset.addEventListener('click', () => setAccent(null));
   bar.addEventListener('click', e => {
     const b = e.target.closest('button[data-mode]');
     if (!b || b.dataset.mode === modeName) return;
@@ -572,6 +606,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     if (!running) render(performance.now());
   });
   renderBar();
+  setAccent(ACCENT);
 
   // verloop uit de tokens --water-calm, --water-mid en --water-hot, in LEVELS stappen (volgt het thema)
   function readPalette() {
@@ -581,7 +616,8 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
       const v = g.fillStyle;
       return v.startsWith('#') ? [1, 3, 5].map(i => parseInt(v.slice(i, i + 2), 16)) : v.match(/\d+/g).slice(0, 3).map(Number);
     };
-    const stops = [rgb('--water-calm'), rgb('--water-mid'), rgb('--water-hot')];
+    const ramp = ACCENT && accentRamp(ACCENT).map(c => c.map(v => Math.round(v * 255)));
+    const stops = ramp ? [rgb('--water-calm'), ramp[2], ramp[3]] : [rgb('--water-calm'), rgb('--water-mid'), rgb('--water-hot')];
     return Array.from({ length: LEVELS }, (_, i) => {
       const t = i / (LEVELS - 1), seg = t < 0.55 ? 0 : 1, u = seg ? (t - 0.55) / 0.45 : t / 0.55;
       const [a, b] = [stops[seg], stops[seg + 1]];

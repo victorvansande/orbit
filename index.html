@@ -26,7 +26,7 @@
     let real = null;
     try { real = window.localStorage; } catch { /* geen opslag */ }
     const mem = new Map();
-    for (const k of ['priority-orbit.theme.v1', 'priority-orbit.lang.v1', 'priority-orbit.tempo.v1', 'priority-orbit.sound.v1', 'priority-orbit.fx.v1', 'priority-orbit.wall.v1', 'priority-orbit.fidget.v1', 'isobar:place']) {
+    for (const k of ['priority-orbit.theme.v1', 'priority-orbit.lang.v1', 'priority-orbit.tempo.v1', 'priority-orbit.sound.v1', 'priority-orbit.fx.v1', 'priority-orbit.wall.v1', 'priority-orbit.fidget.v1', 'priority-orbit.fidgetcolor.v1', 'isobar:place']) {
       try { const v = real && real.getItem(k); if (v != null) mem.set(k, v); } catch { /* geen opslag */ }
     }
     mem.set('priority-orbit.intro.v1', 'gezien');
