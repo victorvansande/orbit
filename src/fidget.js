@@ -221,25 +221,29 @@ const hexRgb = v => {
   return h.length === 6 ? [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255) : [1, 1, 1];
 };
 
-/* ---- Lava: metaballs ---- */
-// Naar MetaBalls van React Bits, met Victors instellingen: variant solid, motion orbit, 15 bollen, animationSize 30,
-// gooeyness 0,5, stretch 0,5, wobble 0,5, speed 0,3, clumpFactor 1, cursor-bol 3 keer zo groot met hoverSmoothness
-// 0,1, stickiness 0,5, klikstoot en intro, transparant. Effen bollen (inktkleur: wit in het donker) die rond het midden
-// draaien en ineenvloeien (veld Σ r²/d², drempel 1); de cursor-bol volgt de aanwijzer zacht en trekt de andere aan.
+/* ---- Lava: metaballs als lavalamp ---- */
+// Look van MetaBalls van React Bits met Victors instellingen (solid, 15 bollen, gooeyness 0,5, stretch 0,5, wobble 0,5,
+// cursor-bol 3 keer zo groot met hoverSmoothness 0,1, stickiness 0,5, klikstoot, intro, transparant). Beweging zoals een
+// echte lavalamp (Victor: "laten werken, vloeien"): onderaan ligt een plas die warm wordt, opgewarmde was wordt lichter
+// en stijgt traag op, koelt bovenaan af en zakt terug. Bollen die elkaar raken, kleven even samen (veld Σ r²/d²) en
+// scheuren weer los. Kantelen of slepen doet alles meeklotsen; de aanwijzer is een warmtebron, een tik blaast uiteen.
 function lava() {
-  const COUNT = 15, SPEED = 0.3, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
+  const COUNT = 10, POOL = 5, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
   const balls = [];
   const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, r: 0, on: false };
   let t = 0, intro = 0, prog = null, color = [1, 1, 1], colorAt = -1e9;
   for (let i = 0; i < COUNT; i++) {
+    const T = Math.random();
     balls.push({
-      a: i / COUNT * Math.PI * 2 + Math.random() * 0.4,
-      R: 18 + Math.random() * 62,                 // straal van de baan (px)
-      w: (0.3 + Math.random() * 0.6) * (Math.random() < 0.5 ? -1 : 1),
-      s: 5.5 + Math.random() * 4.5,               // straal van de bol (px)
-      ph: Math.random() * 10, ox: 0, oy: 0, vx: 0, vy: 0, x: W / 2, y: HH / 2, dx: 0, dy: 0,
+      x: 30 + Math.random() * (W - 60), y: HH * (0.25 + Math.random() * 0.7), vx: 0, vy: 0, dx: 0, dy: 0,
+      s: 6 + Math.random() * 6.5,                 // straal (px)
+      T,                                          // temperatuur 0 (koud, zinkt) tot 1 (warm, stijgt)
+      ph: Math.random() * 10,
+      heat: 0.7 + Math.random() * 0.6,            // elke klont warmt in zijn eigen tempo op
     });
   }
+  // de plas op de bodem: vijf brede bollen die overlappen, half onder de rand liggen en traag deinen
+  const pool = Array.from({ length: POOL }, (_, i) => ({ x: W * (0.1 + 0.2 * i), y: HH + 10, s: 22 + (i % 2) * 3, ph: i * 1.7 }));
   const data = new Float32Array(16 * 4);
   const FRAG = `#extension GL_OES_standard_derivatives : enable
 precision highp float;
@@ -258,25 +262,57 @@ void main() {
   float a = smoothstep(1.0 - w, 1.0 + w, f);
   gl_FragColor = vec4(uColor * a, a);
 }`;
-  function step({ ax, ay }) {
+  function step({ gx, gy, ax, ay }) {
     t += 1 / 60;
     intro = Math.min(1, intro + 1 / 60 / 1.3);
-    const ease = 1 - Math.pow(1 - intro, 3);
     cur.x += (cur.tx - cur.x) * SMOOTH; cur.y += (cur.ty - cur.y) * SMOOTH;
     cur.r += ((cur.on ? 5.5 * CURSOR * 0.75 : 0) - cur.r) * 0.08;
+    // zwaartekracht in het bakje (kantelt mee); opwaartse kracht werkt er recht tegenin
+    const gl = Math.hypot(gx, gy) || 1, ux = gx / gl, uy = gy / gl;
     for (const b of balls) {
-      b.a += b.w * SPEED * (1 / 60) * 3;
-      const wob = 1 + WOBBLE * 0.18 * Math.sin(t * 1.3 + b.ph);
-      const hx = W / 2 + Math.cos(b.a) * b.R * wob * ease * 1.45, hy = HH / 2 + Math.sin(b.a) * b.R * wob * ease * 0.7;
-      let fx = -b.ox * 0.04 - ax * 2.2, fy = -b.oy * 0.04 - ay * 2.2;
+      // warmte: de plas onderaan warmt op, bovenaan koelt de was af, in het midden houdt hij zijn warmte lang vast
+      const depth = b.y / HH;
+      if (depth > 0.78) b.T = Math.min(1, b.T + 0.0035 * b.heat);
+      else if (depth < 0.3) b.T = Math.max(0, b.T - 0.004 * b.heat);
+      else b.T += (0.5 - b.T) * 0.0006;
       if (cur.r > 1) {
-        const ex = cur.x - (hx + b.ox), ey = cur.y - (hy + b.oy), d = Math.hypot(ex, ey);
-        if (d < 90 && d > 1) { const f = STICKY * 0.9 * (1 - d / 90); fx += ex / d * f; fy += ey / d * f; }
+        const d = Math.hypot(cur.x - b.x, cur.y - b.y);
+        if (d < 70) b.T = Math.min(1, b.T + 0.004 * (1 - d / 70));   // de aanwijzer is een warmtebron
       }
-      b.vx = (b.vx + fx) * 0.9; b.vy = (b.vy + fy) * 0.9;
-      b.ox += b.vx; b.oy += b.vy;
-      const nx = hx + b.ox, ny = hy + b.oy;
+      const lift = (b.T - 0.5) * 0.034;
+      let fx = -ux * lift, fy = -uy * lift;
+      // traag dwalen opzij, zoals stroming in de vloeistof
+      fx += Math.sin(t * 0.35 + b.ph) * 0.0045;
+      // klotsen: de vloeistof blijft achter bij een schok van het bakje
+      fx -= ax * 0.5; fy -= ay * 0.5;
+      // kleverig: de cursor-bol trekt was aan
+      if (cur.r > 1) {
+        const ex = cur.x - b.x, ey = cur.y - b.y, d = Math.hypot(ex, ey);
+        if (d < 90 && d > 1) { const f = STICKY * 0.02 * (1 - d / 90); fx += ex / d * f; fy += ey / d * f; }
+      }
+      b.vx = (b.vx + fx) * 0.965; b.vy = (b.vy + fy) * 0.965;
+    }
+    // samenkleven en loslaten: bollen die bijna raken trekken zacht naar elkaar, overlappen te veel duwt uiteen
+    for (let i = 0; i < COUNT; i++) for (let j = i + 1; j < COUNT; j++) {
+      const p = balls[i], q = balls[j], ex = q.x - p.x, ey = q.y - p.y, d = Math.hypot(ex, ey) || 0.01, rr = p.s + q.s;
+      if (d > rr * 1.8) continue;
+      const f = d < rr * 0.85 ? -(rr * 0.85 - d) * 0.012 : 0.0009 * (1 - d / (rr * 1.8));
+      const nx = ex / d * f, ny = ey / d * f;
+      p.vx += nx; p.vy += ny; q.vx -= nx; q.vy -= ny;
+      // warmte deelt zich een beetje: wie samenkleeft, stijgt of zakt samen
+      const dT = (q.T - p.T) * 0.004; p.T += dT; q.T -= dT;
+    }
+    for (const b of balls) {
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > 1.1) { b.vx *= 1.1 / sp; b.vy *= 1.1 / sp; }
+      const nx = b.x + b.vx, ny = b.y + b.vy;
       b.dx = nx - b.x; b.dy = ny - b.y; b.x = nx; b.y = ny;
+      // wanden: zacht terugduwen; onderaan mag een klont in de plas zakken
+      const r = b.s;
+      if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx) * 0.3; }
+      if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx) * 0.3; }
+      if (b.y < r * 0.8) { b.y = r * 0.8; b.vy = Math.abs(b.vy) * 0.2; b.T = Math.max(0, b.T - 0.01); }
+      if (b.y > HH + r * 0.2) { b.y = HH + r * 0.2; b.vy = -Math.abs(b.vy) * 0.2; }
     }
   }
   function render(gl, now) {
@@ -285,9 +321,15 @@ void main() {
     if (now - colorAt > 1000) { color = hexRgb(getComputedStyle(document.documentElement).getPropertyValue('--ink')); colorAt = now; }
     const grow = Math.min(1, intro * 1.4);
     balls.forEach((b, i) => {
-      // uitrekken in de bewegingsrichting: een bol die snel gaat, schuift een beetje voor zich uit
-      const sp = Math.hypot(b.dx, b.dy), k = STRETCH * Math.min(1.5, sp * 0.5);
-      data[i * 4] = b.x + b.dx * k * 2; data[i * 4 + 1] = b.y + b.dy * k * 2; data[i * 4 + 2] = b.s * grow; data[i * 4 + 3] = 0;
+      // uitrekken in de bewegingsrichting (een stijgende klont wordt een druppel) en zacht ademen
+      const sp = Math.hypot(b.dx, b.dy), k = STRETCH * Math.min(1.5, sp * 0.9);
+      const wob = 1 + WOBBLE * 0.08 * Math.sin(t * 1.1 + b.ph);
+      data[i * 4] = b.x + b.dx * k * 3; data[i * 4 + 1] = b.y + b.dy * k * 3; data[i * 4 + 2] = b.s * wob * grow; data[i * 4 + 3] = 0;
+    });
+    pool.forEach((p, i) => {
+      const j = COUNT + i;
+      data[j * 4] = p.x + Math.sin(t * 0.4 + p.ph) * 5; data[j * 4 + 1] = p.y + Math.sin(t * 0.6 + p.ph) * 2;
+      data[j * 4 + 2] = p.s * grow; data[j * 4 + 3] = 0;
     });
     data[15 * 4] = cur.x; data[15 * 4 + 1] = cur.y; data[15 * 4 + 2] = cur.r;
     gl.useProgram(prog.prog);
@@ -299,15 +341,15 @@ void main() {
   }
   return {
     gl: true,
-    init() { intro = 0; },
+    init() { intro = 0; for (let i = 0; i < 400; i++) step({ gx: 0, gy: 1, ax: 0, ay: 0 }); intro = 0; },   // vooraf laten lopen: de lamp brandt al
     step, render,
     move(p) { cur.on = true; cur.tx = p.x; cur.ty = p.y; },
     leave() { cur.on = false; },
     tap(p) {
-      // klikstoot: alles in de buurt vliegt weg van de tik
+      // klikstoot: alles in de buurt vliegt weg van de tik en warmt op
       for (const b of balls) {
-        const ex = b.x - p.x, ey = b.y - p.y, d = Math.hypot(ex, ey) || 1, f = Math.max(0, 1 - d / 160) * 12;
-        b.vx += ex / d * f; b.vy += ey / d * f;
+        const ex = b.x - p.x, ey = b.y - p.y, d = Math.hypot(ex, ey) || 1, f = Math.max(0, 1 - d / 160) * 3;
+        b.vx += ex / d * f; b.vy += ey / d * f; b.T = Math.min(1, b.T + 0.3 * f / 3);
       }
     },
   };
@@ -489,7 +531,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   const shift = { x: 0, y: 0, vx: 0, vy: 0, goalX: 0, goalY: 0 };
   let drag = null, nudgeAt = 0;
 
-  let modeName = 'water';
+  let modeName = 'lava';   // standaard (Victor); zonder WebGL valt renderBar terug op water
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) modeName = m; } catch { /* geen opslag */ }
   const modes = {};
   const mode = () => {
