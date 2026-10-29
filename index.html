@@ -49,6 +49,14 @@
     const dark = pref === 'dark' || (pref !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
+  // Intro: vanaf de eerste weergave ligt er effen papier over de pagina, zodat er niets verschijnt vóór de zachte cirkel
+  // (softReveal in fx.js neemt het over). Zelfde voorwaarden als in app.js: niet met Minimaal, minder beweging of een koppellink.
+  (() => {
+    let fx = null;
+    try { fx = localStorage.getItem('priority-orbit.fx.v1'); } catch { /* geen opslag */ }
+    if (fx === 'min' || matchMedia('(prefers-reduced-motion: reduce)').matches || /^#sync=/.test(location.hash)) return;
+    document.documentElement.classList.add('is-veiled');
+  })();
 </script>
 </head>
 <body>

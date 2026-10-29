@@ -922,6 +922,9 @@ body.is-idle .controls { opacity: 0; }
 /* ---- Effecten (src/fx.js) ---- */
 /* Intro: effen papier dat een zachte cirkel vanuit de kern wegwist; een tik slaat over */
 .fx-reveal { position: fixed; inset: 0; z-index: 60; }
+/* Papier vanaf de eerste weergave tot de intro het overneemt; loopt het script vast, dan verdwijnt het na 6 s vanzelf */
+html.is-veiled::after { content: ''; position: fixed; inset: 0; z-index: 61; background: var(--bg); animation: veil-safety 0.4s ease 6s forwards; }
+@keyframes veil-safety { to { opacity: 0; visibility: hidden; } }
 /* Minimaal (Instellingen → Effecten): wat in de DOM zit gaat ook weg */
 body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle { display: none !important; }
 /* Particle text: titel in de Uitleg uit puntjes; de echte tekst blijft voor schermlezers */

@@ -95,7 +95,8 @@ export function softReveal({ center, onReveal, done = () => {} }) {
   function skip() { if (!skipAt) skipAt = performance.now(); }
   addEventListener('pointerdown', skip, true);
   addEventListener('keydown', skip, true);
-  raf = requestAnimationFrame(frame);
+  frame(t0);   // meteen het eerste beeld, dan pas het papier uit index.html weg: geen gat ertussen
+  document.documentElement.classList.remove('is-veiled');
   return { skip, cancel() { cancelAnimationFrame(raf); cv.remove(); } };
 }
 

@@ -2178,6 +2178,7 @@ if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
     onReveal() { scene.replayIntro(tasks); },
   });
 }
+document.documentElement.classList.remove('is-veiled');   // geen intro: het papier uit index.html meteen weg
 renderStats();
 if (new Date().getHours() === 3) recordEvent(feats, 'night');
 checkFeats(false);   // bij het laden stil: wat al gehaald was, staat meteen goed
