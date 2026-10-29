@@ -562,9 +562,10 @@ function trackRow(t) {
 }
 
 // Notitie bij een taak: een icoontje naast de titel klapt eronder een tekstvak open. Enkel zichtbaar als je ze openklapt;
-// een taak met notitie houdt het icoontje altijd zichtbaar. Bewaard terwijl je typt (gaat mee met de sync en het archief).
+// een taak met notitie houdt het icoontje altijd zichtbaar, met een stip. Bewaard terwijl je typt (gaat mee met de sync en
+// het archief). Ergens anders tikken klapt ze weer dicht (Victor, 29/10/2026: ze bleef op gsm permanent openstaan).
 const NOTE_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M3 4.5h10M3 8h10M3 11.5h6"/></svg>';
-const openNotes = new Set();   // taken waarvan de notitie openstaat (blijft open als de lijst opnieuw getekend wordt)
+const openNotes = new Set();   // taken waarvan de notitie openstaat (blijft open als de lijst opnieuw getekend wordt terwijl je typt)
 function noteButton(t, li) {
   const btn = el('button', t.note ? 't-note-btn has-note' : 't-note-btn');
   btn.type = 'button';
@@ -572,6 +573,8 @@ function noteButton(t, li) {
   btn.setAttribute('aria-label', tx('task.note', { title: t.title }));
   btn.title = tx(t.note ? 'task.noteShow' : 'task.noteAdd');
   btn.setAttribute('aria-expanded', String(openNotes.has(t.id)));
+  // een tik op het icoontje terwijl de notitie openstaat: niet eerst dichtklappen bij het verlaten van het tekstvak
+  btn.addEventListener('pointerdown', () => { btn.dataset.down = '1'; setTimeout(() => { delete btn.dataset.down; }, 600); });
   btn.addEventListener('click', () => {
     const open = !openNotes.has(t.id);
     if (open) openNotes.add(t.id); else openNotes.delete(t.id);
@@ -608,12 +611,23 @@ function notePanel(t, li) {
     li.querySelector('.t-note-btn').classList.toggle('has-note', Boolean(value));
   };
   area.addEventListener('input', () => { fitNote(area); clearTimeout(timer); timer = setTimeout(save, 500); });
-  area.addEventListener('blur', save);
+  const close = () => { openNotes.delete(t.id); panel.hidden = true; li.classList.remove('is-noting'); li.querySelector('.t-note-btn')?.setAttribute('aria-expanded', 'false'); };
+  area.addEventListener('blur', () => {
+    save();
+    if (!area.isConnected || li.querySelector('.t-note-btn')?.dataset.down) return;   // lijst opnieuw getekend, of een tik op het icoontje (dat klapt zelf dicht)
+    close();
+  });
   area.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.stopPropagation(); save(); openNotes.delete(t.id); panel.hidden = true; li.classList.remove('is-noting'); li.querySelector('.t-note-btn').setAttribute('aria-expanded', 'false'); }
+    if (e.key === 'Escape') { e.stopPropagation(); save(); close(); }
   });
   panel.append(area);
-  if (open) requestAnimationFrame(() => fitNote(area));
+  // opnieuw getekend terwijl je typte: verder typen in het nieuwe tekstvak; anders niet open laten staan
+  if (open) requestAnimationFrame(() => {
+    fitNote(area);
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (lost && area.isConnected) { area.focus({ preventScroll: true }); area.setSelectionRange(area.value.length, area.value.length); }
+    else if (document.activeElement !== area) close();
+  });
   return panel;
 }
 

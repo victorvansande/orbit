@@ -341,7 +341,11 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* notitie: icoontje naast de titel, tekstvak eronder over de hele breedte */
 .t-note-btn { width: 26px; height: 42px; display: grid; place-items: center; color: var(--ink-3); border-radius: 7px; transition: color .2s var(--ease), opacity .2s var(--ease); }
 .t-note-btn:hover, .track.is-noting .t-note-btn { color: var(--ink); }
-.t-note-btn.has-note { color: var(--ink-2); }
+.t-note-btn { position: relative; }
+.t-note-btn.has-note { color: var(--ink); }
+/* een taak met notitie: een stipje in de kleur van het moment, zodat je het ziet zonder iets open te klappen */
+.t-note-btn.has-note::after { content: ""; position: absolute; top: 12px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--c, var(--ink)); }
+.track.is-noting .t-note-btn.has-note::after { opacity: 0; }
 .t-note { grid-column: 1 / -1; padding: 0 8px 10px 30px; }
 .t-note-text { display: block; width: 100%; min-height: 34px; max-height: 220px; resize: none; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--fill); color: var(--ink); font: 13.5px/1.45 var(--font); outline: none; overflow-y: auto; }
 .t-note-text::placeholder { color: var(--ink-3); }
