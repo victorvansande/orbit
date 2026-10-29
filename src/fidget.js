@@ -255,7 +255,8 @@ function lava() {
   const data = new Float32Array(16 * 4);
   const FRAG = `#extension GL_OES_standard_derivatives : enable
 precision highp float;
-uniform vec2 uRes; uniform vec4 uBalls[16]; uniform vec3 uColor; uniform float uGoo;
+uniform vec2 uRes; uniform vec4 uBalls[16]; uniform vec3 uColor; uniform float uGoo; uniform float uTime;
+const vec3 BULB = vec3(1.0, 0.46, 0.12);              // warm oranje, de gloeilamp onder de vloeistof
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes * vec2(${W.toFixed(1)}, ${HH.toFixed(1)});
   float f = 0.0;
@@ -268,7 +269,14 @@ void main() {
   f = min(f, 4.0);                                   // midden van een bol: het veld schiet weg, de rand niet
   float w = clamp(fwidth(f), 0.0001, 0.6) * (1.0 + uGoo);
   float a = smoothstep(1.0 - w, 1.0 + w, f);
-  gl_FragColor = vec4(uColor * a, a);
+  // gloed van de lamp: breed en warm aan de onderkant, flakkert heel licht
+  vec2 q = vec2((p.x - ${(W / 2).toFixed(1)}) / ${(W * 0.62).toFixed(1)}, (${(HH + 18).toFixed(1)} - p.y) / ${(HH * 0.7).toFixed(1)});
+  float flick = 0.93 + 0.04 * sin(uTime * 7.3) + 0.03 * sin(uTime * 2.1 + 1.3);
+  float g = exp(-dot(q, q) * 1.5) * 0.62 * flick;
+  // de was kleurt warm aan waar hij dicht bij de lamp komt
+  vec3 col = mix(uColor, BULB, clamp(g * 1.15, 0.0, 0.8));
+  vec3 rgb = col * a + BULB * g * (1.0 - a);
+  gl_FragColor = vec4(rgb, a + g * (1.0 - a));
 }`;
   function step({ gx, gy, ax, ay }) {
     t += 1 / 60;
@@ -351,6 +359,7 @@ void main() {
     gl.uniform4fv(prog.loc('uBalls'), data);
     gl.uniform3fv(prog.loc('uColor'), color);
     gl.uniform1f(prog.loc('uGoo'), GOO);
+    gl.uniform1f(prog.loc('uTime'), t);
     fullscreen(gl, prog);
   }
   return {
