@@ -420,3 +420,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 29/10/2026, Claude Code: webapp op het beginscherm gedraagt zich als een app (geen zoom, geen selectie, geen meeverende pagina). Niets openstaand.
 - 29/10/2026, Claude Code: ringen op gsm 18 px lager (meer lucht boven, begroeting past nog). Niets openstaand.
 - 29/10/2026, Claude Code: zandloper verfijnd (vaste verhouding, geen puntjes in de hals, zand begint als hoopje). Niets openstaand.
+- 29/10/2026, Antigravity: overdracht gestart in Antigravity, werkafspraken en repository gecontroleerd. Klaar voor volgende taak.
