@@ -2162,10 +2162,19 @@ function hideGreeting() {
   scene.lookAt(null);
   greetTimer = setTimeout(() => { $('greeting').hidden = true; }, 800);
 }
+// Hooguit twee regels (Victor, 29/10/2026): past de zin niet, dan eerst tot 3 px kleiner; pas een echt lange zin krijgt meer regels
+function fitGreeting() {
+  const text = $('greeting-text');
+  text.style.fontSize = '';
+  const base = parseFloat(getComputedStyle($('greeting')).fontSize);
+  for (let size = base; text.getClientRects().length > 2 && size > base - 3; size -= 0.5) text.style.fontSize = `${size - 0.5}px`;
+}
 function sayLine(line) {
   clearTimeout(greetTimer);
   $('greeting-text').textContent = line;
   placeGreeting();
+  $('greeting').hidden = false;
+  fitGreeting();
   const node = $('greeting');
   node.hidden = false;
   requestAnimationFrame(() => node.classList.add('is-on'));
@@ -2234,7 +2243,7 @@ function tapCore() {
     next: next && { title: next.title },
   }));
 }
-window.addEventListener('resize', () => { if (!$('greeting').hidden) placeGreeting(); });
+window.addEventListener('resize', () => { if (!$('greeting').hidden) { placeGreeting(); fitGreeting(); } });
 
 /* ---- Offline (sw.js) ---- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

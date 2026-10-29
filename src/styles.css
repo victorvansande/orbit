@@ -126,7 +126,7 @@ kbd {
 .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 /* Begroeting van de kern: een grote zin onder de scène, zacht in en uit */
 .greeting {
-  position: absolute; bottom: 30px; left: 50%; z-index: 1; max-width: min(560px, calc(100% - 32px)); margin: 0;
+  position: absolute; bottom: 30px; left: 50%; z-index: 1; width: max-content; max-width: min(560px, calc(100% - 32px)); margin: 0;   /* width: max-content: anders kreeg de zin met left 50% hooguit de halve breedte en brak hij op drie regels */
   text-align: center; font-size: 21px; line-height: 1.35; letter-spacing: -.005em; color: var(--ink); text-wrap: balance;
   text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg);
   opacity: 0; transform: translate(-50%, 6px); transition: opacity .8s var(--ease), transform .8s var(--ease); pointer-events: none;
