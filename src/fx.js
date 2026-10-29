@@ -188,7 +188,7 @@ export function spotlight(target, { close = 0.6, hold = 0.7, open = 0.6, pad = 7
   const ink = css('--ink');
   const easeIO = x => (x = Math.min(1, Math.max(0, x)), x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   const t0 = performance.now();
-  let skipAt = 0, raf = 0;
+  let skipAt = 0, raf = 0, last = null;
   function frame(now) {
     let t = (now - t0) / 1000;
     if (skipAt) t = Math.max(t, close + hold + (now - skipAt) / 1000 * 1.5);
@@ -196,7 +196,9 @@ export function spotlight(target, { close = 0.6, hold = 0.7, open = 0.6, pad = 7
     if (t >= total) { stop(); done(); return; }
     // k: 0 = open scherm, 1 = gesloten rond het element
     const k = t < close ? easeIO(t / close) : t < close + hold ? 1 : 1 - easeIO((t - close - hold) / open);
-    const r = target.getBoundingClientRect(), m = (1 - k) * M;
+    const box = target.getBoundingClientRect();
+    if (box.width && box.height) last = box;   // pil even niet in de lay-out: de laatste plek houden, nooit naar (0, 0)
+    const r = last || box, m = (1 - k) * M;
     g.clearRect(0, 0, W, H);
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = dim * Math.pow(k, 0.6);
@@ -207,7 +209,10 @@ export function spotlight(target, { close = 0.6, hold = 0.7, open = 0.6, pad = 7
     const rad = Math.min(h / 2, r.height / 2 + pad + m * 0.12);   // de ronding groeit niet mee: anders snijden de hoeken van een groot gat de schermhoeken af
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'destination-out';
-    g.shadowColor = '#000'; g.shadowBlur = soft; g.shadowOffsetX = W * 3;
+    // schaduwverschuiving en -vervaging tellen in echte schermpixels, niet in de geschaalde canvaseenheden: met
+    // devicePixelRatio (retina, gsm, zoom van de browser) erbij vermenigvuldigen, anders valt het gat naast de pil
+    const sc = g.getTransform().a;
+    g.shadowColor = '#000'; g.shadowBlur = soft * sc; g.shadowOffsetX = W * 3 * sc;
     g.beginPath(); g.roundRect(x - W * 3, y, w, h, rad); g.fill();
     g.shadowColor = 'transparent'; g.shadowOffsetX = 0;
     g.globalCompositeOperation = 'source-over';
