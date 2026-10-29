@@ -346,8 +346,9 @@ setInterval(() => {
 
 // De quote loopt door tot vlak voor de buitenste ring (desktop): breedte uit de echte positie van de buitenste ring op
 // de hoogte van de quote. Na het openen van de focusmodus schuift de scène nog even, dus ook later opnieuw.
+// Quote of Nu-taken lopen door tot net voor de buitenste ring (Victor), op desktop
 function fitQuote() {
-  const fig = document.querySelector('.focus-quote');
+  const fig = document.querySelector('.focus-quote, #focus-now ul');
   if (!fig || !desktop.matches || !document.body.classList.contains('is-focus')) return;
   fig.style.width = '';
   // twee keer: een andere breedte geeft een andere hoogte, en de quote hangt aan de onderkant
@@ -373,6 +374,7 @@ function renderFocusNow() {
   for (const t of urgent.slice(0, max)) ul.append(el('li', '', t.title));
   if (urgent.length > max) ul.append(el('li', 'focus-more', tx('focus.more', { n: urgent.length - max })));
   box.append(ul);
+  fitQuote();
 }
 
 /* ---- Statistiek: teller onder de lijst (met details bij een tik) en de sterrenhemel in de scène ---- */

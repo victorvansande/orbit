@@ -14,7 +14,7 @@ const MAX_SHIFT = 26;             // px, zo ver volgt het bakje je sleepbeweging
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
 const MODE_KEY = 'priority-orbit.fidget.v1';
-export const MODES = ['water', 'jelly', 'lava', 'grain'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo'];
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -420,7 +420,44 @@ void main() {
   };
 }
 
-const FACTORIES = { water, jelly, lava, grain };
+/* ---- Topo: topography ---- */
+// Topography van React Bits, letterlijk overgenomen (src/vendor/topography.js, met eigen WebGL2-canvas en eigen lus),
+// met Victors instellingen. Pas geladen als je hem kiest; weg zodra je een andere soort kiest of de focus sluit.
+// Muis en tik vangt de component zelf op (lift en pulse), dus move, leave en tap doen hier niets.
+const TOPO = {
+  color: '#ff5c18', lineCount: 32, lineWidth: 1, elevation: 0.75, foreground: 0.2, tilt: 32, speed: 0.25,
+  direction: 'backward', glow: 0.4, depthOfField: 0, fog: 0, hoverEffect: 'lift', clickEffect: 'pulse', majorLines: true,
+  scale: 0.8, detail: 0.17, morph: 0, brightness: 1.1, markers: 'none', glitch: 0, opacity: 1, mouseInteraction: true,
+  mouseRadius: 0.3, mouseStrength: 0.35, trail: 0.45, parallax: 0.5, intro: false, lightMode: false,
+};
+function topo() {
+  let destroy = null, loading = false, wanted = false;
+  return {
+    own: true,
+    init() {}, step() {}, move() {}, leave() {}, tap() {},
+    mount(el) {
+      wanted = true;
+      if (destroy || loading) return;
+      loading = true;
+      import('./vendor/topography.js').then(({ createTopography }) => {
+        loading = false;
+        if (wanted && !destroy) destroy = createTopography(el, TOPO);
+      }).catch(() => { loading = false; });
+    },
+    unmount() { wanted = false; destroy?.(); destroy = null; },
+  };
+}
+let gl2;
+const hasGL2 = () => {
+  if (gl2 === undefined) {
+    const c = document.createElement('canvas').getContext('webgl2');
+    gl2 = Boolean(c);
+    c?.getExtension('WEBGL_lose_context')?.loseContext();
+  }
+  return gl2;
+};
+
+const FACTORIES = { water, jelly, lava, grain, topo };
 
 export function createFidget(box, { reducedMotion, label = m => m }) {
   const cv = box.querySelector('canvas');
@@ -433,6 +470,11 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   cvGL.className = 'fidget-gl'; cvGL.setAttribute('aria-hidden', 'true'); cvGL.hidden = true;
   cvGL.width = cv.width; cvGL.height = cv.height; cvGL.style.width = cv.style.width; cvGL.style.height = cv.style.height;
   cv.after(cvGL);
+  // derde vlak voor een soort met een eigen canvas (topo)
+  const own = document.createElement('div');
+  own.className = 'fidget-own'; own.hidden = true;
+  own.style.width = cv.style.width; own.style.height = cv.style.height;
+  cvGL.after(own);
   let gl;
   const getGL = () => {
     if (gl === undefined) {
@@ -458,7 +500,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   // keuze bovenin het bakje
   const bar = box.querySelector('.fidget-modes');
   // zonder WebGL geen lava of gloed (dan ook niet als keuze)
-  const available = () => MODES.filter(m => !['lava', 'grain'].includes(m) || getGL());
+  const available = () => MODES.filter(m => (!['lava', 'grain'].includes(m) || getGL()) && (m !== 'topo' || hasGL2()));
   function renderBar() {
     if (!available().includes(modeName)) modeName = 'water';
     bar.replaceChildren(...available().map((m, i) => {
@@ -477,6 +519,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     const b = e.target.closest('button[data-mode]');
     if (!b || b.dataset.mode === modeName) return;
     mode().leave();
+    mode().unmount?.();
     modeName = b.dataset.mode;
     try { localStorage.setItem(MODE_KEY, modeName); } catch { /* geen opslag */ }
     agit.fill(0);
@@ -515,8 +558,14 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
 
   function render(now = 0) {
     const m = mode();
-    cv.hidden = Boolean(m.gl); cvGL.hidden = !m.gl;
-    box.classList.toggle('is-gl', Boolean(m.gl));
+    cv.hidden = Boolean(m.gl || m.own); cvGL.hidden = !m.gl; own.hidden = !m.own;
+    box.classList.toggle('is-gl', Boolean(m.gl || m.own));
+    if (m.own) {
+      m.mount(own);
+      box.style.translate = `${shift.x.toFixed(1)}px ${shift.y.toFixed(1)}px`;
+      box.style.rotate = `${(shift.x * TILT).toFixed(2)}deg`;
+      return;
+    }
     if (m.gl) {
       const ctx = getGL();
       if (ctx) {
@@ -581,7 +630,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   }
 
   // scherm naar het assenstelsel van het bakje (zonder de kanteling, die is klein)
-  const local = e => { const r = (cv.hidden ? cvGL : cv).getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * HH }; };
+  const local = e => { const r = [cv, cvGL, own].find(el => !el.hidden).getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * HH }; };
   box.addEventListener('pointerdown', e => {
     if (reducedMotion.matches) return;
     drag = { x0: e.clientX, y0: e.clientY, moved: false };
@@ -623,6 +672,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     stop() {
       running = false; cancelAnimationFrame(raf);
       drag = null; mode().leave();
+      for (const m of Object.values(modes)) m.unmount?.();   // topo: eigen lus en WebGL-context opruimen
       Object.assign(shift, { x: 0, y: 0, vx: 0, vy: 0, goalX: 0, goalY: 0 });
       box.style.translate = box.style.rotate = '';
     },

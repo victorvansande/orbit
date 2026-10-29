@@ -432,7 +432,9 @@ body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointe
 .fidget { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .fidget.is-dragging { cursor: grabbing; }
 .fidget canvas { display: block; }
-.fidget-gl { border-radius: 10px; }   /* lava en gloed: echte WebGL, zoals hun bron bij React Bits */
+.fidget-gl { border-radius: 10px; }
+.fidget-own { position: relative; overflow: hidden; border-radius: 10px; }   /* topo: eigen canvas van de React Bits-component */
+.fidget-own .topography-canvas { display: block; width: 100%; height: 100%; }   /* lava en gloed: echte WebGL, zoals hun bron bij React Bits */
 /* keuze bovenin: zelfde kapitaaltjes als Boven / Zijkant, klein en rustig */
 .fidget-modes { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 .fidget-modes button { min-height: 22px; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; transition: color .2s var(--ease); }
@@ -470,8 +472,7 @@ body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointe
 .focus-due b { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin-right: 8px; }
 .focus-due.is-late { color: var(--late); }
 .focus-due.is-late b { color: var(--late); }
-.focus-now { margin-top: 36px; max-width: 30ch; }
-.focus-now:has(.focus-quote) { max-width: none; }
+.focus-now { margin-top: 36px; }   /* breedte van de quote of de takenlijst rekent fitQuote() uit */
 .focus-kicker { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--late); margin-bottom: 12px; }
 .focus-now ul { list-style: none; margin: 0; padding: 0; }
 .focus-now li { font-size: 22px; line-height: 1.35; font-weight: 400; letter-spacing: -.01em; }
