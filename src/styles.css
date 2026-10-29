@@ -28,8 +28,8 @@
   --placeholder: #BDBDC3;
   --late: #D7261C;
   --core: #E70049;           /* kleur van de kern (Nu), accent in de effecten */
-  /* bakje water: verloop van stil naar woelig, naar het rode korrelverloop van de Bierfeesten (#C23B22) */
-  --water-calm: #5E5E68; --water-mid: #C23B22; --water-hot: #E8613C;
+  /* bakje: verloop van stil naar woelig, in de kleuren van de Grainient dusk (#BE123C, #FB923C, #FDE68A) */
+  --water-calm: #5E5E68; --water-mid: #BE123C; --water-hot: #FB923C;   /* kleuren van de Grainient dusk */
   --grain-blend: multiply;
   --grain-opacity: .14;
   --warm: #FFB46A;           /* avondtint over het papier */
@@ -48,7 +48,7 @@
 :root[data-theme="dark"] {
   --dm-ghost: .1;
   --core: #F0306A;
-  --water-calm: #A3A3AD; --water-mid: #D9482C; --water-hot: #FF8A5C;
+  --water-calm: #A3A3AD; --water-mid: #BE123C; --water-hot: #FDE68A;
   --bg: #0F0F12;
   --surface: #19191D;
   --ink: #ECECF1;
@@ -428,6 +428,7 @@ body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointe
 .fidget { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .fidget.is-dragging { cursor: grabbing; }
 .fidget canvas { display: block; }
+.fidget-gl { border-radius: 10px; }   /* lava en gloed: echte WebGL, zoals hun bron bij React Bits */
 /* keuze bovenin: zelfde kapitaaltjes als Boven / Zijkant, klein en rustig */
 .fidget-modes { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 .fidget-modes button { min-height: 22px; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; transition: color .2s var(--ease); }

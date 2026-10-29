@@ -14,7 +14,7 @@ const MAX_SHIFT = 26;             // px, zo ver volgt het bakje je sleepbeweging
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
 const MODE_KEY = 'priority-orbit.fidget.v1';
-export const MODES = ['water', 'jelly', 'lava'];
+export const MODES = ['water', 'jelly', 'lava', 'grain'];
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -195,40 +195,79 @@ function jelly() {
   };
 }
 
+/* ---- WebGL: hulpjes voor de soorten die geen tekens zijn (lava, gloed) ---- */
+const VERT = 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }';
+function program(gl, frag) {
+  const sh = (type, src) => { const x = gl.createShader(type); gl.shaderSource(x, src); gl.compileShader(x); return x; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, frag));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  const locs = {};
+  return { prog, loc: n => (n in locs ? locs[n] : (locs[n] = gl.getUniformLocation(prog, n))) };
+}
+// één driehoek over het hele canvas
+function fullscreen(gl, prog) {
+  if (!gl._tri) { gl._tri = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, gl._tri); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW); }
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl._tri);
+  const at = gl.getAttribLocation(prog.prog, 'p');
+  gl.enableVertexAttribArray(at);
+  gl.vertexAttribPointer(at, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+const hexRgb = v => {
+  const h = v.trim().replace('#', '');
+  return h.length === 6 ? [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255) : [1, 1, 1];
+};
+
 /* ---- Lava: metaballs ---- */
-// Naar MetaBalls van React Bits (motion orbit, 15 bollen, cursor-bol, klikstoot, intro). Bollen draaien rond het midden
-// en vloeien ineen waar ze elkaar raken (veld Σ (1 - d²/(2,5r)²)², rand bij 0,7); vier randlagen in tekens rond elke klodder. Een
-// grotere bol volgt de aanwijzer zacht en trekt de andere aan; een tik blaast ze uiteen, waarna ze terug in hun baan
-// glijden. Ze rekken wat uit in hun bewegingsrichting en wiebelen. Een schok van het bakje laat ze meeslingeren.
+// Naar MetaBalls van React Bits, met Victors instellingen: variant solid, motion orbit, 15 bollen, animationSize 30,
+// gooeyness 0,5, stretch 0,5, wobble 0,5, speed 0,3, clumpFactor 1, cursor-bol 3 keer zo groot met hoverSmoothness
+// 0,1, stickiness 0,5, klikstoot en intro, transparant. Effen bollen (inktkleur: wit in het donker) die rond het midden
+// draaien en ineenvloeien (veld Σ r²/d², drempel 1); de cursor-bol volgt de aanwijzer zacht en trekt de andere aan.
 function lava() {
-  const COUNT = 15, SPEED = 0.3, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1;
+  const COUNT = 15, SPEED = 0.3, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
   const balls = [];
-  const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, r: 0, on: false, px: W / 2, py: HH / 2 };
-  let t = 0, intro = 0;
-  const RINGS = ['·', ':', '+', '*'];   // van buiten naar binnen; binnenin '#'
+  const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, r: 0, on: false };
+  let t = 0, intro = 0, prog = null, color = [1, 1, 1], colorAt = -1e9;
   for (let i = 0; i < COUNT; i++) {
     balls.push({
       a: i / COUNT * Math.PI * 2 + Math.random() * 0.4,
-      R: 22 + Math.random() * 70,                 // straal van de baan (px)
-      w: (0.25 + Math.random() * 0.55) * (Math.random() < 0.5 ? -1 : 1),   // hoeksnelheid (rad/s)
-      s: 6 + Math.random() * 6,                   // grootte (px)
-      ph: Math.random() * 10,
-      ox: 0, oy: 0, vx: 0, vy: 0, x: W / 2, y: HH / 2, sp: 0,
+      R: 18 + Math.random() * 62,                 // straal van de baan (px)
+      w: (0.3 + Math.random() * 0.6) * (Math.random() < 0.5 ? -1 : 1),
+      s: 5.5 + Math.random() * 4.5,               // straal van de bol (px)
+      ph: Math.random() * 10, ox: 0, oy: 0, vx: 0, vy: 0, x: W / 2, y: HH / 2, dx: 0, dy: 0,
     });
   }
+  const data = new Float32Array(16 * 4);
+  const FRAG = `#extension GL_OES_standard_derivatives : enable
+precision highp float;
+uniform vec2 uRes; uniform vec4 uBalls[16]; uniform vec3 uColor; uniform float uGoo;
+void main() {
+  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes * vec2(${W.toFixed(1)}, ${HH.toFixed(1)});
+  float f = 0.0;
+  for (int i = 0; i < 16; i++) {
+    vec4 b = uBalls[i];
+    if (b.z <= 0.0) continue;
+    vec2 d = p - b.xy;
+    f += b.z * b.z / (dot(d, d) + 0.0001);
+  }
+  f = min(f, 4.0);                                   // midden van een bol: het veld schiet weg, de rand niet
+  float w = clamp(fwidth(f), 0.0001, 0.6) * (1.0 + uGoo);
+  float a = smoothstep(1.0 - w, 1.0 + w, f);
+  gl_FragColor = vec4(uColor * a, a);
+}`;
   function step({ ax, ay }) {
     t += 1 / 60;
     intro = Math.min(1, intro + 1 / 60 / 1.3);
     const ease = 1 - Math.pow(1 - intro, 3);
-    // cursor-bol: volgt zacht, groeit als de aanwijzer erin is
     cur.x += (cur.tx - cur.x) * SMOOTH; cur.y += (cur.ty - cur.y) * SMOOTH;
-    cur.r += ((cur.on ? 13 : 0) - cur.r) * 0.08;
-    const csp = Math.hypot(cur.x - cur.px, cur.y - cur.py); cur.px = cur.x; cur.py = cur.y;
+    cur.r += ((cur.on ? 5.5 * CURSOR * 0.75 : 0) - cur.r) * 0.08;
     for (const b of balls) {
       b.a += b.w * SPEED * (1 / 60) * 3;
       const wob = 1 + WOBBLE * 0.18 * Math.sin(t * 1.3 + b.ph);
-      const hx = W / 2 + Math.cos(b.a) * b.R * wob * ease * 1.35, hy = HH / 2 + Math.sin(b.a) * b.R * wob * ease * 0.62;
-      // veer terug naar de baan, schok van het bakje, aantrekking door de cursor-bol
+      const hx = W / 2 + Math.cos(b.a) * b.R * wob * ease * 1.45, hy = HH / 2 + Math.sin(b.a) * b.R * wob * ease * 0.7;
       let fx = -b.ox * 0.04 - ax * 2.2, fy = -b.oy * 0.04 - ay * 2.2;
       if (cur.r > 1) {
         const ex = cur.x - (hx + b.ox), ey = cur.y - (hy + b.oy), d = Math.hypot(ex, ey);
@@ -237,37 +276,31 @@ function lava() {
       b.vx = (b.vx + fx) * 0.9; b.vy = (b.vy + fy) * 0.9;
       b.ox += b.vx; b.oy += b.vy;
       const nx = hx + b.ox, ny = hy + b.oy;
-      b.dx = nx - b.x; b.dy = ny - b.y; b.sp = Math.hypot(b.dx, b.dy);
-      b.x = nx; b.y = ny;
+      b.dx = nx - b.x; b.dy = ny - b.y; b.x = nx; b.y = ny;
     }
-    cur.sp = csp;
   }
-  function draw(chr, want) {
-    const list = balls.map(b => [b.x, b.y, b.s * (0.5 + 0.5 * Math.min(1, intro * 1.4)), b.dx, b.dy, b.sp]);
-    if (cur.r > 0.5) list.push([cur.x, cur.y, cur.r, 0, 0, cur.sp]);
-    for (let k = 0; k < CELLS; k++) {
-      const cx = (k % COLS + 0.5) * CW, cy = (Math.floor(k / COLS) + 0.5) * CH;
-      let f = 0, heat = 0;
-      for (const [x, y, r, dx, dy, sp] of list) {
-        let ex = cx - x, ey = cy - y;
-        // uitrekken in de bewegingsrichting: de afstand langs de snelheid telt minder
-        if (sp > 0.05) {
-          const ux = dx / sp, uy = dy / sp, along = ex * ux + ey * uy, k2 = 1 + STRETCH * Math.min(1.5, sp * 0.6);
-          ex -= ux * along * (1 - 1 / k2); ey -= uy * along * (1 - 1 / k2);
-        }
-        const q = (ex * ex + ey * ey) / (r * r * 6.25);       // tot 2,5 keer de straal, daarbuiten niets
-        if (q >= 1) continue;
-        const c = (1 - q) * (1 - q);
-        f += c; heat += c * sp;
-      }
-      // randlagen: vier ringen buiten de drempel, vol binnenin
-      chr[k] = f >= 0.7 ? '#' : f > 0.52 ? RINGS[3] : f > 0.36 ? RINGS[2] : f > 0.22 ? RINGS[1] : f > 0.11 ? RINGS[0] : '';
-      want[k] = clamp(heat / Math.max(f, 0.15) * 0.35 - 0.1, 0, 1);
-    }
+  function render(gl, now) {
+    if (!prog) prog = program(gl, FRAG);
+    if (!prog) return;
+    if (now - colorAt > 1000) { color = hexRgb(getComputedStyle(document.documentElement).getPropertyValue('--ink')); colorAt = now; }
+    const grow = Math.min(1, intro * 1.4);
+    balls.forEach((b, i) => {
+      // uitrekken in de bewegingsrichting: een bol die snel gaat, schuift een beetje voor zich uit
+      const sp = Math.hypot(b.dx, b.dy), k = STRETCH * Math.min(1.5, sp * 0.5);
+      data[i * 4] = b.x + b.dx * k * 2; data[i * 4 + 1] = b.y + b.dy * k * 2; data[i * 4 + 2] = b.s * grow; data[i * 4 + 3] = 0;
+    });
+    data[15 * 4] = cur.x; data[15 * 4 + 1] = cur.y; data[15 * 4 + 2] = cur.r;
+    gl.useProgram(prog.prog);
+    gl.uniform2f(prog.loc('uRes'), gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.uniform4fv(prog.loc('uBalls'), data);
+    gl.uniform3fv(prog.loc('uColor'), color);
+    gl.uniform1f(prog.loc('uGoo'), GOO);
+    fullscreen(gl, prog);
   }
   return {
+    gl: true,
     init() { intro = 0; },
-    step, draw,
+    step, render,
     move(p) { cur.on = true; cur.tx = p.x; cur.ty = p.y; },
     leave() { cur.on = false; },
     tap(p) {
@@ -280,7 +313,93 @@ function lava() {
   };
 }
 
-const FACTORIES = { water, jelly, lava };
+/* ---- Gloed: grainient ---- */
+// Naar Grainient van React Bits, preset dusk zoals Victor hem doorgaf: kleuren #120F17, #3F0D1A, #BE123C, #FB923C,
+// #FDE68A, hoek 150°, silk 0,4. Een verloop dat traag golft als zijde, met filmkorrel. Om mee te spelen: de aanwijzer
+// draait een zachte wervel in het verloop, een tik stuurt een kring door de zijde, slepen laat het verloop meeschuiven.
+function grain() {
+  const COLORS = ['#120f17', '#3f0d1a', '#be123c', '#fb923c', '#fde68a'].map(hexRgb).flat();
+  const ANGLE = 150, SILK = 0.4;
+  let prog = null, t = 0;
+  const ptr = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, k: 0, on: false };
+  const rip = { x: 0.5, y: 0.5, t: -10 };
+  const off = { x: 0, y: 0 };
+  const FRAG = `precision highp float;
+uniform vec2 uRes; uniform float uTime; uniform vec3 uCol[5]; uniform float uAngle; uniform float uSilk;
+uniform vec3 uPtr; uniform vec3 uRip; uniform vec2 uOff;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.02; a *= 0.5; } return v; }
+vec3 ramp(float t) {
+  t = clamp(t, 0.0, 1.0) * 4.0;
+  vec3 c = mix(uCol[0], uCol[1], smoothstep(0.0, 1.0, t));
+  c = mix(c, uCol[2], smoothstep(1.0, 2.0, t));
+  c = mix(c, uCol[3], smoothstep(2.0, 3.0, t));
+  return mix(c, uCol[4], smoothstep(3.0, 4.0, t));
+}
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float asp = uRes.x / uRes.y;
+  vec2 p = (uv - 0.5) * vec2(asp, 1.0) + uOff;
+  // zijde: twee lagen ruis die traag over elkaar schuiven en het verloop vervormen
+  float n1 = fbm(p * 1.4 + vec2(uTime * 0.05, -uTime * 0.035));
+  float n2 = fbm(p * 2.1 + vec2(-uTime * 0.03, uTime * 0.05) + n1 * 1.7);
+  vec2 q = p + uSilk * 0.9 * (vec2(n1, n2) - 0.5);
+  // wervel rond de aanwijzer
+  vec2 pp = (uPtr.xy - 0.5) * vec2(asp, 1.0);
+  vec2 d = q - pp;
+  float fall = exp(-dot(d, d) * 9.0) * uPtr.z;
+  float ang = fall * 1.6;
+  q = pp + mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * d;
+  // kring van een tik
+  vec2 rc = (uRip.xy - 0.5) * vec2(asp, 1.0);
+  float age = uTime - uRip.z, dist = length(p - rc);
+  float ring = exp(-pow((dist - age * 0.55) * 9.0, 2.0)) * exp(-age * 1.6);
+  q += normalize(p - rc + 0.0001) * ring * 0.09;
+  float a = radians(uAngle);
+  vec2 dir = vec2(sin(a), cos(a));                 // zoals CSS: 150° wijst naar rechtsonder (y loopt hier omhoog)
+  float t = dot(q, dir) / (0.5 * (abs(dir.x) * asp + abs(dir.y))) * 0.5 + 0.5;
+  vec3 col = ramp(t);
+  // filmkorrel
+  float g = hash(gl_FragCoord.xy + fract(uTime * 7.3) * vec2(171.0, 97.0)) - 0.5;
+  col += g * 0.075;
+  gl_FragColor = vec4(col, 1.0);
+}`;
+  function step({ ax, ay }) {
+    t += 1 / 60;
+    ptr.x += (ptr.tx - ptr.x) * 0.08; ptr.y += (ptr.ty - ptr.y) * 0.08;
+    ptr.k += ((ptr.on ? 1 : 0) - ptr.k) * 0.05;
+    // slepen: het verloop schuift mee met de schok en veert terug
+    off.x = (off.x - ax * 0.02) * 0.97; off.y = (off.y + ay * 0.02) * 0.97;
+  }
+  function render(gl) {
+    if (!prog) prog = program(gl, FRAG);
+    if (!prog) return;
+    gl.useProgram(prog.prog);
+    gl.uniform2f(prog.loc('uRes'), gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.uniform1f(prog.loc('uTime'), t);
+    gl.uniform3fv(prog.loc('uCol'), COLORS);
+    gl.uniform1f(prog.loc('uAngle'), ANGLE);
+    gl.uniform1f(prog.loc('uSilk'), SILK);
+    gl.uniform3f(prog.loc('uPtr'), ptr.x, ptr.y, ptr.k);
+    gl.uniform3f(prog.loc('uRip'), rip.x, rip.y, rip.t);
+    gl.uniform2f(prog.loc('uOff'), off.x, off.y);
+    fullscreen(gl, prog);
+  }
+  return {
+    gl: true,
+    init() {},
+    step, render,
+    move(p) { ptr.on = true; ptr.tx = p.x / W; ptr.ty = 1 - p.y / HH; },
+    leave() { ptr.on = false; },
+    tap(p) { rip.x = p.x / W; rip.y = 1 - p.y / HH; rip.t = t; },
+  };
+}
+
+const FACTORIES = { water, jelly, lava, grain };
 
 export function createFidget(box, { reducedMotion, label = m => m }) {
   const cv = box.querySelector('canvas');
@@ -288,6 +407,19 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   cv.width = Math.round(W * dpr); cv.height = Math.round(HH * dpr);
   cv.style.width = `${W}px`; cv.style.height = `${HH}px`;
   const g = cv.getContext('2d');
+  // tweede canvas voor de soorten die geen tekens zijn (lava, gloed): WebGL, pas aangemaakt als je er een kiest
+  const cvGL = document.createElement('canvas');
+  cvGL.className = 'fidget-gl'; cvGL.setAttribute('aria-hidden', 'true'); cvGL.hidden = true;
+  cvGL.width = cv.width; cvGL.height = cv.height; cvGL.style.width = cv.style.width; cvGL.style.height = cv.style.height;
+  cv.after(cvGL);
+  let gl;
+  const getGL = () => {
+    if (gl === undefined) {
+      gl = cvGL.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true }) || null;
+      gl?.getExtension('OES_standard_derivatives');
+    }
+    return gl;
+  };
   const chr = new Array(CELLS).fill(''), want = new Float32Array(CELLS), agit = new Float32Array(CELLS), pos = new Float32Array(CELLS * 2);
   let palette = null, paletteAt = 0;
   let raf = 0, running = false, acc = 0, last = 0;
@@ -304,8 +436,11 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
 
   // keuze bovenin het bakje
   const bar = box.querySelector('.fidget-modes');
+  // zonder WebGL geen lava of gloed (dan ook niet als keuze)
+  const available = () => MODES.filter(m => !['lava', 'grain'].includes(m) || getGL());
   function renderBar() {
-    bar.replaceChildren(...MODES.map((m, i) => {
+    if (!available().includes(modeName)) modeName = 'water';
+    bar.replaceChildren(...available().map((m, i) => {
       const frag = document.createDocumentFragment();
       if (i) frag.append(Object.assign(document.createElement('span'), { className: 'slash', textContent: '/', ariaHidden: 'true' }));
       const b = document.createElement('button');
@@ -359,6 +494,20 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
 
   function render(now = 0) {
     const m = mode();
+    cv.hidden = Boolean(m.gl); cvGL.hidden = !m.gl;
+    box.classList.toggle('is-gl', Boolean(m.gl));
+    if (m.gl) {
+      const ctx = getGL();
+      if (ctx) {
+        ctx.viewport(0, 0, cvGL.width, cvGL.height);
+        ctx.clearColor(0, 0, 0, 0); ctx.clear(ctx.COLOR_BUFFER_BIT);
+        ctx.enable(ctx.BLEND); ctx.blendFunc(ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+        m.render(ctx, now);
+      }
+      box.style.translate = `${shift.x.toFixed(1)}px ${shift.y.toFixed(1)}px`;
+      box.style.rotate = `${(shift.x * TILT).toFixed(2)}deg`;
+      return;
+    }
     pos.fill(0);
     m.draw(chr, want, pos);
     if (!palette || now - paletteAt > 1000) { palette = readPalette(); paletteAt = now; }
@@ -411,7 +560,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   }
 
   // scherm naar het assenstelsel van het bakje (zonder de kanteling, die is klein)
-  const local = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * HH }; };
+  const local = e => { const r = (cv.hidden ? cvGL : cv).getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * HH }; };
   box.addEventListener('pointerdown', e => {
     if (reducedMotion.matches) return;
     drag = { x0: e.clientX, y0: e.clientY, moved: false };
