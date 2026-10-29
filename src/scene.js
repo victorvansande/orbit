@@ -121,6 +121,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
   let wallWords = [], wallOn = false, wallK = 0, wallLayout = null, wallBase = null, wallKey = '';
   const lamp = { x: 0, y: 0 };
+  const starHold = new Set();   // nieuwe ster die wacht tot de nacht na het afvinken opengaat (app.js, nightFall)
+  let holdNext = false;
   let starDelay = 0, lastStarAt = 0;                         // ms tot de nieuwe ster verschijnt: pas na het uitfonkelen, nooit twee sterren tegelijk
   let skyKnown = null;
   let hover = { orb: null, level: null }, external = { task: null, level: null }, pinned = null;
@@ -529,6 +531,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawStars(now, sky, front === null ? null : d => d < front - 30);   // nieuwe hemel achter de ring
   }
 
+  // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
+  const starR = (st, dense, small) => Math.max(2.6 * st.s * cam.du, (small ? 3 : 2.4) + st.s) * dense;
+
   function drawStars(now, sky, keep) {
     if (!sky.length) return;
     const a = introAlpha(now, 0.3, 1.2);
@@ -540,10 +545,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const small = Math.min(W, H) < 500;   // gsm: sterren iets groter en helderder, anders vallen ze weg   // een volle hemel krijgt iets kleinere sterren
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
+      if (starHold.has(st.id)) continue;
       const [x, y] = skyXY(st.x, st.y, ks);
       if (keep && !keep(Math.hypot(st.x * ks, st.y * ks))) continue;
-      // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
-      let R = Math.max(2.6 * st.s * cam.du, (small ? 3 : 2.4) + st.s) * dense, alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
+      let R = starR(st, dense, small), alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
       // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
       const born = skyBorn.get(st.id);
       if (born !== undefined) {
@@ -1344,10 +1349,27 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // wat er na de eerste keer bijkomt, is een nieuwe ster (bij het opstarten niet: dan staat de hemel er al)
       const now = performance.now();
       // de nieuwe ster verschijnt pas als de afgevinkte taak helemaal uitgefonkeld is; een andere hemel tonen gebeurt stil
-      if (skyKnown && !quiet && !reducedMotion.matches && !minimal) for (const st of list) if (!skyKnown.has(st.id)) { skyBorn.set(st.id, now + starDelay); lastStarAt = now + starDelay; }
-      starDelay = 0;
+      if (skyKnown && !quiet && !reducedMotion.matches && !minimal) for (const st of list) if (!skyKnown.has(st.id)) {
+        if (holdNext) { starHold.add(st.id); lastStarAt = now + starDelay + 1400; }   // de nacht toont haar; sterrenbeeld pas als het weer open is
+        else { skyBorn.set(st.id, now + starDelay); lastStarAt = now + starDelay; }
+      }
+      starDelay = 0; holdNext = false;
       skyKnown = new Set(list.map(st => st.id));
       sky = list;
+    },
+    // Nacht na het afvinken (app.js): de nieuwe ster wacht verborgen, de nacht toont haar en de sterrenhemel
+    get starWait() { return starDelay; },
+    holdNextStar() { holdNext = true; },
+    releaseStars(born = false) {
+      const now = performance.now();
+      if (born) for (const id of starHold) skyBorn.set(id, now);
+      starHold.clear();
+    },
+    // sterren van de getoonde hemel in schermcoördinaten (px): [{id, x, y, r}]
+    skyPoints() {
+      const r = canvas.getBoundingClientRect(), ks = skyScale(), small = Math.min(W, H) < 500;
+      const dense = clamp(1 - (sky.length - 150) / 1500, 0.65, 1);
+      return sky.map(st => { const [x, y] = skyXY(st.x, st.y, ks); return { id: st.id, x: r.left + x, y: r.top + y, r: starR(st, dense, small) }; });
     },
     // muur van afgevinkte taken achter de hemel: woorden (titels) en aan/uit
     setWall(words, on) { wallWords = words.map(w => w.toUpperCase()); wallOn = on; wallKey = ''; },

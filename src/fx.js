@@ -58,6 +58,79 @@ export function softReveal({ center, onReveal, done = () => {} }) {
   return { skip, cancel() { cancelAnimationFrame(raf); cv.remove(); } };
 }
 
+/* ---- Nacht na het afvinken ("Nacht valt", gekozen door Victor uit vier voorstellen) ---- */
+// Na het uitfonkelen valt de nacht: de pagina wordt in 0,55 s volledig inkt (licht in het donkere thema), alleen de
+// sterrenhemel blijft en licht op. De nieuwe ster bloeit open, daarna komt de dag terug met dezelfde zachte cirkel als
+// bij het laden, vanuit die ster. 2,7 s; een tik of toets laat de cirkel meteen openen.
+const NIGHT = { fade: 0.55, born: 0.55, open: 1.2, end: 2.7 };
+export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {} }) {
+  const cv = document.createElement('canvas');
+  cv.className = 'fx-reveal';
+  cv.setAttribute('aria-hidden', 'true');
+  document.body.append(cv);
+  const W = innerWidth, H = innerHeight, g = fitCanvas(cv, W, H);
+  const rgb = name => { g.fillStyle = css(name); const h = g.fillStyle.slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(','); };
+  const ink = rgb('--ink'), paper = rgb('--bg');
+  const soft = Math.max(110, Math.min(W, H) * 0.22);
+  const M = Math.hypot(Math.max(star.x, W - star.x), Math.max(star.y, H - star.y)) + soft;
+  const easeIO = x => (x = Math.min(1, Math.max(0, x)), x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const easeOut = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  // dekking op afstand r van de nieuwe ster
+  const cover = (r, t) => {
+    const R = t < NIGHT.open ? 0 : M * easeIO((t - NIGHT.open) / (NIGHT.end - NIGHT.open));
+    return easeIO(t / NIGHT.fade) * smoothstep(R - soft, R, r);
+  };
+  const t0 = performance.now();
+  let skipAt = 0, opened = false, raf = 0;
+
+  function star4(x, y, R, rot) {
+    g.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const a = rot + i * Math.PI / 2, b = a + Math.PI / 4, c = a + Math.PI / 2;
+      if (i === 0) g.moveTo(x + Math.cos(a) * R, y + Math.sin(a) * R);
+      g.quadraticCurveTo(x + Math.cos(b) * R * 0.18, y + Math.sin(b) * R * 0.18, x + Math.cos(c) * R, y + Math.sin(c) * R);
+    }
+    g.fill();
+  }
+
+  function frame(now) {
+    let t = (now - t0) / 1000;
+    if (skipAt) t = Math.max(t, NIGHT.open + (now - skipAt) / 1000 * 1.6);
+    if (t >= NIGHT.open && !opened) { opened = true; onOpen(); }
+    if (t >= NIGHT.end) { stop(); done(); return; }
+    g.clearRect(0, 0, W, H);
+    const N = 64, grad = g.createRadialGradient(star.x, star.y, 0, star.x, star.y, M);
+    for (let i = 0; i <= N; i++) grad.addColorStop(i / N, `rgba(${ink},${cover(M * i / N, t).toFixed(4)})`);
+    g.globalAlpha = 1; g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    // de sterrenhemel licht op in de nacht, in papierkleur
+    g.fillStyle = `rgb(${paper})`;
+    for (const s of stars) {
+      const a = cover(Math.hypot(s.x - star.x, s.y - star.y), t);
+      if (a < 0.01) continue;
+      g.globalAlpha = a * (0.55 + 0.25 * Math.sin(now / 900 + s.x));
+      star4(s.x, s.y, s.r, 0);
+    }
+    // de nieuwe ster bloeit open en zakt naar haar gewone maat
+    const ac = cover(0, t);
+    if (t > NIGHT.born && ac > 0.01) {
+      const u = t - NIGHT.born, k = easeOut(u / 0.35) * (1 + 2.6 * (1 - easeOut(u / 1.8))), R = star.r * k;
+      const glow = g.createRadialGradient(star.x, star.y, 0, star.x, star.y, 10 + R * 5);
+      glow.addColorStop(0, `rgba(${paper},${0.3 * ac})`); glow.addColorStop(1, `rgba(${paper},0)`);
+      g.globalAlpha = 1; g.fillStyle = glow; g.fillRect(star.x - 10 - R * 5, star.y - 10 - R * 5, 20 + R * 10, 20 + R * 10);
+      g.fillStyle = `rgb(${paper})`; g.globalAlpha = ac;
+      star4(star.x, star.y, R, (1 - easeOut(u / 1.2)) * Math.PI / 4);
+    }
+    g.globalAlpha = 1;
+    raf = requestAnimationFrame(frame);
+  }
+  function skip() { if (!skipAt) skipAt = performance.now(); }
+  function stop() { cancelAnimationFrame(raf); cv.remove(); removeEventListener('pointerdown', skip, true); removeEventListener('keydown', skip, true); }
+  addEventListener('pointerdown', skip, true);
+  addEventListener('keydown', skip, true);
+  raf = requestAnimationFrame(frame);
+  return { skip };
+}
+
 /* ---- Particle text: de titel in de Uitleg ---- */
 // De letters bestaan uit puntjes in een zeshoekig raster (zoals de kern). Bij het openen spiralen ze binnen zoals de
 // bollen bij de intro; de aanwijzer duwt ze opzij en kleurt ze even rood.

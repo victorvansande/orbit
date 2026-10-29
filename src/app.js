@@ -16,7 +16,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
-import { softReveal, particleTitle, createWall } from './fx.js';
+import { softReveal, nightFall, particleTitle, createWall } from './fx.js';
 
 applyStatic();
 
@@ -717,6 +717,10 @@ function complete(id, row) {
   scene.cheer();
   tasks = tasks.filter(t => t.id !== id);
   let next = null;
+  // Nacht na het afvinken: alleen met een echte ster, alle effecten en niet terwijl er al een nacht loopt
+  const night = !task.demo && !nightBusy && !minimalFx && !reducedMotion.matches && !document.hidden;
+  const wait = scene.starWait;
+  if (night) scene.holdNextStar();
   if (!task.demo) {
     const now = Date.now();
     gone[id] = now;
@@ -735,7 +739,7 @@ function complete(id, row) {
       tasks.push(next);
     }
   }
-  playDone({ level: task.level, n: totalDone(done) - 1 });
+  const sound = () => playDone({ level: task.level, n: totalDone(done) - 1 });
   saveTasks();
   renderSummary();
   renderFocusNow();
@@ -745,8 +749,28 @@ function complete(id, row) {
     if (next) { tasks = tasks.filter(t => t.id !== next.id); gone[next.id] = Date.now(); }
     restore([id]);
   };
-  showToast(next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), back);
+  const toast = () => showToast(next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), back);
+  // toast en geluid wachten tot de nacht voorbij is, zodat er niets over het moment loopt
+  if (night) fallNight(id, wait, sound, toast);
+  else { sound(); toast(); }
   setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
+}
+
+let nightBusy = false;
+function fallNight(id, wait, sound, toast) {
+  nightBusy = true;
+  setTimeout(() => {
+    const pts = scene.skyPoints(), star = pts.find(p => p.id === id);
+    const seen = star && star.x > 0 && star.x < innerWidth && star.y > 0 && star.y < innerHeight;
+    if (!seen || document.hidden) {   // ster niet in beeld (gsm, gescrold naar de lijst): gewoon verschijnen
+      scene.releaseStars(true); nightBusy = false; sound(); toast(); return;
+    }
+    nightFall({
+      star, stars: pts.filter(p => p !== star),
+      onOpen() { scene.releaseStars(); sound(); },
+      done() { nightBusy = false; toast(); },
+    });
+  }, wait);
 }
 
 // Taken uit het archief terugzetten. Een nieuwe wijzigingstijd maakt ze recenter dan het afvinken,
