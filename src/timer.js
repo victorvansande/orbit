@@ -15,8 +15,10 @@ const DURATIONS = [15, 25, 50];
 const FILL = 0.8;                                 // tot waar de bovenste bol bij de start gevuld is
 const STEPS = 240;                                // stappen voor de inhoudstabel van een bol
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-// vorm van één bol: halve breedte (0..1) op hoogte u, van de hals (0) naar de rand (1); strak en rond
-const shape = u => Math.pow(Math.sin(Math.min(u / 0.8, 1) * Math.PI / 2), 0.75);
+// vorm van één bol: halve breedte (0..1) op hoogte u, van de hals (0) naar de rand (1); strak, met ronde schouders
+// (eerst liep de bol vanaf 80 % recht door tot een vlakke rand: dat oogde als een kom, zeker uitgeklapt)
+const shape = u => Math.pow(Math.sin(Math.min(u / 0.78, 1) * Math.PI / 2), 0.75) * (1 - 0.2 * smooth(0.78, 1, u) ** 2);
+const RATIO = 0.6;                                // halve breedte van een bol / hoogte van een bol: het glas houdt zijn verhouding
 
 const ICON_OPEN = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>';
 const ICON_CLOSE = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"/></svg>';
@@ -69,10 +71,12 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     if (!w || !h || (w === W && h === H)) return;
     W = w; H = h; dpr = Math.min(2, devicePixelRatio || 1);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    const top = 3, bot = H - 3;
-    const neckLen = Math.max(2, (bot - top) * 0.025);
-    const bulb = (bot - top - neckLen) / 2;
-    const R = Math.min(W / 2 - 4, bulb * 0.62);             // halve breedte van een bol
+    const sp = Math.max(3.6, Math.min(6.5, W / 30));         // afstand tussen de rasterpunten
+    // vaste verhouding, gecentreerd in het vak: uitgeklapt werd het glas anders lang en smal (Victor, 29/10/2026)
+    const avail = H - 6, neckLen = sp * 0.5;
+    const R = Math.min(W / 2 - 4, (avail - neckLen) / 2 * RATIO);   // halve breedte van een bol
+    const bulb = R / RATIO;
+    const top = (H - (bulb * 2 + neckLen)) / 2, bot = top + bulb * 2 + neckLen;
     const neck = Math.max(1.4, R * 0.075);
     // inhoud van een bol van de hals tot hoogte u (in px², halve breedtes × 2)
     const area = new Float64Array(STEPS + 1);
@@ -81,7 +85,6 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
       const w0 = neck + (R - neck) * shape(u0), w1 = neck + (R - neck) * shape(u1);
       area[i] = area[i - 1] + (w0 + w1) * bulb / STEPS;     // 2 × gemiddelde halve breedte × hoogte van de stap
     }
-    const sp = Math.max(3.6, Math.min(6.5, W / 30));         // afstand tussen de rasterpunten
     glass = { top, bot, neckLen, bulb, R, neck, area, sp, cx: W / 2, neckTop: top + bulb, neckBot: top + bulb + neckLen };
   }
   const halfAt = u => glass.neck + (glass.R - glass.neck) * shape(Math.min(1, Math.max(0, u)));
@@ -123,17 +126,19 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     g.clearRect(0, 0, W, H);
     const vol = area[Math.round(FILL * STEPS)];
     const uTop = levelFor(q * vol);                       // zandhoogte boven (vanaf de hals)
-    const vBot = levelFor(area[STEPS] - (1 - q) * vol);   // onder: zand van de rand tot hier (vanaf de hals gemeten)
     const still = reducedMotion.matches;
+    // onder: eerst een smal hoopje in het midden dat breder wordt tot het de wanden raakt, pas daarna stijgt het
+    // (eerst vulde de onderste rij meteen over de hele breedte); hoogte van het zand in px boven de bodem, per afstand dx
+    const A = (1 - q) * vol, Rb = halfAt(1), Ch = Math.min(Rb * 0.7, bulb * 0.4), slope = Ch / Rb;
+    let sandAt;
+    if (A < Rb * Ch) { const r = Math.sqrt(A / slope); sandAt = dx => slope * (r - dx); }
+    else { const L = (1 - levelFor(area[STEPS] - (A - Rb * Ch))) * bulb; sandAt = dx => Math.min(bulb, L + Ch * (1 - dx / Rb)); }
+    if (live && !still) { const ph = (now / 2600) % 1, base = sandAt; if (ph < 0.25 && A > 0) { const sag = 1 - 0.08 * Math.sin(ph / 0.25 * Math.PI); sandAt = dx => base(dx) * (dx < Rb * 0.5 ? sag + (1 - sag) * dx / (Rb * 0.5) : 1); } }   // af en toe een klein lawinetje
     // zachte pauze: er vallen geen nieuwe korrels meer, wat al valt landt nog
     const settling = !live && now - pausedAt < 1500 && q > 0.001 && q < 1;
     const flowing = (live || settling) && q > 0.001;
-    const dip = live ? Math.min(uTop, 0.08) : 0;          // kuiltje boven waar het zand wegloopt
-    // onder groeit een kegel (met af en toe een klein lawinetje); de rand ligt dan iets lager, zelfde inhoud
-    let cone = 1 - q > 0.002 ? Math.min(0.42, 0.06 + (1 - q) * 0.5) : 0;
-    if (live && !still) { const ph = (now / 2600) % 1; if (ph < 0.25) cone *= 1 - 0.1 * Math.sin(ph / 0.25 * Math.PI); }
-    const vBase = Math.min(1, vBot + cone * 0.45);
-    const soft = 0.07;                                    // breedte van het verloop aan het oppervlak (in u)
+    const dip = live ? Math.min(uTop * 0.45, 0.08) : 0;   // kuiltje boven waar het zand wegloopt; ondieper als er weinig over is (anders twee hoorntjes rond de hals)
+    const soft = sp * 0.85;                               // verloop aan het oppervlak, in px: even scherp in een groot en een klein glas
     // golf door het zand als het laatste korreltje gevallen is
     const waveAge = (now - doneAt) / 1000, waving = !still && waveAge >= 0 && waveAge < 1.1, waveR = waveAge * 320;
     g.fillStyle = ink;
@@ -147,8 +152,8 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
         const k = 1 - dx / hw, edge = smooth(0, sp, hw - dx);
         // hoeveel zand er op deze plek is (0..1), met een zacht verloop aan het oppervlak, en hoe diep onder het oppervlak
         let f, depth;
-        if (up) { const sfc = uTop - dip * k * k; f = smooth(sfc + soft, sfc - soft, u); depth = sfc - u; }
-        else { const sfc = vBase - cone * k; f = smooth(sfc - soft, sfc + soft, u); depth = u - sfc; }
+        if (up) { const d = (uTop - dip * k * k - u) * bulb; f = smooth(-soft, soft, d); depth = d / bulb; }
+        else { const d = sandAt(dx) - (bot - y); f = smooth(-soft, soft, d); depth = d / bulb; }
         let r = sp * (0.09 + 0.39 * f) * (0.55 + 0.45 * edge);
         // volume, zoals de kern: grotere punten in het midden, kleiner naar de wand en naar het oppervlak
         if (f > 0.05) r *= (0.74 + 0.26 * Math.sqrt(k)) * (0.82 + 0.18 * smooth(0, 0.25, depth));
@@ -157,12 +162,9 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
     }
-    // de hals: een paar piepkleine punten, zodat het één vorm is
-    g.globalAlpha = 0.5;
-    const nr = Math.max(0.7, sp * 0.15);
-    for (let y = neckTop - 1; y <= neckBot + 1; y += nr * 2.8) { g.beginPath(); g.arc(cx, y, nr, 0, Math.PI * 2); g.fill(); }
+    // geen aparte puntjes meer in de hals: de twee helften raken elkaar (dat kolommetje oogde vreemd)
     if (flowing) {
-      const end = neckBot + (vBase - cone) * bulb, drop = Math.max(4, end - neckTop);
+      const end = bot - Math.max(0, sandAt(0)), drop = Math.max(4, end - neckTop);
       const fall = Math.sqrt(2 * drop / GRAV) * 1000, t = still ? 0 : now, last = Math.floor(t / EVERY);
       for (let i = last; i > last - (fall + LAND) / EVERY - 1; i--) {
         if (rnd(i, 9) > KEEP) continue;
