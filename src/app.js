@@ -16,6 +16,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
+import { createTimer } from './timer.js';
 import { softReveal, nightFall, particleTitle, createWall } from './fx.js';
 
 applyStatic();
@@ -1123,10 +1124,13 @@ if (DEMO_MODE) {
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
 const fidget = createFidget($('fidget'), { reducedMotion, label: m => tx(`fidget.${m}`) });   // bakje water, alleen op desktop zichtbaar
+// zandloper boven het bakje (desktop): een focusblok van 15, 25 of 50 minuten; klaar = de afvinktik
+const timer = createTimer($('timer'), { reducedMotion, tx, onDone: () => playDone({ level: 1 }) });
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
   if (on && desktop.matches && !minimalFx) fidget.start(); else fidget.stop();
+  if (on && desktop.matches) timer.start(); else timer.stop();
   if (on && !$('greeting').hidden) hideGreeting();   // anders botst de begroeting op gsm met de klok
   $('focus-btn').setAttribute('aria-pressed', String(on));
   if (on) {
