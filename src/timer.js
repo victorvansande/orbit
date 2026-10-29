@@ -105,7 +105,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     save();
     if (quiet) return;
     if (!reducedMotion.matches) [0, 260, 520].forEach(ms => setTimeout(() => twinkleDot(digits), ms));
-    onDone();
+    onDone(st.dur);
   }
 
   function loop(now) {

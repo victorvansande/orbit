@@ -4,6 +4,7 @@
 // WebSockets), dan gewone https-verzoeken om de paar seconden.
 // Orbit is een openbare site met persoonlijke taken: een synccode bepaalt het kanaal (hash) én de sleutel.
 // Alles wordt in de browser versleuteld (AES-GCM); de server ziet enkel ruis.
+import { mergeFeats, featsSig } from './feats.js';
 
 const SERVER = 'https://orbit-sync.victorvansande.workers.dev';
 const CODE_KEY = 'priority-orbit.sync.v1';
@@ -55,7 +56,9 @@ export function mergeStates(a, b) {
   const doneReset = Math.max(a.doneReset || 0, b.doneReset || 0);
   // nieuwe hemels: alle sneden van beide kanten
   const skyCuts = [...new Set([...(a.skyCuts || []), ...(b.skyCuts || [])].filter(Number.isFinite))].sort((x, y) => x - y);
-  return { tasks, gone, done, doneReset, skyCuts };
+  // prestaties: alles van beide kanten (logboek, ontgrendeld, focusblokken, gebeurtenissen)
+  const feats = a.feats || b.feats ? mergeFeats(a.feats, b.feats) : undefined;
+  return { tasks, gone, done, doneReset, skyCuts, feats };
 }
 
 // Twee toestanden zijn gelijk als dezelfde taken met dezelfde wijzigingstijd bestaan, dezelfde taken afgevinkt zijn
@@ -67,6 +70,7 @@ export function sameState(a, b) {
     Object.entries(s.done || {}).map(([id, t]) => `${id}:${t}`).sort(),
     s.doneReset || 0,
     (s.skyCuts || []).join(','),
+    featsSig(s.feats),
   ]);
   return sig(a) === sig(b);
 }

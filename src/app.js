@@ -17,6 +17,7 @@ import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
 import { createTimer } from './timer.js';
+import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate } from './feats.js';
 import { softReveal, nightFall, particleTitle, createWall } from './fx.js';
 
 applyStatic();
@@ -187,6 +188,8 @@ let skyCuts = loadCuts();                         // begin van elke nieuwe hemel
 let skyView = loadSkyView();                      // getoonde hemel: 'current', 'all' of het begin van een vorige
 const starVisible = id => done[id] !== undefined && inView(done[id], skyView, skyCuts);
 let sky = syncStars(loadStars(), done);           // één ster per afgevinkte taak
+let feats = loadFeats();                          // prestaties: logboek, ontgrendeld, focusblokken, gebeurtenissen
+if (backfill(feats, archive)) saveFeats(feats);   // wat al in het archief zat, telt mee
 applyDeadlines();
 saveTasks({ notify: false });
 // Vraag de browser om de opslag niet op te ruimen als er plaats tekort is
@@ -472,6 +475,7 @@ $('sky-new-yes').addEventListener('click', () => {
   saveSkyView(skyView);
   showSkyConfirm(false);
   renderStats({ quiet: true });
+  checkFeats(true);
   notifySync();
   showToast(tx('skies.done'));
 });
@@ -730,6 +734,7 @@ function complete(id, row) {
     archive = saveArchive([{ ...task, doneAt: now }, ...archive]);
     done[id] = now;
     saveDone(done);
+    recordDone(feats, task, now);
     if (skyView !== 'current' && skyView !== 'all') { skyView = 'current'; saveSkyView(skyView); }   // een nieuwe ster hoort bij deze hemel
     placeStar(sky, id, spot, true, starVisible);
     renderStats();
@@ -756,6 +761,12 @@ function complete(id, row) {
   // toast en geluid wachten tot de nacht voorbij is, zodat er niets over het moment loopt
   if (night) fallNight(id, wait, sound, toast);
   else { sound(); toast(); }
+  // prestaties: de laatste Nu-taak, of de hele lijst leeg
+  if (!task.demo) {
+    if (task.level === URGENT_LEVEL && !realTasks().some(t => t.level === URGENT_LEVEL)) recordEvent(feats, 'nuEmpty');
+    if (!realTasks().length) recordEvent(feats, 'clear');
+    checkFeats(true);
+  }
   setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
 }
 
@@ -784,6 +795,7 @@ function restore(ids) {
   if (!back.length) return 0;
   for (const a of back) {
     delete done[a.id];
+    delete feats.log[a.id];
     removeStar(sky, a.id);
     const { doneAt, by, ...task } = a;
     touch(task);
@@ -792,6 +804,7 @@ function restore(ids) {
   }
   archive = saveArchive(archive.filter(a => !want.has(a.id)));
   saveDone(done);
+  saveFeats(feats);
   applyDeadlines();
   saveTasks();
   render();
@@ -1125,7 +1138,7 @@ let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
 const fidget = createFidget($('fidget'), { reducedMotion, label: m => tx(`fidget.${m}`) });   // bakje water, alleen op desktop zichtbaar
 // zandloper boven het bakje (desktop): een focusblok van 15, 25 of 50 minuten; klaar = de afvinktik
-const timer = createTimer($('timer'), { reducedMotion, tx, onDone: () => playDone({ level: 1 }) });
+const timer = createTimer($('timer'), { reducedMotion, tx, onDone(minutes) { playDone({ level: 1 }); recordFocus(feats, minutes); checkFeats(true); } });
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
@@ -1157,9 +1170,114 @@ document.addEventListener('fullscreenchange', () => {
 window.addEventListener('pointermove', bumpIdle, { passive: true });
 window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraakschermen: een tik toont de knoppen weer
 
+/* ---- Prestaties: punten, rang en een venster met alle prestaties ---- */
+// Berekening in src/feats.js. Hier: ontgrendelen (met melding na een eigen actie, stil bij laden en sync), het
+// rangknopje naast de teller, het venster (knop Prestaties, toets P) en de melding bovenaan.
+const featsDialog = $('feats');
+const DATE_SHORT = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
+const featQueue = [];
+function checkFeats(pop) {
+  const r = evaluate(feats, done, { skies: skyCuts.length });
+  if (r.fresh.length) {
+    const now = Date.now();
+    for (const x of r.fresh) feats.unlocked[x.id] = now;
+    if (pop) featQueue.push(...r.fresh);
+    notifySync();
+  }
+  saveFeats(feats);
+  renderFeatsBadge(r);
+  if (featsDialog.open) renderFeats();
+  if (featQueue.length) showFeatPop();
+}
+// vierpuntige ster met holle zijden in een ring, zoals de sterren in de hemel
+const STAR4 = (() => {
+  const R = 6.6, w = 0.2, p = a => `${(Math.cos(a) * R).toFixed(2)} ${(Math.sin(a) * R).toFixed(2)}`;
+  let d = `M${p(-Math.PI / 2)}`;
+  for (let i = 0; i < 4; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 2;
+    d += ` Q${(Math.cos(a + Math.PI / 4) * R * w).toFixed(2)} ${(Math.sin(a + Math.PI / 4) * R * w).toFixed(2)} ${p(a + Math.PI / 2)}`;
+  }
+  return d + 'Z';
+})();
+const badgeSvg = (secret = false) => `<circle class="fb-ring" r="10.6"/>${secret ? '<text class="fb-q" y="4">?</text>' : `<path class="fb-star" d="${STAR4}"/>`}`;
+function renderFeatsBadge(r = evaluate(feats, done, { skies: skyCuts.length })) {
+  const b = $('feats-badge');
+  b.hidden = !r.stars;
+  b.innerHTML = `<svg viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span>${tx('feats.badge', { rank: r.rank.name, n: r.points.toLocaleString(LOCALE) })}</span>`;
+}
+function renderFeats() {
+  const r = evaluate(feats, done, { skies: skyCuts.length });
+  $('feats-count').textContent = tx('feats.count', { a: r.earned, b: FEATS.length });
+  $('feats-level').textContent = tx('feats.level', { n: r.rank.level });
+  $('feats-rankname').textContent = r.rank.name;
+  $('feats-rank-badge').innerHTML = badgeSvg();
+  const pts = tx('feats.points', { n: r.points.toLocaleString(LOCALE) });
+  $('feats-points').textContent = r.rank.next ? `${pts} · ${tx('feats.next', { n: (r.rank.next.at - r.points).toLocaleString(LOCALE), name: r.rank.next.name })}` : `${pts} · ${tx('feats.max')}`;
+  $('feats-bar').style.width = `${r.rank.next ? Math.round((r.points - r.rank.from) / (r.rank.next.at - r.rank.from) * 100) : 100}%`;
+  const list = $('feats-list');
+  list.replaceChildren(...GROUPS.map(([g]) => {
+    const items = r.list.filter(x => x.group === g);
+    const sec = el('section', 'feats-group');
+    const got = items.filter(x => x.at || x.value >= x.goal).length;
+    const h = el('h3', 'feats-group-title', groupName(g));
+    h.append(el('span', '', `${got}/${items.length}`));
+    const ul = el('ul', 'feats-grid');
+    for (const x of items) {
+      const earned = Boolean(x.at) || x.value >= x.goal, hidden = x.secret && !earned;
+      const li = el('li', `feat tier-${x.tier}${earned ? ' is-got' : ''}`);
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('viewBox', '-12 -12 24 24'); icon.setAttribute('class', 'feat-badge'); icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = badgeSvg(hidden);
+      const body = el('div', 'feat-body');
+      const name = el('p', 'feat-name', hidden ? tx('feats.secret') : x.name);
+      name.append(el('span', 'feat-pts', `+${x.points}`));
+      body.append(name, el('p', 'feat-desc', hidden ? tx('feats.secretDesc') : x.desc));
+      if (earned) body.append(el('p', 'feat-meta', x.at ? tx('feats.got', { date: DATE_SHORT.format(x.at) }) : ''));
+      else if (x.goal > 1 && !hidden) {
+        const bar = el('div', 'feat-bar'), fill = el('i');
+        fill.style.width = `${Math.round(x.value / x.goal * 100)}%`;
+        bar.append(fill);
+        body.append(bar, el('p', 'feat-meta', `${x.value.toLocaleString(LOCALE)} / ${x.goal.toLocaleString(LOCALE)}`));
+      }
+      li.append(icon, body);
+      ul.append(li);
+    }
+    sec.append(h, ul);
+    return sec;
+  }));
+}
+function openFeats() {
+  renderFeats();
+  if (!featsDialog.open) featsDialog.showModal();
+  featsDialog.querySelector('.feats-card').scrollTop = 0;
+}
+$('feats-btn').addEventListener('click', () => { setMenu(false); openFeats(); });
+$('feats-badge').addEventListener('click', openFeats);
+$('feats-close').addEventListener('click', () => featsDialog.close());
+featsDialog.addEventListener('click', e => { if (e.target === featsDialog) featsDialog.close(); });
+
+// melding bovenaan: één prestatie tegelijk, pas als de nacht na het afvinken voorbij is
+let popBusy = false;
+function showFeatPop() {
+  if (popBusy || !featQueue.length) return;
+  if (nightBusy || document.querySelector('.fx-reveal')) { setTimeout(showFeatPop, 400); return; }
+  popBusy = true;
+  const x = featQueue.shift(), pop = $('feat-pop');
+  pop.className = `feat-pop tier-${x.tier}`;
+  pop.innerHTML = `<svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
+  pop.querySelector('.feat-pop-name').textContent = x.name;
+  pop.hidden = false;
+  requestAnimationFrame(() => pop.classList.add('is-on'));
+  setTimeout(() => {
+    pop.classList.remove('is-on');
+    setTimeout(() => { pop.hidden = true; popBusy = false; showFeatPop(); }, 400);
+  }, 4200);
+}
+$('feat-pop').addEventListener('click', () => openFeats());
+
 /* ---- Toetsenbord ---- */
 document.addEventListener('keydown', e => {
-  if (composer.open || archiveDialog.open || syncDialog.open || introDialog.open) return;
+  if (composer.open || archiveDialog.open || syncDialog.open || introDialog.open || featsDialog.open) return;
   if (e.repeat) return;                 // ingedrukt houden herhaalt niets (anders flitst D tussen licht en donker)
   if (e.target.closest?.('input, textarea, [contenteditable]')) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
@@ -1171,6 +1289,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'f') setFocus(!document.body.classList.contains('is-focus'));
   else if (k === 'z') undo();
   else if (k === 'a') openArchive();
+  else if (k === 'p') openFeats();
   else if (e.key === '?') openIntro();
   else if (k === 'd') setThemePref(resolvedTheme() === 'dark' ? 'light' : 'dark');
   else if (k === 't') setTempo(TEMPOS[(TEMPOS.indexOf(tempo) + 1) % TEMPOS.length]);
@@ -1415,6 +1534,9 @@ window.addEventListener('storage', e => {
     skyCuts = loadCuts();
     sky = loadStars();
     renderStats();
+  } else if (e.key === FEATS_KEY) {
+    feats = loadFeats();
+    checkFeats(false);
   }
 });
 
@@ -1427,7 +1549,7 @@ const DEVICE = deviceName();
 
 const sync = createSync({
   deviceName: DEVICE,
-  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts }),
+  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts, feats }),
   applyState(state) {
     gone = { ...state.gone };
     const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo');
@@ -1445,11 +1567,13 @@ const sync = createSync({
     doneReset = Math.max(doneReset, state.doneReset || 0);
     skyCuts = cleanCuts([...skyCuts, ...(state.skyCuts || [])]);
     saveCuts(skyCuts);
+    feats = mergeFeats(feats, state.feats);
     for (const t of lost) if (!done[t.id] && (state.gone?.[t.id] || Date.now()) > doneReset) done[t.id] = state.gone?.[t.id] || Date.now();
     saveDone(done);
     saveReset(doneReset);
     syncStars(sky, done);
     renderStats();
+    checkFeats(false);   // wat elders gehaald werd: stil, zonder melding
     tasks = incoming;
     applyDeadlines();
     saveTasks({ notify: false, reason: 'sync' });
@@ -1474,8 +1598,10 @@ const sync = createSync({
     saveDone(done);
     saveReset(doneReset);
     saveCuts(skyCuts);
+    feats = mergeFeats(feats, state.feats);
     syncStars(sky, done);
     renderStats();
+    checkFeats(false);
     // had dit toestel iets wat de verzender niet had (eigen taken of afgevinkte), dan terugsturen
     if (tasks.length !== state.tasks.length || totalDone(done) !== totalDone(cleanDone(state.done)) || doneReset !== (state.doneReset || 0)
       || skyCuts.length !== cleanCuts(state.skyCuts).length) setTimeout(() => sync.changed(), 0);
@@ -1837,12 +1963,13 @@ function greet() {
     dusty: dusty && { title: dusty.title, days: daysOn(dusty) },
   });
   if (line) sayLine(line);
+  if (line && /Dave/.test(line)) { recordEvent(feats, 'dave'); setTimeout(() => checkFeats(true), 2500); }
 }
 
 // Tik op de kern: hij zegt wat er nu het meest toe doet. Nog een tik binnen 4 s: een knipoog.
 let lastCoreTap = 0;
 function tapCore() {
-  if (Date.now() - lastCoreTap < 4000) { lastCoreTap = 0; scene.wink(); return; }
+  if (Date.now() - lastCoreTap < 4000) { lastCoreTap = 0; scene.wink(); recordEvent(feats, 'wink'); checkFeats(true); return; }
   lastCoreTap = Date.now();
   const list = tasks;
   const today = toDue(new Date());
@@ -1895,6 +2022,8 @@ if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
   });
 }
 renderStats();
+if (new Date().getHours() === 3) recordEvent(feats, 'night');
+checkFeats(false);   // bij het laden stil: wat al gehaald was, staat meteen goed
 renderSync();
 if (savedCode()) sync.start(savedCode());
 // Webapp op het beginscherm zonder koppeling: meteen zeggen, de uitleg in de lijst staat op gsm ver onderaan

@@ -117,6 +117,8 @@
       </div>
       <p class="menu-row menu-keys" data-ih="menu.keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
       <div class="menu-row hud-actions">
+        <button type="button" class="sync-btn" id="feats-btn" data-i="menu.feats">Prestaties</button>
+        <span class="slash" aria-hidden="true">/</span>
         <button type="button" class="sync-btn" id="intro-btn" data-i="menu.intro">Uitleg</button>
         <span class="slash" aria-hidden="true">/</span>
         <button type="button" class="sync-btn" id="archive-btn" data-i="menu.archive">Archief</button>
@@ -168,6 +170,7 @@
       <span class="stat-dm" id="stat-total" role="img"></span><span id="stat-stars-label">stars collected</span>
     </button>
     <button type="button" class="wall-toggle" id="wall-toggle" aria-pressed="false" title="Muur van afgevinkte taken achter de hemel" data-ia="title:wall.title" hidden><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2 4h5M9 4h5M2 8h3M7 8h7M2 12h6M10 12h4"/></svg><span data-i="wall.label">Muur</span></button>
+    <button type="button" class="feats-badge" id="feats-badge" hidden></button>
     <div class="stats-detail" id="stats-detail" hidden>
       <dl id="stats-rows"></dl>
       <div class="skies">
@@ -216,6 +219,7 @@
   <div class="focus-now" id="focus-now"></div>
 </div>
 
+<button type="button" class="feat-pop" id="feat-pop" hidden></button>
 <div class="toast" id="toast" role="status" hidden>
   <span id="toast-text"></span>
   <button type="button" id="undo" data-i="undo">Ongedaan maken</button>
@@ -303,6 +307,24 @@
       <input type="file" id="arch-file" accept="application/json,.json" hidden>
       <button type="button" class="btn-solid" id="arch-close" data-i="done">Klaar</button>
     </div>
+  </div>
+</dialog>
+
+<dialog class="sync feats" id="feats" aria-labelledby="feats-title">
+  <div class="sync-card feats-card">
+    <div class="composer-meta"><span id="feats-title" data-i="feats.title">Prestaties</span><span id="feats-count"></span></div>
+    <div class="feats-rank">
+      <svg class="feats-rank-badge" id="feats-rank-badge" viewBox="-12 -12 24 24" aria-hidden="true"></svg>
+      <div>
+        <p class="feats-level" id="feats-level"></p>
+        <h2 class="feats-rankname" id="feats-rankname"></h2>
+        <p class="feats-points" id="feats-points"></p>
+        <div class="feats-bar" aria-hidden="true"><i id="feats-bar"></i></div>
+      </div>
+    </div>
+    <p class="sync-text sync-note" data-i="feats.how">Elke ster is 1 punt, elke prestatie 10 tot 100 punten.</p>
+    <div class="feats-list" id="feats-list"></div>
+    <div class="sync-row arch-foot"><button type="button" class="btn-solid" id="feats-close" data-i="done">Klaar</button></div>
   </div>
 </dialog>
 
