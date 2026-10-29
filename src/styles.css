@@ -307,7 +307,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .group-list { list-style: none; margin: 0; padding: 0; }
 
 .track {
-  display: grid; grid-template-columns: 30px 1fr 32px; align-items: center;
+  display: grid; grid-template-columns: 30px 1fr 26px 32px; align-items: center;
   min-height: 42px;
   border-bottom: 1px solid var(--line-soft);
   transition: opacity .3s var(--ease), transform .3s var(--ease), background-color .2s var(--ease);
@@ -337,7 +337,15 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .t-opt { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; }
 .t-opt:hover { background: var(--fill); }
 .t-opt[aria-current="true"] { box-shadow: inset 0 0 0 1px var(--line); }
-.track.has-due { grid-template-columns: 30px 1fr auto; }
+.track.has-due { grid-template-columns: 30px 1fr 26px auto; }
+/* notitie: icoontje naast de titel, tekstvak eronder over de hele breedte */
+.t-note-btn { width: 26px; height: 42px; display: grid; place-items: center; color: var(--ink-3); border-radius: 7px; transition: color .2s var(--ease), opacity .2s var(--ease); }
+.t-note-btn:hover, .track.is-noting .t-note-btn { color: var(--ink); }
+.t-note-btn.has-note { color: var(--ink-2); }
+.t-note { grid-column: 1 / -1; padding: 0 8px 10px 30px; }
+.t-note-text { display: block; width: 100%; min-height: 34px; max-height: 220px; resize: none; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--fill); color: var(--ink); font: 13.5px/1.45 var(--font); outline: none; overflow-y: auto; }
+.t-note-text::placeholder { color: var(--ink-3); }
+.t-note-text:focus { box-shadow: inset 0 0 0 1px var(--line); }
 .t-due {
   min-height: 42px; padding: 0 2px 0 8px;
   font: 500 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase;
@@ -893,7 +901,10 @@ body.is-idle .controls { opacity: 0; }
 @media (hover: hover) {
   .t-level .orb-dot { opacity: 0; transition: opacity .2s var(--ease), transform .2s var(--pop); }
   .track:hover .t-level .orb-dot, .t-level:focus-visible .orb-dot, .track.is-picking .t-level .orb-dot, .track.is-hot .t-level .orb-dot { opacity: 1; }
+  .t-note-btn:not(.has-note) { opacity: 0; }
+  .track:hover .t-note-btn, .t-note-btn:focus-visible, .track.is-noting .t-note-btn { opacity: 1; }
 }
+@media (hover: none) { .t-note-btn:not(.has-note) { opacity: .45; } }
 @media (hover: none) { .hud-menu .menu-keys, .controls kbd, .menu-label kbd, .hud-menu kbd { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {

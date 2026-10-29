@@ -550,13 +550,70 @@ function trackRow(t) {
   title.title = tx('task.dbl');
   title.addEventListener('dblclick', () => editTitle(t.id, title));
 
-  li.append(check, title);
+  li.append(check, title, noteButton(t, li));
   if (t.due) li.append(...dueControls(t, li));
   else li.append(...levelControls(t, li));
+  li.append(notePanel(t, li));
 
   li.addEventListener('pointerenter', () => scene.highlight({ task: t.id }));
   li.addEventListener('pointerleave', () => scene.highlight({}));
   return li;
+}
+
+// Notitie bij een taak: een icoontje naast de titel klapt eronder een tekstvak open. Enkel zichtbaar als je ze openklapt;
+// een taak met notitie houdt het icoontje altijd zichtbaar. Bewaard terwijl je typt (gaat mee met de sync en het archief).
+const NOTE_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M3 4.5h10M3 8h10M3 11.5h6"/></svg>';
+const openNotes = new Set();   // taken waarvan de notitie openstaat (blijft open als de lijst opnieuw getekend wordt)
+function noteButton(t, li) {
+  const btn = el('button', t.note ? 't-note-btn has-note' : 't-note-btn');
+  btn.type = 'button';
+  btn.innerHTML = NOTE_SVG;
+  btn.setAttribute('aria-label', tx('task.note', { title: t.title }));
+  btn.title = tx(t.note ? 'task.noteShow' : 'task.noteAdd');
+  btn.setAttribute('aria-expanded', String(openNotes.has(t.id)));
+  btn.addEventListener('click', () => {
+    const open = !openNotes.has(t.id);
+    if (open) openNotes.add(t.id); else openNotes.delete(t.id);
+    btn.setAttribute('aria-expanded', String(open));
+    const panel = li.querySelector('.t-note');
+    panel.hidden = !open;
+    li.classList.toggle('is-noting', open);
+    if (open) { const area = panel.querySelector('textarea'); fitNote(area); area.focus(); }
+  });
+  return btn;
+}
+const fitNote = area => { area.style.height = 'auto'; area.style.height = `${area.scrollHeight}px`; };
+function notePanel(t, li) {
+  const panel = el('div', 't-note');
+  const open = openNotes.has(t.id);
+  panel.hidden = !open;
+  li.classList.toggle('is-noting', open);
+  const area = el('textarea', 't-note-text');
+  area.rows = 1;
+  area.maxLength = 2000;
+  area.value = t.note || '';
+  area.placeholder = tx('task.notePlaceholder');
+  area.setAttribute('aria-label', tx('task.note', { title: t.title }));
+  let timer = 0;
+  const save = () => {
+    clearTimeout(timer);
+    const task = tasks.find(x => x.id === t.id);
+    if (!task) return;
+    const value = area.value.replace(/\s+$/, '');
+    if ((task.note || '') === value) return;
+    if (value) task.note = value; else delete task.note;
+    touch(task);
+    saveTasks();
+    li.querySelector('.t-note-btn').classList.toggle('has-note', Boolean(value));
+  };
+  area.addEventListener('input', () => { fitNote(area); clearTimeout(timer); timer = setTimeout(save, 500); });
+  area.addEventListener('blur', save);
+  area.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.stopPropagation(); save(); openNotes.delete(t.id); panel.hidden = true; li.classList.remove('is-noting'); li.querySelector('.t-note-btn').setAttribute('aria-expanded', 'false'); }
+  });
+  panel.append(area);
+  if (open) requestAnimationFrame(() => fitNote(area));
+  return panel;
 }
 
 // Gewone taak: bolletje rechts opent een keuze van de vijf momenten
