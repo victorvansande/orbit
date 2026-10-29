@@ -11,7 +11,7 @@ import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveR
 import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
-import { loadArchive, saveArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
+import { loadArchive, saveArchive, loadArchDel, saveArchDel, mergeArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
 import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './i18n.js';
 import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
@@ -174,6 +174,7 @@ let gone = loadGone();
 let tasks = loadTasks();
 tasks = tasks === null ? demoTasks() : dropDemo(tasks, 'demo');
 let archive = loadArchive();
+let archDel = loadArchDel();                      // voorgoed uit het archief verwijderd (gaat mee met de sync)
 let done = loadDone(archive);                    // logboek van afgevinkte taken, gaat mee met de sync
 // Elke afgevinkte taak in het archief telt als ster; ontbreekt ze in het logboek (bv. door de vroegere "Teller op nul"),
 // dan komt ze erbij. Geeft true als er iets bijkwam.
@@ -1470,6 +1471,9 @@ function removeButton(action) {
 function removeFromArchive(id) {
   const a = archive.find(x => x.id === id);
   archive = saveArchive(archive.filter(x => x.id !== id));
+  archDel[id] = Date.now();   // anders komt hij via een ander toestel terug
+  saveArchDel(archDel);
+  notifySync();
   renderArchive();
   if (a) showToast(tx('archive.removed', { title: a.title }));
 }
@@ -1630,8 +1634,9 @@ window.addEventListener('storage', e => {
     applyDeadlines();
     render();
     renderArchive();
-  } else if (e.key === STORE_KEYS.ARCHIVE_KEY || e.key === STORE_KEYS.SNAP_KEY) {
+  } else if (e.key === STORE_KEYS.ARCHIVE_KEY || e.key === STORE_KEYS.ARCHDEL_KEY || e.key === STORE_KEYS.SNAP_KEY) {
     archive = loadArchive();
+    archDel = loadArchDel();
     renderArchive();
   } else if (e.key === STATS_KEYS.DONE_KEY || e.key === STATS_KEYS.STARS_KEY || e.key === STATS_KEYS.RESET_KEY) {
     // anders overschrijft dit tabblad bij de volgende afgevinkte taak de telling van het andere
@@ -1655,9 +1660,12 @@ const DEVICE = deviceName();
 
 const sync = createSync({
   deviceName: DEVICE,
-  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts, feats }),
+  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts, feats, archive, archDel }),
   applyState(state) {
     gone = { ...state.gone };
+    // het gedeelde archief (een oudere versie van Orbit stuurt er geen: dan blijft het eigen archief)
+    if (state.archDel) archDel = saveArchDel({ ...state.archDel });
+    if (state.archive) archive = saveArchive(state.archive.map(a => ({ ...a })));
     const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo');
     const keep = new Set(incoming.map(t => t.id));
     // Taken die hier verdwijnen omdat ze elders afgevinkt zijn: eerst een momentopname, dan naar het archief, en melden
@@ -1674,6 +1682,7 @@ const sync = createSync({
     skyCuts = cleanCuts([...skyCuts, ...(state.skyCuts || [])]);
     saveCuts(skyCuts);
     feats = mergeFeats(feats, state.feats);
+    if (backfill(feats, archive)) saveFeats(feats);   // wat elders afgevinkt werd, telt ook hier mee voor de prestaties
     for (const t of lost) if (!done[t.id] && (state.gone?.[t.id] || Date.now()) > doneReset) done[t.id] = state.gone?.[t.id] || Date.now();
     saveDone(done);
     saveReset(doneReset);
@@ -1705,12 +1714,17 @@ const sync = createSync({
     saveReset(doneReset);
     saveCuts(skyCuts);
     feats = mergeFeats(feats, state.feats);
+    for (const [id, t] of Object.entries(state.archDel || {})) archDel[id] = Math.max(archDel[id] || 0, t);
+    saveArchDel(archDel);
+    const ownArchive = archive.length;
+    archive = saveArchive(mergeArchive(archive, state.archive || [], new Set(tasks.map(t => t.id)), archDel));
+    if (backfill(feats, archive)) saveFeats(feats);
     syncStars(sky, done);
     renderStats();
     checkFeats(false);
     // had dit toestel iets wat de verzender niet had (eigen taken of afgevinkte), dan terugsturen
     if (tasks.length !== state.tasks.length || totalDone(done) !== totalDone(cleanDone(state.done)) || doneReset !== (state.doneReset || 0)
-      || skyCuts.length !== cleanCuts(state.skyCuts).length) setTimeout(() => sync.changed(), 0);
+      || skyCuts.length !== cleanCuts(state.skyCuts).length || archive.length !== (state.archive || []).length || ownArchive > (state.archive || []).length) setTimeout(() => sync.changed(), 0);
     applyDeadlines();
     saveTasks({ notify: false, reason: 'receive' });
     render();

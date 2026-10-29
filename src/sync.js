@@ -5,6 +5,7 @@
 // Orbit is een openbare site met persoonlijke taken: een synccode bepaalt het kanaal (hash) én de sleutel.
 // Alles wordt in de browser versleuteld (AES-GCM); de server ziet enkel ruis.
 import { mergeFeats, featsSig } from './feats.js';
+import { mergeArchive } from './store.js';
 
 const SERVER = 'https://orbit-sync.victorvansande.workers.dev';
 const CODE_KEY = 'priority-orbit.sync.v1';
@@ -58,7 +59,11 @@ export function mergeStates(a, b) {
   const skyCuts = [...new Set([...(a.skyCuts || []), ...(b.skyCuts || [])].filter(Number.isFinite))].sort((x, y) => x - y);
   // prestaties: alles van beide kanten (logboek, ontgrendeld, focusblokken, gebeurtenissen)
   const feats = a.feats || b.feats ? mergeFeats(a.feats, b.feats) : undefined;
-  return { tasks, gone, done, doneReset, skyCuts, feats };
+  // archief: van beide kanten, zonder wat terug in de lijst staat of voorgoed verwijderd werd
+  const archDel = {};
+  for (const src of [a.archDel, b.archDel]) for (const [id, t] of Object.entries(src || {})) if (Number.isFinite(t)) archDel[id] = Math.max(archDel[id] || 0, t);
+  const archive = a.archive || b.archive ? mergeArchive(a.archive, b.archive, new Set(tasks.map(t => t.id)), archDel) : undefined;
+  return { tasks, gone, done, doneReset, skyCuts, feats, archive, archDel };
 }
 
 // Twee toestanden zijn gelijk als dezelfde taken met dezelfde wijzigingstijd bestaan, dezelfde taken afgevinkt zijn
@@ -71,6 +76,8 @@ export function sameState(a, b) {
     s.doneReset || 0,
     (s.skyCuts || []).join(','),
     featsSig(s.feats),
+    (s.archive || []).map(x => `${x.id}:${x.doneAt}`).sort().join(','),
+    Object.keys(s.archDel || {}).sort().join(','),
   ]);
   return sig(a) === sig(b);
 }
