@@ -4,6 +4,48 @@ To-do-visualizer: taken draaien als slanke, taps toelopende bollen rond vijf rin
 
 Live: https://victorvansande.github.io/orbit/ (GitHub Pages, bron `main` / root). Elke push naar `main` publiceert opnieuw.
 
+## Identiteit (lees dit eerst)
+
+Wat Orbit is, afgeleid uit alle keuzes van Victor. Twijfel je over een nieuw idee, toets het hieraan.
+
+**Karakter**
+- Een object om naar te kijken, geen lijstje met een decor. De scène is de hoofdzaak (op gsm vult ze bijna de breedte), de lijst is het gereedschap ernaast.
+- Rustig, verfijnd, smaakvol. Victor schrapt telkens wat te druk, te standaard, te speels, te goedkoop, gedateerd, "gevibecode" of juist te echt en antiek is. Liever één subtiele reactie dan zes tegelijk (zie het afvinken: van zes reacties terug naar een paar).
+- Speels in het klein: paaseitjes (Dave, knipoog, geheime prestaties), fidgets, een kern met een gezicht. Nooit luid.
+- Geloofwaardige beweging, niet hyperrealistisch: lava die echt vloeit, zand dat echt zakt, een vallende ster die opbrandt. Fysiek juist in het gevoel, gestileerd in de vorm.
+
+**Beeldtaal**
+- Poster en risodruk: papier met korrel, inkt, kleur alleen in de bollen. Ringen, raster en lijnen zijn grafiet met lage dekking.
+- Rasterpunten in een zeshoekig raster als terugkerend motief: kern, zandloper, puntjestitel, matrixklok. Grootte van een punt = hoeveelheid.
+- De vierpuntige ster met holle zijden (`star4`) is het teken van iets afronden: afvinken, fonkelende teller en klok, zandloper klaar.
+- Rood (Nu, de kern) alleen als accent. Tekenset `·:+×#` voor alles in tekens. Geist voor tekst, Geist Mono in kapitaaltjes met letterafstand voor labels en tellers.
+- Geen glans, geen dikke 3D, geen zware schaduwen of `filter: blur` (traag op gsm, lijnen op iOS). Zachte gloed mag, heel licht.
+- Taps en uitdovend: kometen, staarten, vallende ster. Dingen verdwijnen zacht, ze klikken niet weg.
+
+**Gedrag**
+- Eén ding tegelijk in de aandacht. Animaties en meldingen wachten op elkaar en vechten nooit (nacht na afvinken, nieuwe ster, prestatie, toast). Overlays stapelen nooit.
+- Exact: wat ergens naartoe wijst of focust, ligt precies op zijn doel, op elke schermgrootte en pixeldichtheid (1×, 2×, 3×, browserzoom). Geen overlap, niets afgekapt, geen horizontale scroll.
+- Tijdgebaseerd (even snel op 60 en 120 Hz), zachte easing (`cubic-bezier(.4,0,.2,1)`), alles uit bij minder beweging. Een tik of toets slaat elke lange animatie over.
+- De kern is een personage: een goedaardige HAL. Kort, droog, vriendelijk, zegt wat er nu toe doet. Spreekt in één regel onder de scène.
+- Gegevens zijn heilig: niets verdwijnt zonder spoor (zie Vangnet), ook niet bij sync, import of een nieuwe versie.
+
+**Werken met Victor**
+- Bij ontwerpkeuzes eerst visuele voorstellen (een artifact met varianten om naast elkaar te zien), dan bouwen wat hij kiest.
+- Noteer de keuze met datum, en ook wat hij afwees en waarom, zodat het niet terugkomt.
+- "Niet te veel aanpassen" betekent: alleen wat gevraagd is. Geen ongevraagde extra functies. Wel melden wat je opvalt.
+- React Bits-componenten liefst letterlijk uit de bron (`raw.githubusercontent.com/DavidHDev/react-bits`), niet nagebouwd op de naam.
+
+**Klaar is pas klaar** (checklist voor elke nieuwe functie)
+1. Nederlands én Engels in `src/i18n.js`.
+2. Licht én donker, kleuren als tokens.
+3. Desktop 1440×900 én gsm 375 px, console foutloos, geen horizontale scroll.
+4. Minder beweging: geen animatie. Effect? Dan ook in de lijst van Minimaal (zie Effecten: Alle of Minimaal).
+5. Nieuwe gegevens? Mee in sync (`mergeStates`, `sameState`), export en import, archief, en compatibel met oudere versies op andere toestellen. Nooit in de echte opslag vanuit de demo.
+6. Botst het met iets dat tegelijk kan gebeuren (nacht, ster, prestatie, toast, venster, focusmodus)? Dan wachten of voorrang regelen.
+7. Uitleg (`#intro`) bijwerken als de gebruiker het moet kennen; sneltoets ook in de regel sneltoetsen en het paneel.
+8. Nieuw bestand in `src/`? In `SHELL` van `sw.js`.
+9. CLAUDE.md bijwerken, committen, pushen.
+
 ## Werkafspraken
 
 - Antwoord en UI-tekst in het Nederlands. Geen em dashes, geen marketingtaal, geen emoji.

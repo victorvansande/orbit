@@ -8,7 +8,7 @@ Dit project wordt afwisselend bewerkt met Claude Code en met Antigravity. Alle p
 
 ## Altijd, bij elke taak
 
-1. **Lees eerst CLAUDE.md volledig**, vóór je iets wijzigt. Lees zeker de secties Werkafspraken, Samenwerking en Overdracht, en de sectie over het onderdeel waar je aan werkt. Volg alles wat erin staat, ook als het afwijkt van je eigen gewoontes.
+1. **Lees eerst CLAUDE.md volledig**, vóór je iets wijzigt. Lees zeker de secties Identiteit (wat Orbit is, plus de checklist "Klaar is pas klaar"), Werkafspraken, Samenwerking en Overdracht, en de sectie over het onderdeel waar je aan werkt. Volg alles wat erin staat, ook als het afwijkt van je eigen gewoontes.
 2. **Begin met `git pull origin main`.** Lees daarna de laatste regels onder "Overdracht" in CLAUDE.md en `git log --oneline -15`, zodat je weet wat er laatst gebeurde.
 3. **Zet alles wat je verandert ook in CLAUDE.md**, in de sectie waar het thuishoort: wat, waarom, wat Victor koos of afwees (met datum), welke bestanden, functies, sleutels en tokens, en hoe je het getest hebt. Wat niet in CLAUDE.md staat, bestaat voor de volgende sessie niet.
 4. **Voeg bij het stoppen een regel toe onder "Overdracht"** onderaan CLAUDE.md: datum, tool (Antigravity), wat er af is, wat nog openstaat.

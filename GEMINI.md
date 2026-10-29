@@ -2,6 +2,8 @@
 
 Lees **CLAUDE.md** volledig vóór je iets doet. Dat is de enige bron van waarheid voor dit project (Orbit): werkafspraken, ontwerpkeuzes van Victor, bestanden, valkuilen en de overdracht tussen tools.
 
+Begin bij de sectie **Identiteit**: wat Orbit is, de beeldtaal en de checklist "Klaar is pas klaar".
+
 Kort de harde regels (de volledige staan in CLAUDE.md, sectie Samenwerking, en in `.agent/rules/orbit.md`):
 
 - Eerst `git pull origin main`, daarna de laatste regels onder "Overdracht" in CLAUDE.md lezen.
