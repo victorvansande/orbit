@@ -487,7 +487,7 @@ body.is-idle .controls { opacity: 0; }
 
 /* ---- Toast ---- */
 .toast {
-  position: fixed; z-index: 5;
+  position: fixed; z-index: 7;
   left: 50%; bottom: 28px;
   display: flex; align-items: center; gap: 14px;
   width: max-content; max-width: calc(100vw - 32px);   /* anders begrenst left: 50% de breedte tot het halve scherm */
@@ -837,6 +837,8 @@ body.is-idle .controls { opacity: 0; }
 /* ---- Effecten (src/fx.js) ---- */
 /* Intro: effen papier dat een zachte cirkel vanuit de kern wegwist; een tik slaat over */
 .fx-reveal { position: fixed; inset: 0; z-index: 60; }
+/* Spotlicht bij afvinken: over alles behalve de toast (Ongedaan maken blijft bruikbaar), klikken gaan erdoor */
+.fx-spot { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
 /* Minimaal (Instellingen → Effecten): wat in de DOM zit gaat ook weg */
 body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle { display: none !important; }
 /* Particle text: titel in de Uitleg uit puntjes; de echte tekst blijft voor schermlezers */

@@ -58,6 +58,59 @@ export function softReveal({ center, onReveal, done = () => {} }) {
   return { skip, cancel() { cancelAnimationFrame(raf); cv.remove(); } };
 }
 
+/* ---- Spotlicht bij afvinken: alles even donker, behalve de nieuwe ster ---- */
+// Dezelfde zachte cirkel als bij het laden, maar omgekeerd: net voor de nieuwe ster verschijnt, trekt een donkere
+// sluier (licht in het donker) zich zacht samen tot een cirkel rond de plek van de ster; die blijft even staan terwijl
+// de ster opbloeit, en gaat dan weer open tot buiten beeld. point() geeft de plek van de ster (die kan meeschuiven),
+// bornAt het moment waarop ze verschijnt. Raakt niets aan: klikken gaat gewoon door.
+const easeInOut = x => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+export function spotlight({ point, bornAt, dark }) {
+  const cv = document.createElement('canvas');
+  cv.className = 'fx-spot';
+  cv.setAttribute('aria-hidden', 'true');
+  document.body.append(cv);
+  const W = innerWidth, H = innerHeight, g = fitCanvas(cv, W, H);
+  const ink = css('--ink'), A = dark ? 0.7 : 0.8;
+  const CLOSE = 0.75, HOLD_AFTER = 1.15, OPEN = 1.0, R0 = 96, FEATHER = 84;
+  const start = bornAt - CLOSE * 1000 * 0.8;           // de cirkel is bijna dicht als de ster verschijnt
+  const openAt = bornAt + HOLD_AFTER * 1000;
+  const maxR = Math.hypot(W, H) * 1.05;
+  let raf = 0, done = false;
+  function frame(now) {
+    const p = point();
+    if (!p || now > openAt + OPEN * 1000) { stop(); return; }
+    let R, a;
+    if (now < start) { raf = requestAnimationFrame(frame); return; }
+    if (now < start + CLOSE * 1000) {
+      const e = easeInOut((now - start) / (CLOSE * 1000));
+      R = maxR + (R0 - maxR) * e; a = A * e;
+    } else if (now < openAt) {
+      // even stilstaan, met een heel zachte ademhaling rond de ster
+      R = R0 * (1 + 0.05 * Math.sin((now - start) / 260)); a = A;
+    } else {
+      const e = easeInOut((now - openAt) / (OPEN * 1000));
+      R = R0 + (maxR - R0) * e; a = A * (1 - e * e);
+    }
+    g.globalCompositeOperation = 'source-over';
+    g.clearRect(0, 0, W, H);
+    g.globalAlpha = a;
+    g.fillStyle = ink;
+    g.fillRect(0, 0, W, H);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'destination-out';
+    const grad = g.createRadialGradient(p.x, p.y, Math.max(0, R - FEATHER), p.x, p.y, R);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+    raf = requestAnimationFrame(frame);
+  }
+  function stop() { if (done) return; done = true; cancelAnimationFrame(raf); cv.remove(); }
+  raf = requestAnimationFrame(frame);
+  return { stop, get active() { return !done; } };
+}
+
 /* ---- Particle text: de titel in de Uitleg ---- */
 // De letters bestaan uit puntjes in een zeshoekig raster (zoals de kern). Bij het openen spiralen ze binnen zoals de
 // bollen bij de intro; de aanwijzer duwt ze opzij en kleurt ze even rood.
