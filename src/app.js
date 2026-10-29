@@ -1267,12 +1267,25 @@ function showFeatPop() {
   pop.innerHTML = `<svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
   pop.querySelector('.feat-pop-name').textContent = x.name;
   pop.hidden = false;
-  requestAnimationFrame(() => pop.classList.add('is-on'));
+  // net als bij een nieuwe ster: het scherm wordt nacht en alles wacht op de pil, die licht blijft staan en daarna
+  // opent de dag weer vanuit de pil. Eén keer per reeks meldingen, niet met Minimaal of minder beweging.
+  const spot = !minimalFx && !reducedMotion.matches && !document.hidden && Date.now() - lastSpot > 15000;
+  requestAnimationFrame(() => {
+    pop.classList.add('is-on');
+    if (spot) {
+      lastSpot = Date.now();
+      pop.classList.add('is-spot');
+      const r = pop.getBoundingClientRect();
+      nightFall({ star: { x: r.left + r.width / 2, y: r.top + 14 + r.height / 2, r: 0 }, bloom: false, open: 2.2, end: 3.8,
+        onOpen() { pop.classList.remove('is-spot'); } });
+    }
+  });
   setTimeout(() => {
-    pop.classList.remove('is-on');
+    pop.classList.remove('is-on', 'is-spot');
     setTimeout(() => { pop.hidden = true; popBusy = false; showFeatPop(); }, 400);
-  }, 4200);
+  }, spot ? 5200 : 4200);
 }
+let lastSpot = 0;
 $('feat-pop').addEventListener('click', () => openFeats());
 
 /* ---- Toetsenbord ---- */

@@ -955,6 +955,9 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle {
 /* melding bovenaan bij een nieuwe prestatie */
 .feat-pop { position: fixed; z-index: 70; top: 18px; left: 50%; width: max-content; max-width: calc(100vw - 32px); display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 12px; border-radius: 999px; background: var(--surface); box-shadow: 0 10px 30px var(--shadow-3), 0 0 0 1px var(--line); color: var(--ink); cursor: pointer; transform: translate(-50%, -14px); opacity: 0; transition: opacity .4s var(--ease), transform .5s var(--pop); }
 .feat-pop.is-on { opacity: 1; transform: translate(-50%, 0); }
+/* in de nacht: de pil wordt iets groter en krijgt een zachte gloed in de kleur van het niveau */
+.feat-pop { transition: opacity .4s var(--ease), transform .5s var(--pop), box-shadow .8s var(--ease); }
+.feat-pop.is-spot { transform: translate(-50%, 0) scale(1.12); box-shadow: 0 0 0 1px var(--line), 0 0 34px 6px color-mix(in srgb, var(--tier) 45%, transparent), 0 10px 30px var(--shadow-3); }
 .feat-pop.tier-bronze { --tier: var(--tier-bronze); } .feat-pop.tier-silver { --tier: var(--tier-silver); }
 .feat-pop.tier-gold { --tier: var(--tier-gold); } .feat-pop.tier-platinum { --tier: var(--tier-platinum); }
 .feat-pop .feat-badge { width: 28px; height: 28px; margin: 0; }

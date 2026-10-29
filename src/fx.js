@@ -62,8 +62,10 @@ export function softReveal({ center, onReveal, done = () => {} }) {
 // Na het uitfonkelen valt de nacht: de pagina wordt in 0,55 s volledig inkt (licht in het donkere thema), alleen de
 // sterrenhemel blijft en licht op. De nieuwe ster bloeit open, daarna komt de dag terug met dezelfde zachte cirkel als
 // bij het laden, vanuit die ster. 2,7 s; een tik of toets laat de cirkel meteen openen.
-const NIGHT = { fade: 0.55, born: 0.55, open: 1.2, end: 2.7 };
-export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {} }) {
+const NIGHT_DEFAULT = { fade: 0.55, born: 0.55, open: 1.2, end: 2.7 };
+// Ook voor een nieuwe prestatie (app.js): dan blijft de pil zelf licht staan (`bloom: false`, langer donker via `open`/`end`).
+export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {}, bloom = true, open, end }) {
+  const NIGHT = { ...NIGHT_DEFAULT, ...(open ? { open } : {}), ...(end ? { end } : {}) };
   const cv = document.createElement('canvas');
   cv.className = 'fx-reveal';
   cv.setAttribute('aria-hidden', 'true');
@@ -112,7 +114,7 @@ export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {}
     }
     // de nieuwe ster bloeit open en zakt naar haar gewone maat
     const ac = cover(0, t);
-    if (t > NIGHT.born && ac > 0.01) {
+    if (bloom && t > NIGHT.born && ac > 0.01) {
       const u = t - NIGHT.born, k = easeOut(u / 0.35) * (1 + 2.6 * (1 - easeOut(u / 1.8))), R = star.r * k;
       const glow = g.createRadialGradient(star.x, star.y, 0, star.x, star.y, 10 + R * 5);
       glow.addColorStop(0, `rgba(${paper},${0.3 * ac})`); glow.addColorStop(1, `rgba(${paper},0)`);
