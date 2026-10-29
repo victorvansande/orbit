@@ -14,7 +14,7 @@ const MAX_SHIFT = 26;             // px, zo ver volgt het bakje je sleepbeweging
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
 const MODE_KEY = 'priority-orbit.fidget.v1';
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'slats'];
+export const MODES = ['water', 'jelly', 'lava', 'grain'];
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -420,131 +420,7 @@ void main() {
   };
 }
 
-/* ---- Lamellen: micro slats ---- */
-// Naar MicroSlats van React Bits Pro met Victors instellingen: preset swell, kleur #ff1b58, glans #ef4444, achtergrond
-// #120f17, lamellen 11 × 30 met 3 px tussenruimte (hier op 70 %, het bakje is klein), roundness 0,65, cursorStrength 1,
-// cursorSize 80, swirl 0, trail 3,6, lean 0, scale 1,5, speed 1,85, richting 250°, chop 0,65, stretch 0, glint 0,65,
-// contrast 2,1, perspective 0,55, fog 0,45, intro van 1,5 s. Een raster van afgeronde lamellen die kantelen op een
-// deining: een lamel die wegdraait wordt korter en donkerder, een die naar je toe draait licht op, met een glans op de
-// top. Bovenaan liggen ze verder weg (kleiner, in de mist). De aanwijzer laat een spoor van golfjes achter.
-function slats() {
-  const P = { color: '#ff1b58', glint: '#ef4444', bg: '#120f17', sw: 11 * 0.7, sh: 30 * 0.7, gap: 3 * 0.7, round: 0.65,
-    strength: 1, size: 80 * 0.7, trail: 3.6, scale: 1.5, speed: 1.85, dir: 250, chop: 0.65, glintK: 0.65, contrast: 2.1,
-    persp: 0.55, fog: 0.45, intro: 1.5 };
-  const MAXT = 16;
-  let prog = null, t = 0, shake = 0, shakeV = 0, lastDrop = 0;
-  const trail = [];                                          // {x, y, s}: spoor van de aanwijzer, dooft uit
-  const ptr = { x: 0, y: 0, on: false };
-  const data = new Float32Array(MAXT * 3);
-  const FRAG = `precision highp float;
-uniform vec2 uRes; uniform float uTime; uniform vec3 uTrail[${MAXT}]; uniform float uShake;
-uniform vec3 uColor; uniform vec3 uGlint; uniform vec3 uBg;
-const float SW = ${P.sw.toFixed(2)}, SH = ${P.sh.toFixed(2)}, GAP = ${P.gap.toFixed(2)}, ROUND = ${P.round.toFixed(2)};
-const float PERSP = ${P.persp.toFixed(2)}, FOG = ${P.fog.toFixed(2)}, CHOP = ${P.chop.toFixed(2)}, SCALE = ${P.scale.toFixed(2)};
-const float SPEED = ${P.speed.toFixed(2)}, GLINT = ${P.glintK.toFixed(2)}, CONTRAST = ${P.contrast.toFixed(2)};
-const float SIZE = ${P.size.toFixed(1)}, STRENGTH = ${P.strength.toFixed(2)}, INTRO = ${P.intro.toFixed(2)};
-const vec2 BOX = vec2(${W.toFixed(1)}, ${HH.toFixed(1)});
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
-float snoise(vec2 v) {
-  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-  vec2 i = floor(v + dot(v, C.yy)), x0 = v - i + dot(i, C.xx);
-  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-  vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1;
-  i = mod289(i);
-  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-  vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
-  m = m * m; m = m * m;
-  vec3 x = 2.0 * fract(p * C.www) - 1.0, h = abs(x) - 0.5, ox = floor(x + 0.5), a0 = x - ox;
-  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
-  vec3 g; g.x = a0.x * x0.x + h.x * x0.y; g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-  return 130.0 * dot(m, g);
-}
-// perspectief: bovenaan meer wereld per pixel (lamellen kleiner, verder weg)
-float sx(float yn) { return mix(1.0 - 0.45 * PERSP, 1.0, yn); }
-float sdRound(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
-void main() {
-  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes * BOX;
-  float yn = p.y / BOX.y, s = sx(yn);
-  vec2 w = vec2(BOX.x * 0.5 + (p.x - BOX.x * 0.5) / s, BOX.y * (1.0 - pow(1.0 - yn, 1.0 + PERSP)));
-  vec2 pitch = vec2(SW + GAP, SH + GAP);
-  vec2 cell = floor(w / pitch), c = (cell + 0.5) * pitch, local = w - c;
-  // middelpunt van de lamel terug op het scherm, voor het spoor van de aanwijzer
-  float cyn = 1.0 - pow(max(0.0, 1.0 - c.y / BOX.y), 1.0 / (1.0 + PERSP));
-  vec2 cs = vec2(BOX.x * 0.5 + (c.x - BOX.x * 0.5) * sx(cyn), cyn * BOX.y);
-  // deining (swell) in de richting van 250°, met kabbeling (chop)
-  float a = radians(${P.dir.toFixed(1)});
-  vec2 dir = vec2(cos(a), sin(a)), perp = vec2(-dir.y, dir.x);
-  float k = 0.045 / SCALE;
-  float ph = dot(c, dir) * k - uTime * SPEED;
-  float v = sin(ph) * 0.75 + sin(ph * 0.57 + dot(c, perp) * k * 0.6 + uTime * 0.45) * 0.35;
-  v += snoise(c * k * 1.6 + vec2(uTime * 0.35, -uTime * 0.25)) * CHOP * 0.55;
-  for (int i = 0; i < ${MAXT}; i++) {
-    vec3 tr = uTrail[i];
-    if (tr.z <= 0.0) continue;
-    vec2 d = cs - tr.xy;
-    v += STRENGTH * 1.4 * tr.z * exp(-dot(d, d) / (SIZE * SIZE * 0.35));
-  }
-  v += uShake;
-  // intro: lamellen klappen open van onder naar boven
-  float open = smoothstep(0.0, 1.0, (uTime - (1.0 - cyn) * 0.5) / INTRO);
-  float th = v * 1.15 + (1.0 - open) * 1.5;
-  float h = SH * 0.5 * max(0.06, abs(cos(th)));
-  vec2 b = vec2(SW * 0.5, h);
-  float sd = sdRound(local, b, ROUND * min(b.x, b.y));
-  float px = 1.0 / s;                                         // wereld-eenheden per schermpixel
-  float inside = smoothstep(px * 0.9, -px * 0.9, sd);
-  // licht: naar je toe gedraaid = helder, weggedraaid = donker; glans op de top
-  float lum = clamp(0.5 + 0.5 * sin(th + 0.7), 0.0, 1.0);
-  lum = pow(lum, CONTRAST * 0.75);
-  vec3 col = mix(uBg * 1.6, uColor, lum);
-  float g = pow(max(0.0, cos(th - 0.35)), 18.0) * GLINT;
-  col += uGlint * g * 0.9 + vec3(1.0, 0.85, 0.85) * g * g * 0.35;
-  // langs de lamel een fijn verloop, alsof hij rond is
-  col *= 0.82 + 0.18 * (1.0 - abs(local.x) / (SW * 0.5));
-  vec3 outc = mix(uBg, col, inside);
-  // mist bovenaan
-  outc = mix(outc, uBg, FOG * pow(1.0 - yn, 1.6) * 0.9);
-  gl_FragColor = vec4(outc, 1.0);
-}`;
-  function step({ ax }) {
-    t += 1 / 60;
-    for (const tr of trail) tr.s -= 1 / 60 / (P.trail * 0.3);
-    while (trail.length && trail[0].s <= 0) trail.shift();
-    if (ptr.on && t - lastDrop > 0.05) {
-      const last = trail[trail.length - 1];
-      if (!last || Math.hypot(last.x - ptr.x, last.y - ptr.y) > 3 || last.s < 0.7) { trail.push({ x: ptr.x, y: ptr.y, s: 1 }); lastDrop = t; }
-      if (trail.length > MAXT) trail.shift();
-    }
-    shakeV = (shakeV - shake * 0.05 - ax * 0.05) * 0.9; shake += shakeV;
-  }
-  function render(gl) {
-    if (!prog) prog = program(gl, FRAG);
-    if (!prog) return;
-    data.fill(0);
-    trail.slice(-MAXT).forEach((tr, i) => { data[i * 3] = tr.x; data[i * 3 + 1] = tr.y; data[i * 3 + 2] = Math.max(0, tr.s); });
-    gl.useProgram(prog.prog);
-    gl.uniform2f(prog.loc('uRes'), gl.drawingBufferWidth, gl.drawingBufferHeight);
-    gl.uniform1f(prog.loc('uTime'), t);
-    gl.uniform3fv(prog.loc('uTrail'), data);
-    gl.uniform1f(prog.loc('uShake'), shake);
-    gl.uniform3fv(prog.loc('uColor'), hexRgb(P.color));
-    gl.uniform3fv(prog.loc('uGlint'), hexRgb(P.glint));
-    gl.uniform3fv(prog.loc('uBg'), hexRgb(P.bg));
-    fullscreen(gl, prog);
-  }
-  return {
-    gl: true,
-    init() { t = 0; },
-    step, render,
-    move(p) { ptr.on = true; ptr.x = p.x; ptr.y = p.y; },
-    leave() { ptr.on = false; },
-    tap(p) { trail.push({ x: p.x, y: p.y, s: 2.2 }); if (trail.length > MAXT) trail.shift(); },
-  };
-}
-
-const FACTORIES = { water, jelly, lava, grain, slats };
+const FACTORIES = { water, jelly, lava, grain };
 
 export function createFidget(box, { reducedMotion, label = m => m }) {
   const cv = box.querySelector('canvas');
@@ -582,7 +458,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   // keuze bovenin het bakje
   const bar = box.querySelector('.fidget-modes');
   // zonder WebGL geen lava of gloed (dan ook niet als keuze)
-  const available = () => MODES.filter(m => !['lava', 'grain', 'slats'].includes(m) || getGL());
+  const available = () => MODES.filter(m => !['lava', 'grain'].includes(m) || getGL());
   function renderBar() {
     if (!available().includes(modeName)) modeName = 'water';
     bar.replaceChildren(...available().map((m, i) => {
