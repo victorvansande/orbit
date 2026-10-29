@@ -284,9 +284,9 @@ Op vraag van Victor (30/10/2026): "een achievement-systeem om me blijvend te mot
 
 ## Instellingen
 
-- Eén knopje Instellingen met een paneel (`#hud-menu`, `.is-open`), dicht bij een tik ernaast of Esc. `placeMenu()` verhuist de onderdelen bij het wisselen tussen desktop en gsm.
+- Eén knopje Instellingen met een klein tandwielicoontje (`.menu-gear`, Victor, 29/10/2026: gear-icoontje in plaats van het witte bolletje; knippert bij verbinden, kleurt rood bij offline) en een paneel (`#hud-menu`, `.is-open`), dicht bij een tik ernaast of Esc. `placeMenu()` verhuist de onderdelen bij het wisselen tussen desktop en gsm.
 - **Desktop**: knopje linksonder. Paneel (zo breed als de langste regel, niets breekt af): Boven / Zijkant met Focus, Tempo, Thema, sneltoetsen. Uitleg / Archief / Koppelen blijven rechtsboven. In de focusmodus staat naast het knopje "Focus uit (Esc)".
-- **Gsm**: knopje rechtsboven naast de naam (met het syncbolletje). Daaronder één regel: samenvatting links ("Niets dringend · 12 taken", mono, nooit op twee regels) en rechts het tellertje ✦ n (`#stat-mini`, een tik opent de details onderaan en scrolt ernaartoe); zonder afgevinkte taken het weeknummer. De datum valt weg. Paneel zweeft over de scène: Tempo, Thema, Uitleg / Archief / Koppelen. Boven / Zijkant / Focus blijven onder de scène.
+- **Gsm**: knopje rechtsboven naast de naam. Daaronder één regel: samenvatting links ("Niets dringend · 12 taken", mono, nooit op twee regels) en rechts het tellertje ✦ n (`#stat-mini`, een tik opent de details onderaan en scrolt ernaartoe); zonder afgevinkte taken het weeknummer. De datum valt weg. Paneel zweeft over de scène: Tempo, Thema, Uitleg / Archief / Koppelen. Boven / Zijkant / Focus blijven onder de scène.
 
 ## Interactie in de lijst en het venster
 
@@ -420,4 +420,5 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 29/10/2026, Claude Code: webapp op het beginscherm gedraagt zich als een app (geen zoom, geen selectie, geen meeverende pagina). Niets openstaand.
 - 29/10/2026, Claude Code: ringen op gsm 18 px lager (meer lucht boven, begroeting past nog). Niets openstaand.
 - 29/10/2026, Claude Code: zandloper verfijnd (vaste verhouding, geen puntjes in de hals, zand begint als hoopje). Niets openstaand.
-- 29/10/2026, Antigravity: overdracht gestart in Antigravity, werkafspraken en repository gecontroleerd. Klaar voor volgende taak.
+- 29/10/2026, Antigravity: overdracht gestart in Antigravity, werkafspraken en repository gecontroleerd.
+- 29/10/2026, Antigravity: wit bolletje op het instellingenknopje vervangen door een subtiel tandwielicoontje (.menu-gear) in dezelfde lijnstijl als de rest van de UI. Niets openstaand.

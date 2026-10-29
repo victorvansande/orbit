@@ -189,7 +189,9 @@ body.is-focus .greeting { z-index: 4; }   /* automatische begroeting niet in foc
   transition: color .2s var(--ease), border-color .2s var(--ease);
 }
 .menu-btn:hover, .menu-btn[aria-expanded="true"] { color: var(--ink); border-color: var(--dash-2); }
-.menu-btn .sync-dot { display: none; }
+.menu-gear { width: 12px; height: 12px; flex: none; stroke: currentColor; stroke-width: 1.6; }
+.menu-btn[data-status="connecting"] .menu-gear { animation: sync-blink 1.2s ease-in-out infinite; }
+.menu-btn[data-status="offline"] .menu-gear { color: var(--late); }
 .hud-menu {
   position: absolute; z-index: 6; display: none; padding: 2px 16px; pointer-events: auto; text-align: left;
   border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 32px var(--shadow-2);
@@ -863,11 +865,6 @@ body.is-idle .controls { opacity: 0; }
   .topbar:has(.stat-mini:not([hidden])) #week { display: none; }
   .hud-right #date { display: none; }
   .menu-btn { grid-area: 1 / 2; justify-self: end; min-height: 32px; }
-  .menu-btn .sync-dot { display: block; }
-  .menu-btn[data-status="off"] .sync-dot { display: none; }
-  .menu-btn[data-status="online"] .sync-dot { background: currentColor; }
-  .menu-btn[data-status="connecting"] .sync-dot { animation: sync-blink 1.2s ease-in-out infinite; }
-  .menu-btn[data-status="offline"] .sync-dot { color: var(--late); background: currentColor; }
   .topbar { z-index: 5; }
   body.is-focus .controls > .focus-exit { display: none; }
   .topbar .hud-menu { top: calc(100% + 12px); left: var(--pad); right: var(--pad); padding: 2px 14px; }
