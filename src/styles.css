@@ -471,6 +471,13 @@ body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointe
 .focus-kicker { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--late); margin-bottom: 12px; }
 .focus-now ul { list-style: none; margin: 0; padding: 0; }
 .focus-now li { font-size: 22px; line-height: 1.35; font-weight: 400; letter-spacing: -.01em; }
+/* opsommingsteken: een kleine komeet in de Nu-kleur (kop met een taps, uitdovend staartje) */
+.focus-now li:not(.focus-more) { position: relative; padding-left: calc(14px + .5em); }
+.focus-now li:not(.focus-more)::before,
+.focus-now li:not(.focus-more)::after { content: ''; position: absolute; top: calc(.675em - 3px); height: 6px; }
+.focus-now li:not(.focus-more)::before { left: 0; width: 13px; background: linear-gradient(90deg, transparent, var(--core)); clip-path: polygon(0 45%, 100% 15%, 100% 85%, 0 55%); opacity: .55; }
+.focus-now li:not(.focus-more)::after { left: 8px; width: 6px; border-radius: 50%; background: var(--core); }
+.focus-now .focus-more { padding-left: calc(14px + .5em); }
 .focus-now .focus-more { font-size: 15px; color: var(--ink-3); }
 /* Quote als er niets dringend is: groot genoeg om van op afstand te lezen, auteur in kapitaaltjes */
 /* zo breed als de ruimte tot de buitenste ring toelaat (ring ≈ 41vmin van het midden), met een maximum voor de leesbaarheid */
