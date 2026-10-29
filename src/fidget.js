@@ -234,14 +234,14 @@ function lava() {
     const T = Math.random();
     balls.push({
       x: 30 + Math.random() * (W - 60), y: HH * (0.25 + Math.random() * 0.7), vx: 0, vy: 0, dx: 0, dy: 0,
-      s: 6 + Math.random() * 6.5,                 // straal (px)
+      s: 8 + Math.random() * 6.5,                 // straal (px); iets voller op vraag van Victor ("meer lava")
       T,                                          // temperatuur 0 (koud, zinkt) tot 1 (warm, stijgt)
       ph: Math.random() * 10,
       heat: 0.7 + Math.random() * 0.6,            // elke klont warmt in zijn eigen tempo op
     });
   }
   // de plas op de bodem: vijf brede bollen die overlappen, half onder de rand liggen en traag deinen
-  const pool = Array.from({ length: POOL }, (_, i) => ({ x: W * (0.1 + 0.2 * i), y: HH + 14, s: 19 + (i % 2) * 2, ph: i * 1.7 }));   // laag en doorlopend: de was verzamelt zich vooral bovenaan (Victor)
+  const pool = Array.from({ length: POOL }, (_, i) => ({ x: W * (0.1 + 0.2 * i), y: HH + 13, s: 20 + (i % 2) * 2, ph: i * 1.7 }));   // laag en doorlopend: de was verzamelt zich vooral bovenaan (Victor)
   const data = new Float32Array(16 * 4);
   const FRAG = `#extension GL_OES_standard_derivatives : enable
 precision highp float;
@@ -471,7 +471,7 @@ void main() {
 // met Victors instellingen. Pas geladen als je hem kiest; weg zodra je een andere soort kiest of de focus sluit.
 // Muis en tik vangt de component zelf op (lift en pulse), dus move, leave en tap doen hier niets.
 const TOPO = {
-  color: '#ff5c18', lineCount: 32, lineWidth: 1, elevation: 0.75, foreground: 0.2, tilt: 32, speed: 0.25,
+  color: '#cc3022', lineCount: 32, lineWidth: 1, elevation: 0.75, foreground: 0.2, tilt: 32, speed: 0.25,
   direction: 'backward', glow: 0.4, depthOfField: 0, fog: 0, hoverEffect: 'lift', clickEffect: 'pulse', majorLines: true,
   scale: 0.8, detail: 0.17, morph: 0, brightness: 1.1, markers: 'none', glitch: 0, opacity: 1, mouseInteraction: true,
   mouseRadius: 0.3, mouseStrength: 0.35, trail: 0.45, parallax: 0.5, intro: false, lightMode: false,
