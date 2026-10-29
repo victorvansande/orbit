@@ -1,6 +1,7 @@
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
 import { dueLabel, isOverdue } from './deadline.js';
 import { tx } from './i18n.js';
+import { wallRows } from './fx.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */
 const TAU = Math.PI * 2;
@@ -458,21 +459,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // onzichtbaar; rond de aanwijzer (of een zacht rondzwervend licht) worden ze leesbaar.
   const WALL_LH = 15, WALL_R = 130, WALL_FONT = '500 9.5px "Geist Mono", ui-monospace, monospace';
   function layoutWall() {
-    const key = `${W}x${H}:${Math.round(cam.cx / 40)}:${wallWords.length}:${wallWords[0] || ''}:${theme === THEMES.dark}:${document.fonts?.status}`;
+    const key = `${W}x${H}:${Math.round(cam.cx / 40)}:${wallWords.join('|')}:${theme === THEMES.dark}:${document.fonts?.status}`;
     if (key === wallKey) return;
     wallKey = key;
     ctx.save();
     ctx.font = WALL_FONT;
-    const items = [];
-    for (let row = 0, i = 0; row * WALL_LH < H + WALL_LH; row++) {
-      let x = -((row * 41) % 90);
-      while (x < W) {
-        const word = `${wallWords[(i++ * 7 + row) % wallWords.length]}  ✦  `;
-        const w = ctx.measureText(word).width;
-        items.push({ word, x, y: row * WALL_LH + 8, w });
-        x += w;
-      }
-    }
+    const items = wallRows(wallWords, W, H, WALL_LH, t => ctx.measureText(t).width);
     ctx.restore();
     wallLayout = items;
     // basislaag één keer tekenen

@@ -16,6 +16,47 @@ function fitCanvas(cv, w, h) {
   return g;
 }
 
+/* ---- Muur van woorden: verdeling ---- */
+// Rijen woorden voor de muur (in de scène en in de lege lijst). Vroeger koos een vast patroon (i × 7 + rij) het woord:
+// met weinig titels stond dezelfde taak dan vlak naast of schuin onder zichzelf, alsof er maar een paar taken waren.
+// Nu een geschud stapeltje dat helemaal doorlopen wordt voor een titel terugkomt, en nooit dezelfde titel als de buur
+// links of als een titel die er in de rij erboven recht boven staat. Vast zaad, dus de muur verspringt niet.
+export function wallRows(words, W, H, lh, measure) {
+  const n = words.length, items = [];
+  if (!n) return items;
+  let seed = 0x9e3779b9 ^ (n * 2654435761);
+  const rand = () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  let deck = [];
+  const draw = () => {
+    if (!deck.length) { deck = words.map((_, i) => i); for (let i = n - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; } }
+    return deck;
+  };
+  let above = [];
+  for (let row = 0; row * lh < H + lh; row++) {
+    const line = [];
+    let x = -((row * 41) % 90), left = -1;
+    while (x < W) {
+      const d = draw();
+      const clash = idx => { const w = measure(`${words[idx]}  ✦  `); return idx === left || above.some(a => a.idx === idx && a.x < x + w && a.x + a.w > x); };
+      // de eerste kaart die niet botst met de buur links of het woord erboven
+      let k = d.findIndex(i => !clash(i)), idx;
+      if (k >= 0) idx = d.splice(k, 1)[0];
+      else {
+        // het stapeltje heeft niets passends meer: kies uit alle titels, liefst zonder botsing, anders niet dezelfde als links
+        const free = words.map((_, i) => i).filter(i => !clash(i));
+        const pool = free.length ? free : words.map((_, i) => i).filter(i => i !== left);
+        idx = pool.length ? pool[Math.floor(rand() * pool.length)] : 0;
+      }
+      const word = `${words[idx]}  ✦  `, w = measure(word);
+      const it = { word, idx, x, y: row * lh + 8, w };
+      items.push(it); line.push(it);
+      left = idx; x += w;
+    }
+    above = line;
+  }
+  return items;
+}
+
 /* ---- Intro: een zachte cirkel vanuit de kern ---- */
 // Bij het openen ligt er even effen papier over de pagina; een zachte cirkel vanuit de kern wist het weg en de ringen
 // verschijnen van binnen naar buiten (de gewone intro van de scène). Een tik of toets slaat over. Vroeger regende er
@@ -240,6 +281,7 @@ export function createWall({ reducedMotion }) {
   msg.className = 'fx-wall-msg';
   box.append(cv, msg);
   let words = [], g = null, W = 0, H = 0, raf = 0, running = false, pointer = null, lamp = { x: -999, y: -999 }, visible = false;
+  let layout = [], layoutKey = '';
 
   function resize() {
     W = Math.floor(box.clientWidth); H = Math.floor(box.clientHeight);
@@ -257,17 +299,11 @@ export function createWall({ reducedMotion }) {
     g.fillStyle = ink;
     g.font = '500 9.5px "Geist Mono", ui-monospace, monospace';
     g.textBaseline = 'middle';
-    const lh = 15;
-    for (let row = 0, i = 0; row * lh < H + lh; row++) {
-      let x = -((row * 41) % 90);
-      while (x < W) {
-        const word = `${words[(i++ * 7 + row) % words.length]}  ✦  `;
-        const w = g.measureText(word).width, y = row * lh + 8;
-        const d = Math.hypot(Math.max(0, Math.abs(x + w / 2 - lamp.x) - w / 2), y - lamp.y), lit = Math.max(0, 1 - d / 110);
-        g.globalAlpha = 0.06 + 0.55 * lit * lit;
-        g.fillText(word, x, y);
-        x += w;
-      }
+    if (layoutKey !== `${W}x${H}:${words.join('|')}`) { layoutKey = `${W}x${H}:${words.join('|')}`; layout = wallRows(words, W, H, 15, t => g.measureText(t).width); }
+    for (const { word, x, y, w } of layout) {
+      const d = Math.hypot(Math.max(0, Math.abs(x + w / 2 - lamp.x) - w / 2), y - lamp.y), lit = Math.max(0, 1 - d / 110);
+      g.globalAlpha = 0.06 + 0.55 * lit * lit;
+      g.fillText(word, x, y);
     }
     g.globalAlpha = 1;
     if (!still) raf = requestAnimationFrame(draw);
