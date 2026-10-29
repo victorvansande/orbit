@@ -18,7 +18,7 @@ import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
 import { createTimer } from './timer.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate } from './feats.js';
-import { softReveal, nightFall, particleTitle, createWall } from './fx.js';
+import { softReveal, nightFall, spotlight, particleTitle, createWall } from './fx.js';
 
 applyStatic();
 
@@ -1233,8 +1233,11 @@ window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraaks
 const featsDialog = $('feats');
 const DATE_SHORT = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
 const featQueue = [];
+// demo: prestaties en punten tellen enkel wat in deze demo gebeurt, zodat je altijd van 0 begint (Victor)
+const FEATS_SINCE = DEMO_MODE ? Date.now() : 0;
+const featsNow = () => evaluate(feats, done, { skies: skyCuts.filter(t => t >= FEATS_SINCE).length, since: FEATS_SINCE });
 function checkFeats(pop) {
-  const r = evaluate(feats, done, { skies: skyCuts.length });
+  const r = featsNow();
   if (r.fresh.length) {
     const now = Date.now();
     for (const x of r.fresh) feats.unlocked[x.id] = now;
@@ -1257,13 +1260,13 @@ const STAR4 = (() => {
   return d + 'Z';
 })();
 const badgeSvg = (secret = false) => `<circle class="fb-ring" r="10.6"/>${secret ? '<text class="fb-q" y="4">?</text>' : `<path class="fb-star" d="${STAR4}"/>`}`;
-function renderFeatsBadge(r = evaluate(feats, done, { skies: skyCuts.length })) {
+function renderFeatsBadge(r = featsNow()) {
   const b = $('feats-badge');
   b.hidden = !r.stars;
   b.innerHTML = `<svg viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span>${tx('feats.badge', { rank: r.rank.name, n: r.points.toLocaleString(LOCALE) })}</span>`;
 }
 function renderFeats() {
-  const r = evaluate(feats, done, { skies: skyCuts.length });
+  const r = featsNow();
   $('feats-count').textContent = tx('feats.count', { a: r.earned, b: FEATS.length });
   $('feats-level').textContent = tx('feats.level', { n: r.rank.level });
   $('feats-rankname').textContent = r.rank.name;
@@ -1332,15 +1335,13 @@ function showFeatPop() {
     if (spot) {
       lastSpot = Date.now();
       pop.classList.add('is-spot');
-      const r = pop.getBoundingClientRect();
-      nightFall({ star: { x: r.left + r.width / 2, y: r.top + 14 + r.height / 2, r: 0 }, bloom: false, open: 2.2, end: 3.8,
-        onOpen() { pop.classList.remove('is-spot'); } });
+      spotlight(pop, { done() { pop.classList.remove('is-spot'); } });
     }
   });
   setTimeout(() => {
     pop.classList.remove('is-on', 'is-spot');
     setTimeout(() => { pop.hidden = true; popBusy = false; showFeatPop(); }, 400);
-  }, spot ? 5200 : 4200);
+  }, spot ? 3800 : 4200);
 }
 let lastSpot = 0;
 $('feat-pop').addEventListener('click', () => openFeats());

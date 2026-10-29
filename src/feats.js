@@ -160,9 +160,10 @@ function maxPer(times, keyOf) {
   return Math.max(0, ...m.values());
 }
 
-export function measure(f, done, { skies = 0 } = {}) {
-  const times = Object.values(done || {}).filter(Number.isFinite).sort((a, b) => a - b);
-  const log = Object.values(f.log || {});
+// `since`: alleen wat vanaf dat tijdstip gebeurde (de demo begint zo altijd op 0)
+export function measure(f, done, { skies = 0, since = 0 } = {}) {
+  const times = Object.values(done || {}).filter(t => Number.isFinite(t) && t >= since).sort((a, b) => a - b);
+  const log = Object.values(f.log || {}).filter(e => e.t >= since);
   const m = { total: times.length, skies };
   // meeste taken binnen een uur (schuivend venster)
   let best = 0;
@@ -196,18 +197,19 @@ export function measure(f, done, { skies = 0 } = {}) {
   m.old30 = log.filter(e => e.b && e.t - e.b >= 30 * DAY).length;
   m.old90 = log.filter(e => e.b && e.t - e.b >= 90 * DAY).length;
   m.quick = log.filter(e => e.b && e.t - e.b >= 0 && e.t - e.b <= 10 * 60000).length;
-  const focus = Object.entries(f.focus || {}).map(([t, min]) => [Number(t), min]);
+  const focus = Object.entries(f.focus || {}).map(([t, min]) => [Number(t), min]).filter(([t]) => t >= since);
   m.focus = focus.length;
   m.focus50 = focus.some(([, min]) => min >= 50) ? 1 : 0;
   m.focusDay = maxPer(focus.map(([t]) => t), dayKey);
-  for (const [k, t] of Object.entries(f.ev || {})) if (t) m[`ev:${k}`] = 1;
+  for (const [k, t] of Object.entries(f.ev || {})) if (t && t >= since) m[`ev:${k}`] = 1;
   return m;
 }
 
 // voortgang per prestatie, punten en rang; `fresh` = wat net gehaald is en nog niet ontgrendeld was
 export function evaluate(f, done, extra) {
   const m = measure(f, done, extra);
-  const list = FEATS.map(d => ({ ...d, value: Math.min(d.goal, m[d.metric] || 0), at: f.unlocked[d.id] || 0 }));
+  const since = extra?.since || 0;
+  const list = FEATS.map(d => ({ ...d, value: Math.min(d.goal, m[d.metric] || 0), at: (f.unlocked[d.id] || 0) >= since ? f.unlocked[d.id] || 0 : 0 }));
   const fresh = list.filter(x => !x.at && x.value >= x.goal);
   const earned = list.filter(x => x.at || x.value >= x.goal);
   const points = m.total + earned.reduce((s, x) => s + x.points, 0);

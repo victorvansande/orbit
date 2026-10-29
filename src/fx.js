@@ -174,6 +174,52 @@ export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {}
   return { skip };
 }
 
+/* ---- Spotlicht op een element (nieuwe prestatie) ---- */
+// Het scherm wordt zacht donker (licht in het donkere thema) en sluit zich als een gat in exact de vorm van het element
+// (een pil: afgeronde rechthoek met een randje van `pad` px), houdt even in en opent weer. Het element zelf ligt erboven
+// (hogere z-index). Volgt het element elk beeld, dus ook als het nog inschuift. Een tik of toets opent meteen.
+export function spotlight(target, { close = 0.6, hold = 0.7, open = 0.6, pad = 7, soft = 16, dim = 0.9, done = () => {} } = {}) {
+  const cv = document.createElement('canvas');
+  cv.className = 'fx-reveal';
+  cv.setAttribute('aria-hidden', 'true');
+  document.body.append(cv);
+  const W = innerWidth, H = innerHeight, g = fitCanvas(cv, W, H), M = Math.hypot(W, H) * 1.1;
+  const ink = css('--ink');
+  const easeIO = x => (x = Math.min(1, Math.max(0, x)), x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const t0 = performance.now();
+  let skipAt = 0, raf = 0;
+  function frame(now) {
+    let t = (now - t0) / 1000;
+    if (skipAt) t = Math.max(t, close + hold + (now - skipAt) / 1000 * 1.5);
+    const total = close + hold + open;
+    if (t >= total) { stop(); done(); return; }
+    // k: 0 = open scherm, 1 = gesloten rond het element
+    const k = t < close ? easeIO(t / close) : t < close + hold ? 1 : 1 - easeIO((t - close - hold) / open);
+    const r = target.getBoundingClientRect(), m = (1 - k) * M;
+    g.clearRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = dim * Math.pow(k, 0.6);
+    g.fillStyle = ink;
+    g.fillRect(0, 0, W, H);
+    // het gat: de vorm van de pil, met een zachte rand (alleen de schaduw tekenen, ver buiten beeld verschoven)
+    const x = r.left - pad - m, y = r.top - pad - m, w = r.width + 2 * (pad + m), h = r.height + 2 * (pad + m);
+    const rad = Math.min(h / 2, r.height / 2 + pad + m * 0.12);   // de ronding groeit niet mee: anders snijden de hoeken van een groot gat de schermhoeken af
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'destination-out';
+    g.shadowColor = '#000'; g.shadowBlur = soft; g.shadowOffsetX = W * 3;
+    g.beginPath(); g.roundRect(x - W * 3, y, w, h, rad); g.fill();
+    g.shadowColor = 'transparent'; g.shadowOffsetX = 0;
+    g.globalCompositeOperation = 'source-over';
+    raf = requestAnimationFrame(frame);
+  }
+  function skip() { if (!skipAt) skipAt = performance.now(); }
+  function stop() { cancelAnimationFrame(raf); cv.remove(); removeEventListener('pointerdown', skip, true); removeEventListener('keydown', skip, true); }
+  addEventListener('pointerdown', skip, true);
+  addEventListener('keydown', skip, true);
+  raf = requestAnimationFrame(frame);
+  return { skip };
+}
+
 /* ---- Particle text: de titel in de Uitleg ---- */
 // De letters bestaan uit puntjes in een zeshoekig raster (zoals de kern). Bij het openen spiralen ze binnen zoals de
 // bollen bij de intro; de aanwijzer duwt ze opzij en kleurt ze even rood.
