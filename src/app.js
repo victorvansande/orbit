@@ -1077,7 +1077,7 @@ renderSound();
 
 /* ---- Effecten: Alle of Minimaal ---- */
 // Minimaal zet alle extra effecten uit (intro, gloed, raster dat buigt en klopt, schokgolf, vallende ster,
-// sterrenbeeld, spoor op de baan, lichtpuntje, vortex, sonar, muur, avondtint, vijver, puntjestitel, fonkelende klok).
+// sterrenbeeld, spoor op de baan, lichtpuntje, vortex, sonar, muur, avondtint, bakje water, puntjestitel, fonkelende klok).
 // Wat blijft: de scène zelf (ringen, kometen, kern met gezicht, sterren) en het uitfonkelen bij afvinken.
 const FX_KEY = 'priority-orbit.fx.v1';
 let minimalFx = false;
@@ -1109,7 +1109,7 @@ if (DEMO_MODE) {
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
-const fidget = createFidget($('fidget'), { reducedMotion });   // vijver, alleen op desktop zichtbaar
+const fidget = createFidget($('fidget'), { reducedMotion });   // bakje water, alleen op desktop zichtbaar
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
