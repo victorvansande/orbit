@@ -1,8 +1,7 @@
 /* ---- Bakje in de focusmodus: digitale fidgets in mono-tekens ---- */
-// Een klein bakje rechtsonder, getekend in mono-tekens op een canvas, met vier soorten om mee te spelen (keuze bovenin,
-// per toestel onthouden): water (deeltjesvloeistof), zand (vallende korrels), gelei (verend raster) en magneet
-// (ijzervijlsel dat zich naar de polen richt). Alle vier delen dezelfde regels: sleep het bakje en het volgt je, kantelt
-// mee en veert terug (water, zand en gelei voelen die schok); de kleur volgt hoe hard er iets beweegt, van grijze inkt
+// Een klein bakje rechtsonder, getekend in mono-tekens op een canvas, met drie soorten om mee te spelen (keuze bovenin,
+// per toestel onthouden): water (deeltjesvloeistof), gelei (verend raster) en lava (metaballs). Alle drie delen dezelfde
+// regels: sleep het bakje en het volgt je, kantelt mee en veert terug, en de inhoud voelt die schok; de kleur volgt hoe hard er iets beweegt, van grijze inkt
 // naar het rode korrelverloop van de Bierfeesten. Loopt alleen zolang de focusmodus aan staat en het tabblad zichtbaar is.
 
 const COLS = 40, ROWS = 14;
@@ -15,7 +14,7 @@ const MAX_SHIFT = 26;             // px, zo ver volgt het bakje je sleepbeweging
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
 const MODE_KEY = 'priority-orbit.fidget.v1';
-export const MODES = ['water', 'sand', 'jelly', 'magnet'];
+export const MODES = ['water', 'jelly', 'lava'];
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -145,98 +144,6 @@ function water() {
   };
 }
 
-/* ---- Zand: vallende korrels op het tekenraster ---- */
-// Elke cel is een korrel of leeg. Korrels vallen, glijden van een helling en lopen naar de lage kant als het bakje
-// kantelt; een schok gooit de bovenste korrels even op. Ingedrukt houden laat zand uit je vinger stromen, bewegen erover
-// schept een geul. Is het bakje vol, dan loopt de bodem een beetje leeg.
-function sand() {
-  const MAX = Math.round(CELLS * 0.42);
-  let grid = new Uint8Array(CELLS);               // 1 = korrel
-  const heat = new Float32Array(CELLS);           // net bewogen: gloeit na in het verloop
-  let pour = null, dig = null, lastX = null, tick = 0, count = 0;
-  const at = (c, r) => r * COLS + c;
-  const empty = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS && !grid[at(c, r)];
-  function moveGrain(a, b) { grid[a] = 0; grid[b] = 1; heat[b] = 1; }
-
-  function step({ gx, ax, ay }) {
-    tick++;
-    for (let k = 0; k < CELLS; k++) heat[k] *= 0.93;
-    if (count >= MAX) for (let c = 0; c < COLS; c++) if (grid[at(c, ROWS - 1)] && Math.random() < 0.3) { grid[at(c, ROWS - 1)] = 0; count--; }
-    if (pour && count < MAX && tick % 2 === 0) {
-      const c = clamp(Math.round(pour.x / CW - 0.5 + (Math.random() - 0.5) * 1.6), 0, COLS - 1), r = clamp(Math.floor(pour.y / CH), 0, ROWS - 1);
-      if (!grid[at(c, r)]) { grid[at(c, r)] = 1; heat[at(c, r)] = 1; count++; }
-    }
-    if (dig) {
-      // een geul scheppen: korrels onder de aanwijzer schuiven opzij en omhoog
-      const c0 = Math.floor(dig.x / CW), r0 = Math.floor(dig.y / CH), dir = dig.vx >= 0 ? 1 : -1;
-      for (let r = r0 - 1; r <= r0 + 1; r++) for (let c = c0 - 1; c <= c0 + 1; c++) {
-        if (c < 0 || c >= COLS || r < 0 || r >= ROWS || !grid[at(c, r)]) continue;
-        for (const [dc, dr] of [[dir * 2, -1], [dir, -1], [-dir, -1], [dir * 2, 0]]) if (empty(c + dc, r + dr)) { moveGrain(at(c, r), at(c + dc, r + dr)); break; }
-      }
-      dig = null;
-    }
-    // schok van het bakje: de bovenste korrel van elke kolom springt even op
-    const shake = Math.hypot(ax, ay);
-    if (shake > 0.35) {
-      for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
-        if (!grid[at(c, r)]) continue;
-        if (Math.random() < Math.min(0.6, shake * 0.4)) {
-          const nc = c + (Math.sign(-ax) || (Math.random() < 0.5 ? -1 : 1)), nr = r - 1 - (Math.random() < shake * 0.3 ? 1 : 0);
-          if (empty(nc, nr)) moveGrain(at(c, r), at(nc, nr));
-        }
-        break;
-      }
-    }
-    if (tick % 2) return;   // 30 keer per seconde: rustiger en beter te volgen
-    // van onder naar boven, afwisselend links en rechts, zodat er geen voorkeursrichting ontstaat
-    const ltr = tick % 4 === 0, side = gx > 0.02 ? 1 : gx < -0.02 ? -1 : 0, slide = Math.min(0.9, Math.abs(gx) * 9);
-    for (let r = ROWS - 2; r >= 0; r--) {
-      for (let i = 0; i < COLS; i++) {
-        const c = ltr ? i : COLS - 1 - i, k = at(c, r);
-        if (!grid[k]) continue;
-        if (empty(c, r + 1)) { moveGrain(k, at(c, r + 1)); continue; }
-        const first = side || (Math.random() < 0.5 ? -1 : 1);
-        if (empty(c + first, r + 1)) { moveGrain(k, at(c + first, r + 1)); continue; }
-        if (!side && empty(c - first, r + 1)) { moveGrain(k, at(c - first, r + 1)); continue; }
-        // gekanteld: korrels glijden over een vlakke laag naar de lage kant
-        if (side && Math.random() < slide && empty(c + side, r) && !empty(c + side, r + 1)) moveGrain(k, at(c + side, r));
-      }
-    }
-    // bodemrij: ook daar glijden bij een stevige kanteling
-    if (side) for (let i = 0; i < COLS; i++) {
-      const c = side > 0 ? COLS - 1 - i : i, k = at(c, ROWS - 1);
-      if (grid[k] && Math.random() < slide * 0.5 && empty(c + side, ROWS - 1)) moveGrain(k, at(c + side, ROWS - 1));
-    }
-  }
-
-  function draw(chr, want) {
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const k = at(c, r);
-      if (!grid[k]) { chr[k] = ''; want[k] = 0; continue; }
-      const covered = r > 0 && grid[k - COLS];
-      chr[k] = heat[k] > 0.5 ? '*' : covered ? ':' : '·';
-      want[k] = heat[k];
-    }
-  }
-
-  return {
-    init() {
-      grid = new Uint8Array(CELLS); count = 0;
-      // een duin: hoger in het midden, met een ruwe kam
-      for (let c = 0; c < COLS; c++) {
-        const h = Math.round(3 + 2.4 * Math.sin(c / COLS * Math.PI) + Math.sin(c * 1.7) * 0.6);
-        for (let r = ROWS - h; r < ROWS; r++) { grid[at(c, r)] = 1; count++; }
-      }
-    },
-    step, draw,
-    move(p) { dig = { ...p, vx: p.x - (lastX ?? p.x) }; lastX = p.x; },
-    leave() { dig = null; pour = null; lastX = null; },
-    hold(p) { pour = p; },
-    release() { pour = null; },
-    tap() {},
-  };
-}
-
 /* ---- Gelei: een verend raster van puntjes ---- */
 // Elk teken is een knoop met een veer naar zijn rustplek en veren naar zijn buren, dus een duw loopt als een golf door
 // het raster en trilt na. De aanwijzer duwt de knopen opzij, een tik geeft een stoot, en een schok van het bakje laat
@@ -288,54 +195,92 @@ function jelly() {
   };
 }
 
-/* ---- Magneet: ijzervijlsel ---- */
-// Elk teken is een splinter die zich traag naar het veld draait (- \ | /). De ene pool volgt je aanwijzer (zonder
-// aanwijzer zwerft hij rustig rond); een tik zet een tweede pool neer met de andere lading, een tik erop haalt hem weg.
-// Hoe sterker het veld en hoe sneller de splinter draait, hoe roder.
-function magnet() {
-  const ang = new Float32Array(CELLS), str = new Float32Array(CELLS), turn = new Float32Array(CELLS);
-  const pole = { x: W * 0.35, y: HH * 0.5, tx: W * 0.35, ty: HH * 0.5 };
-  let pinned = null, follow = false, t = 0;
-  const GLYPHS = ['-', '\\', '|', '/'];
-  function step() {
+/* ---- Lava: metaballs ---- */
+// Naar MetaBalls van React Bits (motion orbit, 15 bollen, cursor-bol, klikstoot, intro). Bollen draaien rond het midden
+// en vloeien ineen waar ze elkaar raken (veld Σ (1 - d²/(2,5r)²)², rand bij 0,7); vier randlagen in tekens rond elke klodder. Een
+// grotere bol volgt de aanwijzer zacht en trekt de andere aan; een tik blaast ze uiteen, waarna ze terug in hun baan
+// glijden. Ze rekken wat uit in hun bewegingsrichting en wiebelen. Een schok van het bakje laat ze meeslingeren.
+function lava() {
+  const COUNT = 15, SPEED = 0.3, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1;
+  const balls = [];
+  const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, r: 0, on: false, px: W / 2, py: HH / 2 };
+  let t = 0, intro = 0;
+  const RINGS = ['·', ':', '+', '*'];   // van buiten naar binnen; binnenin '#'
+  for (let i = 0; i < COUNT; i++) {
+    balls.push({
+      a: i / COUNT * Math.PI * 2 + Math.random() * 0.4,
+      R: 22 + Math.random() * 70,                 // straal van de baan (px)
+      w: (0.25 + Math.random() * 0.55) * (Math.random() < 0.5 ? -1 : 1),   // hoeksnelheid (rad/s)
+      s: 6 + Math.random() * 6,                   // grootte (px)
+      ph: Math.random() * 10,
+      ox: 0, oy: 0, vx: 0, vy: 0, x: W / 2, y: HH / 2, sp: 0,
+    });
+  }
+  function step({ ax, ay }) {
     t += 1 / 60;
-    if (!follow) { pole.tx = W * (0.5 + 0.32 * Math.sin(t * 0.21)); pole.ty = HH * (0.5 + 0.3 * Math.sin(t * 0.33 + 1)); }
-    pole.x += (pole.tx - pole.x) * 0.12; pole.y += (pole.ty - pole.y) * 0.12;
-    const poles = pinned ? [[pole.x, pole.y, 1], [pinned.x, pinned.y, -1]] : [[pole.x, pole.y, 1]];
-    for (let k = 0; k < CELLS; k++) {
-      const cx = (k % COLS + 0.5) * CW, cy = (Math.floor(k / COLS) + 0.5) * CH;
-      let fx = 0, fy = 0;
-      for (const [px, py, q] of poles) {
-        const ex = cx - px, ey = (cy - py) * 1.1, d2 = ex * ex + ey * ey + 40;
-        fx += q * ex / d2; fy += q * ey / d2;
+    intro = Math.min(1, intro + 1 / 60 / 1.3);
+    const ease = 1 - Math.pow(1 - intro, 3);
+    // cursor-bol: volgt zacht, groeit als de aanwijzer erin is
+    cur.x += (cur.tx - cur.x) * SMOOTH; cur.y += (cur.ty - cur.y) * SMOOTH;
+    cur.r += ((cur.on ? 13 : 0) - cur.r) * 0.08;
+    const csp = Math.hypot(cur.x - cur.px, cur.y - cur.py); cur.px = cur.x; cur.py = cur.y;
+    for (const b of balls) {
+      b.a += b.w * SPEED * (1 / 60) * 3;
+      const wob = 1 + WOBBLE * 0.18 * Math.sin(t * 1.3 + b.ph);
+      const hx = W / 2 + Math.cos(b.a) * b.R * wob * ease * 1.35, hy = HH / 2 + Math.sin(b.a) * b.R * wob * ease * 0.62;
+      // veer terug naar de baan, schok van het bakje, aantrekking door de cursor-bol
+      let fx = -b.ox * 0.04 - ax * 2.2, fy = -b.oy * 0.04 - ay * 2.2;
+      if (cur.r > 1) {
+        const ex = cur.x - (hx + b.ox), ey = cur.y - (hy + b.oy), d = Math.hypot(ex, ey);
+        if (d < 90 && d > 1) { const f = STICKY * 0.9 * (1 - d / 90); fx += ex / d * f; fy += ey / d * f; }
       }
-      const goal = Math.atan2(fy, fx), m = Math.hypot(fx, fy) * 26;
-      // splinters hebben geen kop of staart: draai de kortste weg binnen een halve slag
-      let diff = goal - ang[k];
-      diff = Math.atan2(Math.sin(2 * diff), Math.cos(2 * diff)) / 2;
-      turn[k] = turn[k] * 0.78 + diff * 0.09 * Math.min(1, m + 0.15);
-      ang[k] += turn[k];
-      str[k] += (Math.min(1, m) - str[k]) * 0.1;
+      b.vx = (b.vx + fx) * 0.9; b.vy = (b.vy + fy) * 0.9;
+      b.ox += b.vx; b.oy += b.vy;
+      const nx = hx + b.ox, ny = hy + b.oy;
+      b.dx = nx - b.x; b.dy = ny - b.y; b.sp = Math.hypot(b.dx, b.dy);
+      b.x = nx; b.y = ny;
     }
+    cur.sp = csp;
   }
   function draw(chr, want) {
+    const list = balls.map(b => [b.x, b.y, b.s * (0.5 + 0.5 * Math.min(1, intro * 1.4)), b.dx, b.dy, b.sp]);
+    if (cur.r > 0.5) list.push([cur.x, cur.y, cur.r, 0, 0, cur.sp]);
     for (let k = 0; k < CELLS; k++) {
-      const a = ((ang[k] % Math.PI) + Math.PI) % Math.PI;          // 0..π
-      chr[k] = str[k] < 0.06 ? '·' : GLYPHS[Math.round(a / (Math.PI / 4)) % 4];
-      want[k] = clamp(str[k] * 0.3 + Math.abs(turn[k]) * 9, 0, 1);
+      const cx = (k % COLS + 0.5) * CW, cy = (Math.floor(k / COLS) + 0.5) * CH;
+      let f = 0, heat = 0;
+      for (const [x, y, r, dx, dy, sp] of list) {
+        let ex = cx - x, ey = cy - y;
+        // uitrekken in de bewegingsrichting: de afstand langs de snelheid telt minder
+        if (sp > 0.05) {
+          const ux = dx / sp, uy = dy / sp, along = ex * ux + ey * uy, k2 = 1 + STRETCH * Math.min(1.5, sp * 0.6);
+          ex -= ux * along * (1 - 1 / k2); ey -= uy * along * (1 - 1 / k2);
+        }
+        const q = (ex * ex + ey * ey) / (r * r * 6.25);       // tot 2,5 keer de straal, daarbuiten niets
+        if (q >= 1) continue;
+        const c = (1 - q) * (1 - q);
+        f += c; heat += c * sp;
+      }
+      // randlagen: vier ringen buiten de drempel, vol binnenin
+      chr[k] = f >= 0.7 ? '#' : f > 0.52 ? RINGS[3] : f > 0.36 ? RINGS[2] : f > 0.22 ? RINGS[1] : f > 0.11 ? RINGS[0] : '';
+      want[k] = clamp(heat / Math.max(f, 0.15) * 0.35 - 0.1, 0, 1);
     }
   }
   return {
-    init() { for (let k = 0; k < CELLS; k++) ang[k] = Math.random() * Math.PI; str.fill(0); turn.fill(0); },
+    init() { intro = 0; },
     step, draw,
-    move(p) { follow = true; pole.tx = p.x; pole.ty = p.y; },
-    leave() { follow = false; },
-    tap(p) { pinned = pinned && Math.hypot(pinned.x - p.x, pinned.y - p.y) < 40 ? null : { ...p }; },
-    still: true,   // het bakje schuift wel mee, maar het vijlsel voelt geen schok
+    move(p) { cur.on = true; cur.tx = p.x; cur.ty = p.y; },
+    leave() { cur.on = false; },
+    tap(p) {
+      // klikstoot: alles in de buurt vliegt weg van de tik
+      for (const b of balls) {
+        const ex = b.x - p.x, ey = b.y - p.y, d = Math.hypot(ex, ey) || 1, f = Math.max(0, 1 - d / 160) * 12;
+        b.vx += ex / d * f; b.vy += ey / d * f;
+      }
+    },
   };
 }
 
-const FACTORIES = { water, sand, jelly, magnet };
+const FACTORIES = { water, jelly, lava };
 
 export function createFidget(box, { reducedMotion, label = m => m }) {
   const cv = box.querySelector('canvas');
@@ -347,7 +292,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   let palette = null, paletteAt = 0;
   let raf = 0, running = false, acc = 0, last = 0;
   const shift = { x: 0, y: 0, vx: 0, vy: 0, goalX: 0, goalY: 0 };
-  let drag = null, nudgeAt = 0, holdTimer = 0;
+  let drag = null, nudgeAt = 0;
 
   let modeName = 'water';
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) modeName = m; } catch { /* geen opslag */ }
@@ -457,7 +402,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
       const [ax, ay] = moveBox(), m = mode();
       // zwaartekracht in het assenstelsel van het gekantelde bakje, plus de schok van het bakje zelf
       const tilt = -shift.x * TILT * Math.PI / 180;
-      m.step(m.still ? { gx: 0, gy: 1, ax: 0, ay: 0 } : { gx: Math.sin(tilt) - ax / GRAVITY, gy: Math.cos(tilt) - ay / GRAVITY, ax, ay });
+      m.step({ gx: Math.sin(tilt) - ax / GRAVITY, gy: Math.cos(tilt) - ay / GRAVITY, ax, ay });
       acc -= STEP_MS; n++;
     }
     if (n === 3) acc = 0;
@@ -472,17 +417,13 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     drag = { x0: e.clientX, y0: e.clientY, moved: false };
     box.setPointerCapture(e.pointerId);
     box.classList.add('is-dragging');
-    // ingedrukt houden zonder te slepen: gieten (zand)
-    clearTimeout(holdTimer);
-    const p = local(e);
-    holdTimer = setTimeout(() => { if (drag && !drag.moved) mode().hold?.(p); }, 180);
   });
   box.addEventListener('pointermove', e => {
     if (reducedMotion.matches) return;
     const p = local(e);
     if (drag) {
       const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-      if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; clearTimeout(holdTimer); mode().release?.(); }
+      if (!drag.moved && Math.hypot(dx, dy) > 4) drag.moved = true;
       if (drag.moved) {
         const lim = v => MAX_SHIFT * Math.tanh(v / MAX_SHIFT);   // zacht begrensd
         shift.goalX = lim(dx); shift.goalY = lim(dy) * 0.6;
@@ -493,8 +434,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   });
   const endDrag = e => {
     if (!drag) return;
-    clearTimeout(holdTimer);
-    if (!drag.moved) { mode().release?.(); mode().tap(local(e)); }
+    if (!drag.moved) mode().tap(local(e));
     drag = null;
     box.classList.remove('is-dragging');
   };
@@ -511,7 +451,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
       raf = requestAnimationFrame(frame);
     },
     stop() {
-      running = false; cancelAnimationFrame(raf); clearTimeout(holdTimer);
+      running = false; cancelAnimationFrame(raf);
       drag = null; mode().leave();
       Object.assign(shift, { x: 0, y: 0, vx: 0, vy: 0, goalX: 0, goalY: 0 });
       box.style.translate = box.style.rotate = '';
