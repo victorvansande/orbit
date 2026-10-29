@@ -1,23 +1,31 @@
-/* ---- Vijver: een glaasje vloeistof in de focusmodus (liquid ascii) ---- */
-// Een klein bakje met water, getekend in mono-tekens. Het water is een echte deeltjesvloeistof (dubbele
+/* ---- Bakje water in de focusmodus (liquid ascii) ---- */
+// Een klein bakje met water, getekend in mono-tekens op een canvas. De kleur volgt hoe woelig het water is: stil in
+// grijze inkt, hoe harder het beweegt hoe roder (verloop naar het rode korrelverloop van de Bierfeesten), met korrel. Het water is een echte deeltjesvloeistof (dubbele
 // dichtheidsrelaxatie, Clavet e.a. 2005) waar de zwaartekracht op werkt: sleep het bakje heen en weer en het water
 // klotst, het bakje kantelt mee en het oppervlak blijft waterpas; beweeg erover en je roert erin, een tik geeft een
 // plons. Loopt alleen zolang de focusmodus aan staat en het tabblad zichtbaar is.
 
-const COLS = 34, ROWS = 12;
-const N = 560;                    // deeltjes: vult ongeveer de onderste helft
+const COLS = 40, ROWS = 14;
+const CW = 7.4, CH = 12.6;        // maat van één teken (px), Geist Mono 11 px
+const N = 760;                    // deeltjes: vult ongeveer de onderste helft
 const H = 13;                     // interactiestraal (px)
-const REST = 2.2, K = 0.07, K_NEAR = 0.16;   // rustdichtheid en stijfheid (dimensieloos, schaalt met H)
-const SIGMA = 0.06, BETA = 0.02;  // viscositeit: lineair en kwadratisch
+const REST = 2.2, K = 0.06, K_NEAR = 0.15;   // rustdichtheid en stijfheid (dimensieloos, schaalt met H)
+const SIGMA = 0.035, BETA = 0.01;  // viscositeit: laag, zodat het water vloeit en nadeint zonder te spatten
+const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap², 60 stappen per seconde
 const STEP_MS = 1000 / 60;
 const TILT = 0.3;                 // graden kanteling per px uitwijking van het bakje
 const MAX_SHIFT = 26;             // px, zo ver volgt het bakje je sleepbeweging
 
 export function createFidget(box, { reducedMotion }) {
-  const pre = box.querySelector('pre');
-  pre.textContent = `${' '.repeat(COLS)}\n`.repeat(ROWS);   // vaste maat, ook vóór de eerste weergave
-  let W = 0, Hh = 0;
+  const cv = box.querySelector('canvas');
+  const W = COLS * CW, Hh = ROWS * CH;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr);
+  cv.style.width = `${W}px`; cv.style.height = `${Hh}px`;
+  const g = cv.getContext('2d');
+  const agit = new Float32Array(COLS * ROWS);   // woeligheid per teken, zacht nagevolgd (0..1)
+  let palette = null, paletteAt = 0;
   const x = new Float32Array(N), y = new Float32Array(N), px = new Float32Array(N), py = new Float32Array(N);
   const vx = new Float32Array(N), vy = new Float32Array(N);
   let raf = 0, running = false, acc = 0, last = 0, ready = false;
@@ -25,11 +33,20 @@ export function createFidget(box, { reducedMotion }) {
   const shift = { x: 0, y: 0, vx: 0, vy: 0, goalX: 0, goalY: 0 };
   let drag = null, stir = null, nudgeAt = 0;
 
-  function measure() {
-    const r = pre.getBoundingClientRect();
-    if (!r.width) return false;
-    W = r.width; Hh = r.height;
-    return true;
+  // verloop uit de tokens --water-calm, --water-mid en --water-hot, in LEVELS stappen (volgt het thema)
+  function readPalette() {
+    const st = getComputedStyle(document.documentElement);
+    const rgb = name => {
+      g.fillStyle = '#000'; g.fillStyle = st.getPropertyValue(name).trim() || '#888';
+      const v = g.fillStyle;
+      return v.startsWith('#') ? [1, 3, 5].map(i => parseInt(v.slice(i, i + 2), 16)) : v.match(/\d+/g).slice(0, 3).map(Number);
+    };
+    const stops = [rgb('--water-calm'), rgb('--water-mid'), rgb('--water-hot')];
+    return Array.from({ length: LEVELS }, (_, i) => {
+      const t = i / (LEVELS - 1), seg = t < 0.55 ? 0 : 1, u = seg ? (t - 0.55) / 0.45 : t / 0.55;
+      const [a, b] = [stops[seg], stops[seg + 1]];
+      return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * u)).join(',')})`;
+    });
   }
 
   function seed() {
@@ -129,9 +146,9 @@ export function createFidget(box, { reducedMotion }) {
     for (let i = 0; i < N; i++) {
       if (x[i] < 2) x[i] = 2 + Math.random() * 0.01;
       else if (x[i] > W - 2) x[i] = W - 2 - Math.random() * 0.01;
-      if (y[i] > Hh - 2) { y[i] = Hh - 2 - Math.random() * 0.01; x[i] += (px[i] - x[i]) * 0.2; }   // wat wrijving op de bodem
+      if (y[i] > Hh - 2) { y[i] = Hh - 2 - Math.random() * 0.01; x[i] += (px[i] - x[i]) * 0.06; }   // een beetje wrijving op de bodem
       else if (y[i] < 1) y[i] = 1;
-      vx[i] = (x[i] - px[i]) * 0.995; vy[i] = (y[i] - py[i]) * 0.995;
+      vx[i] = (x[i] - px[i]) * 0.998; vy[i] = (y[i] - py[i]) * 0.998;
     }
   }
 
@@ -147,29 +164,47 @@ export function createFidget(box, { reducedMotion }) {
     return [accX, accY];
   }
 
-  function render() {
+  function render(now = 0) {
     // per teken: aantal deeltjes en hun gemiddelde snelheid (dichtstbijzijnde cel, geen uitsmeren: anders hangt er
     // een nevel boven het oppervlak)
-    const cw = W / COLS, ch = Hh / ROWS, d = new Float32Array(COLS * ROWS), sp = new Float32Array(COLS * ROWS);
+    const d = new Float32Array(COLS * ROWS), sp = new Float32Array(COLS * ROWS);
     for (let i = 0; i < N; i++) {
-      const c = Math.min(COLS - 1, Math.max(0, Math.floor(x[i] / cw))), r = Math.min(ROWS - 1, Math.max(0, Math.floor(y[i] / ch)));
+      const c = Math.min(COLS - 1, Math.max(0, Math.floor(x[i] / CW))), r = Math.min(ROWS - 1, Math.max(0, Math.floor(y[i] / CH)));
       d[r * COLS + c]++; sp[r * COLS + c] += Math.hypot(vx[i], vy[i]);
     }
+    if (!palette || now - paletteAt > 1000) { palette = readPalette(); paletteAt = now; }
     const full = N / (COLS * ROWS) * 1.9;   // aantal in een volle cel
-    let out = '';
+    const groups = Array.from({ length: LEVELS }, () => []);
+    const tick = Math.floor(now / 140);    // de korrel verschuift traag, zoals ruis op film
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const k = r * COLS + c, v = d[k] / full, above = r > 0 ? d[k - COLS] / full : 0;
-        let chr = ' ';
+        const speed = d[k] ? sp[k] / d[k] : 0;
+        // woeligheid: snelheid van het water in dit teken, traag aan en uit zodat de kleur vloeit
+        const want = Math.min(1, Math.max(0, (speed - 0.55) / 3));
+        agit[k] += (want - agit[k]) * (want > agit[k] ? 0.35 : 0.06);
+        let chr = '';
         if (v > 0.45 && above < 0.3) chr = '~';                       // het oppervlak
-        else if (v > 0.45) chr = sp[k] / d[k] > 0.8 ? '≈' : '=';      // binnenin: golvend waar het beweegt
+        else if (v > 0.45) chr = speed > 0.8 ? '≈' : '=';             // binnenin: golvend waar het beweegt
         else if (v > 0.2) chr = '-';
         else if (v > 0) chr = above > 0.45 ? '-' : '·';               // druppels en spetters
-        out += chr;
+        if (!chr) continue;
+        // korrel: elk teken wijkt een beetje af van het verloop, meer naarmate het water woeliger is
+        const h = (Math.imul(k + 1, 374761393) ^ Math.imul(tick + 7, 668265263)) >>> 0;
+        const grain = ((h % 1000) / 1000 - 0.5) * (0.08 + 0.22 * agit[k]);
+        const lv = Math.min(LEVELS - 1, Math.max(0, Math.round((agit[k] + grain) * (LEVELS - 1))));
+        groups[lv].push(chr, c * CW + CW / 2, r * CH + CH / 2);
       }
-      out += '\n';
     }
-    pre.textContent = out;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, Hh);
+    g.font = '500 11px "Geist Mono", ui-monospace, monospace';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    groups.forEach((list, lv) => {
+      if (!list.length) return;
+      g.fillStyle = palette[lv];
+      for (let i = 0; i < list.length; i += 3) g.fillText(list[i], list[i + 1], list[i + 2]);
+    });
     box.style.translate = `${shift.x.toFixed(1)}px ${shift.y.toFixed(1)}px`;
     box.style.rotate = `${(shift.x * TILT).toFixed(2)}deg`;
   }
@@ -180,18 +215,18 @@ export function createFidget(box, { reducedMotion }) {
     last = now;
     // af en toe een zacht duwtje, zodat het water nooit lang helemaal stil ligt
     if (now > nudgeAt && !drag) {
-      shift.vx += (Math.random() < 0.5 ? -1 : 1) * (1.2 + Math.random());
+      shift.vx += (Math.random() < 0.5 ? -1 : 1) * (0.6 + 0.5 * Math.random());
       nudgeAt = now + 9000 + Math.random() * 7000;
     }
     let n = 0;
     while (acc >= STEP_MS && n < 3) { const [ax, ay] = moveBox(); step(ax, ay); acc -= STEP_MS; n++; }
     if (n === 3) acc = 0;
-    render();
+    render(now);
     raf = requestAnimationFrame(frame);
   }
 
   // tekens op het scherm naar het assenstelsel van het bakje (zonder de kanteling, die is klein)
-  const local = e => { const r = pre.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * Hh }; };
+  const local = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * Hh }; };
   box.addEventListener('pointerdown', e => {
     if (reducedMotion.matches) return;
     drag = { x0: e.clientX, y0: e.clientY, moved: false };
@@ -230,7 +265,6 @@ export function createFidget(box, { reducedMotion }) {
   return {
     start() {
       if (running) return;
-      if (!measure()) { requestAnimationFrame(() => { if (!running && measure()) this.start(); }); return; }
       if (!ready) { seed(); for (let k = 0; k < 240; k++) step(0, 0); }   // vooraf laten zakken
       if (reducedMotion.matches) { render(); return; }
       running = true; last = 0; acc = 0;
