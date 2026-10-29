@@ -1544,11 +1544,14 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---- Lay-out: de scène centreert tussen lijst en wiel ---- */
-const GREET_STRIP = 62;   // px, zie .stage op gsm
+// .stage is op gsm 62 px hoger dan breed (zie styles.css); de ringen centreren in de stage min deze strook. Eerst de volle 62 px: dan stonden de ringen te hoog (26 px tot de kop,
+// 91 px tot Boven / Zijkant / Focus; Victor, 29/10/2026). Met 26 px zakken ze 18 px en past de begroeting (twee regels)
+// er nog tussen.
+const GREET_INSET = 26;
 function updateInsets() {
   if (!desktop.matches || document.body.classList.contains('is-focus')) {
     // gsm: onder de ringen een eigen strook voor de begroeting, zodat ze niet tegen de ringen of de knoppen botst
-    scene.setInsets({ left: 0, right: 0, bottom: !desktop.matches && !document.body.classList.contains('is-focus') ? GREET_STRIP : 0 });
+    scene.setInsets({ left: 0, right: 0, bottom: !desktop.matches && !document.body.classList.contains('is-focus') ? GREET_INSET : 0 });
     return;
   }
   const left = $('tracks').getBoundingClientRect().right + 8;
