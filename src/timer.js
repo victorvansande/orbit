@@ -139,13 +139,31 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
     }
-    // straaltje door de hals tot op het heuveltje, in het accent
+    // vallende korrels door de hals tot op het heuveltje, in het accent: ze komen dicht op elkaar uit de hals, versnellen
+    // (zwaartekracht), spreiden een beetje en stuiteren na de landing nog even opzij voor ze in het heuveltje opgaan
     if (flowing) {
-      const end = neckBot + (vBot - mound) * bulb, step = Math.max(3, sp * 0.8), r = Math.max(0.9, sp * 0.22);
-      const shift = reducedMotion.matches ? 0 : (now / 1000 * 40) % step;
-      g.fillStyle = accent; g.globalAlpha = 1; g.beginPath();
-      for (let y = neckTop - 3 + shift; y < end; y += step) { g.moveTo(cx + r, y); g.arc(cx, y, r, 0, Math.PI * 2); }
-      g.fill();
+      const end = neckBot + (vBot - mound) * bulb, drop = Math.max(4, end - neckTop);
+      const GRAV = 1500, EVERY = 16, fall = Math.sqrt(2 * drop / GRAV) * 1000, LAND = 180;   // px/s², ms
+      const rnd = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+      const t = reducedMotion.matches ? 0 : now, last = Math.floor(t / EVERY);
+      g.fillStyle = accent;
+      for (let i = last; i > last - (fall + LAND) / EVERY - 1; i--) {
+        if (rnd(i, 9) < 0.3) continue;                     // niet elke tik een korrel: een onregelmatig straaltje
+        const age = t - i * EVERY, r = sp * (0.15 + 0.15 * rnd(i, 1));
+        let x, y, a = 1;
+        if (age < fall) {
+          const s = age / 1000, d = 0.5 * GRAV * s * s;
+          x = cx + (rnd(i, 2) - 0.5) * Math.min(sp * 1.8, d * 0.07);
+          y = neckTop - 2 + d;
+        } else {
+          const k = Math.min(1, (age - fall) / LAND), side = rnd(i, 3) < 0.5 ? -1 : 1;
+          x = cx + (rnd(i, 2) - 0.5) * Math.min(sp * 1.8, drop * 0.07) + side * k * sp * (0.6 + rnd(i, 4) * 1.4);
+          y = neckTop - 2 + drop - Math.sin(k * Math.PI) * sp * (0.3 + 0.5 * rnd(i, 5));
+          a = 1 - k;
+        }
+        if (age < 0) continue;
+        g.globalAlpha = a; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+      }
     }
     g.globalAlpha = 1;
   }
