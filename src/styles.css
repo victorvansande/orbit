@@ -87,6 +87,12 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+/* Webapp op het beginscherm (html.is-app, gezet in index.html): als een app, niet als een site */
+html.is-app { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+html.is-app body { overscroll-behavior: none; touch-action: manipulation; }
+html.is-app :is(input, textarea, [contenteditable]) { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+html.is-app .sync-code { -webkit-user-select: all; user-select: all; }   /* synccode blijft in één tik te kopiëren */
+html.is-app :is(img, svg, a) { -webkit-user-drag: none; }
 body {
   margin: 0;
   height: 100dvh;

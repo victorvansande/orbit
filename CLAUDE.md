@@ -374,6 +374,13 @@ Op vraag van Victor (30/10/2026): "een achievement-systeem om me blijvend te mot
 - Opent vanzelf bij een eerste bezoek: nog geen taken bewaard (`lsEmptyAtStart`), uitleg nooit gezien (`priority-orbit.intro.v1`) en niet geopend via een koppellink. Altijd terug via "Uitleg" rechtsboven of `?`.
 - Start bovenaan zonder focuskader (focus op de kaart zelf, `preventScroll`).
 
+## Webapp op het beginscherm: als een app
+
+Op vraag van Victor (29/10/2026: "minder als een site, meer als een app", na een pagina die per ongeluk ingezoomd stond). Alleen in de webapp op het beginscherm (`display-mode: standalone` of `fullscreen`, of `navigator.standalone`); in de gewone browser blijft zoomen kunnen voor de leesbaarheid.
+- Het inline script in `<head>` zet `html.is-app`, vervangt de viewport door `maximum-scale=1, user-scalable=no` (ook geen automatische zoom bij het tikken in een tekstvak) en houdt knijpen tegen (`gesturestart/change/end` op iOS, `touchmove` met twee vingers).
+- CSS `html.is-app`: geen tekstselectie (`user-select: none`), behalve in `input`, `textarea` en `[contenteditable]`; de synccode blijft in één tik selecteerbaar. Geen lang-indrukken-menu (`-webkit-touch-callout: none`), geen tikflits, geen meeverende pagina (`overscroll-behavior: none`), geen dubbeltik-zoom (`touch-action: manipulation` op `body`), afbeeldingen en links niet te slepen.
+- Getest (Chromium, 375 px, `navigator.standalone` nagebootst): klasse en viewport gezet, titels niet selecteerbaar, notities wel, knijpen tegengehouden, de lijst scrolt nog; in de browser alles zoals voorheen.
+
 ## Toegankelijkheid
 
 - Canvas heeft `role="img"` met een samenvatting per niveau. Alles wat in de scène kan (afvinken, niveau wijzigen) kan ook via de lijst met toetsenbord.
@@ -410,3 +417,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 29/10/2026, Claude Code: begroeting hooguit twee regels. Niets openstaand.
 - 29/10/2026, Claude Code: knop Klaar in Prestaties blijft onderaan staan. Niets openstaand.
 - 29/10/2026, Claude Code: notities klappen dicht bij een tik ernaast, taak met notitie krijgt een stipje. Niets openstaand.
+- 29/10/2026, Claude Code: webapp op het beginscherm gedraagt zich als een app (geen zoom, geen selectie, geen meeverende pagina). Niets openstaand.
