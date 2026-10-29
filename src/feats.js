@@ -103,7 +103,7 @@ export const FEATS = DEFS.map(([id, group, tier, metric, goal, nl, enName, nlDes
 export const groupName = id => { const g = GROUPS.find(x => x[0] === id); return g ? (en ? g[2] : g[1]) : id; };
 
 /* ---- Opslag en sync ---- */
-const empty = () => ({ log: {}, unlocked: {}, focus: {}, ev: {} });
+const empty = () => ({ log: {}, unlocked: {}, focus: {}, ev: {}, rev: {} });
 export function loadFeats() {
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === 'object') return { ...empty(), ...s }; } catch { /* geen opslag */ }
   return empty();
@@ -115,13 +115,25 @@ export const FEATS_KEY = KEY;
 export function mergeFeats(a = empty(), b = empty()) {
   const out = empty();
   for (const k of ['log', 'focus']) out[k] = { ...(b[k] || {}), ...(a[k] || {}) };
+  // ingetrokken (een afgevinkte taak teruggezet, Victor koos "A"): `rev` = {sleutel: tijdstip}, van beide kanten het
+  // recentste. Een prestatie of gebeurtenis van vóór dat tijdstip telt niet meer, ook niet als een ander toestel ze nog heeft.
+  for (const src of [a.rev, b.rev]) for (const [id, t] of Object.entries(src || {})) if (Number.isFinite(t)) out.rev[id] = Math.max(out.rev[id] || 0, t);
   for (const k of ['unlocked', 'ev']) {
-    out[k] = { ...(a[k] || {}) };
-    for (const [id, t] of Object.entries(b[k] || {})) if (Number.isFinite(t)) out[k][id] = Math.min(out[k][id] ?? t, t);
+    const pre = k === 'ev' ? 'ev:' : '';
+    for (const src of [a[k], b[k]]) for (const [id, t] of Object.entries(src || {})) {
+      if (!Number.isFinite(t) || t <= (out.rev[pre + id] || 0)) continue;
+      out[k][id] = Math.min(out[k][id] ?? t, t);
+    }
   }
   return out;
 }
-export const featsSig = f => f ? `${Object.keys(f.log || {}).length}:${Object.keys(f.unlocked || {}).length}:${Object.keys(f.focus || {}).length}:${Object.keys(f.ev || {}).length}` : '';
+// Intrekken wat één afgevinkte taak opleverde (ongedaan maken): prestaties en gebeurtenissen weg, met een markering.
+export function revoke(f, { unlocked = [], ev = [] }, t = Date.now()) {
+  f.rev ||= {};
+  for (const id of unlocked) if (f.unlocked[id]) { delete f.unlocked[id]; f.rev[id] = t; }
+  for (const k of ev) if (f.ev[k]) { delete f.ev[k]; f.rev['ev:' + k] = t; }
+}
+export const featsSig = f => f ? `${Object.keys(f.log || {}).length}:${Object.keys(f.unlocked || {}).length}:${Object.keys(f.focus || {}).length}:${Object.keys(f.ev || {}).length}:${Object.keys(f.rev || {}).length}` : '';
 
 /* ---- Vastleggen ---- */
 const dayStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };

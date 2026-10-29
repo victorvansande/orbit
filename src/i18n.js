@@ -74,7 +74,7 @@ const NL = {
 
   // toasts
   'undo': 'Ongedaan maken', 'cancel': 'Annuleer', 'done': 'Klaar',
-  'toast.completed': 'Afgevinkt · {title}', 'toast.restored': 'Teruggezet · {title}',
+  'toast.completed': 'Afgevinkt · {title}', 'toast.completedN': 'Afgevinkt · {n} taken', 'toast.restored': 'Teruggezet · {title}',
   'toast.saveFailed': 'Bewaren op dit toestel lukte niet. Je taken staan in de reservekopie; exporteer ze voor de zekerheid.',
   'toast.mirror': n('{n} taak hersteld uit de reservekopie', '{n} taken hersteld uit de reservekopie'),
   'toast.elsewhere1': 'Elders afgevinkt · {title}', 'toast.elsewhere': '{n} taken elders afgevinkt',
@@ -238,7 +238,7 @@ const EN = {
   'focus.late': 'Overdue', 'focus.next': 'Next deadline', 'focus.now': 'Now', 'focus.more': 'and {n} more',
 
   'undo': 'Undo', 'cancel': 'Cancel', 'done': 'Done',
-  'toast.completed': 'Done · {title}', 'toast.restored': 'Restored · {title}',
+  'toast.completed': 'Done · {title}', 'toast.completedN': 'Done · {n} tasks', 'toast.restored': 'Restored · {title}',
   'toast.saveFailed': 'Saving on this device failed. Your tasks are in the backup copy; export them to be safe.',
   'toast.mirror': n('{n} task restored from the backup copy', '{n} tasks restored from the backup copy'),
   'toast.elsewhere1': 'Done elsewhere · {title}', 'toast.elsewhere': '{n} tasks done elsewhere',

@@ -59,6 +59,8 @@ export function mergeStates(a, b) {
   const skyCuts = [...new Set([...(a.skyCuts || []), ...(b.skyCuts || [])].filter(Number.isFinite))].sort((x, y) => x - y);
   // prestaties: alles van beide kanten (logboek, ontgrendeld, focusblokken, gebeurtenissen)
   const feats = a.feats || b.feats ? mergeFeats(a.feats, b.feats) : undefined;
+  // teruggezette taak: haar regel in het prestatielogboek telt niet meer, ook niet als een ander toestel hem nog heeft
+  if (feats) for (const t of tasks) { const e = feats.log[t.id]; if (e && (t.updatedAt || 0) > e.t) delete feats.log[t.id]; }
   // archief: van beide kanten, zonder wat terug in de lijst staat of voorgoed verwijderd werd
   const archDel = {};
   for (const src of [a.archDel, b.archDel]) for (const [id, t] of Object.entries(src || {})) if (Number.isFinite(t)) archDel[id] = Math.max(archDel[id] || 0, t);

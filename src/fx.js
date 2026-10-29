@@ -16,6 +16,27 @@ function fitCanvas(cv, w, h) {
   return g;
 }
 
+// Verduistering over het hele venster (intro, nacht, spotlicht). Draai je de gsm of wisselt het thema terwijl ze loopt,
+// dan past ze zich aan: `fresh()` maakt de canvas opnieuw passend en zegt wat er veranderde ('size', 'theme' of false).
+function overlay() {
+  const cv = document.createElement('canvas');
+  cv.className = 'fx-reveal';
+  cv.setAttribute('aria-hidden', 'true');
+  document.body.append(cv);
+  const o = {
+    cv, W: innerWidth, H: innerHeight, g: null, theme: document.documentElement.dataset.theme,
+    fresh() {
+      let changed = false;
+      if (innerWidth !== o.W || innerHeight !== o.H) { o.W = innerWidth; o.H = innerHeight; o.g = fitCanvas(cv, o.W, o.H); changed = 'size'; }
+      const th = document.documentElement.dataset.theme;
+      if (th !== o.theme) { o.theme = th; changed = changed || 'theme'; }
+      return changed;
+    },
+  };
+  o.g = fitCanvas(cv, o.W, o.H);
+  return o;
+}
+
 /* ---- Muur van woorden: verdeling ---- */
 // Rijen woorden voor de muur (in de scène en in de lege lijst). Vroeger koos een vast patroon (i × 7 + rij) het woord:
 // met weinig titels stond dezelfde taak dan vlak naast of schuin onder zichzelf, alsof er maar een paar taken waren.
@@ -62,16 +83,13 @@ export function wallRows(words, W, H, lh, measure) {
 // verschijnen van binnen naar buiten (de gewone intro van de scène). Een tik of toets slaat over. Vroeger regende er
 // eerst tekens (terminal rain); Victor hield alleen de cirkel.
 export function softReveal({ center, onReveal, done = () => {} }) {
-  const cv = document.createElement('canvas');
-  cv.className = 'fx-reveal';
-  cv.setAttribute('aria-hidden', 'true');
-  document.body.append(cv);
-  const W = innerWidth, H = innerHeight, g = fitCanvas(cv, W, H);
-  const bg = css('--bg'), maxR = Math.hypot(W, H);
+  const ov = overlay(), cv = ov.cv;
+  let W = ov.W, H = ov.H, g = ov.g, bg = css('--bg'), maxR = Math.hypot(W, H);
   const START = 0.08, END = 1.35;
   let t0 = performance.now(), revealed = false, skipAt = 0, raf = 0;
 
   function frame(now) {
+    if (ov.fresh()) { W = ov.W; H = ov.H; g = ov.g; bg = css('--bg'); maxR = Math.hypot(W, H); }
     let t = (now - t0) / 1000;
     if (skipAt) t = Math.max(t, END - 0.25 + (now - skipAt) / 1000);
     if (t >= START && !revealed) { revealed = true; onReveal(); }
@@ -108,15 +126,12 @@ const NIGHT_DEFAULT = { fade: 0.55, born: 0.55, open: 1.2, end: 2.7 };
 // Ook voor een nieuwe prestatie (app.js): dan blijft de pil zelf licht staan (`bloom: false`, langer donker via `open`/`end`).
 export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {}, bloom = true, open, end }) {
   const NIGHT = { ...NIGHT_DEFAULT, ...(open ? { open } : {}), ...(end ? { end } : {}) };
-  const cv = document.createElement('canvas');
-  cv.className = 'fx-reveal';
-  cv.setAttribute('aria-hidden', 'true');
-  document.body.append(cv);
-  const W = innerWidth, H = innerHeight, g = fitCanvas(cv, W, H);
+  const ov = overlay(), cv = ov.cv;
+  let W = ov.W, H = ov.H, g = ov.g;
   const rgb = name => { g.fillStyle = css(name); const h = g.fillStyle.slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(','); };
-  const ink = rgb('--ink'), paper = rgb('--bg');
-  const soft = Math.max(110, Math.min(W, H) * 0.22);
-  const M = Math.hypot(Math.max(star.x, W - star.x), Math.max(star.y, H - star.y)) + soft;
+  let ink = rgb('--ink'), paper = rgb('--bg');
+  let soft = Math.max(110, Math.min(W, H) * 0.22);
+  let M = Math.hypot(Math.max(star.x, W - star.x), Math.max(star.y, H - star.y)) + soft;
   const easeIO = x => (x = Math.min(1, Math.max(0, x)), x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   const easeOut = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
   // dekking op afstand r van de nieuwe ster
@@ -138,6 +153,13 @@ export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {}
   }
 
   function frame(now) {
+    const ch = ov.fresh();
+    if (ch) {
+      W = ov.W; H = ov.H; g = ov.g; ink = rgb('--ink'); paper = rgb('--bg');
+      soft = Math.max(110, Math.min(W, H) * 0.22);
+      M = Math.hypot(Math.max(star.x, W - star.x), Math.max(star.y, H - star.y)) + soft;
+      if (ch === 'size') skip();   // gsm gedraaid: de ster staat elders, dus meteen weer dag
+    }
     let t = (now - t0) / 1000;
     if (skipAt) t = Math.max(t, NIGHT.open + (now - skipAt) / 1000 * 1.6);
     if (t >= NIGHT.open && !opened) { opened = true; onOpen(); }
@@ -180,16 +202,13 @@ export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {}
 // (een pil: afgeronde rechthoek met een randje van `pad` px), houdt even in en opent weer. Het element zelf ligt erboven
 // (hogere z-index). Volgt het element elk beeld, dus ook als het nog inschuift. Een tik of toets opent meteen.
 export function spotlight(target, { close = 0.6, hold = 0.7, open = 0.6, pad = 7, soft = 16, dim = 0.9, done = () => {} } = {}) {
-  const cv = document.createElement('canvas');
-  cv.className = 'fx-reveal';
-  cv.setAttribute('aria-hidden', 'true');
-  document.body.append(cv);
-  const W = innerWidth, H = innerHeight, g = fitCanvas(cv, W, H), M = Math.hypot(W, H) * 1.1;
-  const ink = css('--ink');
+  const ov = overlay(), cv = ov.cv;
+  let W = ov.W, H = ov.H, g = ov.g, M = Math.hypot(W, H) * 1.1, ink = css('--ink');
   const easeIO = x => (x = Math.min(1, Math.max(0, x)), x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   const t0 = performance.now();
   let skipAt = 0, raf = 0, last = null;
   function frame(now) {
+    if (ov.fresh()) { W = ov.W; H = ov.H; g = ov.g; M = Math.hypot(W, H) * 1.1; ink = css('--ink'); }
     let t = (now - t0) / 1000;
     if (skipAt) t = Math.max(t, close + hold + (now - skipAt) / 1000 * 1.5);
     const total = close + hold + open;

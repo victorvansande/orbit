@@ -172,6 +172,21 @@ Elke bol draait op zijn eigen ring, ook Nu (baan 38 = ring 38; vroeger 24, dat o
 - Tijdgebaseerd (dt), dus even snel op 60 en 120 Hz.
 - Tempo (`TEMPO`, `setTempo`): normaal; zen (omlooptijd Nu 8 s, de rest op een samengedrukte schaal `8 × (omloop / 1,1)^0,55`, zodat Nu het snelst blijft; trechter draait aan 35 %, kern klopt half zo snel); stil (banen en trechter glijden tot stilstand, kern zonder golven). Wissels glijden via `speed`, `spinScale`, `beatScale` en `waveVis`. Staarten volgen de snelheid en worden in zen vanzelf korte druppels.
 
+## Regisseur: één groot moment tegelijk (`app.js`)
+
+Op vraag van Victor (29/10/2026: "zodat ze niet moeten vechten om hun animatie te tonen"). Na het afvinken altijd dezelfde volgorde: uitfonkelen en lichtpuntje, nacht met de nieuwe ster (of zonder nacht gewoon de ster), sterrenbeeld bij de 25e, prestatie (pil met spotlicht), toast. Nooit twee verduisteringen tegelijk.
+- **Podium**: `takeStage(maxMs)` neemt het en geeft een functie terug om het vrij te geven (met een vangnet in ms); `whenCalm(fn, prio)` wacht tot het vrij is, prestatie (1) vóór toast (2); `flushStage` speelt af.
+- Wie het podium houdt: de intro (`softReveal`, tot ze klaar is), de nacht (`fallNight`, tot `done`), zonder nacht de nieuwe ster (wachttijd + 0,9 s), een sterrenbeeld (wachttijd + 3,6 s, met nacht + 5 s, tot de lijntjes getekend zijn), het spotlicht op de pil (tot het weer open is; meteen genomen, niet pas in het volgende beeld, anders glipte de toast ertussen).
+- **Prestatie** (`showFeatPop`): wacht op het podium, en op een open venster (`dialog[open]`) of een verduistering (`.fx-reveal`), anders verdween de pil erachter.
+- **Nacht** (`fallNight`): loopt er nog een verduistering (spotlicht dat na de tik opengaat), dan wacht ze tot die weg is.
+- **Toasts**: alles via `showToast` wacht op het podium. Een toast met een knop (Ongedaan maken, Terugzetten) wordt nooit weggeduwd: een volgende wacht in `toastWaiting` tot hij weg is. Snel na elkaar afvinken voegt samen (`toastDone`, `doneBatch`): "Afgevinkt · 2 taken", Ongedaan maken zet ze allemaal terug. Ongedaan maken (ook `Z`) werkt meteen na het afvinken, ook als de toast nog wacht (`undo` gebruikt dan `doneBatch`).
+- **Ongedaan maken trekt in wat de taak opleverde** (Victor koos "A"): `complete()` onthoudt welke prestaties en gebeurtenissen erbij kwamen (`gained`), `revoke()` in `feats.js` haalt ze weg en zet een markering in `feats.rev` (`{id: tijdstip}`, gebeurtenissen als `ev:<sleutel>`). `mergeFeats` neemt het recentste `rev` van beide kanten en laat elke prestatie of gebeurtenis van vóór dat tijdstip vallen, ook van een ouder toestel zonder `rev`; later opnieuw verdiend telt wel. Een pil die nog moet komen, valt uit de wachtrij; een die in beeld is, verdwijnt (`hideFeatPop`).
+- **Logboek bij sync**: `mergeStates` laat de regel van een teruggezette taak uit `feats.log` vallen (`updatedAt` na het afvinken), anders kwam hij via een ander toestel terug.
+- **Overlays** (`overlay()` in `fx.js`, voor intro, nacht en spotlicht): passen zich elk beeld aan de maat van het venster (gsm draaien) en het thema aan; bij een nieuwe maat opent de nacht meteen (de ster staat elders).
+- **Zandloper klaar net na het afvinken**: geen tweede tik binnen 1,5 s (`lastTick`).
+- Getest (Playwright, demo): volgorde nacht, pil met spotlicht, toast (desktop) en zonder nacht (gsm, gescrold); twee taken na elkaar ("2 taken", ongedaan zet beide terug, sterren terug, prestaties ingetrokken met markering); `Z` vóór de toast; afvinken tijdens het spotlicht (nooit twee verduisteringen); draaien tijdens de nacht (overlay volgt de nieuwe maat); venster open (pil wacht tot het dicht is); `mergeFeats` met intrekken, een oud toestel en later opnieuw verdiend.
+- Nieuwe animatie of melding die het scherm vraagt? Via `takeStage` of `whenCalm`, nooit op eigen houtje.
+
 ## Effecten (naar React Bits Pro)
 
 Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev (text morph, terminal rain en mosaic wave zijn weer weg), nagebouwd zonder React of build-stap (de site was vanuit de cloud geblokkeerd; het zijn eigen versies op basis van de namen). Afgestemd op elkaar: Geist Mono, inkt met lage dekking, rood (`--core`, de kern) alleen als accent, dezelfde tekenset `·:+×#`. Alles uit bij reduced motion.
@@ -391,3 +406,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 
 - 29/10/2026, Claude Code: notitie in het venster "nieuwe taak" (met klad), papier vanaf de eerste weergave voor de intro, afspraken voor samenwerking met Antigravity (`AGENTS.md`, `GEMINI.md`, `.agent/rules/orbit.md`). Niets openstaand.
 - 29/10/2026, Claude Code: vallende ster verfijnd (kop brandt op, spoor lost van achteren op). Niets openstaand.
+- 29/10/2026, Claude Code: lava-laag, spotlicht op elke pixeldichtheid, Uitleg bijgewerkt, labels zonder overlap, sectie Identiteit, regisseur (één groot moment tegelijk, toasts samenvoegen, ongedaan maken trekt prestaties in). Niets openstaand.

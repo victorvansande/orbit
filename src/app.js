@@ -17,7 +17,7 @@ import { greeting, coreLine } from './greet.js';
 import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
 import { createTimer } from './timer.js';
-import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate } from './feats.js';
+import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './feats.js';
 import { softReveal, nightFall, spotlight, particleTitle, createWall } from './fx.js';
 
 applyStatic();
@@ -771,7 +771,29 @@ function followDeadlines() {
   if (dayKey(Date.now()) !== statsDay) renderStats();   // nieuwe dag of week
 }
 
-let toastAction = null, toastTimer = 0;
+/* ---- Regisseur: één groot moment tegelijk ---- */
+// Nacht na het afvinken, de nieuwe ster, een sterrenbeeld en het spotlicht op een prestatie vechten nooit om het scherm
+// (Victor, 29/10/2026). Wie het podium nodig heeft, neemt het (`takeStage`, met een vangnet in ms) en geeft het terug;
+// meldingen wachten (`whenCalm`) tot het vrij is, de prestatie (1) vóór de toast (2). Na het afvinken dus altijd:
+// uitfonkelen, nacht en ster, sterrenbeeld, prestatie met spotlicht, toast.
+let stageHolds = 0;
+const stageWaiting = [];
+const stageFree = () => stageHolds === 0;
+function takeStage(maxMs) {
+  stageHolds++;
+  let held = true;
+  const give = () => { if (!held) return; held = false; stageHolds--; setTimeout(flushStage, 0); };
+  setTimeout(give, maxMs);
+  return give;
+}
+function whenCalm(fn, prio = 2) {
+  stageWaiting.push({ fn, prio });
+  stageWaiting.sort((a, b) => a.prio - b.prio);
+  flushStage();
+}
+function flushStage() { while (stageFree() && stageWaiting.length) stageWaiting.shift().fn(); }
+
+let toastAction = null, toastTimer = 0, lastTick = -1e9;
 function complete(id, row) {
   const task = tasks.find(t => t.id === id);
   if (!task || leaving.has(id)) return;
@@ -786,6 +808,10 @@ function complete(id, row) {
   const night = !task.demo && !nightBusy && !minimalFx && !reducedMotion.matches && !document.hidden;
   const wait = scene.starWait;
   if (night) scene.holdNextStar();
+  // het podium: de nacht houdt het tot ze voorbij is, anders tot de nieuwe ster verschenen is
+  const motion = !reducedMotion.matches && !document.hidden;
+  const giveNight = night ? takeStage(wait + 6000) : null;
+  if (motion && !night) takeStage(wait + (minimalFx || task.demo ? 0 : 900));
   if (!task.demo) {
     const now = Date.now();
     gone[id] = now;
@@ -797,7 +823,10 @@ function complete(id, row) {
     placeStar(sky, id, spot, true, starVisible);
     renderStats();
     const shown = Object.keys(done).filter(starVisible).length;
-    if (shown % 25 === 0) scene.constellation(25);   // mijlpaal: de laatste 25 sterren vormen even een sterrenbeeld
+    if (shown % 25 === 0) {   // mijlpaal: de laatste 25 sterren vormen even een sterrenbeeld; meldingen wachten tot het getekend is
+      scene.constellation(25);
+      if (motion && !minimalFx) takeStage(wait + (night ? 5000 : 3600));
+    }
     // herhalende taak: meteen de volgende, met de eerstvolgende datum na vandaag
     if (task.repeat && task.due) {
       const due = nextDue(task.due, task.repeat);
@@ -805,7 +834,7 @@ function complete(id, row) {
       tasks.push(next);
     }
   }
-  const sound = () => playDone({ level: task.level, n: totalDone(done) - 1 });
+  const sound = () => { lastTick = performance.now(); playDone({ level: task.level, n: totalDone(done) - 1 }); };
   saveTasks();
   renderSummary();
   renderFocusNow();
@@ -815,34 +844,51 @@ function complete(id, row) {
     if (next) { tasks = tasks.filter(t => t.id !== next.id); gone[next.id] = Date.now(); }
     restore([id]);
   };
-  const toast = () => showToast(next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), back);
-  // toast en geluid wachten tot de nacht voorbij is, zodat er niets over het moment loopt
-  if (night) fallNight(id, wait, sound, toast);
-  else { sound(); toast(); }
+  // ongedaan maken trekt ook in wat deze taak opleverde (prestaties, gebeurtenissen; Victor koos "A")
+  const gained = { unlocked: [], ev: [] };
+  const undoTask = () => {
+    if (gained.unlocked.length || gained.ev.length) {
+      revoke(feats, gained);
+      for (let i = featQueue.length - 1; i >= 0; i--) if (gained.unlocked.includes(featQueue[i].id)) featQueue.splice(i, 1);
+      if (gained.unlocked.includes(popId)) hideFeatPop();
+    }
+    back();
+    if (!task.demo) { checkFeats(false); notifySync(); }
+  };
+  // toast en geluid wachten tot de nacht voorbij is, zodat er niets over het moment loopt; de toast wacht via de regisseur
+  toastDone(next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), undoTask);
+  if (night) fallNight(id, wait, sound, giveNight);
+  else sound();
   // prestaties: de laatste Nu-taak, of de hele lijst leeg
   if (!task.demo) {
+    const had = new Set(Object.keys(feats.unlocked)), hadEv = new Set(Object.keys(feats.ev));
     if (task.level === URGENT_LEVEL && !realTasks().some(t => t.level === URGENT_LEVEL)) recordEvent(feats, 'nuEmpty');
     if (!realTasks().length) recordEvent(feats, 'clear');
     checkFeats(true);
+    gained.unlocked = Object.keys(feats.unlocked).filter(k => !had.has(k));
+    gained.ev = Object.keys(feats.ev).filter(k => !hadEv.has(k));
   }
   setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
 }
 
 let nightBusy = false;
-function fallNight(id, wait, sound, toast) {
+function fallNight(id, wait, sound, give) {
   nightBusy = true;
-  setTimeout(() => {
+  const go = () => {
+    // loopt er nog een verduistering (spotlicht dat na de tik opengaat), dan eerst die laten eindigen: nooit twee tegelijk
+    if (document.querySelector('.fx-reveal')) { setTimeout(go, 60); return; }
     const pts = scene.skyPoints(), star = pts.find(p => p.id === id);
     const seen = star && star.x > 0 && star.x < innerWidth && star.y > 0 && star.y < innerHeight;
     if (!seen || document.hidden) {   // ster niet in beeld (gsm, gescrold naar de lijst): gewoon verschijnen
-      scene.releaseStars(true); nightBusy = false; sound(); toast(); return;
+      scene.releaseStars(true); nightBusy = false; sound(); setTimeout(give, 900); return;
     }
     nightFall({
       star, stars: pts.filter(p => p !== star),
       onOpen() { scene.releaseStars(); sound(); },
-      done() { nightBusy = false; toast(); },
+      done() { nightBusy = false; give(); },
     });
-  }, wait);
+  };
+  setTimeout(go, wait);
 }
 
 // Taken uit het archief terugzetten. Een nieuwe wijzigingstijd maakt ze recenter dan het afvinken,
@@ -872,6 +918,7 @@ function restore(ids) {
 }
 
 function undo() {
+  if (!toastAction && doneBatch) { undoDone(); return; }   // de toast staat nog niet in beeld
   if (!toastAction) return;
   const action = toastAction;
   toastAction = null;
@@ -879,7 +926,34 @@ function undo() {
   hideToast();
 }
 
-function showToast(text, action = null, label = tx('undo')) {
+// Toasts: een toast met een knop (Ongedaan maken, Terugzetten) wordt nooit weggeduwd; een volgende wacht tot hij weg is.
+// Snel na elkaar afvinken voegt samen: "Afgevinkt · 2 taken", en Ongedaan maken zet ze allemaal terug.
+// Ongedaan maken (ook Z) werkt meteen na het afvinken, ook als de toast nog op de nacht en de prestatie wacht (`doneBatch`).
+let toastKind = '', doneBatch = null;
+const toastWaiting = [];
+const toastOn = () => !$('toast').hidden && $('toast').classList.contains('is-on');
+function toastDone(text, back) {
+  if (doneBatch && (!doneBatch.shown || (toastKind === 'done' && toastOn()))) {
+    doneBatch.backs.push(back);
+    if (doneBatch.shown) showDoneToast();
+    return;
+  }
+  const batch = doneBatch = { backs: [back], text, shown: false };
+  whenCalm(() => { if (doneBatch !== batch) return; batch.shown = true; showDoneToast(); }, 2);
+}
+function showDoneToast() {
+  const b = doneBatch;
+  if (b) showToast(b.backs.length > 1 ? tx('toast.completedN', { n: b.backs.length }) : b.text, undoDone, tx('undo'), 'done');
+}
+function undoDone() {
+  const b = doneBatch;
+  doneBatch = null;
+  if (b) for (const f of [...b.backs].reverse()) f();
+}
+function showToast(text, action = null, label = tx('undo'), kind = '') {
+  if (!stageFree()) { whenCalm(() => showToast(text, action, label, kind), 2); return; }
+  if (toastOn() && toastAction && !(kind && kind === toastKind)) { toastWaiting.push([text, action, label, kind]); return; }
+  toastKind = kind;
   toastAction = action;
   $('undo').textContent = label;
   $('undo').hidden = !action;
@@ -895,7 +969,12 @@ function hideToast() {
   const toast = $('toast');
   toast.classList.remove('is-on');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast.hidden = true; }, 250);
+  toastTimer = setTimeout(() => {
+    if (toastKind === 'done') doneBatch = null;
+    toast.hidden = true; toastKind = ''; toastAction = null;
+    const next = toastWaiting.shift();
+    if (next) showToast(...next);
+  }, 250);
 }
 
 $('undo').addEventListener('click', undo);
@@ -1233,7 +1312,7 @@ let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
 const fidget = createFidget($('fidget'), { reducedMotion, label: m => tx(`fidget.${m}`) });   // bakje water, alleen op desktop zichtbaar
 // zandloper boven het bakje (desktop): een focusblok van 15, 25 of 50 minuten; klaar = de afvinktik
-const timer = createTimer($('timer'), { reducedMotion, tx, onDone(minutes) { playDone({ level: 1 }); recordFocus(feats, minutes); checkFeats(true); } });
+const timer = createTimer($('timer'), { reducedMotion, tx, onDone(minutes) { if (performance.now() - lastTick > 1500) playDone({ level: 1 }); recordFocus(feats, minutes); checkFeats(true); } });   // net afgevinkt: geen tweede tik
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   if (on) weather.start(); else weather.stop();
@@ -1355,12 +1434,16 @@ $('feats-close').addEventListener('click', () => featsDialog.close());
 featsDialog.addEventListener('click', e => { if (e.target === featsDialog) featsDialog.close(); });
 
 // melding bovenaan: één prestatie tegelijk, pas als de nacht na het afvinken voorbij is
-let popBusy = false;
+// De regisseur bepaalt wanneer: pas als het podium vrij is (na de nacht, de ster en een sterrenbeeld), en niet zolang er
+// een venster open is (anders verdwijnt de pil erachter).
+let popBusy = false, popWaiting = false, popId = null, popTimer = 0;
 function showFeatPop() {
-  if (popBusy || !featQueue.length) return;
-  if (nightBusy || document.querySelector('.fx-reveal')) { setTimeout(showFeatPop, 400); return; }
+  if (popBusy || popWaiting || !featQueue.length) return;
+  if (!stageFree()) { popWaiting = true; whenCalm(() => { popWaiting = false; showFeatPop(); }, 1); return; }
+  if (document.querySelector('dialog[open], .fx-reveal')) { popWaiting = true; setTimeout(() => { popWaiting = false; showFeatPop(); }, 400); return; }
   popBusy = true;
   const x = featQueue.shift(), pop = $('feat-pop');
+  popId = x.id;
   pop.className = `feat-pop tier-${x.tier}`;
   pop.innerHTML = `<svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
   pop.querySelector('.feat-pop-name').textContent = x.name;
@@ -1368,18 +1451,24 @@ function showFeatPop() {
   // net als bij een nieuwe ster: het scherm wordt nacht en alles wacht op de pil, die licht blijft staan en daarna
   // opent de dag weer vanuit de pil. Eén keer per reeks meldingen, niet met Minimaal of minder beweging.
   const spot = !minimalFx && !reducedMotion.matches && !document.hidden && Date.now() - lastSpot > 15000;
+  const give = spot ? takeStage(4000) : null;   // meteen (niet pas in het volgende beeld): de toast wacht tot het spotlicht weer open is
   requestAnimationFrame(() => {
     pop.classList.add('is-on');
     if (spot) {
       lastSpot = Date.now();
       pop.classList.add('is-spot');
-      spotlight(pop, { done() { pop.classList.remove('is-spot'); } });
+      activeSpot = spotlight(pop, { done() { pop.classList.remove('is-spot'); activeSpot = null; give(); } });
     }
   });
-  setTimeout(() => {
-    pop.classList.remove('is-on', 'is-spot');
-    setTimeout(() => { pop.hidden = true; popBusy = false; showFeatPop(); }, 400);
-  }, spot ? 3800 : 4200);
+  popTimer = setTimeout(hideFeatPop, spot ? 3800 : 4200);
+}
+let activeSpot = null;
+function hideFeatPop() {
+  const pop = $('feat-pop');
+  clearTimeout(popTimer);
+  activeSpot?.skip();
+  pop.classList.remove('is-on', 'is-spot');
+  popTimer = setTimeout(() => { pop.hidden = true; popBusy = false; popId = null; showFeatPop(); }, 400);
 }
 let lastSpot = 0;
 $('feat-pop').addEventListener('click', () => openFeats());
@@ -2173,9 +2262,11 @@ applyFx();
 let revealDelay = 0;
 if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
   revealDelay = 300;
+  const give = takeStage(2500);   // meldingen bij het laden wachten tot de intro voorbij is
   softReveal({
     center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
     onReveal() { scene.replayIntro(tasks); },
+    done: give,
   });
 }
 document.documentElement.classList.remove('is-veiled');   // geen intro: het papier uit index.html meteen weg
