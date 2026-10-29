@@ -309,6 +309,8 @@ Op vraag van Victor (30/10/2026): "een achievement-systeem om me blijvend te mot
 
 ## Valkuilen
 
+- **Scrollen met een venster of menu open** (Victor, 30/10/2026: de pagina erachter scrolde mee, en in Prestaties kon hij niet scrollen): een scrollwacht in `app.js` (`guardScroll`, op `wheel` en `touchmove` in de capture-fase, niet passief) laat scrollen enkel door als er binnen het open venster (`dialog[open]`, anders `.hud-menu.is-open`) iets in die richting kan scrollen; al de rest (pagina, takenlijst, wiel) wordt tegengehouden. In de CSS `overscroll-behavior: contain` in vensters. Geen `overflow: hidden` op `html`/`body`: dat zette op gsm de scrollpositie terug naar boven. Het vak van Prestaties (`.feats`) is even breed als de kaart; eerst stak de kaart 280 px rechts buiten het vak van 440 px uit, en in Safari kwam scrollen daar niet aan. Getest: muiswiel (desktop en gsm) en een echte veeg via CDP.
+
 - Een `position: fixed` element met `left: 50%` en `translate(-50%)` krijgt hooguit het halve scherm als breedte: de toast heeft daarom `width: max-content` (op gsm werd "Nieuwe hemel. Je vorige sterren staan onder Hemels." afgekapt). Op smalle schermen mag de toast twee regels hebben.
 
 - Canvas-toestand lekt tussen tekenfuncties: wie `textAlign`, `font` of `globalAlpha` wijzigt, zet het terug, en `pill()` zet `textAlign = 'left'` zelf. De glyph sonar liet ooit `center` staan, waardoor de tekst uit de labelpillen schoof.

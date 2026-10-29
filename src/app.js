@@ -1346,6 +1346,41 @@ function showFeatPop() {
 let lastSpot = 0;
 $('feat-pop').addEventListener('click', () => openFeats());
 
+/* ---- Scrollen met een venster of menu open: enkel binnen dat venster ---- */
+// Anders scrolde de pagina (of de takenlijst, of het wiel) erachter mee, en op sommige toestellen bleef een lang venster
+// zelf stilstaan. Muiswiel, trackpad en vinger: enkel doorlaten als er binnen het open venster iets in die richting kan
+// scrollen; al de rest wordt tegengehouden. In de CSS: overscroll-behavior: contain in vensters.
+function openLayer() {
+  const dlg = [...document.querySelectorAll('dialog[open]')].pop();
+  if (dlg) return dlg;
+  const menu = document.querySelector('.hud-menu.is-open');
+  return menu || null;
+}
+function scrollsInside(el, root, dy) {
+  for (; el && el !== root.parentElement; el = el.parentElement) {
+    if (el.nodeType !== 1) continue;
+    const st = getComputedStyle(el);
+    if (!/(auto|scroll)/.test(st.overflowY) || el.scrollHeight <= el.clientHeight + 1) continue;
+    if (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) return true;
+  }
+  return false;
+}
+function guardScroll(e, dy) {
+  const layer = openLayer();
+  if (!layer) return;
+  if (layer.contains(e.target) && scrollsInside(e.target, layer, dy)) return;
+  if (e.cancelable) e.preventDefault();
+  e.stopPropagation();
+}
+addEventListener('wheel', e => guardScroll(e, e.deltaY), { capture: true, passive: false });
+let touchY = 0;
+addEventListener('touchstart', e => { touchY = e.touches[0]?.clientY ?? 0; }, { capture: true, passive: true });
+addEventListener('touchmove', e => {
+  const y = e.touches[0]?.clientY ?? touchY, dy = touchY - y;
+  touchY = y;
+  guardScroll(e, dy);
+}, { capture: true, passive: false });
+
 /* ---- Toetsenbord ---- */
 document.addEventListener('keydown', e => {
   if (composer.open || archiveDialog.open || syncDialog.open || introDialog.open || featsDialog.open) return;
