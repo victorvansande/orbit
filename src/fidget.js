@@ -237,7 +237,7 @@ const hexRgb = v => {
 // en stijgt traag op, koelt bovenaan af en zakt terug. Bollen die elkaar raken, kleven even samen (veld Σ r²/d²) en
 // scheuren weer los. Kantelen of slepen doet alles meeklotsen; de aanwijzer is een warmtebron, een tik blaast uiteen.
 function lava() {
-  const COUNT = 10, POOL = 5, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
+  const COUNT = 13, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
   const balls = [];
   const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, vx: 0, vy: 0, r: 0, on: false };
   let t = 0, intro = 0, prog = null, color = [1, 1, 1], colorAt = -1e9;
@@ -251,12 +251,13 @@ function lava() {
       heat: 0.7 + Math.random() * 0.6,            // elke klont warmt in zijn eigen tempo op
     });
   }
-  // de plas op de bodem: vijf brede bollen die overlappen, half onder de rand liggen en traag deinen
-  const pool = Array.from({ length: POOL }, (_, i) => ({ x: W * (0.1 + 0.2 * i), y: HH + 13, s: 20 + (i % 2) * 2, ph: i * 1.7 }));   // laag en doorlopend: de was verzamelt zich vooral bovenaan (Victor)
+  // de plas op de bodem: één doorlopende laag vloeibare was met een traag deinend oppervlak (Victor: "alsof er echt een
+  // laag liquid lava ligt, geen aparte blobs"); eerst vijf overlappende bollen, die bleven als bultjes zichtbaar
+  const POOL_DEPTH = 12;
   const data = new Float32Array(16 * 4);
   const FRAG = `#extension GL_OES_standard_derivatives : enable
 precision highp float;
-uniform vec2 uRes; uniform vec4 uBalls[16]; uniform vec3 uColor; uniform float uGoo; uniform float uTime;
+uniform vec2 uRes; uniform vec4 uBalls[16]; uniform vec3 uColor; uniform float uGoo; uniform float uTime; uniform float uPool;
 const vec3 DEEP = vec3(0.62, 0.12, 0.04);              // diep oranjerood: licht dat door dikke was valt
 const vec3 HOT = vec3(1.0, 0.62, 0.22);                // warm oranje aan de belichte rand
 const vec2 LAMP = vec2(${(W / 2).toFixed(1)}, ${(HH + 26).toFixed(1)});   // de gloeilamp, net onder de bodem
@@ -271,6 +272,18 @@ void main() {
     float q = dot(d, d) + 0.0001;
     f += b.z * b.z / q;
     grad -= 2.0 * b.z * b.z * d / (q * q);
+  }
+  // de laag op de bodem: zelfde soort veld (L²/(L+h)², h = hoogte boven het oppervlak), dus klonten vloeien er glad in op
+  if (uPool > 0.0) {
+    float k1 = 0.045, k2 = 0.11;
+    float surf = ${HH.toFixed(1)} - uPool + 1.6 * sin(p.x * k1 + uTime * 0.5) + 0.8 * sin(p.x * k2 - uTime * 0.37);
+    float dsurf = 1.6 * k1 * cos(p.x * k1 + uTime * 0.5) + 0.8 * k2 * cos(p.x * k2 - uTime * 0.37);
+    const float L = 9.0;
+    float h = max(surf - p.y, -0.9 * L);
+    float lf = L * L / ((L + h) * (L + h));
+    float dl = -2.0 * L * L / ((L + h) * (L + h) * (L + h));
+    f += lf;
+    grad += vec2(dl * dsurf, -dl);
   }
   float fc = min(f, 4.0);                            // midden van een bol: het veld schiet weg, de rand niet
   float w = clamp(fwidth(fc), 0.0001, 0.6) * (1.0 + uGoo);
@@ -367,11 +380,6 @@ void main() {
       const wob = 1 + WOBBLE * 0.08 * Math.sin(t * 1.1 + b.ph);
       data[i * 4] = b.x + b.dx * k * 3; data[i * 4 + 1] = b.y + b.dy * k * 3; data[i * 4 + 2] = b.s * wob * grow; data[i * 4 + 3] = 0;
     });
-    pool.forEach((p, i) => {
-      const j = COUNT + i;
-      data[j * 4] = p.x + Math.sin(t * 0.4 + p.ph) * 5; data[j * 4 + 1] = p.y + Math.sin(t * 0.6 + p.ph) * 2;
-      data[j * 4 + 2] = p.s * grow; data[j * 4 + 3] = 0;
-    });
     data[15 * 4] = cur.x; data[15 * 4 + 1] = cur.y; data[15 * 4 + 2] = cur.r;
     gl.useProgram(prog.prog);
     gl.uniform2f(prog.loc('uRes'), gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -379,6 +387,7 @@ void main() {
     gl.uniform3fv(prog.loc('uColor'), color);
     gl.uniform1f(prog.loc('uGoo'), GOO);
     gl.uniform1f(prog.loc('uTime'), t);
+    gl.uniform1f(prog.loc('uPool'), POOL_DEPTH * grow);
     fullscreen(gl, prog);
   }
   return {
