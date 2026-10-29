@@ -59,6 +59,7 @@ Wat Orbit is, afgeleid uit alle keuzes van Victor. Twijfel je over een nieuw ide
 Victor werkt afwisselend met Claude Code (cloud) en Google Antigravity (lokaal) aan Orbit, onder meer als de weeklimiet van een tool op is. Er gaat niets verloren zolang iedereen deze regels volgt. Ze gelden voor elke tool, ook voor Claude Code.
 
 - **CLAUDE.md is de enige bron van waarheid.** `AGENTS.md`, `GEMINI.md` en `.agent/rules/orbit.md` (regel voor Antigravity, altijd aan) verwijzen enkel hierheen en herhalen de harde regels. Nieuwe afspraken komen hier, niet in die bestanden.
+- **Controlelogboek**: Antigravity houdt elke wijziging gedetailleerd bij in `ANTIGRAVITY_CHANGELOG.md` (vraag van Victor, gewijzigde bestanden, keuzes en aandachtspunten voor Claude). Zo kan Victor of Claude bij een terugkeer alles stap voor stap nalopen.
 - **Eén tool tegelijk.** Begin altijd met `git pull origin main`, stop altijd met commit en push. Nooit twee tools tegelijk op `main` laten werken.
 - **Bij het starten**: CLAUDE.md lezen, de laatste regels onder "Overdracht" lezen en `git log` sinds de vorige eigen commit nalopen. Staat er iets in de commits dat niet in CLAUDE.md staat, dan eerst CLAUDE.md aanvullen (uit de diff).
 - **Alles in CLAUDE.md**: elke wijziging komt in de sectie waar ze thuishoort (wat, waarom, keuze van Victor met datum, bestanden, functies, opslagsleutels, tokens, hoe getest). CLAUDE.md wordt aangevuld, nooit ingekort of herschreven zonder vraag van Victor.
