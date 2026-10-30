@@ -12,11 +12,13 @@ const QUIET_MS = 10 * 60000;                      // binnen 10 min na de vorige 
 const LINES = {
   nl: {
     away: ['Daar ben je weer. Ik heb alles netjes laten rondjes draaien.', 'Lang niet gezien. De banen draaiden gewoon door.'],
-    overdue1: ['Er is iets over tijd. Geen paniek, gewoon even doen.'],
-    overdue: ['{n} dingen zijn over tijd. Eén voor één.'],
+    overdue1: ['"{title}" is over tijd. Geen paniek, gewoon even doen.'],
+    overdue1Anon: ['Eén taak is over tijd. Geen paniek, gewoon even doen.'],
+    overdue: ['{n} taken zijn over tijd. Eén voor één.'],
     milestone: ['Ster nummer {n}. Niet slecht.', '{n} sterren aan de hemel. Mooi zo.'],
-    dueToday1: ['Eén ding heeft vandaag een deadline. Ik hou het in het oog.'],
-    dueToday: ['{n} dingen hebben vandaag een deadline. Ik hou ze in het oog.'],
+    dueToday1: ['"{title}" heeft vandaag een deadline. Ik hou het in het oog.'],
+    dueToday1Anon: ['Eén taak heeft vandaag een deadline. Ik hou het in het oog.'],
+    dueToday: ['{n} taken hebben vandaag een deadline. Ik hou ze in het oog.'],
     busy: ['{n} dingen in de kern. We pakken ze één voor één.', 'Druk in de kern vandaag. Eén tegelijk.'],
     monday: ['Nieuwe week. Tijd om wat sterren te verdienen.', 'Maandag. Alles staat klaar.'],
     friday: ['Bijna weekend. Wat mag er nog af?', 'Vrijdagmiddag. Nog één ster voor het weekend?'],
@@ -32,11 +34,13 @@ const LINES = {
   },
   en: {
     away: ['There you are. I kept everything going round.', 'Long time no see. The orbits just kept turning.'],
-    overdue1: ['Something is overdue. No panic, just do it.'],
-    overdue: ['{n} things are overdue. One at a time.'],
+    overdue1: ['"{title}" is overdue. No panic, just do it.'],
+    overdue1Anon: ['One task is overdue. No panic, just do it.'],
+    overdue: ['{n} tasks are overdue. One at a time.'],
     milestone: ['Star number {n}. Not bad.', '{n} stars in the sky. Nice.'],
-    dueToday1: ['One thing has a deadline today. I am keeping an eye on it.'],
-    dueToday: ['{n} things have a deadline today. I am keeping an eye on them.'],
+    dueToday1: ['"{title}" has a deadline today. I am keeping an eye on it.'],
+    dueToday1Anon: ['One task has a deadline today. I am keeping an eye on it.'],
+    dueToday: ['{n} tasks have a deadline today. I am keeping an eye on them.'],
     busy: ['{n} things in the core. One at a time.', 'Busy core today. One thing at a time.'],
     monday: ['New week. Time to earn some stars.', 'Monday. Everything is ready.'],
     friday: ['Almost weekend. What else can go?', 'Friday afternoon. One more star before the weekend?'],
@@ -87,7 +91,7 @@ export function coreLine(ctx) {
 function read() { try { return JSON.parse(localStorage.getItem(VISIT_KEY)) || {}; } catch { return {}; } }
 function write(v) { try { localStorage.setItem(VISIT_KEY, JSON.stringify(v)); } catch { /* geen opslag */ } }
 
-// ctx: { urgent, total, overdue, dueToday, stars, stuck?: {title, days, level}, dusty?: {title, days} } → zin, of '' als hij beter zwijgt (net nog begroet)
+// ctx: { urgent, total, overdue, overdueTitle?, dueToday, dueTodayTitle?, stars, stuck?: {title, days, level}, dusty?: {title, days} } → zin, of '' als hij beter zwijgt (net nog begroet)
 export function greeting(ctx, now = new Date()) {
   const L = LINES[LANG] || LINES.nl, visit = read(), ms = now.getTime();
   const lastAt = visit.at || 0;
@@ -98,9 +102,9 @@ export function greeting(ctx, now = new Date()) {
   const milestone = ctx.stars > 0 && ctx.stars % 25 === 0 && visit.milestone !== ctx.stars;
   if (Math.random() < 1 / 40) line = pick(L.egg);
   else if (lastAt && ms - lastAt > AWAY_MS) line = pick(L.away);
-  else if (ctx.overdue) line = ctx.overdue === 1 ? pick(L.overdue1) : fill(pick(L.overdue), ctx.overdue);
+  else if (ctx.overdue) line = ctx.overdue === 1 ? (ctx.overdueTitle ? fillIn(pick(L.overdue1), { title: ctx.overdueTitle }) : pick(L.overdue1Anon)) : fill(pick(L.overdue), ctx.overdue);
   else if (milestone) line = fill(pick(L.milestone), ctx.stars);
-  else if (ctx.dueToday) line = ctx.dueToday === 1 ? pick(L.dueToday1) : fill(pick(L.dueToday), ctx.dueToday);
+  else if (ctx.dueToday) line = ctx.dueToday === 1 ? (ctx.dueTodayTitle ? fillIn(pick(L.dueToday1), { title: ctx.dueTodayTitle }) : pick(L.dueToday1Anon)) : fill(pick(L.dueToday), ctx.dueToday);
   else if (ctx.stuck) line = fillIn(pick(L.stuck), ctx.stuck);
   else if (ctx.urgent >= 3) line = fill(pick(L.busy), ctx.urgent);
   else if (day === 1 && h >= 6 && h < 12) line = ctx.dusty ? fillIn(pick(L.dusty), ctx.dusty) : pick(L.monday);

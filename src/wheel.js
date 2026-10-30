@@ -5,7 +5,7 @@ import { LEVELS, iconSvg, toneNode } from './config.js';
 // Horizontaal (gsm): boog onder de scène, middelpunt onder het wiel.
 const GEOM = {
   vertical:   { R: 560, arc: 70, out: 66, spacing: 96 },
-  horizontal: { R: 620, arc: 20, out: 42, spacing: 80 },
+  horizontal: { R: 620, arc: 30, out: 42, spacing: 80 },
 };
 const PILLS = {
   vertical: { w: 62, h: 48, selW: 76, selH: 54 },
@@ -16,6 +16,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
   const narrow = matchMedia('(max-width: 999px)');
   const list = root.querySelector('.wheel-list');
   const arcPath = root.querySelector('.wheel-arc path');
+  const arcGrad = root.querySelector('#wheel-arc-grad');
   const handle = root.querySelector('.wheel-handle');
 
   let index = 2, pos = 2, raf = 0, drag = null, wheelAcc = 0, wheelLock = 0;
@@ -67,16 +68,36 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       li.setAttribute('aria-selected', i === index ? 'true' : 'false');
     });
 
-    // boog en handvat
-    const span = Math.PI / 3;
-    const pts = [];
-    for (let k = 0; k <= 48; k++) {
-      const th = -span + (2 * span * k) / 48;
-      const x = o === 'vertical' ? cx - g.R * Math.cos(th) : cx + g.R * Math.sin(th);
-      const y = o === 'vertical' ? cy + g.R * Math.sin(th) : cy - g.R * Math.cos(th);
-      pts.push(`${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`);
+    // boog en handvat: op desktop een open cirkelboog, op gsm taps en uitdovend naar de randen
+    if (o === 'vertical') {
+      const span = Math.PI / 3;
+      const pts = [];
+      for (let k = 0; k <= 48; k++) {
+        const th = -span + (2 * span * k) / 48;
+        pts.push(`${k ? 'L' : 'M'}${(cx - g.R * Math.cos(th)).toFixed(1)} ${(cy + g.R * Math.sin(th)).toFixed(1)}`);
+      }
+      arcPath.setAttribute('d', pts.join(' '));
+    } else {
+      const maxDrop = g.arc - 2;
+      const halfW = Math.max(20, Math.min(cx - 16, Math.sqrt(2 * g.R * maxDrop - maxDrop * maxDrop)));
+      const maxTh = Math.asin(Math.min(0.95, halfW / g.R));
+      const upper = [], lower = [];
+      for (let k = 0; k <= 48; k++) {
+        const u = -1 + (2 * k) / 48;
+        const th = u * maxTh;
+        const taper = Math.pow(Math.cos((u * Math.PI) / 2), 1.35) * 0.85;
+        const sin = Math.sin(th), cos = Math.cos(th);
+        upper.push(`${k ? 'L' : 'M'}${(cx + (g.R + taper) * sin).toFixed(2)} ${(cy - (g.R + taper) * cos).toFixed(2)}`);
+        lower.unshift(`L${(cx + (g.R - taper) * sin).toFixed(2)} ${(cy - (g.R - taper) * cos).toFixed(2)}`);
+      }
+      if (arcGrad) {
+        arcGrad.setAttribute('x1', (cx - halfW).toFixed(1));
+        arcGrad.setAttribute('y1', '0');
+        arcGrad.setAttribute('x2', (cx + halfW).toFixed(1));
+        arcGrad.setAttribute('y2', '0');
+      }
+      arcPath.setAttribute('d', `${upper.join(' ')} ${lower.join(' ')} Z`);
     }
-    arcPath.setAttribute('d', pts.join(' '));
     // merkstreepje dwars op de boog, in de kleur van het gekozen moment
     const hx = o === 'vertical' ? cx - g.R : cx;
     const hy = o === 'vertical' ? cy : cy - g.R;

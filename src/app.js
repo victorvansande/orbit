@@ -2223,13 +2223,17 @@ function greet() {
   if (document.body.classList.contains('is-focus') || document.querySelector('dialog[open]')) return;
   const real = realTasks();
   const today = toDue(new Date());
+  const overdueList = real.filter(t => t.due && isOverdue(t.due));
+  const dueTodayList = real.filter(t => t.due === today);
   const stuck = longest(real.filter(t => t.level <= 2 && !t.due && daysOn(t) >= 7));
   const dusty = longest(real.filter(t => t.level === 5 && !t.due && daysOn(t) >= 30));
   const line = greeting({
     urgent: real.filter(t => t.level === URGENT_LEVEL).length,
     total: real.length,
-    overdue: real.filter(t => t.due && isOverdue(t.due)).length,
-    dueToday: real.filter(t => t.due === today).length,
+    overdue: overdueList.length,
+    overdueTitle: overdueList.length === 1 ? overdueList[0].title : '',
+    dueToday: dueTodayList.length,
+    dueTodayTitle: dueTodayList.length === 1 ? dueTodayList[0].title : '',
     stars: totalDone(done),
     stuck: stuck && { title: stuck.title, days: daysOn(stuck), level: levelName(stuck.level) },
     dusty: dusty && { title: dusty.title, days: daysOn(dusty) },
