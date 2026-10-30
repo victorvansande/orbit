@@ -58,6 +58,7 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
 - **Impact op opslag / state:** Geen.
 
 ### 5. Nu-taken afvinken in Focus (met ongedaan-maken-pil) en langere, versnellende intro-cirkel
+- **Commit:** `78b94f9`
 - **Vraag van Victor:**
   1. Implementeer in Focusmodus variant A voor de `Nu`-taken linksboven, maar zonder vastpinnen: enkel rechtstreeks kunnen afvinken, met dezelfde ongedaan-maken-pil (`#toast`) als op het gewone scherm.
   2. Laat de openingsanimatie bij het inladen van de site (`softReveal`, de cirkel vanuit het midden) iets langer duren, net iets trager beginnen en zacht versnellen naar het einde toe zodat ze meer leeft.
@@ -68,4 +69,12 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/i18n.js`: `intro.focusText` in `nl` en `en` bijgewerkt zodat vermeld wordt dat `Nu`/`Now`-taken in Focus meteen afgevinkt kunnen worden.
   - `CLAUDE.md`: Gedocumenteerd onder `## Effecten (naar React Bits Pro)`, `## Interactie in de lijst en het venster` en `## Overdracht`.
 - **Getest:** Headless Edge + 2x DPR visuele screenshotcontrole op desktop `1440x900` (donker/licht, NL) en mobiel `375x812` (donker, EN, `fx = 'all'`): console foutloos, `softReveal` zichtbaar actief op `~1,55 s` en klaar op `~2,3 s` (skip werkt), geen pinning/dimming bij klik op titel, holle afvinkcirkel zonder zichtbare staartpunt, `li.is-done` vinkje + wegglijden + `#toast` met zichtbare cursor onder `is-idle`, en `#undo` herstelt de `Nu`-taak rechtstreeks in Focusmodus.
+- **Impact op opslag / state:** Geen.
+
+### 6. Prestatiepil ingelaten in het papier (zoals fidget/zandloper) met minimalistische zachte cirkelgloed
+- **Vraag van Victor:** De parelgloed uit commit `c5c1be0` oogde te realistisch en AI-achtig (3D-verloop, felle rand, glansstreep). Pas haar aan naar een minimalistische gloed in de stijl van de zachte cirkel (optie A in donker thema, optie A3 zachte inktcirkel als tonale spiegel in licht thema omdat puur wit op licht papier wegvalt) en toon de prestatiepil ingebed/ingelaten in de pagina zoals het fidget-venster op het focusscherm.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`: Oude 3D-pareltokens (`--feat-top`, `--feat-bg`, `--feat-rim-hi`, `--feat-rim-lo`, `--feat-sweep`, `--feat-glow`, `--feat-glow-peak`) en `feat-sheen` / `feat-halo` verwijderd. Nieuwe tokens `--feat-well` (`#E4E4E0` op `:root`, `var(--well)` `#0A0A0D` op `:root[data-theme="dark"]`) en `--feat-aura` (5-staps radiaal verloop: zachte grafietnevel tot `0,135` in licht thema A3, zachte witte nevel tot `0,155` in donker thema A) toegevoegd. `.feat-pop::after` tekent het ingelaten kapsel met exact dezelfde `inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2), 0 1px 0 var(--well-lip)` als `.fidget` en `.timer`. `.feat-pop::before` (`inset: -40px -72px; border-radius: 50%`) legt daarachter het zachte radiale lichtveld (`feat-aura`, `1,6 s backwards`, bij hover `scale(1.07)`, uitgeschakeld onder `prefers-reduced-motion: reduce`).
+  - `CLAUDE.md`: Gedocumenteerd onder `## Regisseur: één groot moment tegelijk`, `## Prestaties (\`src/feats.js\`)` en `## Overdracht`.
+- **Getest:** Headless Edge + 2x DPR visuele screenshotcontrole op desktop `1440x900` (donker en licht, in Focusmodus rechtstreeks naast `#timer` en `#fidget`) en mobiel `375x812` (donker en licht): console foutloos, geen horizontale scroll (`scrollWidth === innerWidth`), hover-schaal werkt na afloop van de opkomstanimatie, en klik opent `#feats`.
 - **Impact op opslag / state:** Geen.
