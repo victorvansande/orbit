@@ -84,12 +84,15 @@ export function wallRows(words, W, H, lh, measure) {
 // eerst tekens (terminal rain); Victor hield alleen de cirkel.
 export function softReveal({ center, onReveal, done = () => {} }) {
   const ov = overlay(), cv = ov.cv;
-  let W = ov.W, H = ov.H, g = ov.g, bg = css('--bg'), maxR = Math.hypot(W, H);
-  const START = 0.08, END = 1.35;
+  let W = ov.W, H = ov.H, g = ov.g, bg = css('--bg');
+  const START = 0.08, END = 1.96;
+  // trage, zachte start boven de kern die naar de randen toe geleidelijk versnelt
+  const easeReveal = u => 0.2 * u + 0.8 * Math.pow(u, 2.35);
+  const STOPS = [[0, 1], [0.25, 0.9], [0.5, 0.5], [0.75, 0.1], [1, 0]];
   let t0 = performance.now(), revealed = false, skipAt = 0, raf = 0;
 
   function frame(now) {
-    if (ov.fresh()) { W = ov.W; H = ov.H; g = ov.g; bg = css('--bg'); maxR = Math.hypot(W, H); }
+    if (ov.fresh()) { W = ov.W; H = ov.H; g = ov.g; bg = css('--bg'); }
     let t = (now - t0) / 1000;
     if (skipAt) t = Math.max(t, END - 0.25 + (now - skipAt) / 1000);
     if (t >= START && !revealed) { revealed = true; onReveal(); }
@@ -99,11 +102,14 @@ export function softReveal({ center, onReveal, done = () => {} }) {
     g.fillRect(0, 0, W, H);
     if (t > START) {
       const [cx, cy] = center();
-      const p = smoothstep(START, END, t), R = maxR * p * 1.05;
+      const soft = Math.max(135, Math.min(W, H) * 0.19);
+      const farR = Math.hypot(Math.max(cx, W - cx), Math.max(cy, H - cy)) + soft;
+      const u = Math.min(1, Math.max(0, (t - START) / (END - START)));
+      const R = farR * easeReveal(u);
+      const a = smoothstep(0, soft * 0.5, R);
       g.globalCompositeOperation = 'destination-out';
-      const grad = g.createRadialGradient(cx, cy, Math.max(0, R - 140), cx, cy, R + 1);
-      grad.addColorStop(0, 'rgba(0,0,0,1)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      const grad = g.createRadialGradient(cx, cy, Math.max(0, R - soft), cx, cy, R + 1);
+      for (const [pos, w] of STOPS) grad.addColorStop(pos, `rgba(0,0,0,${(a * w).toFixed(4)})`);
       g.fillStyle = grad;
       g.fillRect(0, 0, W, H);
       g.globalCompositeOperation = 'source-over';

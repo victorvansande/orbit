@@ -376,7 +376,17 @@ function renderFocusNow() {
   box.append(el('p', 'focus-kicker', tx('focus.now')));
   const ul = el('ul');
   const max = desktop.matches ? 4 : 3;   // op gsm minder plaats onder de scène
-  for (const t of urgent.slice(0, max)) ul.append(el('li', '', t.title));
+  for (const t of urgent.slice(0, max)) {
+    const li = el('li', leaving.has(t.id) ? 'is-done' : '');
+    li.dataset.id = t.id;
+    const check = el('button', 'fn-check');
+    check.type = 'button';
+    check.innerHTML = CHECK_SVG;
+    check.setAttribute('aria-label', tx('task.check', { title: t.title }));
+    check.addEventListener('click', () => complete(t.id, li));
+    li.append(check, el('span', 'fn-title', t.title));
+    ul.append(li);
+  }
   if (urgent.length > max) ul.append(el('li', 'focus-more', tx('focus.more', { n: urgent.length - max })));
   box.append(ul);
   fitQuote();
@@ -813,7 +823,7 @@ function complete(id, row) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
   row.classList.add('is-done');
-  const box = row.querySelector('.t-check')?.getBoundingClientRect();
+  const box = row.querySelector('.t-check, .fn-check')?.getBoundingClientRect();
   const spot = scene.complete(id, box && box.width ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : null);
   scene.cheer();
   tasks = tasks.filter(t => t.id !== id);
@@ -851,7 +861,7 @@ function complete(id, row) {
   const sound = () => { lastTick = performance.now(); playDone({ level: task.level, n: totalDone(done) - 1 }); };
   saveTasks();
   renderSummary();
-  renderFocusNow();
+  if (!document.body.classList.contains('is-focus')) renderFocusNow();
   renderArchive();
   scene.setTasks(tasks);
   const back = task.demo ? () => { tasks.push(task); render(); } : () => {
@@ -882,7 +892,7 @@ function complete(id, row) {
     gained.unlocked = Object.keys(feats.unlocked).filter(k => !had.has(k));
     gained.ev = Object.keys(feats.ev).filter(k => !hadEv.has(k));
   }
-  setTimeout(() => { leaving.delete(id); renderTracks(); }, reducedMotion.matches ? 0 : DONE_MS);
+  setTimeout(() => { leaving.delete(id); renderTracks(); renderFocusNow(); }, reducedMotion.matches ? 0 : DONE_MS);
 }
 
 let nightBusy = false;
@@ -975,6 +985,7 @@ function showToast(text, action = null, label = tx('undo'), kind = '') {
   const toast = $('toast');
   toast.hidden = false;
   requestAnimationFrame(() => toast.classList.add('is-on'));
+  bumpIdle();
   clearTimeout(toastTimer);
   toastTimer = setTimeout(hideToast, TOAST_MS);
 }
@@ -992,6 +1003,8 @@ function hideToast() {
 }
 
 $('undo').addEventListener('click', undo);
+$('toast').addEventListener('pointerenter', () => { if (toastOn()) clearTimeout(toastTimer); });
+$('toast').addEventListener('pointerleave', () => { if (toastOn()) { clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, 2000); } });
 
 /* ---- Venster: nieuwe taak ---- */
 const composer = $('composer');
@@ -2280,8 +2293,8 @@ applyFx();
 // Bij elk openen, behalve met Minimaal, minder beweging of een koppellink.
 let revealDelay = 0;
 if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
-  revealDelay = 300;
-  const give = takeStage(2500);   // meldingen bij het laden wachten tot de intro voorbij is
+  revealDelay = 800;
+  const give = takeStage(3000);   // meldingen bij het laden wachten tot de intro voorbij is
   softReveal({
     center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
     onReveal() { scene.replayIntro(tasks); },
@@ -2303,6 +2316,6 @@ readSyncHash();
 {
   let seen = false;
   try { seen = localStorage.getItem(INTRO_KEY) === 'gezien'; } catch { /* geen opslag */ }
-  if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900);
+  if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900 + (revealDelay ? 650 : 0));
   else setTimeout(DEMO_MODE ? () => sayLine(tx('demo.start')) : greet, 1400 + revealDelay);   // demo: de kern zegt dat het een demo is     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
 }
