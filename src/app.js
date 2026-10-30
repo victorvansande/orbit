@@ -18,7 +18,7 @@ import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
 import { createTimer } from './timer.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './feats.js';
-import { softReveal, nightFall, spotlight, particleTitle, createWall } from './fx.js';
+import { softReveal, nightFall, particleTitle, createWall } from './fx.js';
 
 applyStatic();
 
@@ -786,10 +786,10 @@ function followDeadlines() {
 }
 
 /* ---- Regisseur: één groot moment tegelijk ---- */
-// Nacht na het afvinken, de nieuwe ster, een sterrenbeeld en het spotlicht op een prestatie vechten nooit om het scherm
+// Nacht na het afvinken, de nieuwe ster, een sterrenbeeld en een nieuwe prestatie vechten nooit om het scherm
 // (Victor, 29/10/2026). Wie het podium nodig heeft, neemt het (`takeStage`, met een vangnet in ms) en geeft het terug;
 // meldingen wachten (`whenCalm`) tot het vrij is, de prestatie (1) vóór de toast (2). Na het afvinken dus altijd:
-// uitfonkelen, nacht en ster, sterrenbeeld, prestatie met spotlicht, toast.
+// uitfonkelen, nacht en ster, sterrenbeeld, prestatiepil en toast.
 let stageHolds = 0;
 const stageWaiting = [];
 const stageFree = () => stageHolds === 0;
@@ -889,7 +889,7 @@ let nightBusy = false;
 function fallNight(id, wait, sound, give) {
   nightBusy = true;
   const go = () => {
-    // loopt er nog een verduistering (spotlicht dat na de tik opengaat), dan eerst die laten eindigen: nooit twee tegelijk
+    // loopt er nog een verduistering (bv. de intro), dan eerst die laten eindigen: nooit twee tegelijk
     if (document.querySelector('.fx-reveal')) { setTimeout(go, 60); return; }
     const pts = scene.skyPoints(), star = pts.find(p => p.id === id);
     const seen = star && star.x > 0 && star.x < innerWidth && star.y > 0 && star.y < innerHeight;
@@ -1450,6 +1450,7 @@ featsDialog.addEventListener('click', e => { if (e.target === featsDialog) feats
 // melding bovenaan: één prestatie tegelijk, pas als de nacht na het afvinken voorbij is
 // De regisseur bepaalt wanneer: pas als het podium vrij is (na de nacht, de ster en een sterrenbeeld), en niet zolang er
 // een venster open is (anders verdwijnt de pil erachter).
+const FEAT_POP_MS = 7200;
 let popBusy = false, popWaiting = false, popId = null, popTimer = 0;
 function showFeatPop() {
   if (popBusy || popWaiting || !featQueue.length) return;
@@ -1462,30 +1463,18 @@ function showFeatPop() {
   pop.innerHTML = `<svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
   pop.querySelector('.feat-pop-name').textContent = x.name;
   pop.hidden = false;
-  // net als bij een nieuwe ster: het scherm wordt nacht en alles wacht op de pil, die licht blijft staan en daarna
-  // opent de dag weer vanuit de pil. Eén keer per reeks meldingen, niet met Minimaal of minder beweging.
-  const spot = !minimalFx && !reducedMotion.matches && !document.hidden && Date.now() - lastSpot > 15000;
-  const give = spot ? takeStage(4000) : null;   // meteen (niet pas in het volgende beeld): de toast wacht tot het spotlicht weer open is
-  requestAnimationFrame(() => {
-    pop.classList.add('is-on');
-    if (spot) {
-      lastSpot = Date.now();
-      pop.classList.add('is-spot');
-      activeSpot = spotlight(pop, { done() { pop.classList.remove('is-spot'); activeSpot = null; give(); } });
-    }
-  });
-  popTimer = setTimeout(hideFeatPop, spot ? 3800 : 4200);
+  requestAnimationFrame(() => pop.classList.add('is-on'));
+  popTimer = setTimeout(hideFeatPop, FEAT_POP_MS);
 }
-let activeSpot = null;
 function hideFeatPop() {
   const pop = $('feat-pop');
   clearTimeout(popTimer);
-  activeSpot?.skip();
-  pop.classList.remove('is-on', 'is-spot');
-  popTimer = setTimeout(() => { pop.hidden = true; popBusy = false; popId = null; showFeatPop(); }, 400);
+  pop.classList.remove('is-on');
+  popTimer = setTimeout(() => { pop.hidden = true; popBusy = false; popId = null; showFeatPop(); }, 450);
 }
-let lastSpot = 0;
-$('feat-pop').addEventListener('click', () => openFeats());
+$('feat-pop').addEventListener('pointerenter', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) clearTimeout(popTimer); });
+$('feat-pop').addEventListener('pointerleave', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) { clearTimeout(popTimer); popTimer = setTimeout(hideFeatPop, 2400); } });
+$('feat-pop').addEventListener('click', () => { hideFeatPop(); openFeats(); });
 
 /* ---- Scrollen met een venster of menu open: enkel binnen dat venster ---- */
 // Anders scrolde de pagina (of de takenlijst, of het wiel) erachter mee, en op sommige toestellen bleef een lang venster
