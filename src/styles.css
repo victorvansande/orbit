@@ -324,6 +324,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   position: relative; min-height: 42px;
   border-bottom: 1px solid var(--line-soft);
   touch-action: pan-y; overflow: hidden;
+  display: grid; grid-template-columns: 30px 1fr; align-items: center;
   transition: opacity .3s var(--ease), background-color .2s var(--ease), max-height .28s var(--ease), min-height .28s var(--ease), padding .28s var(--ease);
 }
 .track.is-done { opacity: 0; transform: translateX(10px); }
@@ -333,13 +334,13 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   pointer-events: none;
 }
 .track-row {
-  display: grid; grid-template-columns: 30px 1fr 26px 32px; align-items: center;
+  display: grid; grid-template-columns: 1fr 26px 32px; align-items: center;
   min-height: 42px; width: 100%;
-  transform: translateX(0);
-  transition: transform .2s var(--ease);
-  will-change: transform;
+  padding-right: 0;
+  transition: padding-right .2s var(--ease), transform .2s var(--ease);
+  will-change: padding-right, transform;
 }
-.track.has-due .track-row { grid-template-columns: 30px 1fr 26px auto; }
+.track.has-due .track-row { grid-template-columns: 1fr 26px auto; }
 .t-del-btn {
   position: absolute; top: 0; right: 0;
   width: 36px; height: 42px; display: grid; place-items: center;
@@ -959,11 +960,13 @@ body.is-idle .controls { opacity: 0; }
   .track:hover .t-level .orb-dot, .t-level:focus-visible .orb-dot, .track.is-picking .t-level .orb-dot, .track.is-hot .t-level .orb-dot { opacity: 1; }
   .t-note-btn:not(.has-note) { opacity: 0; }
   .track:hover .t-note-btn, .t-note-btn:focus-visible, .track.is-noting .t-note-btn { opacity: 1; }
-  .track:not(.is-picking):hover .track-row { transform: translateX(-36px); }
-  .track:not(.is-picking):hover .t-del-btn, .t-del-btn:focus-visible { opacity: 1; pointer-events: auto; }
+  .track:not(.is-picking):hover .track-row, .track.is-swiped .track-row { padding-right: 36px; }
+  .track:not(.is-picking):hover .t-del-btn, .t-del-btn:focus-visible, .track.is-swiped .t-del-btn { opacity: 1; pointer-events: auto; }
 }
 @media (hover: none) {
   .t-note-btn:not(.has-note) { opacity: .45; }
+  .track.is-swiped .track-row { padding-right: 36px; }
+  .track.is-swiped .t-del-btn { opacity: 1; pointer-events: auto; }
 }
 @media (hover: none) { .hud-menu .menu-keys, .controls kbd, .menu-label kbd, .hud-menu kbd { display: none; } }
 

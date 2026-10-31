@@ -92,4 +92,19 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/app.js`: Inline SVG `TRASH_SVG` in de minimalistische Orbit-lijnlay-out (16x16, stroke 1.3). `deleteTask(id, row)` verwijdert de taak zonder sterren, prestaties of archiefopname, registreert de id in `gone` en `archDel`, toont de toast met "Ongedaan maken", en herstelt de taak bij een klik op de toastknop of toets `Z`. `attachSwipe` verzorgt een soepele 1:1 hardwarematige veegbeweging (zachte swipe ~36 px opent de actieknop, doortrekken > 80 px verwijdert direct, verticale scrolls worden direct vrijgegeven). `applyState` sluit verwijderde taken expliciet uit van `lost` bij synchronisatie.
   - `CLAUDE.md`: Bijgewerkt onder `## Interactie in de lijst en het venster`.
 - **Impact op opslag / state:** Registreert verwijderingen in `archDel` en `gone` zodat synchronisatie en backups de taak niet abusievelijk herstellen. Verwijderde taken komen bewust niet in `archive` of `done`.
-- **Verfijning animatie (31/10/2026):** Verwijderanimatie opgesplitst in twee natuurlijke fasen: eerst een strakke horizontale uitschuifbeweging naar links (160 ms), gevolgd door een px-nauwkeurige hoogte-inkrimping (260 ms) waarbij de onderliggende taken vloeiend omhoog glijden zonder dat ze schokkend onder de vinger/cursor omhoog springen.
+- **Verfijning animatie (31/10/2026):** Verwijderanimatie opgesplitst in twee natuurlijke fasen: eerst een strakke horizontale uitschuifbeweging naar links (180 ms), gevolgd door een FLIP-animatie (First-Last-Invert-Play) waarbij onderliggende taken direct en vloeiend omhoog glijden met translateY zonder dubbele schokken. Tijdelijke pointerlock en onmiddellijke stijlopruiming voorkomen dat het prullenbak-icoontje op een vervangende taak tweemaal knippert.
+- **Mobiel prioriteit:** Werkafspraak toegevoegd in CLAUDE.md dat mobiel te allen tijde de eerste prioriteit is bij nieuwe toepassingen en interacties (touch-gebaren, hardwareversnelling en comfortabele trefzones).
+
+### 8. Subtiel meer witruimte tussen teller en prestatieregel
+- **Commit:** 1414379
+- **Vraag van Victor:** Zet een heel klein beetje meer ruimte tussen de stars collected regel en de achievements status regel, echt maar een beetje.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`: `margin-top: 13px` toegevoegd op `.feats-badge` (was voorheen de standaard inline/tekststroom zonder marge).
+
+### 9. Vaste afvinkknop links en inspringende inhoud bij hover (Voorstel A)
+- **Vraag van Victor:** Doordat een taak nu naar links schoof bij hover op pc om de prullenbak te tonen, viel het bolletje om de taak af te vinken volledig buiten beeld. Victor koos Voorstel A om dit op te lossen.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`: `.track` is nu een twee-koloms grid (`grid-template-columns: 30px 1fr`). `.track-row` bevat enkel de inhoud (titel, notitieknop, niveau/deadline). Op hover/swipe krijgt `.track-row` `padding-right: 36px` in plaats van een negatieve `transform: translateX(-36px)`. Hierdoor veert de inhoud links nergens naar buiten, maar schuift het niveau-icoontje 36 px naar binnen om plaats te maken voor `.t-del-btn`.
+  - `src/app.js`: In `trackRow(t)` is `.t-check` direct als eerste kind van `li.track` geplaatst, verankerd in de 30 px linkerkolom. Bij `attachSwipe` wordt tijdens swipe-open `paddingRight = '36px'` gebruikt. Bij `deleteTask` glijden `.t-check` en `.track-row` samen soepel naar links weg waarna de onderliggende taken vloeiend omhoog glijden.
+- **Getest:** Desktop (1440x900) en mobiel (375x812), donker en licht thema. Afvinkbolletje blijft 100% stabiel en perfect zichtbaar bij hover. Prullenbakje verschijnt discreet rechts. Verwijderen en FLIP-animatie blijven zijdezacht. Geen consolefouten, geen horizontale scroll.
+- **Impact op opslag / state:** Geen.

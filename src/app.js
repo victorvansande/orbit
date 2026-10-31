@@ -573,15 +573,15 @@ function trackRow(t) {
   });
 
   const row = el('div', 'track-row');
-  row.append(check, title, noteButton(t, li));
+  row.append(title, noteButton(t, li));
   if (t.due) {
     const [chip, editor] = dueControls(t, li);
     row.append(chip);
-    li.append(del, row, editor);
+    li.append(check, del, row, editor);
   } else {
     const [levelBtn, picker] = levelControls(t, li);
     row.append(levelBtn);
-    li.append(del, row, picker);
+    li.append(check, del, row, picker);
   }
   li.append(notePanel(t, li));
   attachSwipe(li, row, t, del);
@@ -638,14 +638,16 @@ function attachSwipe(li, row, t, del) {
       deleteTask(t.id, li);
     } else if (final <= -20) {
       closeAllSwiped(li);
-      row.style.transition = 'transform .2s var(--ease)';
-      row.style.transform = 'translateX(-36px)';
+      row.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)';
+      row.style.transform = '';
+      row.style.paddingRight = '36px';
       del.style.opacity = '1';
       del.style.pointerEvents = 'auto';
       li.classList.add('is-swiped');
     } else {
-      row.style.transition = 'transform .2s var(--ease)';
+      row.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)';
       row.style.transform = '';
+      row.style.paddingRight = '';
       del.style.opacity = '';
       del.style.pointerEvents = '';
       li.classList.remove('is-swiped');
@@ -663,7 +665,7 @@ function closeAllSwiped(except) {
     if (el !== except) {
       el.classList.remove('is-swiped');
       const r = el.querySelector('.track-row');
-      if (r) { r.style.transition = 'transform .2s var(--ease)'; r.style.transform = ''; }
+      if (r) { r.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)'; r.style.transform = ''; r.style.paddingRight = ''; }
       const d = el.querySelector('.t-del-btn');
       if (d) { d.style.opacity = ''; d.style.pointerEvents = ''; }
     }
@@ -930,11 +932,17 @@ function deleteTask(id, li) {
   groupsEl.style.pointerEvents = 'none';
 
   const trackRow = li.querySelector('.track-row');
+  const check = li.querySelector('.t-check');
 
   // 1. Soepele uitschuifbeweging naar links
   if (trackRow) {
     trackRow.style.transition = 'transform .18s cubic-bezier(0.4, 0, 0.2, 1)';
     trackRow.style.transform = 'translateX(-105%)';
+  }
+  if (check) {
+    check.style.transition = 'transform .18s cubic-bezier(0.4, 0, 0.2, 1), opacity .15s ease';
+    check.style.transform = 'translateX(-30px)';
+    check.style.opacity = '0';
   }
 
   const performDelete = () => {
