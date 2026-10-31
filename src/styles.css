@@ -992,7 +992,7 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle {
 @media (max-width: 999px) { .intro-title.has-fx { font-size: 28px; } }
 
 /* ---- Prestaties ---- */
-.feats-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease); --tier: var(--tier-gold); }
+.feats-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 13px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease); --tier: var(--tier-gold); }
 .feats-badge:hover { color: var(--ink); }
 .feats-badge svg { width: 15px; height: 15px; }
 .fb-ring { fill: none; stroke: var(--tier, var(--ink-3)); stroke-width: 1.3; }
