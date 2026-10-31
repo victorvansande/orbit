@@ -30,6 +30,7 @@ Wat Orbit is, afgeleid uit alle keuzes van Victor. Twijfel je over een nieuw ide
 - Gegevens zijn heilig: niets verdwijnt zonder spoor (zie Vangnet), ook niet bij sync, import of een nieuwe versie.
 
 **Werken met Victor**
+- Mobiel is altijd eerste prioriteit bij nieuwe toepassingen/functies (Victor, 31/10/2026): ga nooit uit van desktop-hover; ontwerp touch-interacties meteen mee, zorg voor soepele 60fps GPU-versnelling (`transition: none` tijdens live slepen/vegen), comfortabele trefzones (min. 36-44 px), en verifieer altijd direct op mobiel.
 - Bij ontwerpkeuzes eerst visuele voorstellen (een artifact met varianten om naast elkaar te zien), dan bouwen wat hij kiest.
 - Noteer de keuze met datum, en ook wat hij afwees en waarom, zodat het niet terugkomt.
 - "Niet te veel aanpassen" betekent: alleen wat gevraagd is. Geen ongevraagde extra functies. Wel melden wat je opvalt.
@@ -38,7 +39,7 @@ Wat Orbit is, afgeleid uit alle keuzes van Victor. Twijfel je over een nieuw ide
 **Klaar is pas klaar** (checklist voor elke nieuwe functie)
 1. Nederlands én Engels in `src/i18n.js`.
 2. Licht én donker, kleuren als tokens.
-3. Desktop 1440×900 én gsm 375 px, console foutloos, geen horizontale scroll.
+3. Mobiel-eerst: gsm (375 px en 320 px) én desktop (1440×900), touch-gebaren 60fps zonder hapering, console foutloos, geen horizontale scroll.
 4. Minder beweging: geen animatie. Effect? Dan ook in de lijst van Minimaal (zie Effecten: Alle of Minimaal).
 5. Nieuwe gegevens? Mee in sync (`mergeStates`, `sameState`), export en import, archief, en compatibel met oudere versies op andere toestellen. Nooit in de echte opslag vanuit de demo.
 6. Botst het met iets dat tegelijk kan gebeuren (nacht, ster, prestatie, toast, venster, focusmodus)? Dan wachten of voorrang regelen.
