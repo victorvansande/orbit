@@ -935,43 +935,57 @@ function deleteTask(id, li) {
 
   // 1. Soepele uitschuifbeweging naar links
   if (trackRow) {
-    trackRow.style.transition = 'transform .2s cubic-bezier(0.4, 0, 0.2, 1)';
+    trackRow.style.transition = 'transform .18s cubic-bezier(0.4, 0, 0.2, 1)';
     trackRow.style.transform = 'translateX(-105%)';
   }
 
-  // 2. Aansluitend: vloeiende hoogte-inkrimping (px-nauwkeurig i.p.v. schokkerig verspringen)
-  const collapse = () => {
-    const h = li.offsetHeight;
-    li.style.height = h + 'px';
-    li.style.minHeight = '0';
-    li.style.overflow = 'hidden';
-    li.style.pointerEvents = 'none';
-    requestAnimationFrame(() => {
-      li.style.transition = 'height .26s cubic-bezier(0.4, 0, 0.2, 1), padding .26s ease, opacity .22s ease';
-      li.style.height = '0px';
-      li.style.paddingTop = '0px';
-      li.style.paddingBottom = '0px';
-      li.style.opacity = '0';
-      li.style.borderBottomColor = 'transparent';
-    });
+  const performDelete = () => {
+    // 2. Meet de posities van alle overige rijen voor verwijdering uit de DOM
+    const allTracks = Array.from(groupsEl.querySelectorAll('.track')).filter(el => el !== li);
+    const positions = allTracks.map(el => ({ el, top: el.getBoundingClientRect().top }));
+
+    tasks = tasks.filter(t => t.id !== id);
+    const now = Date.now();
+    if (!task.demo) {
+      gone[id] = now;
+      archDel[id] = now;
+      saveArchDel(archDel);
+    }
+    saveTasks();
+    renderSummary();
+    renderFocusNow();
+    scene.setTasks(tasks);
+    $('tracks-count').textContent = String(tasks.length).padStart(2, '0');
+    $('tracks-demo').hidden = !tasks.some(t => t.demo);
+
+    const group = li.closest('.group');
+    li.remove();
+    if (group && !group.querySelector('.track')) group.remove();
+    leaving.delete(id);
+
+    // 3. FLIP-animatie: onderliggende rijen glijden in een enkele vloeiende beweging op hun plek
+    if (!reducedMotion.matches) {
+      for (const { el, top } of positions) {
+        if (!el.isConnected) continue;
+        const newTop = el.getBoundingClientRect().top;
+        const dy = top - newTop;
+        if (Math.abs(dy) > 0.5) {
+          el.style.transition = 'none';
+          el.style.transform = 'translateY(' + dy + 'px)';
+        }
+      }
+      requestAnimationFrame(() => {
+        for (const { el } of positions) {
+          if (!el.isConnected) continue;
+          el.style.transition = 'transform .28s cubic-bezier(0.4, 0, 0.2, 1)';
+          el.style.transform = '';
+        }
+      });
+    }
   };
 
   const delay = reducedMotion.matches ? 0 : 160;
-  setTimeout(collapse, delay);
-
-  tasks = tasks.filter(t => t.id !== id);
-  const now = Date.now();
-  if (!task.demo) {
-    gone[id] = now;
-    archDel[id] = now;
-    saveArchDel(archDel);
-  }
-  saveTasks();
-  renderSummary();
-  renderFocusNow();
-  scene.setTasks(tasks);
-  $('tracks-count').textContent = String(tasks.length).padStart(2, '0');
-  $('tracks-demo').hidden = !tasks.some(t => t.demo);
+  setTimeout(performDelete, delay);
 
   const undoDelete = () => {
     if (!task.demo) {
@@ -985,11 +999,6 @@ function deleteTask(id, li) {
     render();
   };
   showToast(tx('toast.deleted', { title: task.title }), undoDelete, tx('undo'), 'del');
-
-  setTimeout(() => {
-    leaving.delete(id);
-    renderTracks();
-  }, reducedMotion.matches ? 0 : 430);
 }
 
 function complete(id, row) {
