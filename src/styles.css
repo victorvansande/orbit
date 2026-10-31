@@ -321,27 +321,31 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .group-list { list-style: none; margin: 0; padding: 0; }
 
 .track {
-  display: grid; grid-template-columns: 30px 1fr 26px 32px 30px; align-items: center;
-  min-height: 42px;
+  position: relative; min-height: 42px;
   border-bottom: 1px solid var(--line-soft);
-  touch-action: pan-y;
-  transition: opacity .3s var(--ease), transform .22s var(--ease), background-color .2s var(--ease), max-height .28s var(--ease), min-height .28s var(--ease), padding .28s var(--ease);
+  touch-action: pan-y; overflow: hidden;
+  transition: opacity .3s var(--ease), background-color .2s var(--ease), max-height .28s var(--ease), min-height .28s var(--ease), padding .28s var(--ease);
 }
 .track.is-done { opacity: 0; transform: translateX(10px); }
 .track.is-deleted {
-  opacity: 0 !important;
-  max-height: 0 !important;
-  min-height: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  opacity: 0 !important; max-height: 0 !important; min-height: 0 !important;
+  padding-top: 0 !important; padding-bottom: 0 !important;
   border-bottom-color: transparent !important;
-  transform: translateX(-36px);
-  pointer-events: none;
+  transform: translateX(-36px); pointer-events: none;
 }
+.track-row {
+  display: grid; grid-template-columns: 30px 1fr 26px 32px; align-items: center;
+  min-height: 42px; width: 100%;
+  transform: translateX(0);
+  transition: transform .2s var(--ease);
+  will-change: transform;
+}
+.track.has-due .track-row { grid-template-columns: 30px 1fr 26px auto; }
 .t-del-btn {
-  width: 28px; height: 42px; display: grid; place-items: center; justify-self: end;
+  position: absolute; top: 0; right: 0;
+  width: 36px; height: 42px; display: grid; place-items: center;
   color: var(--ink-3); border: 0; background: transparent; border-radius: 7px;
-  cursor: pointer; padding: 0; opacity: 0;
+  cursor: pointer; padding: 0; opacity: 0; pointer-events: none; z-index: 1;
   transition: opacity .2s var(--ease), color .2s var(--ease), background-color .2s var(--ease), transform .2s var(--pop);
 }
 .t-del-btn:hover { color: var(--late); background: var(--fill); }
@@ -371,7 +375,6 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .t-opt { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; }
 .t-opt:hover { background: var(--fill); }
 .t-opt[aria-current="true"] { box-shadow: inset 0 0 0 1px var(--line); }
-.track.has-due { grid-template-columns: 30px 1fr 26px auto 30px; }
 /* notitie: icoontje naast de titel, tekstvak eronder over de hele breedte */
 .t-note-btn { width: 26px; height: 42px; display: grid; place-items: center; color: var(--ink-3); border-radius: 7px; transition: color .2s var(--ease), opacity .2s var(--ease); }
 .t-note-btn:hover, .track.is-noting .t-note-btn { color: var(--ink); }
@@ -957,16 +960,11 @@ body.is-idle .controls { opacity: 0; }
   .track:hover .t-level .orb-dot, .t-level:focus-visible .orb-dot, .track.is-picking .t-level .orb-dot, .track.is-hot .t-level .orb-dot { opacity: 1; }
   .t-note-btn:not(.has-note) { opacity: 0; }
   .track:hover .t-note-btn, .t-note-btn:focus-visible, .track.is-noting .t-note-btn { opacity: 1; }
-  .track:hover .t-del-btn, .t-del-btn:focus-visible, .track.is-swiped .t-del-btn { opacity: 1; }
+  .track:not(.is-picking):hover .track-row { transform: translateX(-36px); }
+  .track:not(.is-picking):hover .t-del-btn, .t-del-btn:focus-visible { opacity: 1; pointer-events: auto; }
 }
 @media (hover: none) {
   .t-note-btn:not(.has-note) { opacity: .45; }
-  .track { grid-template-columns: 30px 1fr 26px 32px 0; }
-  .track.has-due { grid-template-columns: 30px 1fr 26px auto 0; }
-  .t-del-btn { width: 0; overflow: hidden; }
-  .track.is-swiped { grid-template-columns: 30px 1fr 26px 32px 30px; }
-  .track.has-due.is-swiped { grid-template-columns: 30px 1fr 26px auto 30px; }
-  .track.is-swiped .t-del-btn { width: 28px; opacity: 1; }
 }
 @media (hover: none) { .hud-menu .menu-keys, .controls kbd, .menu-label kbd, .hud-menu kbd { display: none; } }
 

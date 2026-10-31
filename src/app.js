@@ -572,19 +572,26 @@ function trackRow(t) {
     deleteTask(t.id, li);
   });
 
-  li.append(check, title, noteButton(t, li));
-  if (t.due) li.append(...dueControls(t, li));
-  else li.append(...levelControls(t, li));
-  li.append(del);
+  const row = el('div', 'track-row');
+  row.append(check, title, noteButton(t, li));
+  if (t.due) {
+    const [chip, editor] = dueControls(t, li);
+    row.append(chip);
+    li.append(del, row, editor);
+  } else {
+    const [levelBtn, picker] = levelControls(t, li);
+    row.append(levelBtn);
+    li.append(del, row, picker);
+  }
   li.append(notePanel(t, li));
-  attachSwipe(li, t);
+  attachSwipe(li, row, t, del);
 
   li.addEventListener('pointerenter', () => scene.highlight({ task: t.id }));
   li.addEventListener('pointerleave', () => scene.highlight({}));
   return li;
 }
 
-function attachSwipe(li, t) {
+function attachSwipe(li, row, t, del) {
   let startX = 0, startY = 0, dx = 0, dy = 0, locked = '', dragging = false;
 
   const onPointerDown = e => {
@@ -609,32 +616,40 @@ function attachSwipe(li, t) {
     if (locked === 'h') {
       dx = curDx;
       e.preventDefault();
-      const base = li.classList.contains('is-swiped') ? -32 : 0;
+      row.style.transition = 'none';
+      const base = li.classList.contains('is-swiped') ? -36 : 0;
       const target = Math.min(10, Math.max(-120, base + dx));
-      li.style.transform = 'translateX(' + target + 'px)';
+      row.style.transform = 'translateX(' + target + 'px)';
       li.classList.toggle('is-swipe-ready', target <= -80);
-      const del = li.querySelector('.t-del-btn');
-      if (del) del.style.opacity = String(Math.min(1, Math.max(0, -target / 28)));
+      del.style.opacity = String(Math.min(1, Math.max(0, -target / 28)));
+      del.style.pointerEvents = target <= -20 ? 'auto' : 'none';
     }
   };
 
   const onPointerEnd = e => {
     if (!dragging && locked !== 'h') { startX = 0; startY = 0; return; }
     try { li.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-    const base = li.classList.contains('is-swiped') ? -32 : 0;
+    const base = li.classList.contains('is-swiped') ? -36 : 0;
     const final = base + dx;
-    li.style.transform = '';
-    const del = li.querySelector('.t-del-btn');
-    if (del) del.style.opacity = '';
-    li.classList.remove('is-swipe-ready');
     startX = 0; startY = 0; locked = ''; dragging = false;
+    li.classList.remove('is-swipe-ready');
 
     if (final <= -80) {
+      row.style.transition = 'transform .22s var(--ease)';
+      row.style.transform = 'translateX(-100%)';
       deleteTask(t.id, li);
     } else if (final <= -20) {
       closeAllSwiped(li);
+      row.style.transition = 'transform .2s var(--ease)';
+      row.style.transform = 'translateX(-36px)';
+      del.style.opacity = '1';
+      del.style.pointerEvents = 'auto';
       li.classList.add('is-swiped');
     } else {
+      row.style.transition = 'transform .2s var(--ease)';
+      row.style.transform = '';
+      del.style.opacity = '';
+      del.style.pointerEvents = '';
       li.classList.remove('is-swiped');
     }
   };
@@ -647,7 +662,13 @@ function attachSwipe(li, t) {
 
 function closeAllSwiped(except) {
   for (const el of groupsEl.querySelectorAll('.track.is-swiped')) {
-    if (el !== except) el.classList.remove('is-swiped');
+    if (el !== except) {
+      el.classList.remove('is-swiped');
+      const r = el.querySelector('.track-row');
+      if (r) { r.style.transition = 'transform .2s var(--ease)'; r.style.transform = ''; }
+      const d = el.querySelector('.t-del-btn');
+      if (d) { d.style.opacity = ''; d.style.pointerEvents = ''; }
+    }
   }
 }
 document.addEventListener('pointerdown', e => {
