@@ -78,3 +78,17 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `CLAUDE.md`: Gedocumenteerd onder `## Regisseur: één groot moment tegelijk`, `## Prestaties (\`src/feats.js\`)` en `## Overdracht`.
 - **Getest:** Headless Edge + 2x DPR visuele screenshotcontrole op desktop `1440x900` (donker en licht, in Focusmodus rechtstreeks naast `#timer` en `#fidget`) en mobiel `375x812` (donker en licht): console foutloos, geen horizontale scroll (`scrollWidth === innerWidth`), hover-schaal werkt na afloop van de opkomstanimatie, en klik opent `#feats`.
 - **Impact op opslag / state:** Geen.
+
+
+---
+
+## 31/10/2026
+
+### 7. Taken verwijderen zonder afvinken (swipe naar links & discreet prullenbakje)
+- **Vraag van Victor:** Er moet een manier zijn om taken uit de lijst te verwijderen zonder ze af te vinken en als 'complete' te behandelen (geen punten of sterren). Victor koos optie 2: een rustig, minimalistisch prullenbak-icoontje naast het niveaubolletje bij hover of een zachte swipe naar links, zonder visuele botsingen met andere rij-elementen.
+- **Gewijzigde bestanden:**
+  - `src/i18n.js`: Sleutels `'task.delete'` en `'toast.deleted'` toegevoegd in zowel `NL` als `EN`.
+  - `src/styles.css`: Grid van `.track` uitgebreid met een discrete 30 px actiekolom voor `.t-del-btn`. Knopje heeft 0 opacity in rust, verschijnt soepel naast `.t-level` of `.t-due` bij hover op desktop, kleurt zacht `var(--late)` bij hover en krimpt bij inklikken. Op touch (`hover: none`) blijft de kolom standaard 0 px breed en toont ze zich na een zachte swipe (`.is-swiped`). `.track.is-deleted` animeert de rij soepel weg (vervagen en inkrimpen van hoogte en padding).
+  - `src/app.js`: Inline SVG `TRASH_SVG` in de minimalistische Orbit-lijnlay-out (16x16, stroke 1.3). `deleteTask(id, row)` verwijdert de taak zonder sterren, prestaties of archiefopname, registreert de id in `gone` en `archDel`, toont de toast met "Ongedaan maken", en herstelt de taak bij een klik op de toastknop of toets `Z`. `attachSwipe` verzorgt een soepele 1:1 hardwarematige veegbeweging (zachte swipe ~36 px opent de actieknop, doortrekken > 80 px verwijdert direct, verticale scrolls worden direct vrijgegeven). `applyState` sluit verwijderde taken expliciet uit van `lost` bij synchronisatie.
+  - `CLAUDE.md`: Bijgewerkt onder `## Interactie in de lijst en het venster`.
+- **Impact op opslag / state:** Registreert verwijderingen in `archDel` en `gone` zodat synchronisatie en backups de taak niet abusievelijk herstellen. Verwijderde taken komen bewust niet in `archive` of `done`.

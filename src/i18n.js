@@ -53,7 +53,7 @@ const NL = {
   'tracks.demo': 'Dit zijn voorbeeldtaken. Ze verdwijnen zodra je zelf een taak toevoegt.',
   'tracks.emptyDesk': 'Niets te doen. Kies rechts een moment om een taak toe te voegen.',
   'tracks.emptyMobile': 'Niets te doen. Kies hierboven een moment om een taak toe te voegen.',
-  'task.check': 'Markeer “{title}” als klaar', 'task.dbl': 'Dubbelklik om aan te passen', 'task.note': 'Notitie bij “{title}”', 'task.noteAdd': 'Notitie toevoegen', 'task.noteShow': 'Notitie tonen', 'task.notePlaceholder': 'Korte notitie',
+  'task.check': 'Markeer “{title}” als klaar', 'task.delete': 'Verwijder “{title}”', 'task.dbl': 'Dubbelklik om aan te passen', 'task.note': 'Notitie bij “{title}”', 'task.noteAdd': 'Notitie toevoegen', 'task.noteShow': 'Notitie tonen', 'task.notePlaceholder': 'Korte notitie',
   'task.level': 'Moment wijzigen, nu {level}', 'task.pick': 'Kies een moment',
   'task.due': 'Deadline {label}, wijzigen', 'task.dueClear': 'Deadline wissen', 'task.edit': 'Titel aanpassen',
   'demo': ['Huur overschrijven', 'Offerte terugsturen', 'Boodschappen doen', 'Planten water geven', 'Fiets laten herstellen',
@@ -74,7 +74,7 @@ const NL = {
 
   // toasts
   'undo': 'Ongedaan maken', 'cancel': 'Annuleer', 'done': 'Klaar',
-  'toast.completed': 'Afgevinkt · {title}', 'toast.completedN': 'Afgevinkt · {n} taken', 'toast.restored': 'Teruggezet · {title}',
+  'toast.completed': 'Afgevinkt · {title}', 'toast.completedN': 'Afgevinkt · {n} taken', 'toast.deleted': 'Verwijderd · “{title}”', 'toast.restored': 'Teruggezet · {title}',
   'toast.saveFailed': 'Bewaren op dit toestel lukte niet. Je taken staan in de reservekopie; exporteer ze voor de zekerheid.',
   'toast.mirror': n('{n} taak hersteld uit de reservekopie', '{n} taken hersteld uit de reservekopie'),
   'toast.elsewhere1': 'Elders afgevinkt · {title}', 'toast.elsewhere': '{n} taken elders afgevinkt',
@@ -220,7 +220,7 @@ const EN = {
   'tracks.demo': 'These are example tasks. They disappear as soon as you add one of your own.',
   'tracks.emptyDesk': 'Nothing to do. Pick a moment on the right to add a task.',
   'tracks.emptyMobile': 'Nothing to do. Pick a moment above to add a task.',
-  'task.check': 'Mark “{title}” as done', 'task.dbl': 'Double-click to edit', 'task.note': 'Note for “{title}”', 'task.noteAdd': 'Add a note', 'task.noteShow': 'Show note', 'task.notePlaceholder': 'Short note',
+  'task.check': 'Mark “{title}” as done', 'task.delete': 'Delete “{title}”', 'task.dbl': 'Double-click to edit', 'task.note': 'Note for “{title}”', 'task.noteAdd': 'Add a note', 'task.noteShow': 'Show note', 'task.notePlaceholder': 'Short note',
   'task.level': 'Change moment, now {level}', 'task.pick': 'Choose a moment',
   'task.due': 'Deadline {label}, change', 'task.dueClear': 'Clear deadline', 'task.edit': 'Edit title',
   'demo': ['Pay the rent', 'Send back the quote', 'Do the groceries', 'Water the plants', 'Get the bike fixed',
@@ -238,7 +238,7 @@ const EN = {
   'focus.late': 'Overdue', 'focus.next': 'Next deadline', 'focus.now': 'Now', 'focus.more': 'and {n} more',
 
   'undo': 'Undo', 'cancel': 'Cancel', 'done': 'Done',
-  'toast.completed': 'Done · {title}', 'toast.completedN': 'Done · {n} tasks', 'toast.restored': 'Restored · {title}',
+  'toast.completed': 'Done · {title}', 'toast.completedN': 'Done · {n} tasks', 'toast.deleted': 'Deleted · “{title}”', 'toast.restored': 'Restored · {title}',
   'toast.saveFailed': 'Saving on this device failed. Your tasks are in the backup copy; export them to be safe.',
   'toast.mirror': n('{n} task restored from the backup copy', '{n} tasks restored from the backup copy'),
   'toast.elsewhere1': 'Done elsewhere · {title}', 'toast.elsewhere': '{n} tasks done elsewhere',

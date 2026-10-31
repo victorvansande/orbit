@@ -515,6 +515,7 @@ $('stat-mini').addEventListener('click', () => {
 
 /* ---- Takenlijst ---- */
 const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const TRASH_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12.5 4.5l-.7 9a1.5 1.5 0 0 1-1.5 1.5H5.7a1.5 1.5 0 0 1-1.5-1.5l-.7-9M6.5 7.5v4M9.5 7.5v4"/></svg>';
 const leaving = new Set();
 
 const wall = createWall({ reducedMotion });
@@ -561,15 +562,97 @@ function trackRow(t) {
   title.title = tx('task.dbl');
   title.addEventListener('dblclick', () => editTitle(t.id, title));
 
+  const del = el('button', 't-del-btn');
+  del.type = 'button';
+  del.innerHTML = TRASH_SVG;
+  del.setAttribute('aria-label', tx('task.delete', { title: t.title }));
+  del.title = tx('task.delete', { title: t.title });
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteTask(t.id, li);
+  });
+
   li.append(check, title, noteButton(t, li));
   if (t.due) li.append(...dueControls(t, li));
   else li.append(...levelControls(t, li));
+  li.append(del);
   li.append(notePanel(t, li));
+  attachSwipe(li, t);
 
   li.addEventListener('pointerenter', () => scene.highlight({ task: t.id }));
   li.addEventListener('pointerleave', () => scene.highlight({}));
   return li;
 }
+
+function attachSwipe(li, t) {
+  let startX = 0, startY = 0, dx = 0, dy = 0, locked = '', dragging = false;
+
+  const onPointerDown = e => {
+    if (e.target.closest('button, input, textarea, select')) return;
+    startX = e.clientX;
+    startY = e.clientY;
+    dx = 0; dy = 0; locked = ''; dragging = false;
+  };
+
+  const onPointerMove = e => {
+    if (startX === 0 && startY === 0) return;
+    const curDx = e.clientX - startX, curDy = e.clientY - startY;
+    if (!locked) {
+      if (Math.abs(curDy) > Math.abs(curDx) && Math.abs(curDy) > 6) {
+        locked = 'v'; startX = 0; startY = 0; return;
+      }
+      if (Math.abs(curDx) > Math.abs(curDy) && Math.abs(curDx) > 6) {
+        locked = 'h'; dragging = true;
+        try { li.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      }
+    }
+    if (locked === 'h') {
+      dx = curDx;
+      e.preventDefault();
+      const base = li.classList.contains('is-swiped') ? -32 : 0;
+      const target = Math.min(10, Math.max(-120, base + dx));
+      li.style.transform = 'translateX(' + target + 'px)';
+      li.classList.toggle('is-swipe-ready', target <= -80);
+      const del = li.querySelector('.t-del-btn');
+      if (del) del.style.opacity = String(Math.min(1, Math.max(0, -target / 28)));
+    }
+  };
+
+  const onPointerEnd = e => {
+    if (!dragging && locked !== 'h') { startX = 0; startY = 0; return; }
+    try { li.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    const base = li.classList.contains('is-swiped') ? -32 : 0;
+    const final = base + dx;
+    li.style.transform = '';
+    const del = li.querySelector('.t-del-btn');
+    if (del) del.style.opacity = '';
+    li.classList.remove('is-swipe-ready');
+    startX = 0; startY = 0; locked = ''; dragging = false;
+
+    if (final <= -80) {
+      deleteTask(t.id, li);
+    } else if (final <= -20) {
+      closeAllSwiped(li);
+      li.classList.add('is-swiped');
+    } else {
+      li.classList.remove('is-swiped');
+    }
+  };
+
+  li.addEventListener('pointerdown', onPointerDown);
+  li.addEventListener('pointermove', onPointerMove);
+  li.addEventListener('pointerup', onPointerEnd);
+  li.addEventListener('pointercancel', onPointerEnd);
+}
+
+function closeAllSwiped(except) {
+  for (const el of groupsEl.querySelectorAll('.track.is-swiped')) {
+    if (el !== except) el.classList.remove('is-swiped');
+  }
+}
+document.addEventListener('pointerdown', e => {
+  if (!e.target.closest('.track.is-swiped')) closeAllSwiped();
+});
 
 // Notitie bij een taak: een icoontje naast de titel klapt eronder een tekstvak open. Enkel zichtbaar als je ze openklapt;
 // een taak met notitie houdt het icoontje altijd zichtbaar, met een stip. Bewaard terwijl je typt (gaat mee met de sync en
@@ -818,6 +901,44 @@ function whenCalm(fn, prio = 2) {
 function flushStage() { while (stageFree() && stageWaiting.length) stageWaiting.shift().fn(); }
 
 let toastAction = null, toastTimer = 0, lastTick = -1e9;
+function deleteTask(id, row) {
+  const task = tasks.find(t => t.id === id);
+  if (!task || leaving.has(id)) return;
+  leaving.add(id);
+  row.classList.add('is-deleted');
+  tasks = tasks.filter(t => t.id !== id);
+  const now = Date.now();
+  if (!task.demo) {
+    gone[id] = now;
+    archDel[id] = now;
+    saveArchDel(archDel);
+  }
+  saveTasks();
+  renderSummary();
+  renderFocusNow();
+  scene.setTasks(tasks);
+  $('tracks-count').textContent = String(tasks.length).padStart(2, '0');
+  $('tracks-demo').hidden = !tasks.some(t => t.demo);
+
+  const undoDelete = () => {
+    if (!task.demo) {
+      delete gone[id];
+      delete archDel[id];
+      saveArchDel(archDel);
+    }
+    touch(task);
+    tasks.push(task);
+    saveTasks();
+    render();
+  };
+  showToast(tx('toast.deleted', { title: task.title }), undoDelete, tx('undo'), 'del');
+
+  setTimeout(() => {
+    leaving.delete(id);
+    renderTracks();
+  }, reducedMotion.matches ? 0 : 280);
+}
+
 function complete(id, row) {
   const task = tasks.find(t => t.id === id);
   if (!task || leaving.has(id)) return;
@@ -1809,12 +1930,12 @@ const sync = createSync({
   applyState(state) {
     gone = { ...state.gone };
     // het gedeelde archief (een oudere versie van Orbit stuurt er geen: dan blijft het eigen archief)
-    if (state.archDel) archDel = saveArchDel({ ...state.archDel });
+    if (state.archDel) archDel = saveArchDel({ ...archDel, ...state.archDel });
     if (state.archive) archive = saveArchive(state.archive.map(a => ({ ...a })));
     const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo');
     const keep = new Set(incoming.map(t => t.id));
     // Taken die hier verdwijnen omdat ze elders afgevinkt zijn: eerst een momentopname, dan naar het archief, en melden
-    const lost = realTasks().filter(t => !keep.has(t.id));
+    const lost = realTasks().filter(t => !keep.has(t.id) && !state.archDel?.[t.id] && !archDel[t.id]);
     if (lost.length) {
       snapshot(tasks, 'sync');
       const now = Date.now();
