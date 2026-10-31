@@ -108,3 +108,11 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/app.js`: In `trackRow(t)` is `.t-check` direct als eerste kind van `li.track` geplaatst, verankerd in de 30 px linkerkolom. Bij `attachSwipe` wordt tijdens swipe-open `paddingRight = '36px'` gebruikt. Bij `deleteTask` glijden `.t-check` en `.track-row` samen soepel naar links weg waarna de onderliggende taken vloeiend omhoog glijden.
 - **Getest:** Desktop (1440x900) en mobiel (375x812), donker en licht thema. Afvinkbolletje blijft 100% stabiel en perfect zichtbaar bij hover. Prullenbakje verschijnt discreet rechts. Verwijderen en FLIP-animatie blijven zijdezacht. Geen consolefouten, geen horizontale scroll.
 - **Impact op opslag / state:** Geen.
+
+### 10. Lange to-do titels op één regel met zachte analoge nevel (Variant 3)
+- **Vraag van Victor:** Doordat tekst van langere to-do's werd afgebroken naar een andere regel, namen taken dubbel zoveel verticale ruimte in beslag. Victor vroeg om de taak af te kappen en het einde wat te vervagen als er te weinig ruimte is voor de icoontjes rechts, en koos na voorlegging van drie varianten in een interactief artifact voor Variant 3 (zachte analoge nevel zonder leestekens).
+- **Gewijzigde bestanden:**
+  - `src/styles.css`: `.t-title` voorzien van `white-space: nowrap; overflow: hidden; text-overflow: clip; min-width: 0;` en een lineair vervagingsmasker over de laatste 34 px (`mask-image: linear-gradient(to right, black calc(100% - 34px), transparent 100%)`). `.track-row` en `.track.has-due .track-row` gebruiken nu `minmax(0, 1fr)` voor de titelkolom en `.t-edit` heeft `min-width: 0` zodat lange teksten het raster nooit meer horizontaal kunnen opblazen.
+  - `src/app.js`: In `trackRow(t)` toont de tooltip (`title.title`) nu de volledige titel inclusief de dubbelklik-instructie (`${t.title} · ${tx('task.dbl')}`), zodat afgekapte titels altijd volledig leesbaar zijn bij hoveren.
+- **Getest:** Desktop (1440x900) en mobiel (375x812), donker en licht thema. Lange taken blijven exact 42 px hoog. Tekst lost aan het rechteruiteinde natuurlijk en zacht op naar transparant. Volledige tekst toont in de tooltip. Geen horizontale scroll, console foutloos.
+- **Impact op opslag / state:** Geen.

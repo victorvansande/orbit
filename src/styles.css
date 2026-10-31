@@ -334,13 +334,13 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   pointer-events: none;
 }
 .track-row {
-  display: grid; grid-template-columns: 1fr 26px 32px; align-items: center;
+  display: grid; grid-template-columns: minmax(0, 1fr) 26px 32px; align-items: center;
   min-height: 42px; width: 100%;
   padding-right: 0;
   transition: padding-right .2s var(--ease), transform .2s var(--ease);
   will-change: padding-right, transform;
 }
-.track.has-due .track-row { grid-template-columns: 1fr 26px auto; }
+.track.has-due .track-row { grid-template-columns: minmax(0, 1fr) 26px auto; }
 .t-del-btn {
   position: absolute; top: 0; right: 0;
   width: 36px; height: 42px; display: grid; place-items: center;
@@ -366,8 +366,13 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   background: var(--c);
 }
 .track.is-done .t-check svg { opacity: 1; }
-.t-title { padding: 10px 6px 10px 2px; font-size: 14.5px; overflow-wrap: anywhere; cursor: default; }
-.t-edit { width: 100%; padding: 9px 6px 9px 2px; border: 0; border-bottom: 1px solid var(--ink); background: transparent; font: 14.5px var(--font); color: var(--ink); outline: none; }
+.t-title {
+  padding: 10px 4px 10px 2px; font-size: 14.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: clip; min-width: 0; cursor: default;
+  mask-image: linear-gradient(to right, black calc(100% - 34px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 34px), transparent 100%);
+}
+.t-edit { min-width: 0; width: 100%; padding: 9px 6px 9px 2px; border: 0; border-bottom: 1px solid var(--ink); background: transparent; font: 14.5px var(--font); color: var(--ink); outline: none; }
 .t-level { width: 32px; height: 42px; display: grid; place-items: center; border-radius: 8px; }
 .t-level .orb-dot { transition: transform .2s var(--pop); }
 .t-level:hover .orb-dot, .track.is-picking .t-level .orb-dot { transform: scale(1.35); }

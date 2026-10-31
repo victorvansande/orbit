@@ -559,7 +559,7 @@ function trackRow(t) {
   check.addEventListener('click', () => complete(t.id, li));
 
   const title = el('span', 't-title', t.title);
-  title.title = tx('task.dbl');
+  title.title = t.title + ' · ' + tx('task.dbl');
   title.addEventListener('dblclick', () => editTitle(t.id, title));
 
   const del = el('button', 't-del-btn');
