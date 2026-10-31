@@ -618,15 +618,19 @@ function attachSwipe(li, row, t, del) {
       dx = curDx;
       e.preventDefault();
       row.style.transition = 'none';
+      del.style.transition = 'none';
       const base = li.classList.contains('is-swiped') ? -36 : 0;
       let raw = base + dx;
       if (raw < -36) {
         raw = -36 + (raw - (-36)) * 0.35; // zachte elastische begrenzing
       }
-      const target = Math.min(10, Math.max(-52, raw));
-      row.style.transform = 'translateX(' + target + 'px)';
-      del.style.opacity = String(Math.min(1, Math.max(0, -target / 28)));
-      del.style.pointerEvents = target <= -20 ? 'auto' : 'none';
+      // Voorstel 1 (Victor, 31/10/2026): inspringende padding-right zodat tekst nooit over afvinkbolletje schuift
+      const clamped = Math.min(0, Math.max(-48, raw));
+      const pad = -clamped; // 0 tot 48 px
+      row.style.transform = '';
+      row.style.paddingRight = pad + 'px';
+      del.style.opacity = String(Math.min(1, Math.max(0, pad / 28)));
+      del.style.pointerEvents = pad >= 20 ? 'auto' : 'none';
     }
   };
 
@@ -637,17 +641,18 @@ function attachSwipe(li, row, t, del) {
     const final = base + dx;
     startX = 0; startY = 0; locked = ''; dragging = false;
 
-    // Optie 1 (Victor, 31/10/2026): swipe opent enkel het prullenbakje, nooit direct verwijderen via veeg
-    if (final <= -20) {
+    row.style.transition = 'padding-right .2s var(--ease), transform .2s var(--ease)';
+    del.style.transition = 'opacity .2s var(--ease)';
+
+    // Swipe opent enkel het prullenbakje via padding-right (geen fysieke verschuiving links)
+    if (final <= -18) {
       closeAllSwiped(li);
-      row.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)';
       row.style.transform = '';
       row.style.paddingRight = '36px';
       del.style.opacity = '1';
       del.style.pointerEvents = 'auto';
       li.classList.add('is-swiped');
     } else {
-      row.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)';
       row.style.transform = '';
       row.style.paddingRight = '';
       del.style.opacity = '';

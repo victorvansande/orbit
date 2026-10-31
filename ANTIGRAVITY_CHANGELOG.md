@@ -131,3 +131,11 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/fidget.js`: `intro` staat nu standaard direct op 1 (ook na `init()`, de lamp brandt immers al). Hierdoor rendert de lava vanaf het allereerste frame direct op volle grootte en met alle klonten en bodemplas compleet zichtbaar. Daarnaast is een WebGL-contextcheck toegevoegd (`prog.gl !== gl`) en wordt de DPR-canvasresolutie (`cvGL.width / cvGL.height`) direct gesynchroniseerd in `render()`.
 - **Getest:** Desktop focusmodus geopend in licht en donker thema: de lavalamp toont vanaf frame 1 direct alle warme bollen en de vloeibare bodemplas zonder enige vertraging of leeg scherm.
 - **Impact op opslag / state:** Geen.
+
+### 13. Inspringende inhoud tijdens swipe op mobiel (Voorstel 1)
+- **Vraag van Victor:** Als je naar links swipet op een taak om ze te verwijderen, ging de tekst van de to-do over het linker afvink-bolletje. Victor koos Voorstel 1 (inspringende inhoud) om dit op te lossen en te verfijnen.
+- **Oorzaak:** Tijdens de live sleepbeweging verschoof `.track-row` fysiek naar links via `translateX`, waardoor de tekst van de titel de 30 px linkerkolom van het afvinkbolletje in schoof en over het cirkeltje liep.
+- **Gewijzigde bestanden:**
+  - `src/app.js`: In `attachSwipe` beweegt `.track-row` tijdens het slepen niet meer naar links via `translateX`. In plaats daarvan groeit `padding-right` 1:1 dynamisch mee met de vinger (0 tot 36 px, met zachte elastische begrenzing). Het niveaubolletje en eventuele notitieknop schuiven onder de vinger naar links en trekken het prullenbakje tevoorschijn, terwijl het afvinkbolletje en het begin van de titel rotsvast links blijven staan. Hierdoor kan de tekst het afvinkbolletje fysiek nooit meer raken of overlappen.
+- **Getest:** Gesimuleerd en geverifieerd op mobiele formaten (375x812 en 320x568). Live slepen laat de inhoud strak naar binnen veren, tekst blijft volledig binnen kolom 2, nul overlap met `.t-check`, prullenbakje opent soepel.
+- **Impact op opslag / state:** Geen.
