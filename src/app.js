@@ -925,13 +925,11 @@ function deleteTask(id, li) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
 
-  const trackRow = li.querySelector('.track-row');
   const del = li.querySelector('.t-del-btn');
-  if (del) {
-    del.style.transition = 'opacity .15s var(--ease)';
-    del.style.opacity = '0';
-    del.style.pointerEvents = 'none';
-  }
+  if (del) del.remove();
+  groupsEl.style.pointerEvents = 'none';
+
+  const trackRow = li.querySelector('.track-row');
 
   // 1. Soepele uitschuifbeweging naar links
   if (trackRow) {
@@ -980,7 +978,10 @@ function deleteTask(id, li) {
           el.style.transition = 'transform .28s cubic-bezier(0.4, 0, 0.2, 1)';
           el.style.transform = '';
         }
+        setTimeout(() => { groupsEl.style.pointerEvents = ''; }, 300);
       });
+    } else {
+      groupsEl.style.pointerEvents = '';
     }
   };
 
