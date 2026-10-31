@@ -635,8 +635,6 @@ function attachSwipe(li, row, t, del) {
     li.classList.remove('is-swipe-ready');
 
     if (final <= -80) {
-      row.style.transition = 'transform .22s var(--ease)';
-      row.style.transform = 'translateX(-100%)';
       deleteTask(t.id, li);
     } else if (final <= -20) {
       closeAllSwiped(li);
@@ -922,11 +920,45 @@ function whenCalm(fn, prio = 2) {
 function flushStage() { while (stageFree() && stageWaiting.length) stageWaiting.shift().fn(); }
 
 let toastAction = null, toastTimer = 0, lastTick = -1e9;
-function deleteTask(id, row) {
+function deleteTask(id, li) {
   const task = tasks.find(t => t.id === id);
   if (!task || leaving.has(id)) return;
   leaving.add(id);
-  row.classList.add('is-deleted');
+
+  const trackRow = li.querySelector('.track-row');
+  const del = li.querySelector('.t-del-btn');
+  if (del) {
+    del.style.transition = 'opacity .15s var(--ease)';
+    del.style.opacity = '0';
+    del.style.pointerEvents = 'none';
+  }
+
+  // 1. Soepele uitschuifbeweging naar links
+  if (trackRow) {
+    trackRow.style.transition = 'transform .2s cubic-bezier(0.4, 0, 0.2, 1)';
+    trackRow.style.transform = 'translateX(-105%)';
+  }
+
+  // 2. Aansluitend: vloeiende hoogte-inkrimping (px-nauwkeurig i.p.v. schokkerig verspringen)
+  const collapse = () => {
+    const h = li.offsetHeight;
+    li.style.height = h + 'px';
+    li.style.minHeight = '0';
+    li.style.overflow = 'hidden';
+    li.style.pointerEvents = 'none';
+    requestAnimationFrame(() => {
+      li.style.transition = 'height .26s cubic-bezier(0.4, 0, 0.2, 1), padding .26s ease, opacity .22s ease';
+      li.style.height = '0px';
+      li.style.paddingTop = '0px';
+      li.style.paddingBottom = '0px';
+      li.style.opacity = '0';
+      li.style.borderBottomColor = 'transparent';
+    });
+  };
+
+  const delay = reducedMotion.matches ? 0 : 160;
+  setTimeout(collapse, delay);
+
   tasks = tasks.filter(t => t.id !== id);
   const now = Date.now();
   if (!task.demo) {
@@ -957,7 +989,7 @@ function deleteTask(id, row) {
   setTimeout(() => {
     leaving.delete(id);
     renderTracks();
-  }, reducedMotion.matches ? 0 : 280);
+  }, reducedMotion.matches ? 0 : 430);
 }
 
 function complete(id, row) {

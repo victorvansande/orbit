@@ -328,10 +328,9 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 }
 .track.is-done { opacity: 0; transform: translateX(10px); }
 .track.is-deleted {
-  opacity: 0 !important; max-height: 0 !important; min-height: 0 !important;
-  padding-top: 0 !important; padding-bottom: 0 !important;
+  opacity: 0 !important;
   border-bottom-color: transparent !important;
-  transform: translateX(-36px); pointer-events: none;
+  pointer-events: none;
 }
 .track-row {
   display: grid; grid-template-columns: 30px 1fr 26px 32px; align-items: center;
