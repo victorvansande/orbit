@@ -214,7 +214,7 @@ function program(gl, frag) {
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
   const locs = {};
-  return { prog, loc: n => (n in locs ? locs[n] : (locs[n] = gl.getUniformLocation(prog, n))) };
+  return { prog, gl, loc: n => (n in locs ? locs[n] : (locs[n] = gl.getUniformLocation(prog, n))) };
 }
 // één driehoek over het hele canvas
 function fullscreen(gl, prog) {
@@ -240,7 +240,7 @@ function lava() {
   const COUNT = 13, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
   const balls = [];
   const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, vx: 0, vy: 0, r: 0, on: false };
-  let t = 0, intro = 0, prog = null, color = [1, 1, 1], colorAt = -1e9;
+  let t = 0, intro = 1, prog = null, color = [1, 1, 1], colorAt = -1e9;
   for (let i = 0; i < COUNT; i++) {
     const T = Math.random();
     balls.push({
@@ -370,10 +370,10 @@ void main() {
     }
   }
   function render(gl, now) {
-    if (!prog) prog = program(gl, FRAG);
+    if (!prog || prog.gl !== gl) prog = program(gl, FRAG);
     if (!prog) return;
     if (now - colorAt > 1000) { color = ACCENT ? hexRgb(ACCENT) : hexRgb(getComputedStyle(document.documentElement).getPropertyValue('--ink')); colorAt = now; }
-    const grow = Math.min(1, intro * 1.4);
+    const grow = Math.min(1, intro);
     balls.forEach((b, i) => {
       // uitrekken in de bewegingsrichting (een stijgende klont wordt een druppel) en zacht ademen
       const sp = Math.hypot(b.dx, b.dy), k = STRETCH * Math.min(1.5, sp * 0.9);
@@ -392,7 +392,7 @@ void main() {
   }
   return {
     gl: true,
-    init() { intro = 0; for (let i = 0; i < 400; i++) step({ gx: 0, gy: 1, ax: 0, ay: 0 }); intro = 0; },   // vooraf laten lopen: de lamp brandt al
+    init() { intro = 1; for (let i = 0; i < 400; i++) step({ gx: 0, gy: 1, ax: 0, ay: 0 }); intro = 1; },   // vooraf laten lopen: de lamp brandt al
     step, render,
     recolor() { colorAt = -1e9; },
     move(p) { cur.on = true; cur.tx = p.x; cur.ty = p.y; },

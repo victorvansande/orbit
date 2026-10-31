@@ -605,10 +605,11 @@ function attachSwipe(li, row, t, del) {
     if (startX === 0 && startY === 0) return;
     const curDx = e.clientX - startX, curDy = e.clientY - startY;
     if (!locked) {
-      if (Math.abs(curDy) > Math.abs(curDx) && Math.abs(curDy) > 6) {
+      // Voorkom dat verticaal scrollen per ongeluk als swipe wordt gezien
+      if (Math.abs(curDy) > 6 && Math.abs(curDy) >= Math.abs(curDx)) {
         locked = 'v'; startX = 0; startY = 0; return;
       }
-      if (Math.abs(curDx) > Math.abs(curDy) && Math.abs(curDx) > 6) {
+      if (Math.abs(curDx) > 10 && Math.abs(curDx) > Math.abs(curDy) * 1.5) {
         locked = 'h'; dragging = true;
         try { li.setPointerCapture(e.pointerId); } catch { /* ignore */ }
       }
@@ -618,9 +619,12 @@ function attachSwipe(li, row, t, del) {
       e.preventDefault();
       row.style.transition = 'none';
       const base = li.classList.contains('is-swiped') ? -36 : 0;
-      const target = Math.min(10, Math.max(-120, base + dx));
+      let raw = base + dx;
+      if (raw < -36) {
+        raw = -36 + (raw - (-36)) * 0.35; // zachte elastische begrenzing
+      }
+      const target = Math.min(10, Math.max(-52, raw));
       row.style.transform = 'translateX(' + target + 'px)';
-      li.classList.toggle('is-swipe-ready', target <= -80);
       del.style.opacity = String(Math.min(1, Math.max(0, -target / 28)));
       del.style.pointerEvents = target <= -20 ? 'auto' : 'none';
     }
@@ -632,11 +636,9 @@ function attachSwipe(li, row, t, del) {
     const base = li.classList.contains('is-swiped') ? -36 : 0;
     const final = base + dx;
     startX = 0; startY = 0; locked = ''; dragging = false;
-    li.classList.remove('is-swipe-ready');
 
-    if (final <= -80) {
-      deleteTask(t.id, li);
-    } else if (final <= -20) {
+    // Optie 1 (Victor, 31/10/2026): swipe opent enkel het prullenbakje, nooit direct verwijderen via veeg
+    if (final <= -20) {
       closeAllSwiped(li);
       row.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)';
       row.style.transform = '';

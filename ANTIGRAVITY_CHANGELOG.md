@@ -116,3 +116,18 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/app.js`: In `trackRow(t)` toont de tooltip (`title.title`) nu de volledige titel inclusief de dubbelklik-instructie (`${t.title} · ${tx('task.dbl')}`), zodat afgekapte titels altijd volledig leesbaar zijn bij hoveren.
 - **Getest:** Desktop (1440x900) en mobiel (375x812), donker en licht thema. Lange taken blijven exact 42 px hoog. Tekst lost aan het rechteruiteinde natuurlijk en zacht op naar transparant. Volledige tekst toont in de tooltip. Geen horizontale scroll, console foutloos.
 - **Impact op opslag / state:** Geen.
+
+### 11. Swipe-to-reveal only op mobiel (Voorstel 1)
+- **Vraag van Victor:** Het naar links swipen op gsm om iets te deleten was net iets te gevoelig, waardoor taken te gemakkelijk per ongeluk werden verwijderd tijdens het scrollen of bij een snelle veeg. Victor koos Voorstel 1 (swipe-to-reveal only).
+- **Gewijzigde bestanden:**
+  - `src/app.js`: In `attachSwipe` verwijdert een veegbeweging nooit meer direct een taak (de drempel `final <= -80` is verwijderd). Een veeg naar links opent altijd uitsluitend het prullenbakje (`is-swiped`, `padding-right: 36px`). Daadwerkelijk verwijderen gebeurt uitsluitend door bewust op het geopende prullenbakje te tikken. Bovendien is de bewegingsvergrendeling aangescherpt (`|dx| > 10px` en `|dx| > 1.5 * |dy|`), zodat verticaal scrollen door de lijst de taak niet meer per ongeluk horizontaal vergrendelt.
+- **Getest:** Gesimuleerd op 375x812 en met touch-events. Diagonaal scrollen scrolt de pagina zonder swipe. Doortrekken veert zacht elastisch mee en blijft netjes op het prullenbakje staan zonder te wissen. Tikken op het prullenbakje verwijdert de taak met de vertrouwde soepele FLIP-animatie. Tikken elders sluit het prullenbakje.
+- **Impact op opslag / state:** Geen.
+
+### 12. Directe weergave lava-widget in Focusmodus (intro direct op 1)
+- **Vraag van Victor:** Soms laadde de lava widget niet meteen in (toonde als een leeg zwart vak met enkel de lampgloed onderaan, zoals zichtbaar in Victors screenshot).
+- **Oorzaak:** In `src/fidget.js` zette `lava()` aan het einde van `init()` (na 400 opwarmstappen) `intro = 0`. Hierdoor hadden alle 13 bollen en de bodemplas bij het openen van de focusmodus een straal van 0 px en groeiden ze pas over 1,3 seconden langzaam in via de simulatiestappen. Wanneer stappen nog niet direct getikt hadden of bij pauze, bleef het vak leeg.
+- **Gewijzigde bestanden:**
+  - `src/fidget.js`: `intro` staat nu standaard direct op 1 (ook na `init()`, de lamp brandt immers al). Hierdoor rendert de lava vanaf het allereerste frame direct op volle grootte en met alle klonten en bodemplas compleet zichtbaar. Daarnaast is een WebGL-contextcheck toegevoegd (`prog.gl !== gl`) en wordt de DPR-canvasresolutie (`cvGL.width / cvGL.height`) direct gesynchroniseerd in `render()`.
+- **Getest:** Desktop focusmodus geopend in licht en donker thema: de lavalamp toont vanaf frame 1 direct alle warme bollen en de vloeibare bodemplas zonder enige vertraging of leeg scherm.
+- **Impact op opslag / state:** Geen.
