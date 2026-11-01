@@ -71,7 +71,29 @@ function seed() {
     // ook in het archief, met titel: zo heeft de muur achter de hemel iets te tonen
     archive.push({ id, title: lang === 'en' ? en : nl, level: 1 + (i % 5), createdAt: at - DAY, updatedAt: at - DAY, doneAt: at });
   }
+  // vorige maand voor de maandrecap (Victor, 01/11/2026: in de demo altijd een volle recap om te testen): 75 afgevinkte
+  // taken, een veelvoud van 25 zodat twee keer afvinken nog altijd een sterrenbeeld geeft; drukker op dinsdag en in de
+  // avond, één piekdag, verdeeld over de vijf momenten, plus focusblokken en een paar prestaties (fictieve id's die de
+  // echte prestaties in de demo, die op 0 beginnen, niet raken)
+  const feats = { log: {}, unlocked: {}, focus: {}, ev: {}, rev: {} };
+  {
+    let s = 11;
+    const r = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+    const m0 = new Date(now); const y = m0.getFullYear(), m = m0.getMonth() - 1;
+    const days = new Date(y, m + 1, 0).getDate(), peak = 13;
+    const pick = w => { let x = r() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return i; } return w.length - 1; };
+    const HOURS = [0, 0, 0, 0, 0, 0, 1, 3, 5, 8, 9, 7, 4, 5, 6, 7, 6, 4, 5, 7, 9, 10, 6, 2];
+    const dayW = Array.from({ length: days }, (_, d) => { const dow = (new Date(y, m, d + 1).getDay() + 6) % 7; return d === peak ? 9 : dow === 1 ? 4 : dow >= 5 ? 1.2 : 2.6; });
+    for (let i = 0; i < 75; i++) {
+      const d = pick(dayW), h = pick(HOURS), at = new Date(y, m, d + 1, h, Math.floor(r() * 60)).getTime(), id = `demo-recap-${i}`;
+      done[id] = at;
+      feats.log[id] = { t: at, lv: 1 + pick([19, 31, 22, 11, 4]), b: at - Math.round(r() * 5 * DAY), f: 0 };
+    }
+    for (let i = 0; i < 9; i++) feats.focus[String(new Date(y, m, 2 + i * 3, 10 + (i % 4), 0).getTime())] = [25, 25, 15, 50][i % 4];
+    for (let i = 0; i < 4; i++) feats.unlocked[`demo-recap-feat-${i}`] = new Date(y, m, 5 + i * 6, 12).getTime();
+  }
   try {
+    localStorage.setItem('priority-orbit.feats.v1', JSON.stringify(feats));
     localStorage.setItem('priority-orbit.tasks.v1', JSON.stringify(tasks));
     localStorage.setItem('priority-orbit.done.v1', JSON.stringify(done));
     localStorage.setItem('priority-orbit.archive.v1', JSON.stringify(archive));

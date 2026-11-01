@@ -19,6 +19,7 @@ import { createFidget } from './fidget.js';
 import { createTimer } from './timer.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './feats.js';
 import { softReveal, nightFall, particleTitle, createWall } from './fx.js';
+import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './recap.js';
 
 applyStatic();
 
@@ -414,6 +415,7 @@ $('wall-toggle').addEventListener('click', () => {
 
 function renderStats({ quiet = false } = {}) {
   const now = new Date();
+  try { renderRecapPill(); } catch { /* bij het opstarten nog niet klaar (recap.js wordt verderop geladen) */ }
   if (archiveIntoDone()) { saveDone(done); syncStars(sky, done); notifySync(); }
   renderWall();
   statsDay = dayKey(now);
@@ -1593,6 +1595,100 @@ window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraaks
 /* ---- Prestaties: punten, rang en een venster met alle prestaties ---- */
 // Berekening in src/feats.js. Hier: ontgrendelen (met melding na een eigen actie, stil bij laden en sync), het
 // rangknopje naast de teller, het venster (knop Prestaties, toets P) en de melding bovenaan.
+/* ---- Maandrecap: Poster (src/recap.js) ---- */
+// Venster met de kaart van één maand (vorige / volgende), licht of donker, post of story (per toestel onthouden), Delen
+// (deelmenu van het toestel, alleen waar dat met een afbeelding kan) en Bewaar als afbeelding. Te openen via de details
+// van de teller, of via het pilletje "Oktober in sterren" onder de teller op de 1e tot de 5e van de maand. In de demo
+// staat het pilletje er altijd, met een volle vorige maand aan voorbeeldgegevens (src/demo.js).
+const recapDialog = $('recap'), recapCanvas = $('recap-canvas');
+let recap = loadRecap(), recapMonth = null, recapShown = null;
+const monthName = d => new Intl.DateTimeFormat(LOCALE, { month: 'long' }).format(d);
+const capFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
+const thisMonth = (now = new Date()) => monthStart(now.getFullYear(), now.getMonth());
+const lastMonth = (now = new Date()) => monthStart(now.getFullYear(), now.getMonth() - 1);
+const recapStats = m => monthStats(m, { done, feats, archive });
+function firstStarMonth() {
+  const ts = Object.values(done).filter(Number.isFinite);
+  if (!ts.length) return thisMonth();
+  const d = new Date(Math.min(...ts));
+  return monthStart(d.getFullYear(), d.getMonth());
+}
+function drawRecap() {
+  const st = recapShown = recapStats(recapMonth);
+  const theme = recap.theme || document.documentElement.dataset.theme || 'dark', fmt = recap.fmt || 'post';
+  drawPoster(recapCanvas, st, { theme, fmt, tx, locale: LOCALE });
+  recapCanvas.setAttribute('aria-label', tx('recap.alt', { month: monthName(recapMonth), n: st.total }));
+  $('recap-month').textContent = `${monthName(recapMonth)} ${recapMonth.getFullYear()}`;
+  $('recap-next').disabled = recapMonth >= thisMonth();
+  $('recap-prev').disabled = recapMonth <= firstStarMonth();
+  for (const b of recapDialog.querySelectorAll('[data-recap-theme]')) b.setAttribute('aria-pressed', String(b.dataset.recapTheme === theme));
+  for (const b of recapDialog.querySelectorAll('[data-recap-fmt]')) b.setAttribute('aria-pressed', String(b.dataset.recapFmt === fmt));
+}
+async function openRecap(month = new Date().getDate() <= 5 ? lastMonth() : thisMonth()) {
+  recapMonth = month;
+  if (document.fonts) { try { await document.fonts.ready; } catch { /* geen fonts */ } }
+  drawRecap();
+  recap.seen[monthKey(month)] = Date.now();
+  saveRecap(recap);
+  renderRecapPill();
+  let canShare = false;
+  try { canShare = Boolean(navigator.canShare?.({ files: [new File([new Blob(['x'], { type: 'image/png' })], 'x.png', { type: 'image/png' })] })); } catch { /* geen delen */ }
+  $('recap-share').hidden = !canShare;
+  setMenu(false);
+  if (!recapDialog.open) recapDialog.showModal();
+}
+// het pilletje onder de teller: op de 1e tot de 5e voor de vorige maand, zolang je die nog niet opende (in de demo altijd)
+function recapDue(now = new Date()) {
+  const prev = lastMonth(now);
+  if (DEMO_MODE) return prev;
+  if (now.getDate() > 5 || recap.seen[monthKey(prev)]) return null;
+  return recapStats(prev).total ? prev : null;
+}
+function renderRecapPill() {
+  const m = recapDue(), pill = $('recap-pill');
+  pill.hidden = !m;
+  if (m) { pill.textContent = capFirst(tx('recap.pill', { month: monthName(m) })); pill.dataset.month = monthKey(m); }
+}
+// de kern zegt het, hooguit één keer per dag: de laatste 3 dagen van de maand, en op de 1e tot de 5e (als je hem nog niet zag)
+function recapLine(now = new Date()) {
+  if (DEMO_MODE || recap.said === dayKey(now)) return '';
+  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), left = days - now.getDate();
+  let line = '';
+  if (left <= 2) {
+    const n = recapStats(thisMonth(now)).total;
+    if (n) line = left === 0 ? tx('recap.soon1', { month: monthName(now), stars: n }) : tx('recap.soon', { n: left + 1, month: monthName(now), stars: n });
+  } else if (recapDue(now)) {
+    line = capFirst(tx('recap.ready', { month: monthName(lastMonth(now)), stars: recapStats(lastMonth(now)).total }));
+  }
+  if (line) { recap.said = dayKey(now); saveRecap(recap); }
+  return line;
+}
+async function saveRecapImage() {
+  const blob = await posterBlob(recapCanvas);
+  if (!blob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = posterName(recapShown);
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function shareRecap() {
+  const blob = await posterBlob(recapCanvas);
+  if (!blob) return;
+  const file = new File([blob], posterName(recapShown), { type: 'image/png' });
+  try { await navigator.share({ files: [file], title: `Orbit · ${monthName(recapMonth)} ${recapMonth.getFullYear()}` }); }
+  catch (e) { if (e?.name !== 'AbortError') saveRecapImage(); }
+}
+$('recap-open').addEventListener('click', () => openRecap());
+$('recap-pill').addEventListener('click', () => openRecap(recapDue() || lastMonth()));
+$('recap-prev').addEventListener('click', () => { recapMonth = monthStart(recapMonth.getFullYear(), recapMonth.getMonth() - 1); drawRecap(); });
+$('recap-next').addEventListener('click', () => { recapMonth = monthStart(recapMonth.getFullYear(), recapMonth.getMonth() + 1); drawRecap(); });
+for (const b of recapDialog.querySelectorAll('[data-recap-theme]')) b.addEventListener('click', () => { recap.theme = b.dataset.recapTheme; saveRecap(recap); drawRecap(); });
+for (const b of recapDialog.querySelectorAll('[data-recap-fmt]')) b.addEventListener('click', () => { recap.fmt = b.dataset.recapFmt; saveRecap(recap); drawRecap(); });
+$('recap-save').addEventListener('click', saveRecapImage);
+$('recap-share').addEventListener('click', shareRecap);
+$('recap-close').addEventListener('click', () => recapDialog.close());
+recapDialog.addEventListener('click', e => { if (e.target === recapDialog) recapDialog.close(); });
+
 const featsDialog = $('feats');
 const DATE_SHORT = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
 const featQueue = [];
@@ -2449,6 +2545,8 @@ function greet() {
   const dueTodayList = real.filter(t => t.due === today);
   const stuck = longest(real.filter(t => t.level <= 2 && !t.due && daysOn(t) >= 7));
   const dusty = longest(real.filter(t => t.level === 5 && !t.due && daysOn(t) >= 30));
+  // maandrecap: na verstreken deadlines en deadlines vandaag (die gaan voor), hooguit één keer per dag
+  if (!overdueList.length && !dueTodayList.length) { const rl = recapLine(); if (rl) { sayLine(rl); return; } }
   const line = greeting({
     urgent: real.filter(t => t.level === URGENT_LEVEL).length,
     total: real.length,

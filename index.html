@@ -191,8 +191,10 @@
     </button>
     <button type="button" class="wall-toggle" id="wall-toggle" aria-pressed="false" title="Muur van afgevinkte taken achter de hemel" data-ia="title:wall.title" hidden><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2 4h5M9 4h5M2 8h3M7 8h7M2 12h6M10 12h4"/></svg><span data-i="wall.label">Muur</span></button>
     <button type="button" class="feats-badge" id="feats-badge" hidden></button>
+    <button type="button" class="recap-pill" id="recap-pill" hidden></button>
     <div class="stats-detail" id="stats-detail" hidden>
       <dl id="stats-rows"></dl>
+      <button type="button" class="stats-reset-btn recap-open" id="recap-open" data-i="recap.open">Maandrecap</button>
       <div class="skies">
         <p class="skies-title" id="skies-title" data-i="skies.title" hidden>Hemels</p>
         <div class="skies-list" id="skies-list" role="group" aria-labelledby="skies-title"></div>
@@ -349,6 +351,23 @@
     <p class="sync-text sync-note" data-i="feats.how">Elke ster is 1 punt, elke prestatie 10 tot 100 punten.</p>
     <div class="feats-list" id="feats-list"></div>
     <div class="sync-row sticky-foot feats-foot"><button type="button" class="btn-solid" id="feats-close" data-i="done">Klaar</button></div>
+  </div>
+</dialog>
+
+<dialog class="sync recap" id="recap" aria-labelledby="recap-title">
+  <div class="sync-card recap-card">
+    <div class="composer-meta"><span id="recap-title" data-i="recap.title">Maandrecap</span>
+      <span class="recap-month"><button type="button" id="recap-prev" aria-label="Vorige maand" data-ia="aria-label:recap.prev">&lsaquo;</button><span id="recap-month"></span><button type="button" id="recap-next" aria-label="Volgende maand" data-ia="aria-label:recap.next">&rsaquo;</button></span></div>
+    <div class="recap-frame"><canvas id="recap-canvas" role="img"></canvas></div>
+    <div class="recap-opts">
+      <div class="recap-seg" role="group" aria-label="Thema"><button type="button" data-recap-theme="dark" data-i="theme.dark">Donker</button><button type="button" data-recap-theme="light" data-i="theme.light">Licht</button></div>
+      <div class="recap-seg" role="group" aria-label="Formaat"><button type="button" data-recap-fmt="post" data-i="recap.post">Post</button><button type="button" data-recap-fmt="story" data-i="recap.story">Story</button></div>
+    </div>
+    <div class="sync-row sticky-foot recap-foot">
+      <button type="button" class="btn-ghost" id="recap-close" data-i="done">Klaar</button>
+      <button type="button" class="btn-ghost" id="recap-save" data-i="recap.save">Bewaar als afbeelding</button>
+      <button type="button" class="btn-solid" id="recap-share" data-i="recap.share" hidden>Delen</button>
+    </div>
   </div>
 </dialog>
 

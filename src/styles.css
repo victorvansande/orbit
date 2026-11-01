@@ -1109,3 +1109,24 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle {
 /* wat in een venster scrolt, rolt niet door naar de pagina erachter (de rest houdt de scrollwacht in app.js tegen;
    overflow: hidden op de pagina zette op gsm de scrollpositie terug naar boven) */
 dialog *, .hud-menu { overscroll-behavior: contain; }
+
+/* Maandrecap: venster met de poster (src/recap.js); pilletje onder de teller op de 1e tot de 5e (in de demo altijd) */
+.recap { width: min(460px, calc(100vw - 32px)); }
+.recap-card { max-height: min(920px, calc(100dvh - 32px)); overflow-y: auto; gap: 14px; }
+.recap-month { display: inline-flex; align-items: center; gap: 6px; }
+.recap-month button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--ink-2); font-size: 17px; line-height: 1; }
+.recap-month button:hover:not(:disabled) { color: var(--ink); background: var(--fill); }
+.recap-month button:disabled { opacity: .3; cursor: default; }
+.recap-frame { display: grid; place-items: center; }
+.recap-frame canvas { display: block; max-width: 100%; max-height: min(60dvh, 600px); width: auto; height: auto; border-radius: 12px; box-shadow: 0 0 0 1px var(--line), 0 14px 34px var(--shadow-3); }
+.recap-opts { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 14px; }
+.recap-seg { display: inline-flex; gap: 2px; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.recap-seg button { min-height: 32px; padding: 0 11px; border-radius: 999px; color: var(--ink-3); transition: color .2s var(--ease), background .2s var(--ease); }
+.recap-seg button[aria-pressed="true"] { color: var(--ink); background: var(--fill); }
+.recap-foot { justify-content: flex-end; }
+.recap-foot #recap-close { margin-right: auto; }
+.recap-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; min-height: 30px; padding: 0 12px; border-radius: 999px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s var(--ease); }
+.recap-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--core); }
+.recap-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+.recap-open { display: block; margin: 4px 0 6px; }
+.recap-open:hover { color: var(--ink); }
