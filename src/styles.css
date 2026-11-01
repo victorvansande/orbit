@@ -1118,14 +1118,14 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
    naadloos over) en zakt traag naar de gewone achtergrond; de kaart komt tevoorschijn als een overbelichte foto die
    zich ontwikkelt: eerst wit, dan trekt een witte sluier op en zakt ze zacht van iets groter naar haar plek. */
 .recap.is-born[open]::backdrop { animation: recap-light 2.6s cubic-bezier(.4, 0, .2, 1) both; }
-@keyframes recap-light { from { background: var(--turn-light); } 25% { background: var(--turn-light); } }
+@keyframes recap-light { from { background: var(--turn-light); } 16% { background: var(--turn-light); } }
 .recap.is-born[open] .sync-card { position: relative; animation: recap-born 2.2s cubic-bezier(.4, 0, .2, 1) both; }
 .recap.is-born[open] .sync-card::after {
   content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none;
   background: var(--turn-light); animation: recap-veil 2.2s cubic-bezier(.4, 0, .2, 1) both;
 }
-@keyframes recap-born { from { opacity: 0; transform: scale(1.05); } 30% { opacity: 1; } to { transform: none; } }
-@keyframes recap-veil { from, 22% { opacity: 1; } to { opacity: 0; } }
+@keyframes recap-born { from { opacity: 0; transform: scale(1.05); box-shadow: 0 40px 90px transparent, 0 2px 8px transparent; } 30% { opacity: 1; } 45% { box-shadow: 0 40px 90px transparent, 0 2px 8px transparent; } to { transform: none; } }   /* schaduw pas als de kaart uit het wit komt */
+@keyframes recap-veil { from, 12% { opacity: 1; } to { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .recap.is-born[open]::backdrop, .recap.is-born[open] .sync-card, .recap.is-born[open] .sync-card::after { animation: none; } .recap.is-born[open] .sync-card::after { display: none; } }
 .recap-card { max-height: min(920px, calc(100dvh - 32px)); overflow-y: auto; gap: 14px; }
 .recap-month { display: inline-flex; align-items: center; gap: 6px; }

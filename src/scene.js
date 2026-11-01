@@ -1543,6 +1543,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // Minimaal: alle extra effecten uit; wat overblijft is de scène zelf (ringen, kometen, kern, sterren)
     // maandwissel: `old` = de sterren van de vorige hemel (zelfde vorm als setSky); onBurst start de witte gloed
     monthTurn(old, { onBurst } = {}) { turn = { t0: performance.now(), old: old.slice(), onBurst, fired: false }; skyWave = null; },
+    // oude hemel al tonen (stil, nog niet aangetrokken) tot monthTurn begint, bv. tijdens de zachte intro
+    holdTurn(old) { turn = { t0: Infinity, old: old.slice(), onBurst: null, fired: true }; skyWave = null; },
     endTurn() { turn = null; },
     get turning() { return Boolean(turn); },
     setMinimal(on) { minimal = on; if (on) { sonar = null; skyWave = null; meteor = null; constellation = null; sparks.length = 0; } },

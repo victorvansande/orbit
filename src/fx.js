@@ -131,7 +131,7 @@ export function softReveal({ center, onReveal, done = () => {} }) {
 export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
   const ov = overlay(), cv = ov.cv;
   let W = ov.W, H = ov.H, g = ov.g;
-  const GROW = 1.7, PEAK = 1.3, END = 3.6;   // rustig: de recap opent uit het volle licht
+  const GROW = 1.6, PEAK = 1.1, END = 1.8;   // rustig; na het hoogtepunt neemt de witte achtergrond van het venster het over
   let t0 = performance.now(), peaked = false, raf = 0, over = false;
   const easeOut = u => 1 - Math.pow(1 - u, 3);
   function frame(now) {
@@ -143,11 +143,14 @@ export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
     const far = Math.hypot(Math.max(cx, W - cx), Math.max(cy, H - cy));
     const grow = Math.min(1, t / GROW), fade = t < PEAK ? 1 : 1 - smoothstep(PEAK, END, t);
     const k = smoothstep(0, 0.7, t) * fade;
-    const R = Math.max(1, far * 1.25 * easeOut(grow));
+    // op het hoogtepunt is het hele venster vol wit, tot in de hoeken (anders sprong het naar de witte achtergrond
+    // van het venster); de zachte rand ligt dan buiten beeld
+    const R = Math.max(1, far * 1.7 * easeOut(grow));
     g.clearRect(0, 0, W, H);
     const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R);
-    gr.addColorStop(0, `rgba(255,255,255,${(0.97 * k).toFixed(4)})`);
-    gr.addColorStop(0.55, `rgba(255,255,255,${(0.78 * k).toFixed(4)})`);
+    gr.addColorStop(0, `rgba(255,255,255,${k.toFixed(4)})`);
+    gr.addColorStop(0.3, `rgba(255,255,255,${k.toFixed(4)})`);
+    gr.addColorStop(0.62, `rgba(255,255,255,${(0.96 * k).toFixed(4)})`);
     gr.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = gr;
     g.fillRect(0, 0, W, H);

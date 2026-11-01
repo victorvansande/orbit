@@ -1702,6 +1702,15 @@ recapDialog.addEventListener('close', () => recapDialog.classList.remove('is-bor
 // De snede geeft de prestatie "Nieuwe hemel" (Victor, 01/11/2026), met melding na de recap. Had de vorige maand geen sterren, dan alleen de nieuwe hemel, zonder animatie of recap.
 // Er wordt niets gewist: de vorige hemel staat onder Hemels. Demo: bij elk openen, en opnieuw via de details.
 let turning = false, turnFeatLater = false, booted = false;
+// niet over te slaan: tikken en toetsen doen niets (ook geen sneltoetsen, slepen of de intro overslaan) tot de recap open is
+const HUSH_EVENTS = ['pointerdown', 'pointerup', 'click', 'keydown', 'wheel', 'touchstart'];
+const hush = e => { e.preventDefault(); e.stopImmediatePropagation(); };
+let hushed = false;
+function setHush(on) {
+  if (on === hushed) return;
+  hushed = on;
+  for (const ev of HUSH_EVENTS) (on ? addEventListener : removeEventListener)(ev, hush, { capture: true, passive: false });
+}
 const turnCuts = new Set();   // sneden van de maandwissel in deze sessie (demo: tellen mee, ook al liggen ze vóór FEATS_SINCE)
 function turnDue(now = new Date()) {
   if (DEMO_MODE) return true;
@@ -1747,16 +1756,14 @@ function runTurn(plan, { replay = false } = {}) {
   }, { once: true });
   setMenu(false);
   if (reducedMotion.matches || minimalFx || !plan.old.length || document.hidden) {
+    scene.endTurn();
+    setHush(false);
     setTimeout(() => openRecap(plan.prev), reducedMotion.matches || minimalFx ? 300 : 0);
     return true;
   }
   let opened = false;
-  // niet over te slaan: tikken en toetsen doen niets (ook geen sneltoetsen of slepen) tot de recap open is
-  const hush = e => { e.preventDefault(); e.stopPropagation(); };
-  const EVENTS = ['pointerdown', 'pointerup', 'click', 'keydown', 'wheel', 'touchstart'];
-  const open = () => { if (opened) return; opened = true; stop(); openRecap(plan.prev, { born: true }); };
-  const stop = () => { for (const ev of EVENTS) removeEventListener(ev, hush, { capture: true }); };
-  for (const ev of EVENTS) addEventListener(ev, hush, { capture: true, passive: false });
+  const open = () => { if (opened) return; opened = true; setHush(false); openRecap(plan.prev, { born: true }); };
+  setHush(true);
   scene.monthTurn(plan.old, {
     onBurst() {
       whiteBurst({
@@ -2704,18 +2711,26 @@ let revealDelay = 0;
 const turnPlan = /^#sync=/.test(location.hash) ? null : planTurn();
 const turnShow = Boolean(turnPlan?.recap);
 if (turnPlan && !turnShow) runTurn(turnPlan);   // vorige maand zonder sterren: enkel de nieuwe hemel, zonder animatie
-if (!turnShow && !reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
+let turnAfterReveal = false;
+if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
   revealDelay = 800;
+  turnAfterReveal = turnShow;   // maandwissel: eerst opent de pagina zacht met de oude hemel, dan begint de zwaartekracht
+  if (turnAfterReveal && turnPlan.old.length) { scene.holdTurn(turnPlan.old); setHush(true); }
   const give = takeStage(3000);   // meldingen bij het laden wachten tot de intro voorbij is
   softReveal({
     center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
     onReveal() { scene.replayIntro(tasks); },
-    done: give,
+    done() {
+      if (!turnAfterReveal) { give(); return; }
+      const hold = takeStage(2000);   // podium blijft bezet tot runTurn het overneemt: geen pil of toast ertussen
+      give();
+      setTimeout(() => { runTurn(turnPlan); hold(); }, 350);
+    },
   });
 }
 document.documentElement.classList.remove('is-veiled');   // geen intro: het papier uit index.html meteen weg
 renderStats();
-if (turnShow) setTimeout(() => runTurn(turnPlan), 250);   // de scène bouwt op terwijl de sterren oplichten
+if (turnShow && !turnAfterReveal) setTimeout(() => runTurn(turnPlan), 250);   // zonder intro: de scène bouwt op terwijl de sterren oplichten
 if (new Date().getHours() === 3) recordEvent(feats, 'night');
 checkFeats(turnFeatLater);   // bij het laden stil: wat al gehaald was, staat meteen goed (behalve de nieuwe hemel van de maandwissel)
 booted = true;
