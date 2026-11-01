@@ -485,7 +485,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     g.globalCompositeOperation = 'source-over';
   }
   function wallRadius() { return Math.min(Math.max(200, W - insets.left - insets.right), H) * 0.62; }
-  const SWEEP_ANGLE = 34 * DEG, SWEEP_BEAM = 280;
+  const SWEEP_ANGLE = 34 * DEG, SWEEP_BEAM = 440;
   function drawWall(now) {
     if (wallK < 0.005 || !wallWords.length) return;
     layoutWall();
@@ -497,14 +497,15 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (p >= 1) {
         wallSweep = null;
       } else {
-        // Trage, uiterst gemoedelijke in- en uitfade: rustig ademen in ~1.6s, zachtjes wegebben in ~2.0s
-        if (p < 0.18) sweepFade = ease(p / 0.18);
-        else if (p > 0.76) sweepFade = 1 - ease((p - 0.76) / 0.24);
+        // Heel kalme, ademende in- en uitfade (geen plotselinge schokken of versnellingen)
+        if (p < 0.15) sweepFade = smoothstep(0, 1, p / 0.15);
+        else if (p > 0.82) sweepFade = 1 - smoothstep(0, 1, (p - 0.82) / 0.18);
         else sweepFade = 1;
 
         const maxDist = W * Math.cos(SWEEP_ANGLE) + H * Math.sin(SWEEP_ANGLE);
-        // Trager en gelijkmatiger verloop over het scherm
-        beamPos = -SWEEP_BEAM * 0.6 + ease(p) * (maxDist + SWEEP_BEAM * 1.2);
+        // Gelijkmatige, statige drift (smoothstep) zonder plotse versnelling in het midden
+        const progressMotion = smoothstep(0, 1, p);
+        beamPos = -SWEEP_BEAM * 0.7 + progressMotion * (maxDist + SWEEP_BEAM * 1.4);
       }
     }
 
@@ -533,16 +534,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
           lit = Math.max(lit, 0.45 * l * l * wallK);
         }
       }
-      // 2. Diagonale veeg: continue gradiënt van donkergrijs (0.065) naar zachte witte focus (0.62)
-      // Geen harde overgangen: woorden warmen zachtjes op en doven rustig weer uit
+      // 2. Diagonale veeg: zeer brede (880 px), zachte gradiënt van donkergrijs (0.07) naar witte focus (0.65)
+      // Beweegt statig en rustig zodat je ontspannen alle titels kunt lezen
       if (sweepFade > 0.01) {
         const proj = midX * cosA + midY * sinA;
         const dist = Math.abs(proj - beamPos);
         const normDist = Math.min(1, dist / SWEEP_BEAM);
-        // Kosinus-verloop van 1 (in de focus) tot 0 (in rustend donkergrijs)
-        const focusCurve = Math.pow(Math.cos(normDist * (Math.PI / 2)), 1.4);
-        const darkGray = 0.065 * theme.grid;
-        const whiteFocus = 0.62;
+        // Brede kosinusboog met zachte schouders
+        const focusCurve = Math.pow(Math.cos(normDist * (Math.PI / 2)), 1.3);
+        const darkGray = 0.07 * theme.grid;
+        const whiteFocus = 0.65;
         const sweepLit = (darkGray + (whiteFocus - darkGray) * focusCurve) * sweepFade;
         lit = Math.max(lit, sweepLit);
       }
@@ -1295,10 +1296,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.clearRect(0, 0, W, H);
     updateCamera();
     drawGrid(now);
-    drawWall(now);
     drawSky(now);
     drawConstellation(now);
     drawMeteor(now);
+    // Muur van taken verschijnt vóór de sterretjes, maar altijd achter de banen, de kern en de orbs
+    drawWall(now);
     drawRings(now);
     drawVortex();
     drawCore(now);
@@ -1508,7 +1510,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     },
     // muur van afgevinkte taken achter de hemel: woorden (titels) en aan/uit
     setWall(words, on) { wallWords = words.map(w => w.toUpperCase()); wallOn = on; wallKey = ''; },
-    sweepWall(dur = 8600) {
+    sweepWall(dur = 16000) {
       if (reducedMotion.matches || minimal || !wallWords.length) return;
       wallSweep = { t0: performance.now(), dur };
     },

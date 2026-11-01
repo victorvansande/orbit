@@ -208,3 +208,14 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/scene.js`: In `drawWall` de bundelbreedte verhoogd naar 280 px, timingparameters aangepast voor 8,6s, continue gradiëntformule geïmplementeerd en standaardduur in `sweepWall(dur = 8600)` verhoogd.
 - **Getest:** Gecontroleerd op zowel desktop als mobiel: woorden warmen zacht en vloeiend op van donkergrijs naar helder wit en dimmen rustig weer terug. Geen harde drempels meer, tijd genoeg om ontspannen te lezen.
 - **Impact op opslag / state:** Geen.
+
+
+### 21. Juiste dieptevolgorde (muur achter banen, kern en orbs, vóór sterren) en 16s leestempo
+- **Vraag van Victor:** "nog steeds een pak te snel" en "Laat de muur ook zeker altijd achter alle andere elementen verschijnen (achter de orbs, banen, kern), het mag wel voor de sterretjes".
+- **Oplossing & Implementatie:**
+  - **Dieptevolgorde (Z-index):** In `src/scene.js` (`draw(now)`) is de tekensvolgorde gecorrigeerd. De muur wordt nu getekend ná `drawSky`, `drawConstellation` en `drawMeteor`, maar vóór `drawRings`, `drawCore` en `drawOrbs`. Hierdoor staat de muur vóór de sterretjes, maar blijven de orbs, banen en kern altijd scherp en helder op de voorgrond.
+  - **Gemoedelijk 16s tempo:** Duur verruimd naar 16 seconden (`dur = 16000`), bundel verbreed naar 880 px (`SWEEP_BEAM = 440`) en de beweging omgezet naar een gelijkmatige `smoothstep` (zonder plotse acceleratie in het midden). Woorden blijven nu ruim 8 seconden in de overgangszone, waardoor je in alle rust taken kunt lezen.
+- **Gewijzigde bestanden:**
+  - `src/scene.js`: Tekensvolgorde in `draw(now)` aangepast; duur en bundelparameters geüpdatet.
+- **Getest:** Gecontroleerd op desktop en mobiel. Banen, kern en orbs tekenen prominent over de muur heen; de achtergrondsterren liggen erachter; de tekst glijdt traag en vloeiend voorbij.
+- **Impact op opslag / state:** Geen.
