@@ -119,7 +119,7 @@ const NL = {
   'stamp.today': 'vandaag', 'stamp.yesterday': 'gisteren',
   'reason.overwrite': 'Voor een overschrijving', 'reason.demo': 'Voor opruimen voorbeeldtaken', 'reason.mirror': 'Voor herstel uit reservekopie',
   'reason.daily': 'Dagelijkse kopie', 'reason.restore': 'Voor terugzetten', 'reason.restoreServer': 'Voor terugzetten van server',
-  'reason.import': 'Voor import', 'reason.sync': 'Voor synchronisatie', 'reason.receive': 'Voor ontvangen',
+  'reason.import': 'Voor import', 'reason.sync': 'Voor synchronisatie', 'reason.receive': 'Voor ontvangen', 'reason.delete': 'Voor verwijderen',
 
   // koppelen
   'sync.off': 'Koppelen', 'sync.connecting': 'Verbinden', 'sync.online': 'Gesynchroniseerd', 'sync.offline': 'Offline', 'sync.connected': 'Verbonden',
@@ -280,7 +280,7 @@ const EN = {
   'stamp.today': 'today', 'stamp.yesterday': 'yesterday',
   'reason.overwrite': 'Before an overwrite', 'reason.demo': 'Before clearing example tasks', 'reason.mirror': 'Before restoring from the backup copy',
   'reason.daily': 'Daily copy', 'reason.restore': 'Before restoring', 'reason.restoreServer': 'Before restoring from the server',
-  'reason.import': 'Before import', 'reason.sync': 'Before sync', 'reason.receive': 'Before receiving',
+  'reason.import': 'Before import', 'reason.sync': 'Before sync', 'reason.receive': 'Before receiving', 'reason.delete': 'Before deleting',
 
   'sync.off': 'Pair', 'sync.connecting': 'Connecting', 'sync.online': 'Synced', 'sync.offline': 'Offline', 'sync.connected': 'Connected',
   'sync.waiting': n('{n} waiting', '{n} waiting'), 'sync.pair': 'Pair devices', 'sync.status': 'Sync: {text}',

@@ -966,6 +966,8 @@ function deleteTask(id, li) {
     const allTracks = Array.from(groupsEl.querySelectorAll('.track')).filter(el => el !== li);
     const positions = allTracks.map(el => ({ el, top: el.getBoundingClientRect().top }));
 
+    // vangnet: een verwijderde taak komt niet in het archief, dus eerst een momentopname (anders na 5 s onherstelbaar weg)
+    if (!task.demo) snapshot(tasks, 'delete');
     tasks = tasks.filter(t => t.id !== id);
     const now = Date.now();
     if (!task.demo) {
@@ -2022,9 +2024,10 @@ const sync = createSync({
     const incoming = dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo');
     const keep = new Set(incoming.map(t => t.id));
     // Taken die hier verdwijnen omdat ze elders afgevinkt zijn: eerst een momentopname, dan naar het archief, en melden
+    // elders verwijderd (archDel) gaat niet naar het archief, maar krijgt wel eerst een momentopname: niets verdwijnt zonder spoor
+    if (realTasks().some(t => !keep.has(t.id))) snapshot(tasks, 'sync');
     const lost = realTasks().filter(t => !keep.has(t.id) && !state.archDel?.[t.id] && !archDel[t.id]);
     if (lost.length) {
-      snapshot(tasks, 'sync');
       const now = Date.now();
       archive = saveArchive([...lost.map(t => ({ ...t, doneAt: state.gone?.[t.id] || now, by: 'elders' })), ...archive]);
       for (const t of lost) placeStar(sky, t.id, scene.complete(t.id));     // ook hier fonkelt de taak uit en blijft er een ster
