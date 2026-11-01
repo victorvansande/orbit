@@ -501,6 +501,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         if (p < 0.15) sweepFade = smoothstep(0, 1, p / 0.15);
         else if (p > 0.82) sweepFade = 1 - smoothstep(0, 1, (p - 0.82) / 0.18);
         else sweepFade = 1;
+        // afgebroken (details dicht, of de regisseur geeft het podium aan iets anders): zacht uitdoven in 0,7 s
+        if (wallSweep.outAt) { const o = (now - wallSweep.outAt) / 700; if (o >= 1) wallSweep = null; sweepFade *= 1 - smoothstep(0, 1, Math.min(1, o)); }
 
         const maxDist = W * Math.cos(SWEEP_ANGLE) + H * Math.sin(SWEEP_ANGLE);
         // Gelijkmatige, statige drift (smoothstep) zonder plotse versnelling in het midden
@@ -1514,7 +1516,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (reducedMotion.matches || minimal || !wallWords.length) return;
       wallSweep = { t0: performance.now(), dur };
     },
-    cancelWallSweep() { wallSweep = null; },
+    cancelWallSweep() { if (wallSweep && !wallSweep.outAt) wallSweep.outAt = performance.now(); },
+    get sweeping() { return Boolean(wallSweep && !wallSweep.outAt); },
     isBusy() {
       return Boolean(
         sparks.length > 0 ||

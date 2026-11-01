@@ -491,18 +491,26 @@ $('sky-new-yes').addEventListener('click', () => {
   showToast(tx('skies.done'));
 });
 
+// Veeg over de muur bij het openen van de details: via de regisseur, met de laagste voorrang (3). Hij wacht tot het
+// podium vrij is en er geen venster, toast, pil of iets in de scène bezig is (`scene.isBusy()`: lichtpuntje, uitfonkelen,
+// verse ster, sterrenbeeld, slepen), en houdt het podium zelf niet vast: neemt iets anders het podium, dan dooft hij zacht uit.
+let sweepWanted = false;
 function triggerWallSweep() {
-  if (scene.isBusy?.()) return;
-  if (document.querySelector('dialog[open]')) return;
-  if (document.querySelector('.feat-pop.is-on')) return;
-  if (document.querySelector('.toast.is-on')) return;
+  sweepWanted = true;
+  whenCalm(startWallSweep, 3);
+}
+function startWallSweep() {
+  if (!sweepWanted || $('stats-detail').hidden) return;
+  if (document.querySelector('dialog[open], .feat-pop.is-on, .toast.is-on') || scene.isBusy()) { setTimeout(() => { if (sweepWanted) whenCalm(startWallSweep, 3); }, 400); return; }
+  sweepWanted = false;
   scene.sweepWall();
 }
+function stopWallSweep() { sweepWanted = false; scene.cancelWallSweep(); }
 function showStatsDetail(open) {
   $('stats-detail').hidden = !open;
   $('stats-toggle').setAttribute('aria-expanded', String(open));
   if (open) triggerWallSweep();
-  else scene.cancelWallSweep?.();
+  else stopWallSweep();
 }
 $('stats-toggle').addEventListener('click', () => showStatsDetail($('stats-detail').hidden));
 // gsm: het tellertje bovenaan brengt je naar de details onderaan
@@ -925,6 +933,7 @@ const stageWaiting = [];
 const stageFree = () => stageHolds === 0;
 function takeStage(maxMs) {
   stageHolds++;
+  if (scene.sweeping) stopWallSweep();   // een groot moment gaat altijd voor de veeg over de muur
   let held = true;
   const give = () => { if (!held) return; held = false; stageHolds--; setTimeout(flushStage, 0); };
   setTimeout(give, maxMs);
