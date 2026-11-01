@@ -850,7 +850,7 @@ body.is-idle .controls { opacity: 0; }
 
 /* ---- Venster: uitleg (eerste bezoek, knop Uitleg, toets ?) ---- */
 .intro { width: min(680px, calc(100vw - 32px)); }
-.intro-card:focus { outline: none; }
+.intro-card:focus, .recap-card:focus { outline: none; }
 .intro-card { max-height: min(820px, calc(100dvh - 32px)); overflow-y: auto; gap: 14px; }
 .intro-title { margin: 2px 0 0; font: 600 24px/1.15 var(--font); letter-spacing: -.01em; }
 .intro-lead { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 46ch; }
@@ -1112,6 +1112,10 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
 
 /* Maandrecap: venster met de poster (src/recap.js); pilletje onder de teller op de 1e tot de 5e (in de demo altijd) */
 .recap { width: min(460px, calc(100vw - 32px)); }
+/* maandwissel: het venster komt uit de witte gloed (zachter en trager dan pop-in) */
+.recap.is-born[open] .sync-card { animation: recap-born .8s cubic-bezier(.4, 0, .2, 1) both; }
+@keyframes recap-born { from { opacity: 0; transform: scale(.88); } }
+@media (prefers-reduced-motion: reduce) { .recap.is-born[open] .sync-card { animation: none; } }
 .recap-card { max-height: min(920px, calc(100dvh - 32px)); overflow-y: auto; gap: 14px; }
 .recap-month { display: inline-flex; align-items: center; gap: 6px; }
 .recap-month button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--ink-2); font-size: 17px; line-height: 1; }

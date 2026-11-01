@@ -195,6 +195,7 @@
     <div class="stats-detail" id="stats-detail" hidden>
       <dl id="stats-rows"></dl>
       <button type="button" class="stats-reset-btn recap-open" id="recap-open" data-i="recap.open">Maandrecap</button>
+      <button type="button" class="stats-reset-btn recap-open" id="turn-replay" data-i="turn.replay" hidden>Speel maandwissel</button>
       <div class="skies">
         <p class="skies-title" id="skies-title" data-i="skies.title" hidden>Hemels</p>
         <div class="skies-list" id="skies-list" role="group" aria-labelledby="skies-title"></div>
@@ -355,7 +356,7 @@
 </dialog>
 
 <dialog class="sync recap" id="recap" aria-labelledby="recap-title">
-  <div class="sync-card recap-card">
+  <div class="sync-card recap-card" tabindex="-1">
     <div class="composer-meta"><span id="recap-title" data-i="recap.title">Maandrecap</span>
       <span class="recap-month"><button type="button" id="recap-prev" aria-label="Vorige maand" data-ia="aria-label:recap.prev">&lsaquo;</button><span id="recap-month"></span><button type="button" id="recap-next" aria-label="Volgende maand" data-ia="aria-label:recap.next">&rsaquo;</button></span></div>
     <div class="recap-frame"><canvas id="recap-canvas" role="img"></canvas></div>

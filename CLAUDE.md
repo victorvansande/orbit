@@ -114,10 +114,10 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/i18n.js` | Taal: woordenboeken NL en EN, `tx(key, vars)`, `LANG`, `LOCALE`, `setLang`, `applyStatic`, `reasonText`, `DEMO_TITLES` |
 | `src/greet.js` | Begroeting van de kern: `greeting(ctx)` en `coreLine(ctx)` (tik op de kern), zinnen in NL en EN |
 | `src/demo.js` | Demoversie: `DEMO_MODE` en een volledige voorbeeldlijst in de tijdelijke opslag; als eerste geïmporteerd in `app.js` |
-| `src/fx.js` | Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React): `softReveal`, `particleTitle`, `createWall`. Zie Effecten |
+| `src/fx.js` | Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React): `softReveal`, `whiteBurst` (maandwissel), `nightFall`, `particleTitle`, `createWall`. Zie Effecten |
 | `src/fidget.js` | Bakje in de focusmodus met vier digitale fidgets: water en gelei in mono-tekens (2D-canvas), lava (metaballs) en gloed (grainient) in WebGL. `createFidget(box, {reducedMotion, label})` met `start`/`stop` |
 | `src/timer.js` | Zandloper: focustimer boven het bakje in de focusmodus, `createTimer(box, {reducedMotion, tx, onDone})` met `start`/`stop` |
-| `src/recap.js` | Maandrecap Poster: `monthStats`, `drawPoster`, `loadRecap`/`saveRecap`, zie Maandrecap |
+| `src/recap.js` | Maandrecap Poster: `monthStats`, `drawPoster`, `loadRecap`/`saveRecap`, zie Maandrecap (de maandwissel zelf zit in `app.js`, `scene.js` en `fx.js`) |
 | `src/feats.js` | Prestaties: 62 definities in `DEFS` (NL en EN), punten, rangen, logboek, `measure`, `evaluate`, `mergeFeats` |
 | `src/sound.js` | Geluid bij afvinken (Web Audio, geen bestanden): `playDone`, `soundOn`, `setSound`, zes klanken in `SOUNDS`, gekozen klank `SOUND_STYLE` |
 | `src/backup.js` | Tweede kopie van taken en afgevinkte taken in IndexedDB |
@@ -301,6 +301,17 @@ Op vraag van Victor (01/11/2026: een "monthly recap" om te delen en te downloade
 - **Demo** (Victor, 01/11/2026: altijd een volle recap om te testen): het pilletje staat er altijd; `src/demo.js` zet 75 afgevinkte taken in de vorige maand (veelvoud van 25, zodat twee keer afvinken nog een sterrenbeeld geeft), drukker op dinsdag en 's avonds, één piekdag, verdeeld over de momenten, plus 9 focusblokken en 4 prestaties met fictieve id's (`demo-recap-feat-*`), die de echte prestaties van de demo (die op 0 beginnen) niet raken.
 - Getest (demo, 1440 donker en 375 licht): pilletje, venster, post en story, maandwissel, Bewaar levert een PNG van 1080 × 1350, console foutloos, geen horizontale scroll.
 
+## Maandwissel: Zwaartekracht (`app.js`, `scene.js`, `fx.js`)
+
+Op vraag van Victor (01/11/2026: "vernieuw vanaf de eerste van de maand de sterrenhemel, maar niet zomaar"). Uit vier geanimeerde voorstellen (Zwaartekracht, Rasterpunt-nova, Lichtring, Sterrenbeeld; artifact "Orbit maandwissel") koos hij **1. Zwaartekracht**.
+- **Wanneer**: de eerste keer dat je Orbit opent in een nieuwe maand, ook als dat pas op de 3e is; één keer per toestel (`recap.turned` = `JJJJ-MM` in `priority-orbit.recap.v1`). Ook als de maand wisselt terwijl Orbit openstaat (bij terugkeer naar het tabblad, `visibilitychange`). Niet via een koppellink.
+- **Nieuwe hemel**: een snede op exact het begin van de maand (`cutMonth`, middernacht lokale tijd), alleen als er sterren van vóór die dag zijn en er nog geen snede na het begin van de maand ligt. Twee toestellen maken dus dezelfde snede (`cleanCuts` ontdubbelt), en via de sync komt er nooit een tweede bij. De getoonde hemel springt naar "deze hemel". Er wordt niets gewist: de vorige hemel staat onder Hemels. Deze automatische snede telt niet voor de prestatie "Nieuwe hemel" (`isMonthCut` in `featsNow`).
+- **Animatie** (alleen als de vorige maand sterren had; anders enkel de nieuwe hemel, zonder animatie of recap): vervangt de gewone intro (`softReveal`) en houdt het podium vast tot de recap dicht is (`takeStage`). `scene.monthTurn(oud, {onBurst})` toont de sterren van de vorige hemel (`oldSky`, ook als de snede al via de sync binnen was): 0 tot 0,8 s lichten ze op, daarna draaien ze in steeds snellere spiralen (hoek + q² × 5) met een taps lichtstaartje naar de kern, elk iets later (vast per ster via `ph`); de kern zwelt (`turnCore`, tot ongeveer 3,3 keer) en krimpt na de gloed terug (`TURN_END` 4,3 s). Zachte gloed rond de sterren alleen in het donker. Op 2,2 s start `whiteBurst` in `fx.js`: een radiaal wit verloop vanuit de kern vult het venster (1 s), op 0,75 s opent de recap van de vorige maand uit het licht (`.recap.is-born`, `recap-born` 0,8 s, focus op de kaart zodat er geen kader op een knop staat) en de gloed trekt erachter terug (klaar op 1,7 s). Wit in beide thema's.
+- **Overslaan**: een tik of toets springt naar de recap (vóór de gloed meteen, tijdens de gloed naar het hoogtepunt). Minimaal of minder beweging: geen animatie, de recap opent meteen.
+- **Daarna**: sluit je de recap, dan zegt de kern `turn.empty` ("November. Een lege hemel.") of `turn.fresh` ("November. Een nieuwe hemel, al 3 sterren."). De gewone begroeting valt die keer weg.
+- **Demo** (Victor: "laat me het ook kunnen testen"): speelt bij elk openen van de demo, en opnieuw via **Speel maandwissel** in de details van de teller (`#turn-replay`, alleen in de demo; scrolt op gsm eerst naar boven). In de demo wordt `turned` niet gezet.
+- Getest (Playwright): demo op 1440 donker en 375 licht (opbouw, spiraal, gloed, recap van oktober, zin na sluiten), tik tijdens de spiraal, Speel maandwissel, echt toestel met 30 sterren in oktober (snede op 1 november, `turned`, na herladen niet opnieuw, geen prestatie "Nieuwe hemel"), minder beweging; console foutloos, geen horizontale scroll.
+
 ## Instellingen
 
 - Eén knopje Instellingen met een klein tandwielicoontje (`.menu-gear`, Victor, 29/10/2026: gear-icoontje in plaats van het witte bolletje; knippert bij verbinden, kleurt rood bij offline) en een paneel (`#hud-menu`, `.is-open`), dicht bij een tik ernaast of Esc. `placeMenu()` verhuist de onderdelen bij het wisselen tussen desktop en gsm.
@@ -454,3 +465,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 01/11/2026, Claude Code: één soort aanhalingstekens, veeg over de muur via de regisseur. Voorstellen voor de maandrecap volgen.
 - 01/11/2026, Claude Code: maandrecap Poster gebouwd (venster, delen en bewaren, herinnering via kern en pilletje, volle voorbeeldmaand in de demo, focusminuten op de kaart). Open: Victor kiest eventueel extra cijfers voor de kaart.
 - 01/11/2026, Claude Code: beste uur op de poster. Niets openstaand.
+- 01/11/2026, Claude Code: maandwissel Zwaartekracht (nieuwe hemel vanaf de 1e, sterren spiralen naar de kern, witte gloed, recap uit het licht), ook te testen in de demo. Niets openstaand.

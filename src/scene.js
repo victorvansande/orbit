@@ -117,6 +117,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const dust = Array.from({ length: DUST }, (_, i) => ({ r: 20 + Math.random() * 190, a: Math.random() * TAU, s: 0.55 + Math.random() * 0.9, k: i / DUST }));
   let dustAmount = 0;
   let sonar = null;                          // {t0, target}: ring van tekens vanuit de kern, de gezochte bol licht op
+  let turn = null;                           // maandwissel: {t0, old, onBurst, fired}, de oude hemel spiraalt naar de kern
   let skyWave = null;                        // {t0, old}: nieuwe hemel, de ring van tekens neemt de oude sterren mee
   let minimal = false;                       // Minimaal (Instellingen → Effecten): alle extra effecten uit
   // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
@@ -581,9 +582,63 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   function drawSky(now) {
+    if (turn) { drawTurn(now); return; }
     const front = skyWaveFront(now);
     if (front !== null) drawStars(now, skyWave.old, d => d > front);   // oude hemel tot de ring langskomt
     drawStars(now, sky, front === null ? null : d => d < front - 30);   // nieuwe hemel achter de ring
+  }
+
+  // Maandwissel ("Zwaartekracht", gekozen door Victor, 01/11/2026): de sterren van de vorige hemel lichten op
+  // (0 tot 0,8 s), draaien in steeds snellere spiralen met een taps lichtstaartje naar de kern (0,8 tot ongeveer 2,7 s),
+  // de kern zwelt, en op 2,2 s laat de scène de witte gloed beginnen (`onBurst`, app.js). Daarna krimpt de kern terug.
+  const TURN_BURST = 2.2, TURN_END = 4.3;
+  const seg01 = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+  const easeIn = u => u * u * u;
+  function turnCore(now) {   // groeifactor van de kern tijdens de maandwissel
+    if (!turn) return 1;
+    const t = (now - turn.t0) / 1000;
+    const pull = seg01(t, 0.8, 2.3), boom = seg01(t, 2.2, 3.2), back = ease(seg01(t, 3.2, TURN_END));
+    return (1 + easeIn(pull) * 0.8 + boom * 1.5) * (1 - back) + back;
+  }
+  function drawTurn(now) {
+    const t = (now - turn.t0) / 1000;
+    if (t >= TURN_BURST && !turn.fired) { turn.fired = true; turn.onBurst?.(); }
+    if (t >= TURN_END) { turn = null; return; }
+    const a = introAlpha(now, 0.3, 1.2);
+    if (a <= 0) return;
+    const ks = skyScale(), small = Math.min(W, H) < 500;
+    const dense = clamp(1 - (turn.old.length - 150) / 1500, 0.65, 1);
+    const cx = coreHit ? coreHit.x : cam.cx, cy = coreHit ? coreHit.y : cam.cy;
+    const dark = theme === THEMES.dark;
+    ctx.lineCap = 'round';
+    for (const st of turn.old) {
+      const d = ((st.ph / (Math.PI * 2)) % 1 + 1) % 1 * 0.5;      // elke ster iets later, vast per ster
+      const b = ease(seg01(t, d * 0.6, 0.7 + d * 0.6));
+      const p = easeIn(seg01(t, 0.8 + d * 0.5, 2.2 + d * 0.5));
+      if (p >= 1) continue;
+      const [x0, y0] = skyXY(st.x, st.y, ks, st);
+      const r0 = Math.hypot(x0 - cx, y0 - cy), a0 = Math.atan2(y0 - cy, x0 - cx);
+      const pos = q => { const r = r0 * (1 - q), an = a0 + q * q * 5; return [cx + Math.cos(an) * r, cy + Math.sin(an) * r]; };
+      const [x, y] = pos(p);
+      const R = starR(st, dense, small) * (1 + b * 0.7) * (1 - p * 0.5);
+      const alpha = a * (0.45 + 0.55 * b);
+      if (p > 0.02) {   // taps lichtstaartje langs de spiraal, dooft uit naar achteren
+        const [tx, ty] = pos(Math.max(0, p - 0.12));
+        const gr = ctx.createLinearGradient(x, y, tx, ty);
+        gr.addColorStop(0, rgba(INK, 0.7 * alpha)); gr.addColorStop(1, rgba(INK, 0));
+        ctx.strokeStyle = gr; ctx.lineWidth = Math.max(1, R * 0.45);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.stroke();
+      }
+      if (dark && b > 0) {   // heel zachte gloed, alleen in het donker (op papier zou het een vlek zijn)
+        const g = ctx.createRadialGradient(x, y, 0, x, y, R * 2.2);
+        g.addColorStop(0, rgba(INK, 0.2 * b * alpha)); g.addColorStop(1, rgba(INK, 0));
+        ctx.fillStyle = g; ctx.fillRect(x - R * 2.2, y - R * 2.2, R * 4.4, R * 4.4);
+      }
+      ctx.fillStyle = rgba(INK, 1);
+      ctx.globalAlpha = alpha;
+      star4(x, y, R, 0);
+      ctx.globalAlpha = 1;
+    }
   }
 
   // nooit kleiner dan een paar pixels: op een gsm verdwenen ze anders
@@ -1305,7 +1360,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawWall(now);
     drawRings(now);
     drawVortex();
-    drawCore(now);
+    const swell = turnCore(now);
+    if (swell !== 1 && coreHit) {   // maandwissel: de kern zwelt rond haar eigen middelpunt
+      const { x, y } = coreHit;
+      ctx.save(); ctx.translate(x, y); ctx.scale(swell, swell); ctx.translate(-x, -y);
+      drawCore(now);
+      ctx.restore();
+      coreHit = { x, y, r: coreHit.r };
+    } else drawCore(now);
     drawOrbs();
     drawEffects();
     drawSonar(now);
@@ -1472,6 +1534,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       sonar = { t0, target: null, far: true };
     },
     // Minimaal: alle extra effecten uit; wat overblijft is de scène zelf (ringen, kometen, kern, sterren)
+    // maandwissel: `old` = de sterren van de vorige hemel (zelfde vorm als setSky); onBurst start de witte gloed
+    monthTurn(old, { onBurst } = {}) { turn = { t0: performance.now(), old: old.slice(), onBurst, fired: false }; skyWave = null; },
+    endTurn() { turn = null; },
+    get turning() { return Boolean(turn); },
     setMinimal(on) { minimal = on; if (on) { sonar = null; skyWave = null; meteor = null; constellation = null; sparks.length = 0; } },
     wake() { wakeUntil = performance.now() + 20000; },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
@@ -1520,6 +1586,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     get sweeping() { return Boolean(wallSweep && !wallSweep.outAt); },
     isBusy() {
       return Boolean(
+        turn !== null ||
         sparks.length > 0 ||
         twinkles.length > 0 ||
         constellation !== null ||

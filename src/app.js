@@ -18,7 +18,7 @@ import { playDone, soundOn, setSound } from './sound.js';
 import { createFidget } from './fidget.js';
 import { createTimer } from './timer.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './feats.js';
-import { softReveal, nightFall, particleTitle, createWall } from './fx.js';
+import { softReveal, whiteBurst, nightFall, particleTitle, createWall } from './fx.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './recap.js';
 
 applyStatic();
@@ -1624,8 +1624,9 @@ function drawRecap() {
   for (const b of recapDialog.querySelectorAll('[data-recap-theme]')) b.setAttribute('aria-pressed', String(b.dataset.recapTheme === theme));
   for (const b of recapDialog.querySelectorAll('[data-recap-fmt]')) b.setAttribute('aria-pressed', String(b.dataset.recapFmt === fmt));
 }
-async function openRecap(month = new Date().getDate() <= 5 ? lastMonth() : thisMonth()) {
+async function openRecap(month = new Date().getDate() <= 5 ? lastMonth() : thisMonth(), { born = false } = {}) {
   recapMonth = month;
+  recapDialog.classList.toggle('is-born', born);   // maandwissel: het venster komt uit het licht
   if (document.fonts) { try { await document.fonts.ready; } catch { /* geen fonts */ } }
   drawRecap();
   recap.seen[monthKey(month)] = Date.now();
@@ -1636,6 +1637,7 @@ async function openRecap(month = new Date().getDate() <= 5 ? lastMonth() : thisM
   $('recap-share').hidden = !canShare;
   setMenu(false);
   if (!recapDialog.open) recapDialog.showModal();
+  if (born) recapDialog.querySelector('.recap-card').focus({ preventScroll: true });   // geen focuskader op een knop na de animatie
 }
 // het pilletje onder de teller: op de 1e tot de 5e voor de vorige maand, zolang je die nog niet opende (in de demo altijd)
 function recapDue(now = new Date()) {
@@ -1688,13 +1690,94 @@ $('recap-save').addEventListener('click', saveRecapImage);
 $('recap-share').addEventListener('click', shareRecap);
 $('recap-close').addEventListener('click', () => recapDialog.close());
 recapDialog.addEventListener('click', e => { if (e.target === recapDialog) recapDialog.close(); });
+recapDialog.addEventListener('close', () => recapDialog.classList.remove('is-born'));
+
+// ---- Maandwissel ("Zwaartekracht", gekozen door Victor, 01/11/2026) ----
+// De eerste keer dat je Orbit opent in een nieuwe maand (ook als dat pas op de 3e is), per toestel één keer
+// (`recap.turned`): er komt een nieuwe hemel vanaf de 1e (snede op exact het begin van de maand, dus op twee toestellen
+// dezelfde en nooit dubbel), de sterren van de vorige hemel spiralen naar de kern, een zachte witte gloed, en daaruit
+// opent de recap van de vorige maand. Sluit je de recap, dan zegt de kern iets als "November. Een lege hemel."
+// In plaats van de gewone intro, via de regisseur. Een tik of toets slaat over naar de recap. Minimaal of minder
+// beweging: meteen de recap. Had de vorige maand geen sterren, dan alleen de nieuwe hemel, zonder animatie of recap.
+// Er wordt niets gewist: de vorige hemel staat onder Hemels. Demo: bij elk openen, en opnieuw via de details.
+const isMonthCut = t => { const d = new Date(t); return d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0 && d.getMilliseconds() === 0; };
+let turning = false;
+function turnDue(now = new Date()) {
+  if (DEMO_MODE) return true;
+  return recap.turned !== monthKey(thisMonth(now));
+}
+// sterren van de hemel die op het begin van deze maand eindigt (ook als de snede via de sync al binnen was)
+function oldSky(ms) {
+  const before = skyCuts.filter(c => c < ms);
+  const from = before.length ? before[before.length - 1] : 0;
+  return sky.stars.filter(st => Number.isFinite(done[st.id]) && done[st.id] >= from && done[st.id] < ms);
+}
+function planTurn(now = new Date()) {
+  if (!turnDue(now)) return null;
+  const ms = +thisMonth(now), prev = lastMonth(now);
+  return { ms, prev, old: oldSky(ms), recap: recapStats(prev).total > 0 };
+}
+function cutMonth(plan) {
+  const hadOld = Object.values(done).some(t => Number.isFinite(t) && t < plan.ms);
+  if (hadOld && !skyCuts.some(c => c >= plan.ms)) { skyCuts = cleanCuts([...skyCuts, plan.ms]); saveCuts(skyCuts); notifySync(); }
+  if (skyView !== 'current') { skyView = 'current'; saveSkyView(skyView); }
+  renderStats({ quiet: true });   // de scène heeft meteen de nieuwe hemel; tijdens de wissel toont ze nog de oude
+}
+function turnLine() {
+  const now = new Date(), month = capFirst(monthName(now));
+  const n = Object.values(done).filter(t => Number.isFinite(t) && t >= +thisMonth(now)).length;
+  const line = n ? tx('turn.fresh', { month, n }) : tx('turn.empty', { month });
+  return DEMO_MODE ? `${line} ${tx('demo.start')}` : line;
+}
+function runTurn(plan, { replay = false } = {}) {
+  if (!plan || turning) return false;
+  if (!replay && !DEMO_MODE) { recap.turned = monthKey(thisMonth()); saveRecap(recap); }
+  cutMonth(plan);
+  if (!plan.recap) return false;
+  turning = true;
+  const give = takeStage(180000);   // geen begroeting, pil of toast tot de recap weer dicht is
+  recapDialog.addEventListener('close', () => {
+    turning = false;
+    give();
+    setTimeout(() => { if (!document.querySelector('dialog[open]')) sayLine(turnLine()); }, 500);
+  }, { once: true });
+  setMenu(false);
+  if (reducedMotion.matches || minimalFx || !plan.old.length || document.hidden) {
+    setTimeout(() => openRecap(plan.prev), reducedMotion.matches || minimalFx ? 300 : 0);
+    return true;
+  }
+  let burst = null, opened = false;
+  const open = () => { if (opened) return; opened = true; stop(); openRecap(plan.prev, { born: true }); };
+  const skip = () => { scene.endTurn(); if (burst) burst.skip(); else open(); };
+  const stop = () => { removeEventListener('pointerdown', skip, true); removeEventListener('keydown', skip, true); };
+  addEventListener('pointerdown', skip, true);
+  addEventListener('keydown', skip, true);
+  scene.monthTurn(plan.old, {
+    onBurst() {
+      burst = whiteBurst({
+        center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
+        onPeak: open,
+      });
+    },
+  });
+  return true;
+}
+// demo: de maandwissel opnieuw afspelen vanuit de details van de teller
+$('turn-replay').hidden = !DEMO_MODE;
+$('turn-replay').addEventListener('click', () => {
+  if (turning) return;
+  const go = () => runTurn(planTurn(), { replay: true });
+  if (!desktop.matches && scrollY > 40) { scrollTo({ top: 0, behavior: reducedMotion.matches ? 'auto' : 'smooth' }); setTimeout(go, 600); }
+  else go();
+});
 
 const featsDialog = $('feats');
 const DATE_SHORT = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
 const featQueue = [];
 // demo: prestaties en punten tellen enkel wat in deze demo gebeurt, zodat je altijd van 0 begint (Victor)
 const FEATS_SINCE = DEMO_MODE ? Date.now() : 0;
-const featsNow = () => evaluate(feats, done, { skies: skyCuts.filter(t => t >= FEATS_SINCE).length, since: FEATS_SINCE });
+// de automatische snede van de maandwissel telt niet als zelf een nieuwe hemel beginnen
+const featsNow = () => evaluate(feats, done, { skies: skyCuts.filter(t => t >= FEATS_SINCE && !isMonthCut(t)).length, since: FEATS_SINCE });
 function checkFeats(pop) {
   const r = featsNow();
   if (r.fresh.length) {
@@ -2598,6 +2681,8 @@ setInterval(renderClock, 10000);
 setInterval(followDeadlines, 60000);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) followDeadlines();
+  // de maand wisselde terwijl Orbit openstond: bij terugkeren alsnog de maandwissel (niet in de demo, niet over een venster)
+  if (!document.hidden && !DEMO_MODE && !turning && !document.querySelector('dialog[open]') && turnDue()) runTurn(planTurn());
   if (document.hidden) fidget.stop();
   else if (document.body.classList.contains('is-focus') && desktop.matches && !minimalFx) fidget.start();
 });
@@ -2610,7 +2695,11 @@ applyFx();
 // Intro: een zachte cirkel vanuit de kern wist het papier weg en de ringen verschijnen van binnen naar buiten.
 // Bij elk openen, behalve met Minimaal, minder beweging of een koppellink.
 let revealDelay = 0;
-if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
+// maandwissel bij het openen: vervangt de gewone intro (nooit via een koppellink)
+const turnPlan = /^#sync=/.test(location.hash) ? null : planTurn();
+const turnShow = Boolean(turnPlan?.recap);
+if (turnPlan && !turnShow) runTurn(turnPlan);   // vorige maand zonder sterren: enkel de nieuwe hemel, zonder animatie
+if (!turnShow && !reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
   revealDelay = 800;
   const give = takeStage(3000);   // meldingen bij het laden wachten tot de intro voorbij is
   softReveal({
@@ -2621,6 +2710,7 @@ if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
 }
 document.documentElement.classList.remove('is-veiled');   // geen intro: het papier uit index.html meteen weg
 renderStats();
+if (turnShow) setTimeout(() => runTurn(turnPlan), 250);   // de scène bouwt op terwijl de sterren oplichten
 if (new Date().getHours() === 3) recordEvent(feats, 'night');
 checkFeats(false);   // bij het laden stil: wat al gehaald was, staat meteen goed
 renderSync();
@@ -2635,5 +2725,6 @@ readSyncHash();
   let seen = false;
   try { seen = localStorage.getItem(INTRO_KEY) === 'gezien'; } catch { /* geen opslag */ }
   if (!seen && lsEmptyAtStart && !syncDialog.open) setTimeout(openIntro, 900 + (revealDelay ? 650 : 0));
+  else if (turnShow) { /* de kern spreekt na de recap */ }
   else setTimeout(DEMO_MODE ? () => sayLine(tx('demo.start')) : greet, 1400 + revealDelay);   // demo: de kern zegt dat het een demo is     // na de intro van de scène; bij een eerste bezoek spreekt de uitleg
 }

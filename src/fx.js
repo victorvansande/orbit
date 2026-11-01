@@ -124,6 +124,43 @@ export function softReveal({ center, onReveal, done = () => {} }) {
   return { skip, cancel() { cancelAnimationFrame(raf); cv.remove(); } };
 }
 
+/* ---- Witte gloed bij de maandwissel ("Zwaartekracht") ---- */
+// De sterren van de vorige maand zijn in de kern verdwenen; vanuit de kern vult een zachte witte gloed het venster
+// (radiaal verloop, geen harde rand) en op het hoogtepunt opent het recapvenster (`onPeak`). Daarna trekt de gloed
+// achter het venster terug. Wit in beide thema's: het is licht, geen inkt. `skip()` springt naar het hoogtepunt.
+export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
+  const ov = overlay(), cv = ov.cv;
+  let W = ov.W, H = ov.H, g = ov.g;
+  const GROW = 1.0, PEAK = 0.75, END = 1.7;
+  let t0 = performance.now(), peaked = false, raf = 0, over = false;
+  const easeOut = u => 1 - Math.pow(1 - u, 3);
+  function frame(now) {
+    if (ov.fresh()) { W = ov.W; H = ov.H; g = ov.g; }
+    const t = (now - t0) / 1000;
+    if (t >= PEAK && !peaked) { peaked = true; onPeak(); }
+    if (t >= END) { finish(); return; }
+    const [cx, cy] = center();
+    const far = Math.hypot(Math.max(cx, W - cx), Math.max(cy, H - cy));
+    const grow = Math.min(1, t / GROW), fade = t < PEAK ? 1 : 1 - smoothstep(PEAK, END, t);
+    const k = smoothstep(0, 0.35, t) * fade;
+    const R = Math.max(1, far * 1.25 * easeOut(grow));
+    g.clearRect(0, 0, W, H);
+    const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+    gr.addColorStop(0, `rgba(255,255,255,${(0.97 * k).toFixed(4)})`);
+    gr.addColorStop(0.55, `rgba(255,255,255,${(0.78 * k).toFixed(4)})`);
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, W, H);
+    raf = requestAnimationFrame(frame);
+  }
+  function finish() { if (over) return; over = true; cancelAnimationFrame(raf); cv.remove(); done(); }
+  raf = requestAnimationFrame(frame);
+  return {
+    skip() { if (!peaked) t0 = performance.now() - PEAK * 1000; },
+    cancel: finish,
+  };
+}
+
 /* ---- Nacht na het afvinken ("Nacht valt", gekozen door Victor uit vier voorstellen) ---- */
 // Na het uitfonkelen valt de nacht: de pagina wordt in 0,55 s volledig inkt (licht in het donkere thema), alleen de
 // sterrenhemel blijft en licht op. De nieuwe ster bloeit open, daarna komt de dag terug met dezelfde zachte cirkel als
