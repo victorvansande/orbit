@@ -182,3 +182,17 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/styles.css`: `.wall-toggle` voorzien van `align-items: flex-end; padding: 0 2px 2px;` en `.wall-toggle svg { margin-bottom: 1.5px; }`. Hierdoor rusten beide knoppen op `flex-end` van de rij en staan de letters van 'MUUR' en 'STARS COLLECTED' op exact dezelfde horizontale basislijn (2 px van de onderkant). Tevens heeft `.feats-badge` `flex-basis: 100%` gekregen zodat deze altijd strak op de volgende regel begint.
 - **Getest:** Gecontroleerd op mobiel en desktop: 'stars collected' en 'muur' staan pixelperfect op dezelfde horizontale lijn.
 - **Impact op opslag / state:** Geen.
+
+
+### 19. Rustige, gemoedelijke diagonale muurveeg bij 'Stars Collected' (Voorstel 2)
+- **Vraag van Victor:** Victor koos Voorstel 2 voor de muur: laat bij het aantikken van 'Stars Collected' een witte gloed één keer diagonaal over de muur passeren en dan weer verdwijnen. Victor benadrukte expliciet: "Zorg wel dat het niet te snel gaat en je de kans hebt om nog wat taakjes te lezen voor ze weer verdwijnen, anders heeft het ook niet echt nut" en "Zorg er wel voor dat de muur niet gereveald wordt nadat er al veel animaties tegelijk gebeuren ... Maak de animatie ook sleek, rustig en gemoedelijk. Niet bruusk, erg aanwezig of storend".
+- **Oplossing & Implementatie:**
+  - **Pacing & Leesbaarheid:** De veegduur is ingesteld op 5,6 seconden met een kalme, zachte sinusboog (`ease(p)`). De diagonale lichtbundel (hoek 34°) is 420 px breed (`SWEEP_BEAM = 210`) met een perfecte verhoogde-cosinus afval (`(1 + cos(dist/R * PI)) / 2`). Woorden blijven ~1,8 tot 2,2 seconden comfortabel in het zachte licht leesbaar.
+  - **Lichtsterkte:** De maximale helderheid van de verlichte woorden is begrensd op 0,52 (in zachte inktkleur), zodat het nooit fel of storend oogt, maar aanvoelt als een zachte maanlichtgloed over e-ink.
+  - **Strikte bewaking tegen animatie-stapeling:** `triggerWallSweep()` in `src/app.js` en `scene.isBusy()` in `src/scene.js` controleren vóór het starten of er openstaande dialogen, actieve toasts, achievement-popups, uitfonkelende taken (`twinkles`), vliegende vonken (`sparks`), een pas geboren ster (`lastStarAt < 3000`), of een getekend sterrenbeeld actief zijn. Is dat het geval, dan wordt de veeg direct tegengehouden.
+  - **Direct annuleren bij sluiten:** Als de gebruiker de statistiekdetails weer dichtklapt, dooft de veeg direct en geruisloos uit (`scene.cancelWallSweep()`).
+- **Gewijzigde bestanden:**
+  - `src/scene.js`: Variabele `wallSweep` toegevoegd, `wallWant` reageert op `wallSweep`, `drawWall(now)` berekent de diagonale bundel en zachte in-/uitfade, en de methoden `sweepWall(dur = 5600)`, `cancelWallSweep()` en `isBusy()` zijn toegevoegd aan het `scene` object.
+  - `src/app.js`: In `showStatsDetail` wordt bij het openen `triggerWallSweep()` aangeroepen en bij het sluiten `cancelWallSweep()`.
+- **Getest:** Gecontroleerd bij openen en sluiten van de statistieken op zowel desktop als mobiel formaat. Woorden glijden rustig en leesbaar voorbij zonder enige schok, en bij drukke activiteit blijft de muur verborgen in de diepte.
+- **Impact op opslag / state:** Geen.

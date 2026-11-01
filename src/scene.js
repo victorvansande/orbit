@@ -120,7 +120,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let skyWave = null;                        // {t0, old}: nieuwe hemel, de ring van tekens neemt de oude sterren mee
   let minimal = false;                       // Minimaal (Instellingen → Effecten): alle extra effecten uit
   // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
-  let wallWords = [], wallOn = false, wallK = 0, wallLayout = null, wallBase = null, wallKey = '';
+  let wallWords = [], wallOn = false, wallK = 0, wallLayout = null, wallBase = null, wallKey = '', wallSweep = null;
   const lamp = { x: 0, y: 0 };
   const starHold = new Set();   // nieuwe ster die wacht tot de nacht na het afvinken opengaat (app.js, nightFall)
   let holdNext = false;
@@ -393,7 +393,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       }
     }
     if (sonar && (now - sonar.t0) / 1000 > (sonar.far ? 6 : SONAR_LIFE + 2.4)) sonar = null;
-    const wallWant = wallOn && wallWords.length && !minimal ? 1 : 0;
+    const wallWant = (wallOn || wallSweep) && wallWords.length && !minimal ? 1 : 0;
     wallK = motion ? smooth(wallK, wallWant, 3, dt) : wallWant;
     if (wallK > 0.001) {
       // licht: rond de aanwijzer, anders zwerft het traag rond
@@ -485,20 +485,67 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     g.globalCompositeOperation = 'source-over';
   }
   function wallRadius() { return Math.min(Math.max(200, W - insets.left - insets.right), H) * 0.62; }
-  function drawWall() {
+  const SWEEP_ANGLE = 34 * DEG, SWEEP_BEAM = 210;
+  function drawWall(now) {
     if (wallK < 0.005 || !wallWords.length) return;
     layoutWall();
-    ctx.globalAlpha = 0.035 * theme.grid * wallK;
     const R = wallRadius();
-    ctx.drawImage(wallBase, 0, 0, W, H);
+
+    let sweepFade = 0, beamPos = -9999;
+    if (wallSweep) {
+      const p = (now - wallSweep.t0) / wallSweep.dur;
+      if (p >= 1) {
+        wallSweep = null;
+      } else {
+        // Rustige, gemoedelijke in- en uitfade: rustig opkomen in ~1.2s, zachtjes wegebben in ~1.6s
+        if (p < 0.22) sweepFade = ease(p / 0.22);
+        else if (p > 0.70) sweepFade = 1 - ease((p - 0.70) / 0.30);
+        else sweepFade = 1;
+
+        const maxDist = W * Math.cos(SWEEP_ANGLE) + H * Math.sin(SWEEP_ANGLE);
+        beamPos = -SWEEP_BEAM * 0.5 + ease(p) * (maxDist + SWEEP_BEAM);
+      }
+    }
+
+    // Basislaag: subtiele achtergrondprint (nooit storend of te aanwezig)
+    const baseAlpha = wallOn ? 0.035 * theme.grid * wallK : (0.038 * theme.grid * sweepFade);
+    if (baseAlpha > 0.003) {
+      ctx.globalAlpha = baseAlpha;
+      ctx.drawImage(wallBase, 0, 0, W, H);
+    }
+
     ctx.font = WALL_FONT; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     ctx.fillStyle = rgba(INK, 1);
+
+    const cosA = Math.cos(SWEEP_ANGLE), sinA = Math.sin(SWEEP_ANGLE);
+
     for (const it of wallLayout) {
-      if (Math.abs(it.y - lamp.y) > WALL_R || it.x > lamp.x + WALL_R || it.x + it.w < lamp.x - WALL_R) continue;
-      const d = Math.hypot(Math.max(0, Math.abs(it.x + it.w / 2 - lamp.x) - it.w / 2), it.y - lamp.y), lit = Math.max(0, 1 - d / WALL_R);
-      const fade = 1 - smoothstep(R * 0.45, R, Math.hypot(it.x + it.w / 2 - cam.cx, it.y - cam.cy));
-      if (lit * fade < 0.02) continue;
-      ctx.globalAlpha = 0.45 * lit * lit * fade * wallK;
+      const midX = it.x + it.w / 2, midY = it.y;
+      const fade = 1 - smoothstep(R * 0.45, R, Math.hypot(midX - cam.cx, midY - cam.cy));
+      if (fade < 0.02) continue;
+
+      let lit = 0;
+      // 1. Handmatig aangezette muur: lichtstraal rond de cursor / zwevende lamp
+      if (wallOn) {
+        const d = Math.hypot(Math.max(0, Math.abs(midX - lamp.x) - it.w / 2), midY - lamp.y);
+        if (d < WALL_R) {
+          const l = 1 - d / WALL_R;
+          lit = Math.max(lit, 0.45 * l * l * wallK);
+        }
+      }
+      // 2. Diagonale veeg (Voorstel 2): brede, zachte lichtgloed die rustig over de woorden glijdt
+      // zodat titels comfortabel leesbaar zijn zonder haast
+      if (sweepFade > 0.01) {
+        const proj = midX * cosA + midY * sinA;
+        const dist = Math.abs(proj - beamPos);
+        if (dist < SWEEP_BEAM) {
+          const beamLit = (1 + Math.cos((dist / SWEEP_BEAM) * Math.PI)) / 2;
+          lit = Math.max(lit, 0.52 * beamLit * beamLit * sweepFade);
+        }
+      }
+
+      if (lit * fade < 0.015) continue;
+      ctx.globalAlpha = lit * fade;
       ctx.fillText(it.word, it.x, it.y);
     }
     ctx.globalAlpha = 1;
@@ -1245,7 +1292,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.clearRect(0, 0, W, H);
     updateCamera();
     drawGrid(now);
-    drawWall();
+    drawWall(now);
     drawSky(now);
     drawConstellation(now);
     drawMeteor(now);
@@ -1458,6 +1505,21 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     },
     // muur van afgevinkte taken achter de hemel: woorden (titels) en aan/uit
     setWall(words, on) { wallWords = words.map(w => w.toUpperCase()); wallOn = on; wallKey = ''; },
+    sweepWall(dur = 5600) {
+      if (reducedMotion.matches || minimal || !wallWords.length) return;
+      wallSweep = { t0: performance.now(), dur };
+    },
+    cancelWallSweep() { wallSweep = null; },
+    isBusy() {
+      return Boolean(
+        sparks.length > 0 ||
+        twinkles.length > 0 ||
+        constellation !== null ||
+        starHold.size > 0 ||
+        (drag?.type === 'orb' && drag.active) ||
+        (performance.now() - lastStarAt < 3000)
+      );
+    },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;

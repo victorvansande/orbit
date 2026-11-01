@@ -491,9 +491,18 @@ $('sky-new-yes').addEventListener('click', () => {
   showToast(tx('skies.done'));
 });
 
+function triggerWallSweep() {
+  if (scene.isBusy?.()) return;
+  if (document.querySelector('dialog[open]')) return;
+  if (document.querySelector('.feat-pop.is-on')) return;
+  if (document.querySelector('.toast.is-on')) return;
+  scene.sweepWall();
+}
 function showStatsDetail(open) {
   $('stats-detail').hidden = !open;
   $('stats-toggle').setAttribute('aria-expanded', String(open));
+  if (open) triggerWallSweep();
+  else scene.cancelWallSweep?.();
 }
 $('stats-toggle').addEventListener('click', () => showStatsDetail($('stats-detail').hidden));
 // gsm: het tellertje bovenaan brengt je naar de details onderaan
