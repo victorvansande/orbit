@@ -148,6 +148,8 @@ export function drawPoster(cv, s, { theme = 'dark', fmt = 'post', tx, locale }) 
   const ly = (besides ? top + cell * 7 : wy + 40) + (story ? 190 : 100), lintH = story ? 250 : 130;
   const max = Math.max(1, ...s.perDay), colW = room / s.days, step = Math.min(story ? 20 : 14, lintH / max), dot = Math.min(story ? 6 : 4.6, step * 0.34 + 1.2);
   label(g, tx('recap.perDay'), L, ly - 24, 17, ink3);
+  // beste uur (Victor, 01/11/2026): klein rechts boven het lint, het uur waarop de meeste sterren vielen
+  if (s.hour >= 0) label(g, tx('recap.hour', { h: `${String(s.hour).padStart(2, '0')}:00` }), W - L, ly - 24, 17, ink2, 'right');
   for (let d = 0; d < s.days; d++) for (let k = 0; k < s.perDay[d]; k++) {
     g.fillStyle = d === s.busiest ? core : rgba(ink, 0.85);
     g.beginPath(); g.arc(L + d * colW + colW / 2, ly + lintH - k * step, dot, 0, Math.PI * 2); g.fill();
