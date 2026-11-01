@@ -1842,36 +1842,50 @@ function renderFeats() {
   $('feats-points').textContent = r.rank.next ? `${pts} · ${tx('feats.next', { n: (r.rank.next.at - r.points).toLocaleString(LOCALE), name: r.rank.next.name })}` : `${pts} · ${tx('feats.max')}`;
   $('feats-bar').style.width = `${r.rank.next ? Math.round((r.points - r.rank.from) / (r.rank.next.at - r.rank.from) * 100) : 100}%`;
   const list = $('feats-list');
-  list.replaceChildren(...GROUPS.map(([g]) => {
+  // Recent bovenaan (Victor, 01/11/2026: niet zoeken of scrollen naar wat je net behaalde): de vier laatst behaalde
+  // prestaties, nieuwste eerst; minder dan een dag oud krijgt een rood stipje. Ze staan daarna ook gewoon in hun groep.
+  const recent = r.list.filter(x => x.at).sort((a, b) => b.at - a.at).slice(0, RECENT_FEATS);
+  const groups = GROUPS.map(([g]) => {
     const items = r.list.filter(x => x.group === g);
-    const sec = el('section', 'feats-group');
     const got = items.filter(x => x.at || x.value >= x.goal).length;
-    const h = el('h3', 'feats-group-title', groupName(g));
-    h.append(el('span', '', `${got}/${items.length}`));
-    const ul = el('ul', 'feats-grid');
-    for (const x of items) {
-      const earned = Boolean(x.at) || x.value >= x.goal, hidden = x.secret && !earned;
-      const li = el('li', `feat tier-${x.tier}${earned ? ' is-got' : ''}`);
-      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      icon.setAttribute('viewBox', '-12 -12 24 24'); icon.setAttribute('class', 'feat-badge'); icon.setAttribute('aria-hidden', 'true');
-      icon.innerHTML = badgeSvg(hidden);
-      const body = el('div', 'feat-body');
-      const name = el('p', 'feat-name', hidden ? tx('feats.secret') : x.name);
-      name.append(el('span', 'feat-pts', `+${x.points}`));
-      body.append(name, el('p', 'feat-desc', hidden ? tx('feats.secretDesc') : x.desc));
-      if (earned) body.append(el('p', 'feat-meta', x.at ? tx('feats.got', { date: DATE_SHORT.format(x.at) }) : ''));
-      else if (x.goal > 1 && !hidden) {
-        const bar = el('div', 'feat-bar'), fill = el('i');
-        fill.style.width = `${Math.round(x.value / x.goal * 100)}%`;
-        bar.append(fill);
-        body.append(bar, el('p', 'feat-meta', `${x.value.toLocaleString(LOCALE)} / ${x.goal.toLocaleString(LOCALE)}`));
-      }
-      li.append(icon, body);
-      ul.append(li);
-    }
-    sec.append(h, ul);
-    return sec;
-  }));
+    return featSection(groupName(g), `${got}/${items.length}`, items);
+  });
+  list.replaceChildren(...(recent.length ? [featSection(tx('feats.recent'), '', recent, true)] : []), ...groups);
+}
+const RECENT_FEATS = 4;   // vier past zonder gat in het raster van twee kolommen
+function gotLabel(at) {   // vandaag, gisteren of de datum
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(at).setHours(0, 0, 0, 0)) / DAY_MS);
+  return days === 0 ? tx('feats.gotToday') : days === 1 ? tx('feats.gotYesterday') : tx('feats.got', { date: DATE_SHORT.format(at) });
+}
+function featSection(title, count, items, isRecent = false) {
+  const sec = el('section', `feats-group${isRecent ? ' is-recent' : ''}`);
+  const h = el('h3', 'feats-group-title', title);
+  h.append(el('span', '', count));
+  const ul = el('ul', 'feats-grid');
+  ul.append(...items.map(x => featTile(x, isRecent)));
+  sec.append(h, ul);
+  return sec;
+}
+function featTile(x, isRecent) {
+  const earned = Boolean(x.at) || x.value >= x.goal, hidden = x.secret && !earned;
+  const fresh = isRecent && x.at && Date.now() - x.at < DAY_MS;
+  const li = el('li', `feat tier-${x.tier}${earned ? ' is-got' : ''}${fresh ? ' is-fresh' : ''}`);
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '-12 -12 24 24'); icon.setAttribute('class', 'feat-badge'); icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = badgeSvg(hidden);
+  const body = el('div', 'feat-body');
+  const name = el('p', 'feat-name', hidden ? tx('feats.secret') : x.name);
+  name.append(el('span', 'feat-pts', `+${x.points}`));
+  body.append(name, el('p', 'feat-desc', hidden ? tx('feats.secretDesc') : x.desc));
+  if (earned) body.append(el('p', 'feat-meta', x.at ? gotLabel(x.at) : ''));
+  else if (x.goal > 1 && !hidden) {
+    const bar = el('div', 'feat-bar'), fill = el('i');
+    fill.style.width = `${Math.round(x.value / x.goal * 100)}%`;
+    bar.append(fill);
+    body.append(bar, el('p', 'feat-meta', `${x.value.toLocaleString(LOCALE)} / ${x.goal.toLocaleString(LOCALE)}`));
+  }
+  li.append(icon, body);
+  return li;
 }
 function openFeats() {
   renderFeats();

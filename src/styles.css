@@ -1062,6 +1062,9 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle {
 .feats-group-title { display: flex; justify-content: space-between; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); font: 500 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); }
 .feats-group-title span { color: var(--ink-3); }
 .feats-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+/* Recent behaald bovenaan; een prestatie van minder dan een dag krijgt een rood stipje (het accent van de kern) */
+.feat.is-fresh { position: relative; }
+.feat.is-fresh::after { content: ""; position: absolute; top: 8px; left: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--core); box-shadow: 0 0 0 2px var(--fill); }
 .feat { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--fill); }
 .feat.tier-bronze { --tier: var(--tier-bronze); } .feat.tier-silver { --tier: var(--tier-silver); }
 .feat.tier-gold { --tier: var(--tier-gold); } .feat.tier-platinum { --tier: var(--tier-platinum); }
