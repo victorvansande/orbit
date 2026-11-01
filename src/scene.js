@@ -593,6 +593,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // kern (1,3 tot ongeveer 4,4 s), de kern zwelt, en op 3,9 s laat de scène de witte gloed beginnen (`onBurst`, app.js).
   // Daarna krimpt de kern terug. Niet over te slaan: dit is het moment van de maand.
   const TURN_BURST = 3.9, TURN_END = 7;
+  const TURN_TAIL_N = 12, TURN_TAIL_DT = 0.03;   // staart: 12 stukjes over 0,36 s van de eigen baan, dus mee gebogen
   const seg01 = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
   const pullEase = u => u * u * (1.6 - 0.6 * u);   // zacht vertrek, versnelt, maar zonder ruk op het einde
   function turnCore(now) {   // groeifactor van de kern tijdens de maandwissel
@@ -615,7 +616,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const st of turn.old) {
       const d = ((st.ph / (Math.PI * 2)) % 1 + 1) % 1 * 0.5;      // elke ster iets later, vast per ster
       const b = ease(seg01(t, d * 0.8, 1.2 + d * 0.8));
-      const p = pullEase(seg01(t, 1.3 + d * 0.9, 3.9 + d * 0.9));
+      const pullAt = tt => pullEase(seg01(tt, 1.3 + d * 0.9, 3.9 + d * 0.9));
+      const p = pullAt(t);
       if (p >= 1) continue;
       const [x0, y0] = skyXY(st.x, st.y, ks, st);
       const r0 = Math.hypot(x0 - cx, y0 - cy), a0 = Math.atan2(y0 - cy, x0 - cx);
@@ -623,12 +625,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const [x, y] = pos(p);
       const R = starR(st, dense, small) * (1 + b * 0.7) * (1 - p * 0.5);
       const alpha = a * (0.45 + 0.55 * b);
-      if (p > 0.02) {   // taps lichtstaartje langs de spiraal, dooft uit naar achteren
-        const [tx, ty] = pos(Math.max(0, p - 0.14));
-        const gr = ctx.createLinearGradient(x, y, tx, ty);
-        gr.addColorStop(0, rgba(INK, 0.7 * alpha)); gr.addColorStop(1, rgba(INK, 0));
-        ctx.strokeStyle = gr; ctx.lineWidth = Math.max(1, R * 0.45);
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.stroke();
+      if (p > 0.004) {   // taps lichtstaartje langs de werkelijke spiraal (waar de ster de laatste 0,36 s was), dooft uit naar achteren
+        trailPts.length = 0;
+        for (let k = 0; k <= TURN_TAIL_N; k++) { const [px, py] = pos(pullAt(t - k * TURN_TAIL_DT)); trailPts.push(px, py); }
+        const n = trailPts.length / 2, ex = trailPts[2 * n - 2], ey = trailPts[2 * n - 1];
+        if (Math.hypot(ex - x, ey - y) > 1.5) {
+          const gr = ctx.createLinearGradient(x, y, ex, ey);
+          gr.addColorStop(0, rgba(INK, 0.7 * alpha)); gr.addColorStop(1, rgba(INK, 0));
+          ctx.fillStyle = gr;
+          taper(Math.max(1.2, R * 0.6), 0.2);
+        }
       }
       if (dark && b > 0) {   // heel zachte gloed, alleen in het donker (op papier zou het een vlek zijn)
         const g = ctx.createRadialGradient(x, y, 0, x, y, R * 2.2);
