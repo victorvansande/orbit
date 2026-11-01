@@ -127,11 +127,11 @@ export function softReveal({ center, onReveal, done = () => {} }) {
 /* ---- Witte gloed bij de maandwissel ("Zwaartekracht") ---- */
 // De sterren van de vorige maand zijn in de kern verdwenen; vanuit de kern vult een zachte witte gloed het venster
 // (radiaal verloop, geen harde rand) en op het hoogtepunt opent het recapvenster (`onPeak`). Daarna trekt de gloed
-// achter het venster terug. Wit in beide thema's: het is licht, geen inkt. `skip()` springt naar het hoogtepunt.
+// achter het venster terug. Wit in beide thema's: het is licht, geen inkt. De maandwissel slaat niet over.
 export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
   const ov = overlay(), cv = ov.cv;
   let W = ov.W, H = ov.H, g = ov.g;
-  const GROW = 1.0, PEAK = 0.75, END = 1.7;
+  const GROW = 1.7, PEAK = 1.3, END = 3.0;   // rustig: de recap opent uit het volle licht
   let t0 = performance.now(), peaked = false, raf = 0, over = false;
   const easeOut = u => 1 - Math.pow(1 - u, 3);
   function frame(now) {
@@ -142,7 +142,7 @@ export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
     const [cx, cy] = center();
     const far = Math.hypot(Math.max(cx, W - cx), Math.max(cy, H - cy));
     const grow = Math.min(1, t / GROW), fade = t < PEAK ? 1 : 1 - smoothstep(PEAK, END, t);
-    const k = smoothstep(0, 0.35, t) * fade;
+    const k = smoothstep(0, 0.7, t) * fade;
     const R = Math.max(1, far * 1.25 * easeOut(grow));
     g.clearRect(0, 0, W, H);
     const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R);

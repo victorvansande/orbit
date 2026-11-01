@@ -588,17 +588,18 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawStars(now, sky, front === null ? null : d => d < front - 30);   // nieuwe hemel achter de ring
   }
 
-  // Maandwissel ("Zwaartekracht", gekozen door Victor, 01/11/2026): de sterren van de vorige hemel lichten op
-  // (0 tot 0,8 s), draaien in steeds snellere spiralen met een taps lichtstaartje naar de kern (0,8 tot ongeveer 2,7 s),
-  // de kern zwelt, en op 2,2 s laat de scène de witte gloed beginnen (`onBurst`, app.js). Daarna krimpt de kern terug.
-  const TURN_BURST = 2.2, TURN_END = 4.3;
+  // Maandwissel ("Zwaartekracht", gekozen door Victor, 01/11/2026; trager en vloeiender op zijn vraag): de sterren van
+  // de vorige hemel lichten op (0 tot 1,4 s), draaien in steeds snellere spiralen met een taps lichtstaartje naar de
+  // kern (1,3 tot ongeveer 4,4 s), de kern zwelt, en op 3,9 s laat de scène de witte gloed beginnen (`onBurst`, app.js).
+  // Daarna krimpt de kern terug. Niet over te slaan: dit is het moment van de maand.
+  const TURN_BURST = 3.9, TURN_END = 7;
   const seg01 = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
-  const easeIn = u => u * u * u;
+  const pullEase = u => u * u * (1.6 - 0.6 * u);   // zacht vertrek, versnelt, maar zonder ruk op het einde
   function turnCore(now) {   // groeifactor van de kern tijdens de maandwissel
     if (!turn) return 1;
     const t = (now - turn.t0) / 1000;
-    const pull = seg01(t, 0.8, 2.3), boom = seg01(t, 2.2, 3.2), back = ease(seg01(t, 3.2, TURN_END));
-    return (1 + easeIn(pull) * 0.8 + boom * 1.5) * (1 - back) + back;
+    const pull = seg01(t, 1.3, 4.1), boom = ease(seg01(t, 3.8, 5.3)), back = ease(seg01(t, 5.2, TURN_END));
+    return (1 + pullEase(pull) * 0.8 + boom * 1.5) * (1 - back) + back;
   }
   function drawTurn(now) {
     const t = (now - turn.t0) / 1000;
@@ -613,17 +614,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.lineCap = 'round';
     for (const st of turn.old) {
       const d = ((st.ph / (Math.PI * 2)) % 1 + 1) % 1 * 0.5;      // elke ster iets later, vast per ster
-      const b = ease(seg01(t, d * 0.6, 0.7 + d * 0.6));
-      const p = easeIn(seg01(t, 0.8 + d * 0.5, 2.2 + d * 0.5));
+      const b = ease(seg01(t, d * 0.8, 1.2 + d * 0.8));
+      const p = pullEase(seg01(t, 1.3 + d * 0.9, 3.9 + d * 0.9));
       if (p >= 1) continue;
       const [x0, y0] = skyXY(st.x, st.y, ks, st);
       const r0 = Math.hypot(x0 - cx, y0 - cy), a0 = Math.atan2(y0 - cy, x0 - cx);
-      const pos = q => { const r = r0 * (1 - q), an = a0 + q * q * 5; return [cx + Math.cos(an) * r, cy + Math.sin(an) * r]; };
+      const pos = q => { const r = r0 * (1 - q), an = a0 + Math.pow(q, 1.7) * 4.4; return [cx + Math.cos(an) * r, cy + Math.sin(an) * r]; };
       const [x, y] = pos(p);
       const R = starR(st, dense, small) * (1 + b * 0.7) * (1 - p * 0.5);
       const alpha = a * (0.45 + 0.55 * b);
       if (p > 0.02) {   // taps lichtstaartje langs de spiraal, dooft uit naar achteren
-        const [tx, ty] = pos(Math.max(0, p - 0.12));
+        const [tx, ty] = pos(Math.max(0, p - 0.14));
         const gr = ctx.createLinearGradient(x, y, tx, ty);
         gr.addColorStop(0, rgba(INK, 0.7 * alpha)); gr.addColorStop(1, rgba(INK, 0));
         ctx.strokeStyle = gr; ctx.lineWidth = Math.max(1, R * 0.45);

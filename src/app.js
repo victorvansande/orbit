@@ -1697,11 +1697,12 @@ recapDialog.addEventListener('close', () => recapDialog.classList.remove('is-bor
 // (`recap.turned`): er komt een nieuwe hemel vanaf de 1e (snede op exact het begin van de maand, dus op twee toestellen
 // dezelfde en nooit dubbel), de sterren van de vorige hemel spiralen naar de kern, een zachte witte gloed, en daaruit
 // opent de recap van de vorige maand. Sluit je de recap, dan zegt de kern iets als "November. Een lege hemel."
-// In plaats van de gewone intro, via de regisseur. Een tik of toets slaat over naar de recap. Minimaal of minder
-// beweging: meteen de recap. Had de vorige maand geen sterren, dan alleen de nieuwe hemel, zonder animatie of recap.
+// In plaats van de gewone intro, via de regisseur. Niet over te slaan (Victor: "te belangrijk om geskipt te kunnen
+// worden"): tikken en toetsen doen niets tot de recap open is. Minimaal of minder beweging: meteen de recap.
+// De snede geeft de prestatie "Nieuwe hemel" (Victor, 01/11/2026), met melding na de recap. Had de vorige maand geen sterren, dan alleen de nieuwe hemel, zonder animatie of recap.
 // Er wordt niets gewist: de vorige hemel staat onder Hemels. Demo: bij elk openen, en opnieuw via de details.
-const isMonthCut = t => { const d = new Date(t); return d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0 && d.getMilliseconds() === 0; };
-let turning = false;
+let turning = false, turnFeatLater = false, booted = false;
+const turnCuts = new Set();   // sneden van de maandwissel in deze sessie (demo: tellen mee, ook al liggen ze vóór FEATS_SINCE)
 function turnDue(now = new Date()) {
   if (DEMO_MODE) return true;
   return recap.turned !== monthKey(thisMonth(now));
@@ -1719,7 +1720,10 @@ function planTurn(now = new Date()) {
 }
 function cutMonth(plan) {
   const hadOld = Object.values(done).some(t => Number.isFinite(t) && t < plan.ms);
-  if (hadOld && !skyCuts.some(c => c >= plan.ms)) { skyCuts = cleanCuts([...skyCuts, plan.ms]); saveCuts(skyCuts); notifySync(); }
+  if (hadOld && !skyCuts.some(c => c >= plan.ms)) {
+    skyCuts = cleanCuts([...skyCuts, plan.ms]); saveCuts(skyCuts); turnCuts.add(plan.ms); notifySync();
+    if (booted) checkFeats(true); else turnFeatLater = true;   // de pil wacht via de regisseur tot de recap dicht is
+  }
   if (skyView !== 'current') { skyView = 'current'; saveSkyView(skyView); }
   renderStats({ quiet: true });   // de scène heeft meteen de nieuwe hemel; tijdens de wissel toont ze nog de oude
 }
@@ -1732,10 +1736,10 @@ function turnLine() {
 function runTurn(plan, { replay = false } = {}) {
   if (!plan || turning) return false;
   if (!replay && !DEMO_MODE) { recap.turned = monthKey(thisMonth()); saveRecap(recap); }
-  cutMonth(plan);
-  if (!plan.recap) return false;
+  if (!plan.recap) { cutMonth(plan); return false; }
   turning = true;
   const give = takeStage(180000);   // geen begroeting, pil of toast tot de recap weer dicht is
+  cutMonth(plan);
   recapDialog.addEventListener('close', () => {
     turning = false;
     give();
@@ -1746,15 +1750,16 @@ function runTurn(plan, { replay = false } = {}) {
     setTimeout(() => openRecap(plan.prev), reducedMotion.matches || minimalFx ? 300 : 0);
     return true;
   }
-  let burst = null, opened = false;
+  let opened = false;
+  // niet over te slaan: tikken en toetsen doen niets (ook geen sneltoetsen of slepen) tot de recap open is
+  const hush = e => { e.preventDefault(); e.stopPropagation(); };
+  const EVENTS = ['pointerdown', 'pointerup', 'click', 'keydown', 'wheel', 'touchstart'];
   const open = () => { if (opened) return; opened = true; stop(); openRecap(plan.prev, { born: true }); };
-  const skip = () => { scene.endTurn(); if (burst) burst.skip(); else open(); };
-  const stop = () => { removeEventListener('pointerdown', skip, true); removeEventListener('keydown', skip, true); };
-  addEventListener('pointerdown', skip, true);
-  addEventListener('keydown', skip, true);
+  const stop = () => { for (const ev of EVENTS) removeEventListener(ev, hush, { capture: true }); };
+  for (const ev of EVENTS) addEventListener(ev, hush, { capture: true, passive: false });
   scene.monthTurn(plan.old, {
     onBurst() {
-      burst = whiteBurst({
+      whiteBurst({
         center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
         onPeak: open,
       });
@@ -1777,7 +1782,7 @@ const featQueue = [];
 // demo: prestaties en punten tellen enkel wat in deze demo gebeurt, zodat je altijd van 0 begint (Victor)
 const FEATS_SINCE = DEMO_MODE ? Date.now() : 0;
 // de automatische snede van de maandwissel telt niet als zelf een nieuwe hemel beginnen
-const featsNow = () => evaluate(feats, done, { skies: skyCuts.filter(t => t >= FEATS_SINCE && !isMonthCut(t)).length, since: FEATS_SINCE });
+const featsNow = () => evaluate(feats, done, { skies: skyCuts.filter(t => t >= FEATS_SINCE || turnCuts.has(t)).length, since: FEATS_SINCE });
 function checkFeats(pop) {
   const r = featsNow();
   if (r.fresh.length) {
@@ -2712,7 +2717,8 @@ document.documentElement.classList.remove('is-veiled');   // geen intro: het pap
 renderStats();
 if (turnShow) setTimeout(() => runTurn(turnPlan), 250);   // de scène bouwt op terwijl de sterren oplichten
 if (new Date().getHours() === 3) recordEvent(feats, 'night');
-checkFeats(false);   // bij het laden stil: wat al gehaald was, staat meteen goed
+checkFeats(turnFeatLater);   // bij het laden stil: wat al gehaald was, staat meteen goed (behalve de nieuwe hemel van de maandwissel)
+booted = true;
 renderSync();
 if (savedCode()) sync.start(savedCode());
 // Webapp op het beginscherm zonder koppeling: meteen zeggen, de uitleg in de lijst staat op gsm ver onderaan
