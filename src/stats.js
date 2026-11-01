@@ -171,12 +171,6 @@ export function placeStar(sky, id, near, save = true, visible = null) {
   return sky;
 }
 
-export function clearStars(sky) {
-  sky.stars = [];
-  writeObj(STARS_KEY, sky);
-  return sky;
-}
-
 export function removeStar(sky, id) {
   const i = sky.stars.findIndex(s => s.id === id);
   if (i >= 0) { sky.stars.splice(i, 1); writeObj(STARS_KEY, sky); }

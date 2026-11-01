@@ -691,6 +691,17 @@ body.is-idle .controls { opacity: 0; }
 .composer-title::placeholder { color: var(--placeholder); }
 .composer-title:focus { border-bottom-color: var(--ink); }
 .composer-title:focus-visible { outline: none; }
+/* Lage schermen (bv. 320 x 568): het orbitje steekt boven het venster uit en viel buiten beeld. Het venster reserveert
+   die ruimte zelf (padding bovenaan) zodat centreren het orbitje meetelt, en alles wordt iets compacter. */
+@media (max-height: 760px) {
+  .composer { padding-top: 84px; }
+  .composer form { padding-top: 92px; padding-bottom: 18px; }
+  .composer-orb { width: 196px; height: 196px; top: -88px; }
+}
+@media (max-width: 360px) {
+  .composer form { padding-left: 22px; padding-right: 22px; }
+  .composer-title { font-size: 20px; }
+}
 .composer-levels { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
 .c-level {
   position: relative;

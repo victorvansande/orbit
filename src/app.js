@@ -6,7 +6,7 @@ import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './deadl
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
 import { mirror, readMirror } from './backup.js';
 import { setMatrix, twinkleDot } from './matrix.js';
-import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, clearStars, dayKey, STATS_KEYS,
+import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
   loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView } from './stats.js';
 import { QUOTES } from './quotes.js';
 import { createWeather } from './weather.js';
@@ -611,13 +611,13 @@ function trackRow(t) {
 }
 
 function attachSwipe(li, row, t, del) {
-  let startX = 0, startY = 0, dx = 0, dy = 0, locked = '', dragging = false;
+  let startX = 0, startY = 0, dx = 0, locked = '', dragging = false;
 
   const onPointerDown = e => {
     if (e.target.closest('button, input, textarea, select')) return;
     startX = e.clientX;
     startY = e.clientY;
-    dx = 0; dy = 0; locked = ''; dragging = false;
+    dx = 0; locked = ''; dragging = false;
   };
 
   const onPointerMove = e => {

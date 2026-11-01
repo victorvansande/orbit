@@ -1316,7 +1316,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       placed.push(box);
       it.box = box;
     }
-    for (const { o, dx, dy, ax, ay, box } of items) {
+    for (const { o, dx, dy, box } of items) {
       // Vloeiende S-curve (Voorstel 1, gekozen door Victor): organische Bezier-curve die vertrekt uit de orb
       // en horizontaal rakend aankomt op de rand van de pil, met een subtiel ankerpuntje aan de orb.
       const py = box.top + box.h / 2, px = dx >= 0 ? box.left : box.left + box.w;
