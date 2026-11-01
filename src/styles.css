@@ -576,7 +576,7 @@ body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer
   transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
   pointer-events: none;
 }
-/* Matrixklok (src/matrix.js): stippen van 5 × 7, onverlichte stippen als zachte schim */
+/* Matrixklok (src/scene/matrix.js): stippen van 5 × 7, onverlichte stippen als zachte schim */
 .clock { --dm-h: min(84px, 9.4vh); display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
 .clock .dm { display: block; height: 100%; width: auto; overflow: visible; }
 .dm .o { fill: currentColor; animation: dm-in .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d); }
@@ -1024,7 +1024,7 @@ body.is-idle .controls { opacity: 0; }
   .dm .o { animation: none; }
 }
 
-/* ---- Effecten (src/fx.js) ---- */
+/* ---- Effecten (src/scene/fx.js) ---- */
 /* Intro: effen papier dat een zachte cirkel vanuit de kern wegwist; een tik slaat over */
 .fx-reveal { position: fixed; inset: 0; z-index: 60; }
 /* Papier vanaf de eerste weergave tot de intro het overneemt; loopt het script vast, dan verdwijnt het na 6 s vanzelf */
@@ -1122,7 +1122,7 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle {
    overflow: hidden op de pagina zette op gsm de scrollpositie terug naar boven) */
 dialog *, .hud-menu { overscroll-behavior: contain; }
 
-/* Maandrecap: venster met de poster (src/recap.js); pilletje onder de teller op de 1e tot de 5e (in de demo altijd) */
+/* Maandrecap: venster met de poster (src/data/recap.js); pilletje onder de teller op de 1e tot de 5e (in de demo altijd) */
 .recap { width: min(460px, calc(100vw - 32px)); }
 /* maandwissel: het venster komt uit de witte gloed (zachter en trager dan pop-in) */
 /* Maandwissel: de recap verschijnt uit het licht. De achtergrond begint wit (zo neemt het venster de witte gloed

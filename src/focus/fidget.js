@@ -533,7 +533,7 @@ function topo() {
       wanted = true;
       if (destroy || loading) return;
       loading = true;
-      import('./vendor/topography.js').then(({ createTopography }) => {
+      import('../vendor/topography.js').then(({ createTopography }) => {
         loading = false;
         if (wanted && !destroy) destroy = createTopography(el, ACCENT ? { ...TOPO, color: ACCENT } : TOPO);
       }).catch(() => { loading = false; });

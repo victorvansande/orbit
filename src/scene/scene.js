@@ -1,6 +1,6 @@
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from './config.js';
-import { dueLabel, isOverdue } from './deadline.js';
-import { tx } from './i18n.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } from '../core/config.js';
+import { dueLabel, isOverdue } from '../core/deadline.js';
+import { tx } from '../core/i18n.js';
 import { wallRows } from './fx.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */

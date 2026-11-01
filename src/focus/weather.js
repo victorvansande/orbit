@@ -4,7 +4,7 @@
 // Kwick koos (isobar:place) geldt hier ook. Anders je locatie, maar alleen als je die al eens toestond (geen
 // onverwachte vraag), en anders Brussel, zoals Kwick.
 
-import { tx, LANG } from './i18n.js';
+import { tx, LANG } from '../core/i18n.js';
 
 const KWICK = 'https://victorvansande.github.io/kwick/';
 const CACHE_KEY = 'priority-orbit.weather.v2';

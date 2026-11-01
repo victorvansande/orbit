@@ -7,7 +7,7 @@
 // Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
 // De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de pagina herlaadt.
 // Klaar: een golf door het zand, een paar stippen fonkelen uit als de vierpuntige ster en de afvinktik klinkt.
-import { setMatrix, twinkleDot } from './matrix.js';
+import { setMatrix, twinkleDot } from '../scene/matrix.js';
 
 const KEY = 'priority-orbit.timer.v1';
 const UI_KEY = 'priority-orbit.timer.ui.v1';     // uitgeklapt of niet, per toestel

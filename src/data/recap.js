@@ -4,7 +4,7 @@
 // lint van stippen per dag (de drukste dag in rood) en de vijf momenten als kometen, lang naar hoeveel je ervan afrondde.
 // Onderaan drie cijfers. Getekend op een canvas van 1080 px breed (post 4:5 of story 9:16), licht of donker, zonder
 // taaktitels: wat je deelt, blijft van jou. Alles komt uit gegevens die Orbit al bijhoudt (logboek, prestaties, archief).
-import { LEVELS } from './config.js';
+import { LEVELS } from '../core/config.js';
 
 const KEY = 'priority-orbit.recap.v1';            // per toestel: {said: 'JJJJ-MM-DD', seen: {'JJJJ-MM': ts}, theme, fmt}
 const DAY = 86400000;

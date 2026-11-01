@@ -4,8 +4,8 @@
 // WebSockets), dan gewone https-verzoeken om de paar seconden.
 // Orbit is een openbare site met persoonlijke taken: een synccode bepaalt het kanaal (hash) én de sleutel.
 // Alles wordt in de browser versleuteld (AES-GCM); de server ziet enkel ruis.
-import { mergeFeats, featsSig } from './feats.js';
-import { mergeArchive } from './store.js';
+import { mergeFeats, featsSig } from '../data/feats.js';
+import { mergeArchive } from '../data/store.js';
 
 const SERVER = 'https://orbit-sync.victorvansande.workers.dev';
 const CODE_KEY = 'priority-orbit.sync.v1';

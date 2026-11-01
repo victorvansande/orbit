@@ -12,3 +12,4 @@ Kort de harde regels (de volledige staan in CLAUDE.md, sectie Samenwerking, en i
 - Nooit secrets beheren. Nooit gegevens van gebruikers laten verdwijnen.
 - Geen em dashes, geen marketingtaal, geen emoji. Nederlands.
 - Testen op 1440×900 en 375 px, licht en donker, console foutloos.
+- Code staat in mappen per domein (`src/core`, `data`, `sync`, `scene`, `focus`, `vendor`). Volg de regels in CLAUDE.md, sectie **Structuur**: één bestand één taak, afhankelijkheden één kant op, nieuwe functies in een module en niet in `app.js`, geen dode code.

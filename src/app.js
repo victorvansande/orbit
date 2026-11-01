@@ -1,25 +1,25 @@
-import { DEMO_MODE } from './demo.js';   // als eerste: vult in de demo de tijdelijke opslag
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './config.js';
-import { createScene } from './scene.js';
-import { createWheel } from './wheel.js';
-import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './deadline.js';
-import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync.js';
-import { mirror, readMirror } from './backup.js';
-import { setMatrix, twinkleDot } from './matrix.js';
+import { DEMO_MODE } from './core/demo.js';   // als eerste: vult in de demo de tijdelijke opslag
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './core/config.js';
+import { createScene } from './scene/scene.js';
+import { createWheel } from './scene/wheel.js';
+import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/deadline.js';
+import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync/sync.js';
+import { mirror, readMirror } from './data/backup.js';
+import { setMatrix, twinkleDot } from './scene/matrix.js';
 import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
-  loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView } from './stats.js';
-import { QUOTES } from './quotes.js';
-import { createWeather } from './weather.js';
-import { renderQr, codeFromText, createScanner, deviceName } from './pair.js';
-import { loadArchive, saveArchive, loadArchDel, saveArchDel, mergeArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './store.js';
-import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './i18n.js';
-import { greeting, coreLine } from './greet.js';
-import { playDone, soundOn, setSound } from './sound.js';
-import { createFidget } from './fidget.js';
-import { createTimer } from './timer.js';
-import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './feats.js';
-import { softReveal, whiteBurst, nightFall, particleTitle, createWall } from './fx.js';
-import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './recap.js';
+  loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView } from './data/stats.js';
+import { QUOTES } from './focus/quotes.js';
+import { createWeather } from './focus/weather.js';
+import { renderQr, codeFromText, createScanner, deviceName } from './sync/pair.js';
+import { loadArchive, saveArchive, loadArchDel, saveArchDel, mergeArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './data/store.js';
+import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './core/i18n.js';
+import { greeting, coreLine } from './scene/greet.js';
+import { playDone, soundOn, setSound } from './scene/sound.js';
+import { createFidget } from './focus/fidget.js';
+import { createTimer } from './focus/timer.js';
+import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './data/feats.js';
+import { softReveal, whiteBurst, nightFall, particleTitle, createWall } from './scene/fx.js';
+import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
 applyStatic();
 

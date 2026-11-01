@@ -3,7 +3,7 @@
 // De punten samen bepalen je rang. Alles wordt berekend uit een eigen logboek met per afgevinkte taak het moment, de
 // tijd en een paar kenmerken (deadline, herhaling, leeftijd), plus de afgeronde focusblokken en een paar gebeurtenissen.
 // Gaat mee met de sync (samenvoegen = alles van beide kanten), zodat elk toestel dezelfde punten toont.
-import { LANG } from './i18n.js';
+import { LANG } from '../core/i18n.js';
 
 const KEY = 'priority-orbit.feats.v1';
 const DAY = 86400000;

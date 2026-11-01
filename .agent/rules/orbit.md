@@ -19,8 +19,9 @@ Dit project wordt afwisselend bewerkt met Claude Code en met Antigravity. Alle p
 - Nooit `git push --force`, `rebase`, `reset --hard` of `commit --amend` op gepushte commits. Iets ongedaan maken = `git revert`.
 - Nooit secrets of API-tokens invullen, aanmaken of beheren (de Cloudflare-secrets staan als GitHub secrets, door Victor ingesteld).
 - Nooit taken, het archief, sync of opslagsleutels zo wijzigen dat bestaande gegevens verloren gaan. Lees eerst "Vangnet: nooit iets kwijt" in CLAUDE.md.
-- Geen em dashes, geen marketingtaal en geen emoji, ook niet in commits en docs. UI-tekst in het Nederlands én Engels (`src/i18n.js`).
+- Geen em dashes, geen marketingtaal en geen emoji, ook niet in commits en docs. UI-tekst in het Nederlands én Engels (`src/core/i18n.js`).
 - Geen build-stap, geen frameworks, geen npm-dependencies in de app.
+- Geen code buiten de mappenstructuur: volg CLAUDE.md, sectie **Structuur** (mappen per domein, afhankelijkheden één kant op, nieuwe functies in een module van hun domein en niet in `app.js`, geen dode code).
 - Geen losse kleuren: altijd een CSS-token op `:root`, ook herdefinieerd voor het donkere thema.
 - Geen werk aan andere projecten in deze map.
 - CLAUDE.md niet inkorten of herschrijven: alleen aanvullen of verbeteren wat niet meer klopt.

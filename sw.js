@@ -4,12 +4,12 @@
 // localStorage, en sync stuurt wat offline veranderde door zodra er weer verbinding is.
 // Alleen de eigen bestanden en de lettertypes; nooit de sync-server of de weerdienst.
 
-const CACHE = 'orbit-v2';
+const CACHE = 'orbit-v3';
 const TIMEOUT = 3500;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.svg', 'favicon.ico',
-  'src/styles.css', 'src/app.js', 'src/config.js', 'src/scene.js', 'src/wheel.js', 'src/deadline.js',
-  'src/store.js', 'src/backup.js', 'src/sync.js', 'src/pair.js', 'src/matrix.js', 'src/weather.js', 'src/quotes.js', 'src/stats.js', 'src/i18n.js', 'src/greet.js', 'src/sound.js', 'src/demo.js', 'src/fidget.js', 'src/timer.js', 'src/feats.js', 'src/fx.js', 'src/recap.js',
+  'src/styles.css', 'src/app.js', 'src/core/config.js', 'src/scene/scene.js', 'src/scene/wheel.js', 'src/core/deadline.js',
+  'src/data/store.js', 'src/data/backup.js', 'src/sync/sync.js', 'src/sync/pair.js', 'src/scene/matrix.js', 'src/focus/weather.js', 'src/focus/quotes.js', 'src/data/stats.js', 'src/core/i18n.js', 'src/scene/greet.js', 'src/scene/sound.js', 'src/core/demo.js', 'src/focus/fidget.js', 'src/focus/timer.js', 'src/data/feats.js', 'src/scene/fx.js', 'src/data/recap.js',
   'src/vendor/qrcode.min.mjs', 'src/vendor/jsqr.min.js', 'src/vendor/topography.js',
   'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];

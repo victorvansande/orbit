@@ -4,7 +4,7 @@
 // Bibliotheken worden pas geladen als ze nodig zijn: QR maken (qrcode-generator, 21 KB) en QR lezen (jsQR, 131 KB,
 // alleen als de browser geen ingebouwde BarcodeDetector heeft, zoals Safari).
 
-import { tx } from './i18n.js';
+import { tx } from '../core/i18n.js';
 
 import { normalizeCode } from './sync.js';
 
@@ -15,7 +15,7 @@ let jsqrPromise = null;
 export async function renderQr(root, text) {
   if (root.dataset.text === text) return;
   root.dataset.text = text;
-  qrLib ??= import('./vendor/qrcode.min.mjs').then(m => m.default);
+  qrLib ??= import('../vendor/qrcode.min.mjs').then(m => m.default);
   const qrcode = await qrLib;
   const q = qrcode(0, 'M');
   q.addData(text);
@@ -37,7 +37,7 @@ function loadJsQr() {
   if (window.jsQR) return Promise.resolve(window.jsQR);
   jsqrPromise ??= new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = new URL('./vendor/jsqr.min.js', import.meta.url).href;
+    s.src = new URL('../vendor/jsqr.min.js', import.meta.url).href;
     s.onload = () => (window.jsQR ? resolve(window.jsQR) : reject(new Error('jsQR ontbreekt')));
     s.onerror = () => { jsqrPromise = null; reject(new Error('jsQR kon niet laden')); };
     document.head.append(s);

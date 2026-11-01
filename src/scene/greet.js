@@ -3,7 +3,7 @@
 // het moment en van je lijst. Voorrang: lang weg, iets te laat, een sterrenmijlpaal, een deadline vandaag, veel in de
 // kern, maandagochtend of vrijdagmiddag, en anders het uur. Heel af en toe een knipoog naar HAL 9000.
 
-import { LANG } from './i18n.js';
+import { LANG } from '../core/i18n.js';
 
 const VISIT_KEY = 'priority-orbit.visit.v1';   // {at, greetedAt, milestone}
 const AWAY_MS = 3 * 86400000;

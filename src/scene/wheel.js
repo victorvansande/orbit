@@ -1,4 +1,4 @@
-import { LEVELS, iconSvg, toneNode } from './config.js';
+import { LEVELS, iconSvg, toneNode } from '../core/config.js';
 
 /* ---- Wiel: gebogen keuze tussen de vijf momenten ---- */
 // Verticaal (desktop): boog langs de rechterrand, middelpunt van de cirkel rechts buiten beeld.
