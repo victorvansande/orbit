@@ -131,7 +131,7 @@ export function softReveal({ center, onReveal, done = () => {} }) {
 export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
   const ov = overlay(), cv = ov.cv;
   let W = ov.W, H = ov.H, g = ov.g;
-  const GROW = 1.7, PEAK = 1.3, END = 3.0;   // rustig: de recap opent uit het volle licht
+  const GROW = 1.7, PEAK = 1.3, END = 3.6;   // rustig: de recap opent uit het volle licht
   let t0 = performance.now(), peaked = false, raf = 0, over = false;
   const easeOut = u => 1 - Math.pow(1 - u, 3);
   function frame(now) {

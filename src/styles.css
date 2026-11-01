@@ -26,6 +26,7 @@
   --shadow-2: rgba(20, 20, 30, .1);
   --shadow-3: rgba(24, 22, 40, .16);
   --backdrop: rgba(241, 241, 239, .6);
+  --turn-light: #fff;   /* maandwissel: het licht waaruit de recap verschijnt, wit in beide thema's */
   --placeholder: #BDBDC3;
   --late: #D7261C;
   --core: #E70049;           /* kleur van de kern (Nu), accent in de effecten */
@@ -1113,9 +1114,19 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
 /* Maandrecap: venster met de poster (src/recap.js); pilletje onder de teller op de 1e tot de 5e (in de demo altijd) */
 .recap { width: min(460px, calc(100vw - 32px)); }
 /* maandwissel: het venster komt uit de witte gloed (zachter en trager dan pop-in) */
-.recap.is-born[open] .sync-card { animation: recap-born 1.3s cubic-bezier(.4, 0, .2, 1) both; }
-@keyframes recap-born { from { opacity: 0; transform: scale(.88); } }
-@media (prefers-reduced-motion: reduce) { .recap.is-born[open] .sync-card { animation: none; } }
+/* Maandwissel: de recap verschijnt uit het licht. De achtergrond begint wit (zo neemt het venster de witte gloed
+   naadloos over) en zakt traag naar de gewone achtergrond; de kaart komt tevoorschijn als een overbelichte foto die
+   zich ontwikkelt: eerst wit, dan trekt een witte sluier op en zakt ze zacht van iets groter naar haar plek. */
+.recap.is-born[open]::backdrop { animation: recap-light 2.6s cubic-bezier(.4, 0, .2, 1) both; }
+@keyframes recap-light { from { background: var(--turn-light); } 25% { background: var(--turn-light); } }
+.recap.is-born[open] .sync-card { position: relative; animation: recap-born 2.2s cubic-bezier(.4, 0, .2, 1) both; }
+.recap.is-born[open] .sync-card::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none;
+  background: var(--turn-light); animation: recap-veil 2.2s cubic-bezier(.4, 0, .2, 1) both;
+}
+@keyframes recap-born { from { opacity: 0; transform: scale(1.05); } 30% { opacity: 1; } to { transform: none; } }
+@keyframes recap-veil { from, 22% { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .recap.is-born[open]::backdrop, .recap.is-born[open] .sync-card, .recap.is-born[open] .sync-card::after { animation: none; } .recap.is-born[open] .sync-card::after { display: none; } }
 .recap-card { max-height: min(920px, calc(100dvh - 32px)); overflow-y: auto; gap: 14px; }
 .recap-month { display: inline-flex; align-items: center; gap: 6px; }
 .recap-month button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--ink-2); font-size: 17px; line-height: 1; }
