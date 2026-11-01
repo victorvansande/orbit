@@ -1154,6 +1154,13 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
 .recap-seg button[aria-pressed="true"] { color: var(--ink); background: var(--fill); }
 .recap-foot { justify-content: flex-end; }
 .recap-foot #recap-close { margin-right: auto; }
+/* Met Delen erbij past "Bewaar als afbeelding" op gsm niet meer naast Klaar: Delen viel dan alleen op een tweede regel */
+.recap-foot .lbl-short { display: none; }
+@media (max-width: 540px) {
+  .recap-foot:has(#recap-share:not([hidden])) .lbl-long { display: none; }
+  .recap-foot:has(#recap-share:not([hidden])) .lbl-short { display: inline; }
+}
+@media (max-width: 360px) { .recap-foot { gap: 4px; } .recap-foot .btn-ghost, .recap-foot .btn-solid { padding: 0 13px; } }
 .recap-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; min-height: 30px; padding: 0 12px; border-radius: 999px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s var(--ease); }
 .recap-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--core); }
 .recap-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
