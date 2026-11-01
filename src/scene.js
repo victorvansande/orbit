@@ -15,9 +15,9 @@ const SPIN_PERIOD = 160;
 const ZEN_BASE = 8;                     // omlooptijd van Nu in zen (s)
 const zenFactor = lv => lv.period / (ZEN_BASE * Math.pow(lv.period / LEVELS[0].period, 0.55));
 const TEMPO = {
-  normaal: { orbit: () => 1, spin: 1, beat: 1, waves: 1 },
-  zen:     { orbit: zenFactor, spin: 0.35, beat: 0.5, waves: 1 },
-  stil:    { orbit: () => 0, spin: 0, beat: 0, waves: 0 },
+  normaal: { orbit: () => 1, spin: 1, beat: 1, waves: 1, tail: 1 },
+  zen:     { orbit: zenFactor, spin: 0.35, beat: 0.5, waves: 1, tail: 0.75 },
+  stil:    { orbit: () => 0, spin: 0, beat: 0, waves: 0, tail: 0 },
 };
 const FIT = 440;                        // zoveel stage-eenheden passen in min(breedte, hoogte)
 const FIT_NARROW = 372;                 // gsm: de ringen vullen bijna de hele breedte (Victor: de orbit moet de hoofdzaak zijn)
@@ -965,7 +965,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const vr = o.vr || 0;
       const v = Math.hypot(o.r * omega, vr);
       const cruise = lv.orbit * TAU / lv.period;
-      const length = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * Math.min(2.5, v / cruise);
+      // In normale modus volgt de staartlengte de snelheid (cruise = 1).
+      // In Zen-modus (Voorstel 2) behouden de orbs ~75% van hun sierlijke normale lengte.
+      const zenTailScale = tempo.tail !== undefined ? tempo.tail : 1;
+      const vRatio = (sp > 0.001 && tempo.tail !== undefined) ? (v / (cruise * sp)) * zenTailScale : (v / cruise);
+      const length = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH * Math.min(2.5, vRatio);
       if (v > 0.01 && length > 0.5) {
         const n = tracePath(o, it, it.a, omega, vr, length / v, TRAIL_STEPS);
         if (n > 1) {

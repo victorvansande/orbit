@@ -139,3 +139,21 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/app.js`: In `attachSwipe` beweegt `.track-row` tijdens het slepen niet meer naar links via `translateX`. In plaats daarvan groeit `padding-right` 1:1 dynamisch mee met de vinger (0 tot 36 px, met zachte elastische begrenzing). Het niveaubolletje en eventuele notitieknop schuiven onder de vinger naar links en trekken het prullenbakje tevoorschijn, terwijl het afvinkbolletje en het begin van de titel rotsvast links blijven staan. Hierdoor kan de tekst het afvinkbolletje fysiek nooit meer raken of overlappen.
 - **Getest:** Gesimuleerd en geverifieerd op mobiele formaten (375x812 en 320x568). Live slepen laat de inhoud strak naar binnen veren, tekst blijft volledig binnen kolom 2, nul overlap met `.t-check`, prullenbakje opent soepel.
 - **Impact op opslag / state:** Geen.
+
+
+### 14. Sierlijkere komeetstaarten in Zen-modus (Voorstel 2)
+- **Vraag van Victor:** Kan je de staarten van de orbs in de rustigere tussenmode iets langer maken? Victor koos Voorstel 2 (~75% van normale lengte) na interactieve demonstratie in `zen-orb-tails-options.html`.
+- **Oorzaak:** In `src/scene.js` werd de staartlengte berekend als `Math.min(2.5, v / cruise)`. In normale modus is `v / cruise ≈ 1`. In Zen-modus draaien de bollen op een lagere snelheid (`sp = zenFactor(lv) ≈ 0.14 - 0.21`), waardoor de staartlengte tot ~20% kromp en slechts een kort stompje vormde.
+- **Gewijzigde bestanden:**
+  - `src/scene.js`: In `TEMPO` is de eigenschap `tail: 0.75` toegevoegd aan `zen` (en `tail: 1` aan `normaal`). In `drawOrb` wordt de verhouding berekend ten opzichte van de actieve kruissnelheid (`(v / (cruise * sp)) * zenTailScale`). Hierdoor behouden de bollen in Zen-modus een elegante staart van ~75% van de normale lengte, terwijl dynamische versnellingen (zoals binnenvliegen of overspringen) nog steeds natuurlijk mee opzwelgen.
+- **Getest:** Gecontroleerd in zowel normale, zen- als stilstandmodus. Normale modus blijft identiek (100% lengte), stilstand heeft geen staart, en Zen-modus toont de gekozen langere, sierlijke komeetstaart.
+- **Impact op opslag / state:** Geen.
+
+### 15. Oplossing overflow instellingenpaneel op mobiel
+- **Vraag van Victor:** "Dit valt buiten het window en is een bug" met schermafbeelding van het instellingenpaneel op mobiel waar het woord `GESYNCHRONISEERD` buiten de rechterrand van de dialoogkaart stak.
+- **Oorzaak:** In de kopbalk op mobiel wordt `.hud-actions` in `#hud-menu` geplaatst. Doordat vier knoppen (`PRESTATIES / UITLEG / ARCHIEF / ● GESYNCHRONISEERD`) op één enkele regel zonder afbreking stonden, nam de regel ~400 px in beslag. Op mobiele schermen (375 px of smaller met 16 px schermmarge en padding) was er slechts ~315 px beschikbaar, waardoor de tekst aan de rechterkant uitbrak.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`: Voor `.topbar .hud-menu .hud-actions` is `flex-wrap: wrap` toegevoegd met `row-gap: 8px`. De laatste scheidingsslash (`.slash:last-of-type`) wordt op mobiel verborgen. `#sync-btn` breekt daardoor netjes af naar een eigen volle breedte onderaan met `border-top: 1px dashed var(--line)` en `padding-top: 8px`.
+  - Hierdoor staat `PRESTATIES / UITLEG / ARCHIEF` perfect gecentreerd/uitgelijnd op regel 1 (breedte ~180 px), en staat `● GESYNCHRONISEERD` ruim en comfortabel op regel 2 zonder dat er ook maar één pixel buiten de rand valt. Desktop (`.hud-right`) blijft ongewijzigd op één strakke regel.
+- **Getest:** Getest op 375 px (iPhone standaard) en 320 px (iPhone SE klein). Tekst blijft 100% binnen het paneel, acties blijven direct aantikbaar en sluiten het menu zoals voorheen.
+- **Impact op opslag / state:** Geen.

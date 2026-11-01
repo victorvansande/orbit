@@ -913,7 +913,24 @@ body.is-idle .controls { opacity: 0; }
   body.is-focus .controls > .focus-exit { display: none; }
   .topbar .hud-menu { top: calc(100% + 12px); left: var(--pad); right: var(--pad); padding: 2px 14px; }
   .hud-menu .menu-keys, .menu-label kbd, .hud-menu .tempo kbd { display: none; }
-  .hud-menu .hud-actions { justify-content: flex-start; gap: 10px; }
+  .topbar .hud-menu .hud-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 10px 0;
+    row-gap: 8px;
+    column-gap: 10px;
+  }
+  .topbar .hud-menu .hud-actions .slash:last-of-type { display: none; }
+  .topbar .hud-menu .hud-actions #sync-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 8px;
+    margin-top: 2px;
+    border-top: 1px dashed var(--line);
+  }
   .wheel {
     position: relative; top: auto; right: auto;
     width: 100%; height: 148px; margin-top: 6px;
