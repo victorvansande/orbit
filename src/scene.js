@@ -485,7 +485,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     g.globalCompositeOperation = 'source-over';
   }
   function wallRadius() { return Math.min(Math.max(200, W - insets.left - insets.right), H) * 0.62; }
-  const SWEEP_ANGLE = 34 * DEG, SWEEP_BEAM = 210;
+  const SWEEP_ANGLE = 34 * DEG, SWEEP_BEAM = 280;
   function drawWall(now) {
     if (wallK < 0.005 || !wallWords.length) return;
     layoutWall();
@@ -497,20 +497,20 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (p >= 1) {
         wallSweep = null;
       } else {
-        // Rustige, gemoedelijke in- en uitfade: rustig opkomen in ~1.2s, zachtjes wegebben in ~1.6s
-        if (p < 0.22) sweepFade = ease(p / 0.22);
-        else if (p > 0.70) sweepFade = 1 - ease((p - 0.70) / 0.30);
+        // Trage, uiterst gemoedelijke in- en uitfade: rustig ademen in ~1.6s, zachtjes wegebben in ~2.0s
+        if (p < 0.18) sweepFade = ease(p / 0.18);
+        else if (p > 0.76) sweepFade = 1 - ease((p - 0.76) / 0.24);
         else sweepFade = 1;
 
         const maxDist = W * Math.cos(SWEEP_ANGLE) + H * Math.sin(SWEEP_ANGLE);
-        beamPos = -SWEEP_BEAM * 0.5 + ease(p) * (maxDist + SWEEP_BEAM);
+        // Trager en gelijkmatiger verloop over het scherm
+        beamPos = -SWEEP_BEAM * 0.6 + ease(p) * (maxDist + SWEEP_BEAM * 1.2);
       }
     }
 
-    // Basislaag: subtiele achtergrondprint (nooit storend of te aanwezig)
-    const baseAlpha = wallOn ? 0.035 * theme.grid * wallK : (0.038 * theme.grid * sweepFade);
-    if (baseAlpha > 0.003) {
-      ctx.globalAlpha = baseAlpha;
+    // Handmatige muur (wallOn): basisprint
+    if (wallOn && !wallSweep) {
+      ctx.globalAlpha = 0.035 * theme.grid * wallK;
       ctx.drawImage(wallBase, 0, 0, W, H);
     }
 
@@ -533,18 +533,21 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
           lit = Math.max(lit, 0.45 * l * l * wallK);
         }
       }
-      // 2. Diagonale veeg (Voorstel 2): brede, zachte lichtgloed die rustig over de woorden glijdt
-      // zodat titels comfortabel leesbaar zijn zonder haast
+      // 2. Diagonale veeg: continue gradiënt van donkergrijs (0.065) naar zachte witte focus (0.62)
+      // Geen harde overgangen: woorden warmen zachtjes op en doven rustig weer uit
       if (sweepFade > 0.01) {
         const proj = midX * cosA + midY * sinA;
         const dist = Math.abs(proj - beamPos);
-        if (dist < SWEEP_BEAM) {
-          const beamLit = (1 + Math.cos((dist / SWEEP_BEAM) * Math.PI)) / 2;
-          lit = Math.max(lit, 0.52 * beamLit * beamLit * sweepFade);
-        }
+        const normDist = Math.min(1, dist / SWEEP_BEAM);
+        // Kosinus-verloop van 1 (in de focus) tot 0 (in rustend donkergrijs)
+        const focusCurve = Math.pow(Math.cos(normDist * (Math.PI / 2)), 1.4);
+        const darkGray = 0.065 * theme.grid;
+        const whiteFocus = 0.62;
+        const sweepLit = (darkGray + (whiteFocus - darkGray) * focusCurve) * sweepFade;
+        lit = Math.max(lit, sweepLit);
       }
 
-      if (lit * fade < 0.015) continue;
+      if (lit * fade < 0.012) continue;
       ctx.globalAlpha = lit * fade;
       ctx.fillText(it.word, it.x, it.y);
     }
@@ -1505,7 +1508,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     },
     // muur van afgevinkte taken achter de hemel: woorden (titels) en aan/uit
     setWall(words, on) { wallWords = words.map(w => w.toUpperCase()); wallOn = on; wallKey = ''; },
-    sweepWall(dur = 5600) {
+    sweepWall(dur = 8600) {
       if (reducedMotion.matches || minimal || !wallWords.length) return;
       wallSweep = { t0: performance.now(), dur };
     },

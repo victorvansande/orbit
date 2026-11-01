@@ -196,3 +196,15 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/app.js`: In `showStatsDetail` wordt bij het openen `triggerWallSweep()` aangeroepen en bij het sluiten `cancelWallSweep()`.
 - **Getest:** Gecontroleerd bij openen en sluiten van de statistieken op zowel desktop als mobiel formaat. Woorden glijden rustig en leesbaar voorbij zonder enige schok, en bij drukke activiteit blijft de muur verborgen in de diepte.
 - **Impact op opslag / state:** Geen.
+
+
+### 20. Trage gradiënt-overgang over de muur van donkergrijs naar witte focus
+- **Vraag van Victor:** Laat de gloed er trager overtrekken en werk met een gradiënt van donkergrijs naar de witte focus. Nu waren de woorden binair (of donkergrijs uit focus, of wit uitgelicht). Victor vroeg een vloeiende overgang en een trager verloop.
+- **Oplossing & Implementatie:**
+  - **Trager en gemoedelijker verloop:** Duur verlengd van 5,6 naar 8,6 seconden (`dur = 8600`). De bundel glijdt kalm en statig over de diagonaal. Elk taakwoord blijft ruim 4,5 seconden in het overgangsverloop en circa 2 seconden in de helderste focus.
+  - **Continue gradiënt i.p.v. harde sprong:** De bundelbreedte is verruimd naar 560 px (`SWEEP_BEAM = 280`). Woorden worden berekend met een kosinus-focuscurve: `focusCurve = pow(cos(normDist * PI/2), 1.4)`. Hierdoor vloeit elk woord traploos van rustend donkergrijs (0,065) via zacht middengrijs naar de witte leesfocus (0,62) en dooft weer geruisloos terug naar donkergrijs.
+  - **Geen binaire onderlaag:** Tijdens de veeg wordt de statische canvas-onderlaag overgeslagen ten gunste van de directe continue gradiëntberekening per woord.
+- **Gewijzigde bestanden:**
+  - `src/scene.js`: In `drawWall` de bundelbreedte verhoogd naar 280 px, timingparameters aangepast voor 8,6s, continue gradiëntformule geïmplementeerd en standaardduur in `sweepWall(dur = 8600)` verhoogd.
+- **Getest:** Gecontroleerd op zowel desktop als mobiel: woorden warmen zacht en vloeiend op van donkergrijs naar helder wit en dimmen rustig weer terug. Geen harde drempels meer, tijd genoeg om ontspannen te lezen.
+- **Impact op opslag / state:** Geen.
