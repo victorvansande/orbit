@@ -2,6 +2,7 @@ import { DEMO_MODE } from './core/demo.js';   // als eerste: vult in de demo de 
 import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './core/config.js';
 import { createScene } from './scene/scene.js';
 import { createWheel } from './scene/wheel.js';
+import { createLegend } from './scene/legend.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync/sync.js';
 import { mirror, readMirror } from './data/backup.js';
@@ -236,9 +237,39 @@ const scene = createScene($('scene'), {
   reducedMotion,
   onHover(taskId, level) { hotTask = taskId; hotLevel = level; markHot(); },
   onReassign(id, level) { setLevel(id, level); },
-  onView(name) { syncViewButtons(name); },
+  onView(name) { syncViewButtons(name); setTimeout(placeLegend, 950); },
   onCore() { tapCore(); },
+  onLegend(items) { showLegend(items); },
 });
+
+// Legende onder de scène (src/scene/legend.js): nummers op de bollen van een opgelichte ring, titels hieronder.
+// Ze begint net onder de buitenste ring en krijgt zoveel rijen als er tot de onderrand passen (max. 5); meer taken
+// schuiven traag door. Niet in de focusmodus (daar staan klok en Nu-taken onder de scène). Vervangt een zin van de kern.
+const legend = createLegend($('legend'), { reducedMotion });
+let legendItems = null;
+// Op gsm is er onder de ringen maar plaats voor twee rijen: daar neemt de legende ook de rij Boven / Zijkant / Focus in,
+// die zolang vervaagt (`body.has-legend`), zodat er vier rijen passen.
+function legendWhere() {
+  const mobile = !desktop.matches, lineH = mobile ? 19 : 23;
+  const st = $('scene').getBoundingClientRect();
+  const top = scene.ringsBottom() + (mobile ? 18 : 26);
+  const bottom = mobile ? document.querySelector('.controls').getBoundingClientRect().bottom - st.top - 4 : st.height - 28;
+  return { top, left: mobile ? null : scene.centerX, lineH, rows: Math.max(1, Math.min(5, Math.floor((bottom - top) / lineH))) };
+}
+let legendOff = 0;
+function showLegend(items) {
+  legendItems = items;
+  clearTimeout(legendOff);
+  if (!items || document.body.classList.contains('is-focus')) {
+    legend.hide();
+    legendOff = setTimeout(() => document.body.classList.remove('has-legend'), 260);
+    return;
+  }
+  if (!$('greeting').hidden) hideGreeting();
+  if (!desktop.matches) document.body.classList.add('has-legend');
+  legend.show(items, legendWhere());
+}
+function placeLegend() { if (legendItems && legend.visible) legend.place(legendWhere()); }
 
 // Een tik of klik buiten de scène (lijst, wiel, kop, lege pagina) zet een vastgezette bol of opgelichte ring terug.
 // Wat je daarna aanwijst (een rij, een moment op het wiel), licht gewoon opnieuw op.
@@ -255,7 +286,7 @@ const wheel = createWheel($('wheel'), {
   onChange(level) {
     scene.highlight({ level });
     clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => scene.highlight({}), 1100);
+    flashTimer = setTimeout(() => scene.highlight({}), 4500);   // lang genoeg om de legende te lezen (was 1,1 s, toen nog met pillen)
   },
   onHover(level) { clearTimeout(flashTimer); scene.highlight({ level }); },
   onOpen(level) { openComposer(level); },
@@ -2628,6 +2659,7 @@ function fitGreeting() {
 }
 function sayLine(line) {
   clearTimeout(greetTimer);
+  legend.hide(); document.body.classList.remove('has-legend');   // de kern spreekt op dezelfde plek
   $('greeting-text').textContent = line;
   placeGreeting();
   $('greeting').hidden = false;
@@ -2706,7 +2738,7 @@ function tapCore() {
     next: next && { title: next.title },
   }));
 }
-window.addEventListener('resize', () => { if (!$('greeting').hidden) { placeGreeting(); fitGreeting(); } });
+window.addEventListener('resize', () => { if (!$('greeting').hidden) { placeGreeting(); fitGreeting(); } placeLegend(); });
 
 /* ---- Offline (sw.js) ---- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

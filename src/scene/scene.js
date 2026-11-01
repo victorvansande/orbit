@@ -90,7 +90,7 @@ function distToSegment(px, py, ax, ay, bx, by) {
   return Math.hypot(px - ax - t * vx, py - ay - t * vy);
 }
 
-export function createScene(canvas, { onHover = () => {}, onReassign = () => {}, onView = () => {}, onCore = () => {}, reducedMotion }) {
+export function createScene(canvas, { onHover = () => {}, onReassign = () => {}, onView = () => {}, onCore = () => {}, onLegend = () => {}, reducedMotion }) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, DPR = 1;
   let insets = { left: 0, right: 0 }, center = { x: 0, y: 0 }, centerReady = false;
@@ -1233,7 +1233,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   /* Labels: witte pil, zoals in het wiel */
   // Eerst meten (`pillBox`), dan tekenen (`drawPill`): zo kan `drawLabels` ze schikken zodat ze elkaar nooit overlappen.
-  const PILL_H = 26, PILL_GAP = 5;
+  const PILL_H = 26;
   function pillBox(text, x, y, align, color, opts = {}) {
     ctx.font = opts.mono ? '500 10.5px "Geist Mono", ui-monospace, monospace' : '500 12.5px Geist, system-ui, sans-serif';
     let label = text;
@@ -1276,74 +1276,66 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.textBaseline = 'middle';
     ctx.fillText(label, left + padX + dot, top + h / 2 + 0.5);
   }
-  const hits = (a, b) => a.left < b.left + b.w + PILL_GAP && b.left < a.left + a.w + PILL_GAP && a.top < b.top + b.h + PILL_GAP && b.top < a.top + a.h + PILL_GAP;
 
+  // Labels: "Nummers en legende" (gekozen door Victor uit vier voorstellen, 01/11/2026). Vroeger stond naast elke bol een
+  // pil die enkel andere pillen ontweek; op gsm liep een lange titel over andere bollen en buiten beeld. Nu krijgt elke bol
+  // van een opgelichte ring een klein nummer naast zich, en staan titel en deadline in een legende onder de scène
+  // (`onLegend`, getekend door legend.js). Eén bol (aanwijzen, vastzetten, rij in de lijst): enkel zijn regel, zonder nummer.
+  let legendKey = '', legendOrder = [], legendSig = '';
   function drawLabels() {
     if (drag?.type === 'orb' && drag.active) {
       if (dropLevel) ringLabel(dropLevel, true);
+      emitLegend(null);
       return;
     }
     const hot = hotLevel();
-    let shown = [];
     const single = hover.orb ?? external.task ?? pinned;
-    if (single && orbs.has(single)) shown = [orbs.get(single)];
-    else if (hot) shown = [...orbs.values()].filter(o => o.level === hot && !o.leaving);
-    // het ringlabel staat vast; elk taaklabel dat ergens tegenaan botst, schuift op tot het vrij is (eerst naar buiten)
-    const placed = [];
+    let shown = [], key = '';
+    if (single && orbs.has(single)) { shown = [orbs.get(single)]; key = `o:${single}`; }
+    else if (hot) { shown = [...orbs.values()].filter(o => o.level === hot && !o.leaving && o.sx != null); key = `r:${hot}`; }
     const ring = hot ? ringBox(hot, false) : null;
-    if (ring) placed.push(ring);
-    const items = [];
-    for (const o of shown) {
-      if (o.sx == null) continue;
-      let dx = o.sx - cam.cx, dy = o.sy - cam.cy;
-      const len = Math.hypot(dx, dy) || 1;
-      dx /= len; dy /= len;
-      const gap = o.sr + 14;
-      items.push({ o, dx, dy, ax: o.sx + dx * gap, ay: o.sy + dy * gap });
-    }
-    items.sort((a, b) => Math.abs(b.dy) - Math.abs(a.dy));   // wie het verst boven of onder ligt, eerst: die kan naar buiten uitwijken
-    for (const it of items) {
-      const { o, dx, dy, ax, ay } = it;
-      const text = o.due ? `${o.title} · ${dueLabel(o.due)}` : o.title;
-      const out = dy < 0 ? -1 : 1, step = PILL_H + PILL_GAP;
-      let box = null;
-      for (let k = 0; k <= 12 && !box; k++) {
-        const off = k === 0 ? 0 : Math.ceil(k / 2) * step * (k % 2 ? out : -out);
-        const b = pillBox(text, ax + (dx >= 0 ? 2 : -2), ay + off, dx >= 0 ? 'left' : 'right', colors.get(o.level));
-        if (!placed.some(p => hits(p, b))) box = b;
+    if (!shown.length) { if (ring) drawPill(ring); emitLegend(null); return; }
+    // volgorde vast zolang dezelfde ring opgelicht is: met de klok mee vanaf boven, nieuwe bollen achteraan
+    const angle = o => (Math.atan2(o.sx - cam.cx, -(o.sy - cam.cy)) + TAU) % TAU;
+    if (key !== legendKey) { legendKey = key; legendOrder = shown.slice().sort((a, b) => angle(a) - angle(b)).map(o => o.id); }
+    for (const o of shown) if (!legendOrder.includes(o.id)) legendOrder.push(o.id);
+    const list = legendOrder.map(id => orbs.get(id)).filter(o => o && shown.includes(o));
+    const numbered = key.startsWith('r:');
+    if (numbered) {
+      ctx.font = '500 10.5px "Geist Mono", ui-monospace, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = rgba(INK, .9);
+      const spots = [];
+      list.forEach((o, i) => {
+        let dx = o.sx - cam.cx, dy = o.sy - cam.cy; const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+        let d = o.sr + 9, x = o.sx + dx * d, y = o.sy + dy * d;
+        for (let k = 0; k < 4 && spots.some(p => Math.hypot(p[0] - x, p[1] - y) < 11); k++) { d += 10; x = o.sx + dx * d; y = o.sy + dy * d; }
+        spots.push([x, y]);
+        ctx.fillText(String(i + 1), x, y);
+      });
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      // het ringlabel bovenaan mag geen bol of nummer afdekken: dan schuift het omhoog tot het vrij is
+      if (ring) {
+        const pts = [...spots, ...list.map(o => [o.sx, o.sy])];
+        const covers = () => pts.some(([x, y]) => x > ring.left - 8 && x < ring.left + ring.w + 8 && y > ring.top - 8 && y < ring.top + ring.h + 8);
+        for (let k = 0; k < 8 && covers(); k++) ring.top -= 7;
       }
-      box ||= pillBox(text, ax + (dx >= 0 ? 2 : -2), ay, dx >= 0 ? 'left' : 'right', colors.get(o.level));
-      placed.push(box);
-      it.box = box;
-    }
-    for (const { o, dx, dy, box } of items) {
-      // Vloeiende S-curve (Voorstel 1, gekozen door Victor): organische Bezier-curve die vertrekt uit de orb
-      // en horizontaal rakend aankomt op de rand van de pil, met een subtiel ankerpuntje aan de orb.
-      const py = box.top + box.h / 2, px = dx >= 0 ? box.left : box.left + box.w;
-      const startX = o.sx + dx * (o.sr + 3);
-      const startY = o.sy + dy * (o.sr + 3);
-      const spanX = px - startX;
-      const spanDist = Math.max(16, Math.abs(spanX) * 0.45);
-      const cp1x = startX + dx * spanDist;
-      const cp1y = startY + dy * spanDist;
-      const cp2x = px - (dx >= 0 ? 1 : -1) * spanDist;
-      const cp2y = py;
-
-      ctx.strokeStyle = theme.leader;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, px, py);
-      ctx.stroke();
-
-      // Micro-ankerpuntje bij de orb voor een strakke, organische overgang
-      ctx.fillStyle = theme.leader;
-      ctx.beginPath();
-      ctx.arc(startX, startY, 1.2, 0, TAU);
-      ctx.fill();
     }
     if (ring) drawPill(ring);
-    for (const it of items) drawPill(it.box);
+    emitLegend(list.map((o, i) => ({ id: o.id, n: numbered ? i + 1 : 0, title: o.title, due: o.due ? dueLabel(o.due) : '', late: Boolean(o.late), level: o.level })));
+  }
+  function emitLegend(items) {
+    const sig = items ? JSON.stringify(items) : '';
+    if (sig === legendSig) return;
+    legendSig = sig;
+    if (!items) legendKey = '';
+    onLegend(items);
+  }
+  // onderkant van de buitenste ring op het scherm (px, canvas), zodat de legende eronder past zonder iets te raken
+  function ringsBottom() {
+    const scr = rings[rings.length - 1].screen; let max = 0;
+    for (let k = 1; k < scr.length; k += 2) if (scr[k] > max) max = scr[k];
+    return max;
   }
 
   function ringBox(level, isDrop) {
@@ -1553,6 +1545,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },
     get centerX() { return cam.cx; },
+    ringsBottom,
     // linkerrand van de buitenste ring (px) op schermhoogte y, zodat tekst ernaast tot aan die ring kan lopen
     edgeLeft(y) {
       if (!project(-EDGE, 0, 0, false)) return null;

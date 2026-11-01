@@ -146,7 +146,26 @@ kbd {
 }
 .greeting.is-on { opacity: 1; transform: translate(-50%, 0); }
 .greeting small { display: block; margin-top: 6px; font: 500 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
-body.is-focus .greeting { z-index: 4; }   /* automatische begroeting niet in focus (zie greet), een tik op de kern wel */
+body.is-focus .greeting { z-index: 4; }
+/* Legende van een opgelichte ring (src/scene/legend.js): op de plek van de begroeting, nooit over de ringen.
+   --rows en --lh zet legend.js; meer taken dan rijen: de onderste vervaagt en de lijst schuift traag omhoog. */
+.legend {
+  position: absolute; left: 50%; z-index: 1; width: max-content; max-width: min(400px, calc(100% - 40px)); margin: 0;
+  transform: translateX(-50%); pointer-events: none; opacity: 0; transition: opacity .3s var(--ease);
+  font-size: 15px; color: var(--ink); text-shadow: 0 0 10px var(--bg), 0 0 3px var(--bg);
+}
+.legend.is-on { opacity: 1; }
+.legend-view { height: calc(var(--rows) * var(--lh)); overflow: hidden; }
+.legend.is-scroll .legend-view { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 7px, #000 calc(100% - var(--lh) * 1.15), transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 7px, #000 calc(100% - var(--lh) * 1.15), transparent 100%); }
+.legend.is-manual { pointer-events: auto; }
+.legend.is-manual .legend-view { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.legend-list { list-style: none; margin: 0; padding: 0; transition: transform .9s var(--ease); }
+.legend-row { display: flex; align-items: center; gap: 9px; height: var(--lh); min-width: 0; }
+.legend-num { flex: none; min-width: 1.3em; text-align: right; font: 500 10.5px/1 var(--mono); color: color-mix(in srgb, var(--c) 82%, var(--ink)); }
+.legend-title { min-width: 0; overflow: hidden; white-space: nowrap; }
+.legend-title.is-long { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 30px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 30px), transparent); }
+.legend-due { flex: none; color: var(--ink-3); font-size: .9em; }
+.legend-due.is-late { color: var(--late); }   /* automatische begroeting niet in focus (zie greet), een tik op de kern wel */
 .warmth {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
   background: var(--warm); mix-blend-mode: var(--warm-blend);
@@ -910,6 +929,10 @@ body.is-idle .controls { opacity: 0; }
   .stage canvas { touch-action: pan-y; }
   .greeting { bottom: 10px; font-size: 15px; line-height: 1.3; color: var(--ink-2); }
   .greeting small { display: none; }
+  .legend { font-size: 13.5px; color: var(--ink-2); }
+  .controls { transition: opacity .3s var(--ease); }
+  body.has-legend .controls { opacity: 0; pointer-events: none; }   /* de legende neemt even hun plek in */
+  .legend-title { color: var(--ink); }
   .grain { position: fixed; }
   .controls { position: relative; left: auto; bottom: auto; justify-content: center; flex-wrap: wrap; column-gap: 18px; row-gap: 0; margin-top: -4px; padding: 0 var(--pad); }
   .controls { font-size: 10px; margin-top: 2px; }
