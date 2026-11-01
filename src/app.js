@@ -188,20 +188,7 @@ if (archiveIntoDone()) saveDone(done);
 let doneReset = loadReset();                      // teller op nul gezet op dit tijdstip
 let skyCuts = loadCuts();                         // begin van elke nieuwe hemel (gaat mee met de sync)
 let skyView = loadSkyView();                      // getoonde hemel: 'current', 'all' of het begin van een vorige
-// Verborgen sneden (per toestel, `priority-orbit.skyhide.v1`): de automatische nieuwe hemel van 1 november 2026 kwam
-// onverwacht op Victors echte lijst (01/11/2026: "zet ze terug zonder achievements, punten of andere dingen te
-// beinvloeden"). De snede zelf blijft in `skyCuts` (gaat mee met de sync, een ander toestel zet ze anders terug, en
-// de prestatie blijft), maar de hemel kijkt eroverheen. Elk toestel verbergt ze zelf, ook als ze pas later binnenkomt.
-const SKY_HIDE_KEY = 'priority-orbit.skyhide.v1';
-let skyHide = [];
-try { skyHide = (JSON.parse(localStorage.getItem(SKY_HIDE_KEY)) || []).filter(Number.isFinite); } catch { skyHide = []; }
-if (!DEMO_MODE) {
-  const nov2026 = +new Date(2026, 10, 1);
-  if (!skyHide.includes(nov2026)) { skyHide.push(nov2026); try { localStorage.setItem(SKY_HIDE_KEY, JSON.stringify(skyHide)); } catch { /* geen opslag */ } }
-}
-const viewCuts = () => skyCuts.filter(c => !skyHide.includes(c));
-if (skyHide.includes(Number(skyView))) { skyView = 'current'; saveSkyView(skyView); }
-const starVisible = id => done[id] !== undefined && inView(done[id], skyView, viewCuts());
+const starVisible = id => done[id] !== undefined && inView(done[id], skyView, skyCuts);
 let sky = syncStars(loadStars(), done);           // één ster per afgevinkte taak
 let feats = loadFeats();                          // prestaties: logboek, ontgrendeld, focusblokken, gebeurtenissen
 if (backfill(feats, archive)) saveFeats(feats);   // wat al in het archief zat, telt mee
@@ -462,10 +449,9 @@ const SKY_DATE = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short
 const skyDate = t => SKY_DATE.format(t).replace(/\./g, '');
 function renderSkies() {
   const list = $('skies-list');
-  const cuts = viewCuts();
-  $('skies-title').hidden = !cuts.length;
-  if (!cuts.length) { list.replaceChildren(); return; }
-  const periods = skyPeriods(done, cuts);
+  $('skies-title').hidden = !skyCuts.length;
+  if (!skyCuts.length) { list.replaceChildren(); return; }
+  const periods = skyPeriods(done, skyCuts);
   const cur = periods[periods.length - 1];
   const opt = (value, label, n) => {
     const b = el('button', 'sky-opt');
@@ -1616,6 +1602,19 @@ window.addEventListener('pointerdown', bumpIdle, { passive: true }); // aanraaks
 // staat het pilletje er altijd, met een volle vorige maand aan voorbeeldgegevens (src/demo.js).
 const recapDialog = $('recap'), recapCanvas = $('recap-canvas');
 let recap = loadRecap(), recapMonth = null, recapShown = null;
+// Maandwissel van november 2026 opnieuw (Victor, 01/11/2026: eerst teruggedraaid omdat hij ze niet verwachtte, daarna
+// "speel de animatie de eerstvolgende keer af en reset de hemel alsof ik hem net opende in een nieuwe maand"): één keer
+// per toestel wordt `turned` gewist, zodat de wissel bij dit openen speelt. De verborgen snede van de tussenversie
+// (`priority-orbit.skyhide.v1`) verdwijnt. De snede zelf bestond al, dus er komt geen tweede prestatie bij.
+if (!DEMO_MODE) {
+  try {
+    localStorage.removeItem('priority-orbit.skyhide.v1');
+    if (localStorage.getItem('priority-orbit.turnagain.v1') !== '2026-11') {
+      localStorage.setItem('priority-orbit.turnagain.v1', '2026-11');
+      if (recap.turned === '2026-11') { delete recap.turned; saveRecap(recap); }
+    }
+  } catch { /* geen opslag: geen herhaling */ }
+}
 const monthName = d => new Intl.DateTimeFormat(LOCALE, { month: 'long' }).format(d);
 const capFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
 const thisMonth = (now = new Date()) => monthStart(now.getFullYear(), now.getMonth());
@@ -1732,14 +1731,13 @@ function turnDue(now = new Date()) {
 }
 // sterren van de hemel die op het begin van deze maand eindigt (ook als de snede via de sync al binnen was)
 function oldSky(ms) {
-  const before = viewCuts().filter(c => c < ms);
+  const before = skyCuts.filter(c => c < ms);
   const from = before.length ? before[before.length - 1] : 0;
   return sky.stars.filter(st => Number.isFinite(done[st.id]) && done[st.id] >= from && done[st.id] < ms);
 }
 function planTurn(now = new Date()) {
   if (!turnDue(now)) return null;
   const ms = +thisMonth(now), prev = lastMonth(now);
-  if (skyHide.includes(ms)) { if (!DEMO_MODE) { recap.turned = monthKey(thisMonth(now)); saveRecap(recap); } return null; }   // deze maandwissel is teruggedraaid
   return { ms, prev, old: oldSky(ms), recap: recapStats(prev).total > 0 };
 }
 function cutMonth(plan) {
