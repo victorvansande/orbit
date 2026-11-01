@@ -157,3 +157,28 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Hierdoor staat `PRESTATIES / UITLEG / ARCHIEF` perfect gecentreerd/uitgelijnd op regel 1 (breedte ~180 px), en staat `● GESYNCHRONISEERD` ruim en comfortabel op regel 2 zonder dat er ook maar één pixel buiten de rand valt. Desktop (`.hud-right`) blijft ongewijzigd op één strakke regel.
 - **Getest:** Getest op 375 px (iPhone standaard) en 320 px (iPhone SE klein). Tekst blijft 100% binnen het paneel, acties blijven direct aantikbaar en sluiten het menu zoals voorheen.
 - **Impact op opslag / state:** Geen.
+
+
+### 16. Vloeiende S-curve verbindingslijn tussen orb en hover-label (Voorstel 1)
+- **Vraag van Victor:** De verbinding tussen een orb en haar beschrijving zag er bij hoveren soms wat glitchy of te scherp afgesneden uit. Victor vroeg naar alternatieven en koos Voorstel 1 (Vloeiende S-curve).
+- **Oorzaak:** In `src/scene.js` (`drawLabels`) werd de verbindingslijn getekend met twee rechte lijnstukken via een tussenpunt (`lineTo(ax, ay) -> lineTo(px, py)`). Wanneer de labelpil verticaal moest uitwijken om overlap te voorkomen, ontstond een scherpe, hoekige knik (zaagtand) en eindigde de lijn stomp tegen de rand van de bol.
+- **Gewijzigde bestanden:**
+  - `src/scene.js`: In `drawLabels` vervangen door een organische Bezier-curve (`bezierCurveTo`) met zachte horizontale tangens (`cp2y = py`) aan de pilzijde en radiale vertrekrichting aan de orbzijde. Daarnaast is een discreet micro-ankerpuntje van 1,2 px toegevoegd (`ctx.arc(startX, startY, 1.2, 0, TAU)`) aan de bolrand, waardoor de overgang altijd zijdezacht en naadloos oogt.
+- **Getest:** Zowel op desktop als mobiel getest met uitwijkende labels: de curve beweegt elastisch en vloeiend mee zonder scherpe knikken of afkappingen.
+- **Impact op opslag / state:** Geen.
+
+### 17. Meerlagige diepteparallax en fading voor achtergrondsterren (Voorstel 2)
+- **Vraag van Victor:** De sterren op de achtergrond verplaatsten wel mee van plaats bij het switchen tussen bovenaanzicht en zijaanzicht, maar veranderden niet mee van perspectief waardoor de animatie niet vloeiend of sleek oogde. Victor koos Voorstel 2 (Meerlagige diepteparallax en fading).
+- **Oorzaak:** In `src/scene.js` gebruikten alle sterren in `skyXY` een uniforme platte 2D-compressie (`y * Math.cos(a) - LIFT`), zonder verschil in afstand, parallax of diepteschaal.
+- **Gewijzigde bestanden:**
+  - `src/scene.js`: `starLayer(st)` verdeelt sterren deterministisch over 3 kosmische dieptelagen (verre achtergrond, middenlaag, nabije voorgrond). In `skyXY` bewegen verre sterren trager (55% van de kantelsnelheid) en nabije sterren responsiever (115%). In `drawStars` schalen sterren die naar de horizon verdwijnen subtiel af in grootte (`distScale`) en zacht in contrast (`distFade`). Ook sterrenbeelden (`makeConstellation` / `drawConstellation`) en schermpunten (`skyPoints`) volgen nu exact de individuele dieptelaag van elke ster.
+- **Getest:** Vloeiend schakelen tussen boven- en zijaanzicht: de hemel krijgt een cinematografisch 'deep space' dieptegevoel waarin de 3D-trechter prachtig ademt en de sterren natuurlijk meebewegen.
+- **Impact op opslag / state:** Geen.
+
+### 18. Exacte basislijnutlijning van 'stars collected' en 'muur'
+- **Vraag van Victor:** Laat de 'stars collected' en 'wall' op dezelfde lijn uitgelijnd zijn (met screenshot waarop te zien was dat 'MUUR' enkele pixels hoger zweefde dan 'STARS COLLECTED').
+- **Oorzaak:** `.stats-total` gebruikte `align-items: flex-end` met `padding-bottom: 2px` op de tekst, terwijl `.wall-toggle` `align-items: center` had in een box van `min-height: 32px`. Daardoor centreerde 'MUUR' verticaal in de 32 px en zweefde de tekst circa 8 px hoger dan 'STARS COLLECTED'.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`: `.wall-toggle` voorzien van `align-items: flex-end; padding: 0 2px 2px;` en `.wall-toggle svg { margin-bottom: 1.5px; }`. Hierdoor rusten beide knoppen op `flex-end` van de rij en staan de letters van 'MUUR' en 'STARS COLLECTED' op exact dezelfde horizontale basislijn (2 px van de onderkant). Tevens heeft `.feats-badge` `flex-basis: 100%` gekregen zodat deze altijd strak op de volgende regel begint.
+- **Getest:** Gecontroleerd op mobiel en desktop: 'stars collected' en 'muur' staan pixelperfect op dezelfde horizontale lijn.
+- **Impact op opslag / state:** Geen.

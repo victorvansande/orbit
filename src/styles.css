@@ -264,8 +264,9 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
 .stats { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 .stats .stats-detail { flex-basis: 100%; }
-/* knopje: muur van afgevinkte taken achter de sterrenhemel */
-.wall-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 2px; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); transition: color .2s var(--ease); }
+/* knopje: muur van afgevinkte taken achter de sterrenhemel (uitgelijnd op dezelfde basislijn als stars collected) */
+.wall-toggle { display: inline-flex; align-items: flex-end; gap: 6px; min-height: 32px; padding: 0 2px 2px; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); transition: color .2s var(--ease); }
+.wall-toggle svg { margin-bottom: 1.5px; }
 .wall-toggle:hover { color: var(--ink-2); }
 .wall-toggle[aria-pressed="true"] { color: var(--ink); }
 .stats-total {
@@ -1017,7 +1018,7 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle {
 @media (max-width: 999px) { .intro-title.has-fx { font-size: 28px; } }
 
 /* ---- Prestaties ---- */
-.feats-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 13px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease); --tier: var(--tier-gold); }
+.feats-badge { display: inline-flex; align-items: center; gap: 6px; flex-basis: 100%; margin-top: 13px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease); --tier: var(--tier-gold); }
 .feats-badge:hover { color: var(--ink); }
 .feats-badge svg { width: 15px; height: 15px; }
 .fb-ring { fill: none; stroke: var(--tier, var(--ink-3)); stroke-width: 1.3; }

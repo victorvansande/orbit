@@ -508,13 +508,23 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // afstand (px) van de ring van tekens tot het midden bij een nieuwe hemel, of null
   function skyWaveFront(now) { return skyWave ? (26 + (now - skyWave.t0) / 1000 * SKY_WAVE_SPEED) * cam.s * cam.zoom : null; }
 
-  // Plek van een ster op het scherm. De hemel is een verre koepel: bij het kantelen naar het zijaanzicht schuift hij
-  // mee omhoog en wordt hij wat platter, maar veel minder dan de ringen (SKY_TILT van de kanteling). Bewust alleen het
-  // aanzicht (cam.depth), niet de muis: sterren die met de aanwijzer meeschoven vond Victor storend.
+  // Plek van een ster op het scherm. Meerlagige diepteparallax en fading (Voorstel 2, gekozen door Victor):
+  // Drie kosmische dieptelagen (ver, midden, nabij) bewegen met gedifferentieerde parallax en zachte diepte-fading.
   const SKY_TILT = 0.45, SKY_LIFT = 150;
-  function skyXY(x, y, ks) {
-    const a = (VIEW.top.tilt + (VIEW.side.tilt - VIEW.top.tilt) * cam.depth) * DEG * SKY_TILT;
-    return [cam.cx + x * ks * (1 + 0.06 * cam.depth), cam.cy + (y * Math.cos(a) - SKY_LIFT * Math.sin(a)) * ks];
+  function starLayer(st) {
+    if (!st) return { pFactor: 0.85, depthScale: 0.98, depthFade: 0.95 };
+    const tier = Math.abs(Math.round((st.ph || 0) * 10)) % 3;
+    if (tier === 0) return { pFactor: 0.55, depthScale: 0.88, depthFade: 0.80 };
+    if (tier === 1) return { pFactor: 0.85, depthScale: 0.98, depthFade: 0.95 };
+    return { pFactor: 1.15, depthScale: 1.08, depthFade: 1.05 };
+  }
+
+  function skyXY(x, y, ks, st = null) {
+    const { pFactor } = starLayer(st);
+    const baseTilt = (VIEW.top.tilt + (VIEW.side.tilt - VIEW.top.tilt) * cam.depth) * DEG * SKY_TILT;
+    const a = baseTilt * pFactor;
+    const lift = (SKY_LIFT * pFactor) * Math.sin(a);
+    return [cam.cx + x * ks * (1 + 0.05 * cam.depth * pFactor), cam.cy + (y * Math.cos(a) - lift) * ks];
   }
 
   function drawSky(now) {
@@ -538,9 +548,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const st of sky) {
       const tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(t * 0.9 + st.ph);
       if (starHold.has(st.id)) continue;
-      const [x, y] = skyXY(st.x, st.y, ks);
+      const [x, y] = skyXY(st.x, st.y, ks, st);
       if (keep && !keep(Math.hypot(st.x * ks, st.y * ks))) continue;
-      let R = starR(st, dense, small), alpha = (small ? 0.5 : 0.36) + 0.44 * tw;
+      const { depthScale, depthFade } = starLayer(st);
+      const yNorm = clamp((st.y * ks + 200) / 400, 0, 1);
+      const distFade = 1 - (1 - yNorm) * cam.depth * 0.32;
+      const distScale = 1 - (1 - yNorm) * cam.depth * 0.18;
+      let R = starR(st, dense, small) * depthScale * distScale;
+      let alpha = Math.max(0.12, ((small ? 0.5 : 0.36) + 0.44 * tw) * depthFade * distFade);
       // een nieuwe ster verschijnt na het uitfonkelen groot en helder, en zakt in 2,4 s naar haar plek
       const born = skyBorn.get(st.id);
       if (born !== undefined) {
@@ -617,7 +632,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         if (d < bd) { bd = d; best = [i, j]; }
       }
       inTree.push(best[1]); rest.delete(best[1]);
-      edges.push([pts[best[0]].x, pts[best[0]].y, pts[best[1]].x, pts[best[1]].y]);
+      edges.push([pts[best[0]], pts[best[1]]]);
     }
     return edges;
   }
@@ -633,11 +648,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.lineWidth = 0.8;
     ctx.globalAlpha = 0.3 * fade;
     ctx.beginPath();
-    constellation.edges.forEach(([x1, y1, x2, y2], i) => {
+    constellation.edges.forEach(([stA, stB], i) => {
       // lijntjes verschijnen na elkaar en groeien van de ene ster naar de andere
       const p = clamp((e / IN) * n - i, 0, 1);
       if (p <= 0) return;
-      const ks = skyScale(), [ax, ay] = skyXY(x1, y1, ks), [bx, by] = skyXY(x2, y2, ks);
+      const ks = skyScale(), [ax, ay] = skyXY(stA.x, stA.y, ks, stA), [bx, by] = skyXY(stB.x, stB.y, ks, stB);
       ctx.moveTo(ax, ay); ctx.lineTo(ax + (bx - ax) * p, ay + (by - ay) * p);
     });
     ctx.stroke();
@@ -1187,15 +1202,30 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       it.box = box;
     }
     for (const { o, dx, dy, ax, ay, box } of items) {
-      // lijntje van de bol naar de pil; is de pil opgeschoven, dan plooit het mee naar haar zijkant
+      // Vloeiende S-curve (Voorstel 1, gekozen door Victor): organische Bezier-curve die vertrekt uit de orb
+      // en horizontaal rakend aankomt op de rand van de pil, met een subtiel ankerpuntje aan de orb.
       const py = box.top + box.h / 2, px = dx >= 0 ? box.left : box.left + box.w;
+      const startX = o.sx + dx * (o.sr + 3);
+      const startY = o.sy + dy * (o.sr + 3);
+      const spanX = px - startX;
+      const spanDist = Math.max(16, Math.abs(spanX) * 0.45);
+      const cp1x = startX + dx * spanDist;
+      const cp1y = startY + dy * spanDist;
+      const cp2x = px - (dx >= 0 ? 1 : -1) * spanDist;
+      const cp2y = py;
+
       ctx.strokeStyle = theme.leader;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(o.sx + dx * (o.sr + 3), o.sy + dy * (o.sr + 3));
-      ctx.lineTo(ax, ay);
-      if (Math.abs(py - ay) > 1 || Math.abs(px - ax) > 4) ctx.lineTo(px, py);
+      ctx.moveTo(startX, startY);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, px, py);
       ctx.stroke();
+
+      // Micro-ankerpuntje bij de orb voor een strakke, organische overgang
+      ctx.fillStyle = theme.leader;
+      ctx.beginPath();
+      ctx.arc(startX, startY, 1.2, 0, TAU);
+      ctx.fill();
     }
     if (ring) drawPill(ring);
     for (const it of items) drawPill(it.box);
@@ -1424,7 +1454,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     skyPoints() {
       const r = canvas.getBoundingClientRect(), ks = skyScale(), small = Math.min(W, H) < 500;
       const dense = clamp(1 - (sky.length - 150) / 1500, 0.65, 1);
-      return sky.map(st => { const [x, y] = skyXY(st.x, st.y, ks); return { id: st.id, x: r.left + x, y: r.top + y, r: starR(st, dense, small) }; });
+      return sky.map(st => { const [x, y] = skyXY(st.x, st.y, ks, st); return { id: st.id, x: r.left + x, y: r.top + y, r: starR(st, dense, small) }; });
     },
     // muur van afgevinkte taken achter de hemel: woorden (titels) en aan/uit
     setWall(words, on) { wallWords = words.map(w => w.toUpperCase()); wallOn = on; wallKey = ''; },
