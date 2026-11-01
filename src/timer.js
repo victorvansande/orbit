@@ -137,7 +137,10 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     // zachte pauze: er vallen geen nieuwe korrels meer, wat al valt landt nog
     const settling = !live && now - pausedAt < 1500 && q > 0.001 && q < 1;
     const flowing = (live || settling) && q > 0.001;
-    const dip = live ? Math.min(uTop * 0.45, 0.08) : 0;   // kuiltje boven waar het zand wegloopt; ondieper als er weinig over is (anders twee hoorntjes rond de hals)
+    // trechter boven waar het zand wegloopt: groeit geleidelijk uit een vlak oppervlak naarmate er zand weg is, en blijft
+    // staan bij een pauze, zoals in een echte zandloper (eerst sprong hij bij de start meteen op volle diepte); ondieper
+    // als er weinig over is (anders twee hoorntjes rond de hals)
+    const dip = Math.min(uTop * 0.45, 0.09 * smooth(0, 0.12, 1 - q));
     const soft = sp * 0.85;                               // verloop aan het oppervlak, in px: even scherp in een groot en een klein glas
     // golf door het zand als het laatste korreltje gevallen is
     const waveAge = (now - doneAt) / 1000, waving = !still && waveAge >= 0 && waveAge < 1.1, waveR = waveAge * 320;
