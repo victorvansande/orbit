@@ -264,9 +264,21 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
 .stats { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 .stats .stats-detail { flex-basis: 100%; }
-/* knopje: muur van afgevinkte taken achter de sterrenhemel (uitgelijnd op dezelfde basislijn als stars collected) */
-.wall-toggle { display: inline-flex; align-items: flex-end; gap: 6px; min-height: 32px; padding: 0 2px 2px; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); transition: color .2s var(--ease); }
-.wall-toggle svg { margin-bottom: 1.5px; }
+/* knopje: muur van afgevinkte taken achter de sterrenhemel (icoon en tekst perfect gecentreerd, op de basislijn van stars collected) */
+.wall-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  margin-bottom: 1.5px;
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: color .2s var(--ease);
+}
+.wall-toggle::before { content: ''; position: absolute; inset: -10px -8px; }
 .wall-toggle:hover { color: var(--ink-2); }
 .wall-toggle[aria-pressed="true"] { color: var(--ink); }
 .stats-total {
