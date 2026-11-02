@@ -979,7 +979,7 @@ function whenCalm(fn, prio = 2) {
 }
 function flushStage() { while (stageFree() && stageWaiting.length) stageWaiting.shift().fn(); }
 
-let toastAction = null, toastTimer = 0, lastTick = -1e9;
+let toastAction = null, toastTimer = 0, lastTick = -1e9, resetToastDrag = () => {};
 function deleteTask(id, li) {
   const task = tasks.find(t => t.id === id);
   if (!task || leaving.has(id)) return;
@@ -1261,6 +1261,7 @@ function showToast(text, action = null, label = tx('undo'), kind = '') {
   $('undo').hidden = !action;
   $('toast-text').textContent = text;
   const toast = $('toast');
+  resetToastDrag();
   toast.hidden = false;
   requestAnimationFrame(() => toast.classList.add('is-on'));
   bumpIdle();
@@ -1275,6 +1276,7 @@ function hideToast() {
   toastTimer = setTimeout(() => {
     if (toastKind === 'done') doneBatch = null;
     toast.hidden = true; toastKind = ''; toastAction = null;
+    resetToastDrag();
     const next = toastWaiting.shift();
     if (next) showToast(...next);
   }, 250);
@@ -1283,6 +1285,59 @@ function hideToast() {
 $('undo').addEventListener('click', undo);
 $('toast').addEventListener('pointerenter', () => { if (toastOn()) clearTimeout(toastTimer); });
 $('toast').addEventListener('pointerleave', () => { if (toastOn()) { clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, 2000); } });
+
+// Wegvegen (Victor, 02/11/2026: "make the notifications at the bottom dismissable by swiping them down"): de melding volgt
+// de vinger of muis live naar beneden (geen transitie tijdens het slepen), los na 44 px of een snelle veeg en ze glijdt weg;
+// anders veert ze terug. Omhoog geeft ze maar een klein beetje mee. Wegvegen is hetzelfde als laten verlopen: niets ongedaan.
+(function swipeToast() {
+  const toast = $('toast');
+  let id = null, y0 = 0, dy = 0, t0 = 0, dragging = false, moved = false;
+  const place = (y, fade) => {
+    toast.style.transform = `translate(-50%, ${y}px)`;
+    toast.style.opacity = String(fade);
+  };
+  const reset = () => { toast.style.transition = ''; toast.style.transform = ''; toast.style.opacity = ''; };
+  toast.addEventListener('pointerdown', e => {
+    if (!toastOn() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    id = e.pointerId; y0 = e.clientY; dy = 0; t0 = performance.now(); dragging = false; moved = false;
+  });
+  toast.addEventListener('pointermove', e => {
+    if (e.pointerId !== id) return;
+    const d = e.clientY - y0;
+    if (!dragging) {
+      if (Math.abs(d) < 6) return;
+      dragging = true; moved = true;
+      clearTimeout(toastTimer);
+      try { toast.setPointerCapture(id); } catch { /* ignore */ }
+      toast.style.transition = 'none';
+    }
+    dy = d > 0 ? d : Math.max(-8, d * 0.25);
+    place(dy, Math.max(0, 1 - Math.max(0, dy) / 120));
+  });
+  const end = e => {
+    if (e.pointerId !== id) return;
+    id = null;
+    if (!dragging) return;
+    dragging = false;
+    const fast = dy > 14 && dy / Math.max(1, performance.now() - t0) > 0.45;
+    if (dy > 44 || fast) {
+      if (reducedMotion.matches) { reset(); hideToast(); return; }
+      toast.style.transition = 'transform .22s cubic-bezier(.4, 0, .2, 1), opacity .2s cubic-bezier(.4, 0, .2, 1)';
+      place(toast.offsetHeight + 48, 0);
+      hideToast();
+    } else {
+      toast.style.transition = 'transform .25s cubic-bezier(.4, 0, .2, 1), opacity .25s cubic-bezier(.4, 0, .2, 1)';
+      toast.style.transform = ''; toast.style.opacity = '';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, 2000);
+    }
+  };
+  toast.addEventListener('pointerup', end);
+  toast.addEventListener('pointercancel', end);
+  // een veeg die op de knop begon, is geen tik op Ongedaan maken
+  toast.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  resetToastDrag = reset;
+})();
 
 /* ---- Venster: nieuwe taak ---- */
 const composer = $('composer');
