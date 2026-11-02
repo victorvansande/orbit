@@ -23,6 +23,14 @@ const RATIO = 0.6;                                // halve breedte van een bol /
 const ICON_OPEN = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>';
 const ICON_CLOSE = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"/></svg>';
 
+// toestand zoals bewaard: duur (min), en ofwel een eindtijd (loopt), ofwel de resterende tijd (gepauzeerd of nog niet
+// gestart). Ook gelezen door het kleine glas buiten de focus (glass.js).
+export function timerState() {
+  let st = { dur: 25, endAt: 0, left: 25 * 60000, done: false };
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && DURATIONS.includes(s.dur)) st = { ...st, ...s }; } catch { /* geen opslag */ }
+  return st;
+}
+
 export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   const wrap = Object.assign(document.createElement('div'), { className: 'timer-glass' });
   const cv = document.createElement('canvas');
@@ -47,9 +55,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   box.append(wrap, side, expand);
   const g = cv.getContext('2d');
 
-  // toestand: duur (min), en ofwel een eindtijd (loopt), ofwel de resterende tijd (gepauzeerd of nog niet gestart)
-  let st = { dur: 25, endAt: 0, left: 25 * 60000, done: false };
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && DURATIONS.includes(s.dur)) st = { ...st, ...s }; } catch { /* geen opslag */ }
+  let st = timerState();
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* geen opslag */ } };
   const remaining = (now = Date.now()) => st.endAt ? Math.max(0, st.endAt - now) : st.left;
 

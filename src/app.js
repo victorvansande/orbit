@@ -18,6 +18,7 @@ import { greeting, coreLine } from './scene/greet.js';
 import { playDone, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer } from './focus/timer.js';
+import { createGlass } from './focus/glass.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './data/feats.js';
 import { softReveal, whiteBurst, smallNight, createWall } from './scene/fx.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
@@ -1694,8 +1695,14 @@ const weather = createWeather($('focus-weather'));
 const fidget = createFidget($('fidget'), { reducedMotion, label: m => tx(`fidget.${m}`) });   // bakje water, alleen op desktop zichtbaar
 // zandloper boven het bakje (desktop): een focusblok van 15, 25 of 50 minuten; klaar = de afvinktik
 const timer = createTimer($('timer'), { reducedMotion, tx, onDone(minutes) { if (performance.now() - lastTick > 1500) playDone({ level: 1 }); recordFocus(feats, minutes); checkFeats(true); } });   // net afgevinkt: geen tweede tik
+// klein glas rechtsonder buiten de focus (desktop), zolang de zandloper loopt of gepauzeerd staat; een tik opent de focus
+const glass = createGlass($('glass'), { reducedMotion, tx, onOpen: () => setFocus(true) });
+function placeGlass() { if (desktop.matches && !document.body.classList.contains('is-focus')) glass.start(); else glass.stop(); }
+desktop.addEventListener('change', placeGlass);
+placeGlass();
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
+  placeGlass();
   if (on) weather.start(); else weather.stop();
   if (on && desktop.matches && !minimalFx) fidget.start(); else fidget.stop();
   if (on && desktop.matches) timer.start(); else timer.stop();
