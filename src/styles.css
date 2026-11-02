@@ -651,19 +651,19 @@ body.is-focus .glass { display: none; }
 .focus-kicker { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--late); margin-bottom: 12px; }
 .focus-now ul { list-style: none; margin: 0; padding: 0; }
 .focus-now li { font-size: 22px; line-height: 1.35; font-weight: 400; letter-spacing: -.01em; }
-.focus-now li:not(.focus-more) { position: relative; padding-left: calc(14px + .5em); transition: opacity .3s var(--ease), transform .3s var(--ease); }
+.focus-now li:not(.focus-more) { position: relative; padding-left: 22px; transition: opacity .3s var(--ease), transform .3s var(--ease); }
 .focus-now li.is-done { pointer-events: none; }
 .focus-now li.is-leaving { opacity: 0; transform: translateX(14px); }
 .fn-check { position: absolute; left: -6px; top: calc(.675em - 15px); width: 30px; height: 30px; display: grid; place-items: center; }
 body.is-focus .fn-check { pointer-events: auto; }
 /* opsommingsteken: een bolletje in de Nu-kleur, zoals de bollen in de scène (Victor, 02/11/2026: geen komeet met staart meer) */
 .fn-check::after { content: ''; position: absolute; box-sizing: border-box; }
-.fn-check::after { left: 13px; top: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--core); border: 1.5px solid var(--core); transition: left .22s var(--pop), top .22s var(--pop), width .22s var(--pop), height .22s var(--pop), background-color .18s var(--ease), border-color .18s var(--ease); }
-.fn-check svg { position: absolute; z-index: 1; left: 12px; top: 11px; opacity: 0; pointer-events: none; color: var(--bg); transition: opacity .15s var(--ease); }   /* midden van het rondje: 8 + 19 / 2 = 17,5 */
-.fn-check:hover::after, .fn-check:focus-visible::after { left: 8px; top: 7px; width: 19px; height: 19px; background: transparent; }
-.focus-now li.is-done .fn-check::after { left: 8px; top: 7px; width: 19px; height: 19px; background: var(--core); border-color: var(--core); }
+.fn-check::after { left: 6px; top: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--core); border: 1.5px solid var(--core); transition: left .22s var(--pop), top .22s var(--pop), width .22s var(--pop), height .22s var(--pop), background-color .18s var(--ease), border-color .18s var(--ease); }
+.fn-check svg { position: absolute; z-index: 1; left: 10px; top: 11px; opacity: 0; pointer-events: none; color: var(--bg); transition: opacity .15s var(--ease); }   /* bolletje en rondje beginnen op de rand van NU (6 - 6 = 0); midden van het rondje: 6 + 19 / 2 = 15,5 */
+.fn-check:hover::after, .fn-check:focus-visible::after { left: 6px; top: 7px; width: 19px; height: 19px; background: transparent; }
+.focus-now li.is-done .fn-check::after { left: 6px; top: 7px; width: 19px; height: 19px; background: var(--core); border-color: var(--core); }
 .focus-now li.is-done .fn-check svg { opacity: 1; }
-.focus-now .focus-more { padding-left: calc(14px + .5em); }
+.focus-now .focus-more { padding-left: 22px; }
 .focus-now .focus-more { font-size: 15px; color: var(--ink-3); }
 /* Quote als er niets dringend is: groot genoeg om van op afstand te lezen, auteur in kapitaaltjes */
 /* zo breed als de ruimte tot de buitenste ring toelaat (ring ≈ 41vmin van het midden), met een maximum voor de leesbaarheid */
