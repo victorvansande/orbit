@@ -5,6 +5,7 @@
 // Onderaan drie cijfers. Getekend op een canvas van 1080 px breed (post 4:5 of story 9:16), licht of donker, zonder
 // taaktitels: wat je deelt, blijft van jou. Alles komt uit gegevens die Orbit al bijhoudt (logboek, prestaties, archief).
 import { LEVELS } from '../core/config.js';
+import { LOCKUP_SMALL } from '../core/mark.js';
 
 const KEY = 'priority-orbit.recap.v1';            // per toestel: {said: 'JJJJ-MM-DD', seen: {'JJJJ-MM': ts}, theme, fmt}
 const DAY = 86400000;
@@ -110,6 +111,16 @@ function fitSans(g, text, x, y, size, maxW, col, weight = 500) {
   sans(g, text, x, y, s, col, 'left', weight);
 }
 
+// het merk (Victor, 02/11/2026: "klein maar smaakvol op elke recap"): kleine tekening met woordmerk,
+// h px hoog, de basislijn van het woord op y, baan en woord in inkt, de kop in de kernkleur
+function brandMark(g, x, y, h, ink, core) {
+  const M = LOCKUP_SMALL, s = h / M.h;
+  g.save(); g.translate(x, y - M.base * s); g.scale(s, s);
+  g.fillStyle = ink; g.fill(new Path2D(M.tail)); g.fill(new Path2D(M.word));
+  g.fillStyle = core; g.beginPath(); g.arc(M.head[0], M.head[1], M.head[2], 0, Math.PI * 2); g.fill();
+  g.restore();
+}
+
 // s = monthStats(...), t = { tx, locale }; geeft het canvas terug (1080 breed)
 export function drawPoster(cv, s, { theme = 'dark', fmt = 'post', tx, locale }) {
   const W = 1080, H = fmt === 'story' ? 1920 : 1350, dark = theme === 'dark', story = fmt === 'story';
@@ -123,7 +134,7 @@ export function drawPoster(cv, s, { theme = 'dark', fmt = 'post', tx, locale }) 
   const L = 72;
 
   // hoeken, zoals een platenhoes
-  label(g, 'Orbit tasks', L, 104, 26, rgba(ink, 1), 'left', 600, 0.2);
+  brandMark(g, L, 104, 32, rgba(ink, 1), core);
   label(g, `${month} ${s.start.getFullYear()}`, W - L, 104, 22, ink3, 'right');
   label(g, 'victorvansande.github.io/orbit', L, H - 64, 18, ink3);
 
