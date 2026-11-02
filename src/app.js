@@ -29,7 +29,7 @@ const STORAGE_KEY = 'priority-orbit.tasks.v1';
 const GONE_KEY = 'priority-orbit.gone.v1';        // afgevinkte taken (id → tijdstip), nodig voor synchronisatie
 const SAVED_KEY = 'priority-orbit.saved.v1';      // tijdstip van de laatste geslaagde bewaring in localStorage
 const PENDING_KEY = 'priority-orbit.pending.v1';  // {n, confirmedAt}: wijzigingen die de server nog niet bevestigde
-const DONE_MS = 320;          // rij vervaagt, daarna verdwijnt ze uit de lijst
+const DONE_MS = 720;          // afvinken in de lijst: vinkje, inhoud schuift weg, rij sluit zich (leaveRow), daarna opnieuw tekenen
 const TOAST_MS = 5000;
 const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stilstand
 
@@ -409,7 +409,7 @@ function renderFocusNow() {
   const ul = el('ul');
   const max = desktop.matches ? 4 : 3;   // op gsm minder plaats onder de scène
   for (const t of urgent.slice(0, max)) {
-    const li = el('li', leaving.has(t.id) ? 'is-done' : '');
+    const li = el('li');
     li.dataset.id = t.id;
     const check = el('button', 'fn-check');
     check.type = 'button';
@@ -564,7 +564,7 @@ $('stat-mini').addEventListener('click', () => {
 })();
 
 /* ---- Takenlijst ---- */
-const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const TRASH_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12.5 4.5l-.7 9a1.5 1.5 0 0 1-1.5 1.5H5.7a1.5 1.5 0 0 1-1.5-1.5l-.7-9M6.5 7.5v4M9.5 7.5v4"/></svg>';
 const leaving = new Set();
 
@@ -599,7 +599,7 @@ function renderTracks() {
 }
 
 function trackRow(t) {
-  const li = el('li', leaving.has(t.id) ? 'track is-done' : 'track');
+  const li = el('li', 'track');
   li.dataset.id = t.id;
 
   const check = el('button', 't-check');
@@ -1075,6 +1075,7 @@ function complete(id, row) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
   row.classList.add('is-done');
+  leaveRow(row);
   const box = row.querySelector('.t-check, .fn-check')?.getBoundingClientRect();
   const spot = scene.complete(id, box && box.width ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : null);
   scene.cheer();
@@ -1128,6 +1129,7 @@ function complete(id, row) {
       for (let i = featQueue.length - 1; i >= 0; i--) if (gained.unlocked.includes(featQueue[i].id)) featQueue.splice(i, 1);
       if (gained.unlocked.includes(popId)) hideFeatPop();
     }
+    leaving.delete(id);
     back();
     if (!task.demo) { checkFeats(false); notifySync(); }
   };
@@ -1145,6 +1147,30 @@ function complete(id, row) {
     gained.ev = Object.keys(feats.ev).filter(k => !hadEv.has(k));
   }
   setTimeout(() => { leaving.delete(id); renderTracks(); renderFocusNow(); }, reducedMotion.matches ? 0 : DONE_MS);
+}
+
+// Een afgevinkte rij verlaat de lijst in drie rustige stappen (Victor, 02/11/2026: "het schuift niet mooi vlot weg"):
+// 0 tot 0,3 s vult het rondje zich en tekent het vinkje (CSS .is-done), daarna schuift de inhoud weg (.is-leaving)
+// en vanaf 0,4 s sluit de rij zich tot hoogte 0, zodat de rijen eronder vloeiend opschuiven in plaats van te springen.
+// Was ze de laatste van haar moment, dan sluit het hele groepje (met kop) zich.
+const LEAVE_SLIDE = 280, LEAVE_CLOSE = 120, LEAVE_EASE = 'cubic-bezier(.4, 0, .2, 1)';
+function leaveRow(row) {
+  if (reducedMotion.matches) return;
+  const group = row.classList.contains('track') ? row.closest('.group') : null;
+  const alone = group && ![...group.querySelectorAll('.track')].some(r => r !== row && !leaving.has(r.dataset.id));
+  const target = alone ? group : row;
+  setTimeout(() => {
+    if (!row.isConnected) return;
+    row.classList.add('is-leaving');
+    setTimeout(() => {
+      if (!target.isConnected) return;
+      const h = target.offsetHeight;
+      Object.assign(target.style, { boxSizing: 'border-box', height: h + 'px', minHeight: '0', overflow: 'hidden' });
+      void target.offsetHeight;
+      target.style.transition = `height .3s ${LEAVE_EASE}, margin-top .3s ${LEAVE_EASE}, border-color .2s ${LEAVE_EASE}`;
+      Object.assign(target.style, { height: '0px', marginTop: '0px', borderBottomColor: 'transparent' });
+    }, LEAVE_CLOSE);
+  }, LEAVE_SLIDE);
 }
 
 let nightBusy = false;

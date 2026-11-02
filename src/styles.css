@@ -364,7 +364,14 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   display: grid; grid-template-columns: 30px 1fr; align-items: center;
   transition: opacity .3s var(--ease), background-color .2s var(--ease), max-height .28s var(--ease), min-height .28s var(--ease), padding .28s var(--ease);
 }
-.track.is-done { opacity: 0; transform: translateX(10px); }
+/* Afvinken (02/11/2026): eerst vult het rondje zich en tekent het vinkje, dan schuift de inhoud weg en sluit de rij zich
+   zacht; de rijen eronder schuiven zo vanzelf mee omhoog. Hoogte en tijden zet complete() in app.js. */
+.track.is-leaving > .t-check, .track.is-leaving > .track-row {
+  transform: translateX(28px) !important; opacity: 0;
+  transition: transform .3s cubic-bezier(.4, 0, .2, 1), opacity .24s var(--ease) .04s !important;
+}
+.track.is-leaving > .t-del-btn { opacity: 0 !important; }
+.track.is-leaving .t-title { color: var(--ink-3); }
 .track.is-deleted {
   opacity: 0 !important;
   border-bottom-color: transparent !important;
@@ -388,21 +395,28 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .t-del-btn:hover { color: var(--late); background: var(--fill); }
 .t-del-btn:active { transform: scale(.9); }
 .track.is-swipe-ready .t-del-btn { color: var(--late); transform: scale(1.15); opacity: 1 !important; }
-.track.is-hot, .track:hover { background: linear-gradient(90deg, var(--fill), transparent); }
+.track.is-hot { background: linear-gradient(90deg, var(--fill), transparent); }
+/* hover alleen met een echte aanwijzer: op touch bleef :hover kleven op de rij die na verwijderen onder de vinger schoof */
+@media (hover: hover) { .track:hover { background: linear-gradient(90deg, var(--fill), transparent); } }
 .t-check { position: relative; width: 30px; height: 42px; display: grid; place-items: center; }
 .t-check::before {
   content: ""; position: absolute; left: 4px; top: 50%;
-  width: 17px; height: 17px; margin-top: -8.5px;
+  box-sizing: border-box; width: 20px; height: 20px; margin-top: -10px;   /* midden op 14 px, op de middellijn van de rij */
   border-radius: 50%; border: 1.5px solid var(--stroke);
   transition: border-color .2s var(--ease), background-color .2s var(--ease), box-shadow .2s var(--ease);
 }
-.t-check svg { position: relative; left: -3px; opacity: 0; transition: opacity .15s var(--ease); }
-.track:hover .t-check::before, .t-check:focus-visible::before { border-color: var(--c); }
+/* vinkje precies in het midden van het rondje (rondje 4 + 10 = 14 px, vinkje 11 px breed) */
+.t-check svg { position: absolute; left: 8.5px; top: 50%; margin-top: -5.5px; color: var(--bg); }
+.t-check svg path, .fn-check svg path { stroke-dasharray: 14; stroke-dashoffset: 14; }
+@media (hover: hover) { .track:hover .t-check::before { border-color: var(--c); } }
+.t-check:focus-visible::before { border-color: var(--c); }
 .track.is-done .t-check::before {
-  border-color: transparent;
+  border-color: var(--c);
   background: var(--c);
+  animation: check-pop .34s cubic-bezier(.4, 0, .2, 1);
 }
-.track.is-done .t-check svg { opacity: 1; }
+.track.is-done .t-check svg path, .focus-now li.is-done .fn-check svg path { stroke-dashoffset: 0; transition: stroke-dashoffset .24s cubic-bezier(.4, 0, .2, 1) .07s; }
+@keyframes check-pop { 0% { transform: scale(.82); } 55% { transform: scale(1.1); } 100% { transform: scale(1); } }
 .t-title {
   padding: 10px 4px 10px 2px; font-size: 14.5px;
   white-space: nowrap; overflow: hidden; text-overflow: clip; min-width: 0; cursor: default;
@@ -628,13 +642,14 @@ body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer
 .focus-now li { font-size: 22px; line-height: 1.35; font-weight: 400; letter-spacing: -.01em; }
 /* opsommingsteken: een kleine komeet in de Nu-kleur (kop met een taps, uitdovend staartje) */
 .focus-now li:not(.focus-more) { position: relative; padding-left: calc(14px + .5em); transition: opacity .3s var(--ease), transform .3s var(--ease); }
-.focus-now li.is-done { opacity: 0; transform: translateX(10px); pointer-events: none; }
+.focus-now li.is-done { pointer-events: none; }
+.focus-now li.is-leaving { opacity: 0; transform: translateX(14px); }
 .fn-check { position: absolute; left: -6px; top: calc(.675em - 15px); width: 30px; height: 30px; display: grid; place-items: center; }
 body.is-focus .fn-check { pointer-events: auto; }
 .fn-check::before, .fn-check::after { content: ''; position: absolute; }
 .fn-check::before { left: 6px; top: 12px; width: 13px; height: 6px; background: linear-gradient(90deg, transparent, var(--core)); clip-path: polygon(0 45%, 100% 15%, 100% 85%, 0 55%); opacity: .55; transform-origin: right center; transition: opacity .18s var(--ease), transform .2s var(--ease); }
 .fn-check::after { left: 14px; top: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--core); border: 1.5px solid var(--core); transition: left .22s var(--pop), top .22s var(--pop), width .22s var(--pop), height .22s var(--pop), background-color .18s var(--ease), border-color .18s var(--ease); }
-.fn-check svg { position: absolute; left: 10.5px; top: 9.5px; opacity: 0; pointer-events: none; transition: opacity .15s var(--ease); }
+.fn-check svg { position: absolute; z-index: 1; left: 12px; top: 11px; opacity: 0; pointer-events: none; color: var(--bg); transition: opacity .15s var(--ease); }   /* midden van het rondje: 8 + 19 / 2 = 17,5 */
 .fn-check:hover::before, .fn-check:focus-visible::before { opacity: 0; transform: translateX(-5px) scaleX(.3); }
 .fn-check:hover::after, .fn-check:focus-visible::after { left: 8px; top: 7px; width: 16px; height: 16px; background: transparent; }
 .focus-now li.is-done .fn-check::before { opacity: 0; }
@@ -1051,6 +1066,8 @@ body.is-idle .controls { opacity: 0; }
   .composer-orb, .composer-orb.is-swap { animation: none; }
   .composer[open] form, .composer.is-closing form, .composer[open]::backdrop, .composer.is-closing::backdrop { animation-duration: .01s; }
   .track, .tracks, .wheel, .focus-info, .focus-now li, .fn-check::before, .fn-check::after, .toast { transition-duration: .01s; }
+  .track.is-done .t-check::before { animation: none; }
+  .t-check svg path, .fn-check svg path { transition: none !important; }
   .dm .o { animation: none; }
 }
 
