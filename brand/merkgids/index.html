@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Orbit merkgids</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column with wide plates; summary first, then mark, system, colour, rules, applications, files and honest notes. */
+:root{--paper:#F1F1EF;--surface:#E7E7E3;--ink:#1B1B22;--ink-2:#5E5E68;--ink-3:#8A8A94;--line:rgba(27,27,34,.14);--red:#E70049;--night:#0F0F12;
+--sans:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#0F0F12;--surface:#19191D;--ink:#ECECF1;--ink-2:#A6A6B0;--ink-3:#7A7A84;--line:rgba(236,236,241,.14);--red:#F0306A;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0F0F12;--surface:#19191D;--ink:#ECECF1;--ink-2:#A6A6B0;--ink-3:#7A7A84;--line:rgba(236,236,241,.14);--red:#F0306A;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.6 var(--sans)}
+.wrap{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 90px;display:grid;gap:56px}
+.kicker{font:500 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+h1{font:600 clamp(30px,5vw,46px)/1.08 var(--sans);margin:0;text-wrap:balance}
+h2{font:600 24px/1.2 var(--sans);margin:0;text-wrap:balance}
+h3{font:500 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0}
+p{margin:0;max-width:65ch}
+section,header{display:grid;gap:16px;min-width:0}
+.wrap>*,.grid3>*,.grid2>*,figure{min-width:0}
+.lead{font-size:19px;color:var(--ink-2);max-width:60ch}
+.plate{border-radius:8px;display:grid;place-items:center;padding:clamp(20px,5vw,56px)}
+.plate img{max-width:100%;height:auto}
+.light{background:#F1F1EF}.dark{background:#0F0F12}.white{background:#fff}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.grid2>*,.grid3>*{min-width:0}
+figure{margin:0;display:grid;gap:8px}
+figure img.shot{width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}
+figcaption{font-size:13px;color:var(--ink-3);max-width:70ch}
+.sw{border-radius:8px;border:1px solid var(--line);overflow:hidden;display:grid}
+.sw .chip{height:96px}
+.sw .info{padding:12px 14px;display:grid;gap:2px;font:400 13px/1.5 var(--mono);font-variant-numeric:tabular-nums}
+.sw .info b{font:600 15px var(--sans)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
+th{font:500 11px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+td.n{font-family:var(--mono);text-align:center}
+ul{margin:0;padding-left:18px;display:grid;gap:6px;max-width:68ch}
+code{font:400 13px var(--mono);background:var(--surface);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.note{border:1px solid var(--line);border-left:3px solid var(--red);border-radius:6px;background:var(--surface);padding:18px 20px;display:grid;gap:10px}
+.idea{font:500 clamp(22px,3.6vw,30px)/1.3 var(--sans);max-width:28ch;text-wrap:balance}
+</style>
+<style>body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header>
+  <span class="kicker">Orbit · merkgids · v1 · 02/11/2026</span>
+  <h1>Een komeet op zijn baan</h1>
+  <p class="lead">Het beeldmerk van Orbit is een taak in beweging. De kop leidt in rood, de kleur van Nu. De staart loopt rondom taps uit tot een punt, zoals de bollen in de app. Eén vorm, twee kleuren, met en zonder naam.</p>
+</header>
+
+<section aria-labelledby="idee">
+  <span class="kicker">Idee</span>
+  <p class="idea">Wat dringend is, komt dichterbij en gaat sneller.</p>
+  <div class="grid2">
+    <div class="plate light"><img src="../merk/svg/orbit-symbol-fullcolour.svg" alt="Beeldmerk Orbit in volle kleur: een gekantelde baan in inkt met een rode kop rechtsonder en een staart die taps uitloopt" width="320" height="255"></div>
+    <div class="plate dark"><img src="../merk/svg/orbit-symbol-fullcolour-reversed.svg" alt="Beeldmerk Orbit omgekeerd op een donkere achtergrond, baan in lichte inkt, kop in zachter rood" width="320" height="255"></div>
+  </div>
+</section>
+
+<section aria-labelledby="lockups">
+  <span class="kicker">Systeem</span>
+  <h2 id="lockups">Lockups</h2>
+  <div class="plate light"><img src="../merk/svg/orbit-horizontal-fullcolour.svg" alt="Horizontale lockup: beeldmerk links, het woord orbit rechts" width="620" height="145"></div>
+  <div class="grid2">
+    <div class="plate light"><img src="../merk/svg/orbit-stacked-fullcolour.svg" alt="Gestapelde lockup: beeldmerk boven het woord orbit" width="240" height="250"></div>
+    <div class="plate dark"><img src="../merk/svg/orbit-horizontal-fullcolour-reversed.svg" alt="Horizontale lockup omgekeerd op donker" width="380" height="90"></div>
+  </div>
+  <ul>
+    <li><strong>Horizontaal</strong> is de standaard. Het merk is iets hoger dan de stokken van de b en de t, de kop staat op de basislijn, en de tussenruimte is 1,6 keer de kopdiameter.</li>
+    <li><strong>Gestapeld</strong> voor vierkante plekken, zoals een splash of een avatar met naam.</li>
+    <li><strong>Enkel het beeldmerk</strong> voor app-icoon en favicon. <strong>Enkel het woordmerk</strong> waar het beeldmerk al in de buurt staat.</li>
+    <li><strong>Woordmerk</strong>: Instrument Sans Medium (SIL Open Font License 1.1, gebruik in een logo toegestaan). Spatiëring -10 over het hele woord, r-b -16 en i-t -10 extra. De vierkante i-punt is rond gemaakt (Ø 120), zodat hij rijmt op de kop.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="klein">
+  <h2 id="klein">Twee tekeningen: groot en klein</h2>
+  <div class="grid3">
+    <div class="plate white"><img src="../merk/svg/orbit-symbol-fullcolour.svg" alt="Master-tekening, met fijne punt en witte rand rond de kop" width="200" height="160"></div>
+    <div class="plate white"><img src="../merk/svg/orbit-symbol-small-fullcolour.svg" alt="Kleine tekening, met dikkere staart, grotere kop en zonder witte rand" width="200" height="160"></div>
+  </div>
+  <p>De <strong>master</strong> geldt vanaf 48 px of 30 mm breed. Daaronder neemt de <strong>kleine tekening</strong> het over, tot 16 px of 6 mm. Die heeft een dikkere staart (56 tot 150 eenheden), een grotere kop (Ø 256) en geen witte rand: op 16 px zou die als een rendering-fout ogen.</p>
+  <figure><img class="shot" src="../merk/test-groottes.png" alt="Testblad: master op 256, 64, 32 en 16 pixels, kleine tekening op 32 en 16 pixels, uitvergroot per pixel" width="1400" height="733"><figcaption>Op 16 px houdt de kleine tekening stand: de ring is 1 tot 2,7 px dik en de kop 4,6 px.</figcaption></figure>
+</section>
+
+<section aria-labelledby="constructie">
+  <h2 id="constructie">Constructie</h2>
+  <div class="plate light"><img src="../merk/constructie/orbit-constructie.svg" alt="Constructieblad met de ellipsbaan, de kanteling, de kop en de punt van de staart op een raster van 100 eenheden" width="620" height="620"></div>
+  <ul>
+    <li>Vak 1000 × 1000. Baan: ellips 410 × 270 (1,52 : 1), gekanteld -24°, middelpunt (500, 500).</li>
+    <li>Kop: Ø 200 op 70° van de baan, met een witte rand van 20 rondom.</li>
+    <li>Staart: 322° achter de kop, breedte 4 + 108 · u^2,3 (u = 0 aan de punt, 1 aan de kop). Het zwaartepunt ligt zo bij de kop.</li>
+    <li>Schone paden: geen open lijnen, geen overlappende vormen, geen losse tekst. Twee vormen, met svgo geoptimaliseerd.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="kleur">
+  <span class="kicker">Kleur</span>
+  <h2 id="kleur">Inkt, papier en één rode kop</h2>
+  <div class="grid3">
+    <div class="sw"><div class="chip" style="background:#1B1B22"></div><div class="info"><b>Inkt</b>#1B1B22 · rgb 27 27 34<br>CMYK ≈ 21 21 0 87<br>Pantone-kandidaat Black 6 C</div></div>
+    <div class="sw"><div class="chip" style="background:#F1F1EF"></div><div class="info"><b>Papier</b>#F1F1EF · rgb 241 241 239<br>CMYK ≈ 0 0 1 5</div></div>
+    <div class="sw"><div class="chip" style="background:#E70049"></div><div class="info"><b>Amaranth</b>#E70049 · rgb 231 0 73<br>CMYK ≈ 0 100 68 9<br>Pantone-kandidaat 192 C</div></div>
+    <div class="sw"><div class="chip" style="background:#ECECF1"></div><div class="info"><b>Inkt licht</b>#ECECF1 · voor donker</div></div>
+    <div class="sw"><div class="chip" style="background:#F0306A"></div><div class="info"><b>Amaranth donker</b>#F0306A · voor donker</div></div>
+    <div class="sw"><div class="chip" style="background:#0F0F12"></div><div class="info"><b>Nacht</b>#0F0F12 · donkere achtergrond</div></div>
+  </div>
+  <p>De categorie is verzadigd blauw of rood met een vinkje. Orbit blijft licht en rustig: inkt op papier, met rood alleen voor de kop, zoals Nu in de app. De CMYK-waarden zijn geschat zonder kleurprofiel; laat ze nakijken door de drukker. De Pantone-kandidaten moet je vergelijken met een fysieke Pantone-gids, het zijn geen bevestigde matches.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Combinatie</th><th>Contrast</th><th>Gebruik</th></tr></thead>
+    <tbody>
+      <tr><td>Inkt op papier</td><td class="n">15,1 : 1</td><td>Alle tekst</td></tr>
+      <tr><td>Amaranth op papier</td><td class="n">4,1 : 1</td><td>Groot of grafisch, niet voor kleine tekst (AA vraagt 4,5 : 1)</td></tr>
+      <tr><td>Inkt licht op nacht</td><td class="n">14,5 : 1</td><td>Alle tekst in het donker</td></tr>
+      <tr><td>Amaranth donker op nacht</td><td class="n">4,4 : 1</td><td>Groot of grafisch</td></tr>
+    </tbody>
+  </table></div>
+  <figure><img class="shot" src="../merk/kleurenblind.png" alt="App-icoon licht en donker, gesimuleerd voor normaal zicht, protanopie, deuteranopie en tritanopie" width="940" height="540"><figcaption>Bij kleurenblindheid verliest de kop zijn rood, maar door de vorm en de witte rand blijft hij herkenbaar als kop.</figcaption></figure>
+</section>
+
+<section aria-labelledby="regels">
+  <span class="kicker">Regels</span>
+  <h2 id="regels">Ruimte, formaat en wat niet mag</h2>
+  <div class="grid2">
+    <div><h3>Vrije ruimte</h3><p>Rondom elk logo minstens één kopdiameter vrij.</p></div>
+    <div><h3>Minimum</h3><p>Master 48 px of 30 mm breed. Kleine tekening 16 px of 6 mm. Horizontale lockup 120 px of 30 mm, met de kleine tekening vanaf 72 px.</p></div>
+    <div><h3>Varianten</h3><p>Volle kleur, volle kleur omgekeerd, inkt, wit, amaranth. Op een foto: wit of inkt, waar het rustig is in het beeld.</p></div>
+    <div><h3>Druk</h3><p>Op 30 mm is de dikste staart 4,2 mm en de witte rand 0,75 mm. De punt loopt bewust dun uit. Zeefdruk en borduren: nakijken met de leverancier.</p></div>
+  </div>
+  <div class="grid3">
+    <div class="plate white"><img src="../merk/svg/orbit-symbol-black.svg" alt="Beeldmerk in één kleur inkt" width="160" height="128"></div>
+    <div class="plate dark"><img src="../merk/svg/orbit-symbol-white.svg" alt="Beeldmerk in wit op donker" width="160" height="128"></div>
+    <div class="plate white"><img src="../merk/svg/orbit-symbol-red.svg" alt="Beeldmerk in één kleur amaranth" width="160" height="128"></div>
+  </div>
+  <figure><img class="shot" src="../merk/regels-niet-doen.png" alt="Niet doen: uitrekken, draaien, andere kleuren, schaduw, omtrek, kop verplaatsen, drukke achtergrond" width="1020" height="600"><figcaption>Linksboven zoals het hoort. De rest niet: uitrekken, draaien, andere kleuren, schaduw of gloed, enkel een omtrek, de kop losmaken, een drukke achtergrond zonder rustig vlak.</figcaption></figure>
+</section>
+
+<section aria-labelledby="toepassing">
+  <span class="kicker">Toepassingen</span>
+  <h2 id="toepassing">Icoon, tab en signatuur</h2>
+  <figure><img class="shot" src="../merk/mockups/homescreen.png" alt="Voorbeeld: het Orbit-icoon op een beginscherm tussen neutrale plaatshouders" width="1000" height="860"><figcaption>App-icoon op het beginscherm: licht vlak, inkt en een rode kop, rustig tussen verzadigde iconen. De andere iconen zijn neutrale plaatshouders.</figcaption></figure>
+  <div class="grid2">
+    <figure><img class="shot" src="../merk/mockups/browser.png" alt="Voorbeeld: browsertab met het favicon en de pagina met de horizontale lockup" width="1000" height="860"><figcaption>Favicon (kleine tekening op een papieren tegel) in een tab.</figcaption></figure>
+    <figure><img class="shot" src="../merk/mockups/inapp.png" alt="Voorbeeld: de signatuur linksboven in de app, licht en donker" width="1000" height="860"><figcaption>Signatuur in de app, licht en donker.</figcaption></figure>
+  </div>
+</section>
+
+<section aria-labelledby="app">
+  <span class="kicker">In Orbit</span>
+  <h2 id="app">Zo staat het merk in de app</h2>
+  <p>Sinds 02/11/2026 overal in Orbit: favicon, app-iconen, de kop linksboven, de Uitleg en klein op elke maandrecap. De vormen komen uit één bron, <code>src/core/mark.js</code>.</p>
+  <figure><img class="shot" src="../merk/toepassing-kop.png" alt="De kop van de app linksboven: het merk met woordmerk en daaronder de samenvatting" width="1000" height="200"><figcaption>Kop linksboven: kleine tekening met woordmerk, 22 px hoog (gsm 20 px), in de kleuren van het thema.</figcaption></figure>
+  <div class="grid3">
+    <figure><img class="shot" src="../merk/toepassing-recap-donker.png" alt="Maandrecap donker met het merk klein linksboven" width="540" height="675"><figcaption>Maandrecap: het merk klein linksboven, basislijn gelijk met de maand.</figcaption></figure>
+    <figure><img class="shot" src="../merk/toepassing-recap-licht.png" alt="Maandrecap licht met het merk klein linksboven" width="540" height="675"><figcaption>Ook in licht, post en story.</figcaption></figure>
+    <figure><img class="shot" src="../merk/toepassing-uitleg.png" alt="Het venster Uitleg met het beeldmerk boven de titel" width="375" height="450"><figcaption>Uitleg: het beeldmerk boven de titel.</figcaption></figure>
+  </div>
+</section>
+
+<section aria-labelledby="bestanden">
+  <span class="kicker">Bestanden</span>
+  <h2 id="bestanden">Waar alles staat</h2>
+  <p>Deze gids staat ook in de Orbit-repository als <code>brand/merkgids/index.html</code> (online via GitHub Pages op <code>victorvansande.github.io/orbit/brand/merkgids/</code>). Alle bestanden staan onder <code>brand/merk/</code>:</p>
+  <ul>
+    <li><code>svg/</code>: beeldmerk, kleine tekening, woordmerk, horizontaal en gestapeld, in vijf varianten, plus de app-iconen licht en donker.</li>
+    <li><code>png/512</code> en <code>png/1024</code>, transparant. Op 2048 px maak je ze opnieuw met <code>tools/build_v4.py</code>.</li>
+    <li><code>pdf/</code>: vector, voor druk.</li>
+    <li><code>favicon/</code>: favicon.ico (16, 32, 48), favicon.svg, apple-touch-icon 180, 192, 512, 512 donker en maskable 512.</li>
+    <li><code>constructie/</code> (svg, pdf, png), <code>mockups/</code>, de testbladen en de regels.</li>
+  </ul>
+</section>
+
+<section class="note" aria-labelledby="eerlijk">
+  <h2 id="eerlijk">Eerlijk wat nog zwak is</h2>
+  <ul>
+    <li><strong>Onderscheidend vermogen</strong> bleef in vier blinde rondes op 2 tot 3 op 5. Een ring met een bol is een drukke categorie. Het merk werd onder meer gelezen als een C, een piercing-ring of een meldingsbolletje.</li>
+    <li>In de lockup kan het als <strong>"C orbit"</strong> lezen. Het woordmerk heeft nog geen eigen detail dat naar het merk verwijst.</li>
+    <li>De laatste drie verbeteringen (zwaartepunt bij de kop, grotere kop, staart tot een punt) heb ik zelf nagekeken op renders, maar niet meer blind laten testen. Het protocol stopt na vier rondes.</li>
+    <li><strong>De naam</strong> is een apart risico: er bestaat een Amerikaanse merkaanvraag ORBIT (90211922) voor software die herhaalde taken inplant, en er zijn meerdere to-do-apps met die naam. Laat een specialist een merkonderzoek doen voor je het merk breder gebruikt.</li>
+    <li>Het auteursrecht op werk dat met hulp van AI gemaakt is, is juridisch nog onzeker.</li>
+  </ul>
+</section>
+</div>
+
+</body>
+</html>
