@@ -31,3 +31,4 @@ Dit project wordt afwisselend bewerkt met Claude Code en met Antigravity. Alle p
 - Lokaal: `python3 -m http.server 3000` in de root, open http://localhost:3000/.
 - Desktop 1440×900 én gsm 375 px, licht én donker thema.
 - Console foutloos, geen horizontale scroll (`document.documentElement.scrollWidth === innerWidth`).
+- Logisch uitgelijnd: wat bij elkaar hoort deelt een rand of lijn (tekst en zichtbare randen op de randen van de inhoud), niets onnodig forceren. Nameten met `getBoundingClientRect`. Zie CLAUDE.md, Identiteit, Gedrag.
