@@ -636,20 +636,17 @@ body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer
 .focus-kicker { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--late); margin-bottom: 12px; }
 .focus-now ul { list-style: none; margin: 0; padding: 0; }
 .focus-now li { font-size: 22px; line-height: 1.35; font-weight: 400; letter-spacing: -.01em; }
-/* opsommingsteken: een kleine komeet in de Nu-kleur (kop met een taps, uitdovend staartje) */
 .focus-now li:not(.focus-more) { position: relative; padding-left: calc(14px + .5em); transition: opacity .3s var(--ease), transform .3s var(--ease); }
 .focus-now li.is-done { pointer-events: none; }
 .focus-now li.is-leaving { opacity: 0; transform: translateX(14px); }
 .fn-check { position: absolute; left: -6px; top: calc(.675em - 15px); width: 30px; height: 30px; display: grid; place-items: center; }
 body.is-focus .fn-check { pointer-events: auto; }
-.fn-check::before, .fn-check::after { content: ''; position: absolute; }
-.fn-check::before { left: 6px; top: 12px; width: 13px; height: 6px; background: linear-gradient(90deg, transparent, var(--core)); clip-path: polygon(0 45%, 100% 15%, 100% 85%, 0 55%); opacity: .55; transform-origin: right center; transition: opacity .18s var(--ease), transform .2s var(--ease); }
-.fn-check::after { left: 14px; top: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--core); border: 1.5px solid var(--core); transition: left .22s var(--pop), top .22s var(--pop), width .22s var(--pop), height .22s var(--pop), background-color .18s var(--ease), border-color .18s var(--ease); }
+/* opsommingsteken: een bolletje in de Nu-kleur, zoals de bollen in de scène (Victor, 02/11/2026: geen komeet met staart meer) */
+.fn-check::after { content: ''; position: absolute; box-sizing: border-box; }
+.fn-check::after { left: 13px; top: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--core); border: 1.5px solid var(--core); transition: left .22s var(--pop), top .22s var(--pop), width .22s var(--pop), height .22s var(--pop), background-color .18s var(--ease), border-color .18s var(--ease); }
 .fn-check svg { position: absolute; z-index: 1; left: 12px; top: 11px; opacity: 0; pointer-events: none; color: var(--bg); transition: opacity .15s var(--ease); }   /* midden van het rondje: 8 + 19 / 2 = 17,5 */
-.fn-check:hover::before, .fn-check:focus-visible::before { opacity: 0; transform: translateX(-5px) scaleX(.3); }
-.fn-check:hover::after, .fn-check:focus-visible::after { left: 8px; top: 7px; width: 16px; height: 16px; background: transparent; }
-.focus-now li.is-done .fn-check::before { opacity: 0; }
-.focus-now li.is-done .fn-check::after { left: 8px; top: 7px; width: 16px; height: 16px; background: var(--core); border-color: var(--core); }
+.fn-check:hover::after, .fn-check:focus-visible::after { left: 8px; top: 7px; width: 19px; height: 19px; background: transparent; }
+.focus-now li.is-done .fn-check::after { left: 8px; top: 7px; width: 19px; height: 19px; background: var(--core); border-color: var(--core); }
 .focus-now li.is-done .fn-check svg { opacity: 1; }
 .focus-now .focus-more { padding-left: calc(14px + .5em); }
 .focus-now .focus-more { font-size: 15px; color: var(--ink-3); }
@@ -1061,7 +1058,7 @@ body.is-idle .controls { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .composer-orb, .composer-orb.is-swap { animation: none; }
   .composer[open] form, .composer.is-closing form, .composer[open]::backdrop, .composer.is-closing::backdrop { animation-duration: .01s; }
-  .track, .tracks, .wheel, .focus-info, .focus-now li, .fn-check::before, .fn-check::after, .toast { transition-duration: .01s; }
+  .track, .tracks, .wheel, .focus-info, .focus-now li, .fn-check::after, .toast { transition-duration: .01s; }
   .track.is-done .t-check::before { animation: none; }
   .t-check svg path, .fn-check svg path { transition: none !important; }
   .dm .o { animation: none; }
