@@ -1291,32 +1291,33 @@ $('toast').addEventListener('pointerleave', () => { if (toastOn()) { clearTimeou
 // anders veert ze terug. Omhoog geeft ze maar een klein beetje mee. Wegvegen is hetzelfde als laten verlopen: niets ongedaan.
 (function swipeToast() {
   const toast = $('toast');
-  let id = null, y0 = 0, dy = 0, t0 = 0, dragging = false, moved = false;
+  let active = false, y0 = 0, dy = 0, t0 = 0, dragging = false, moved = false;
   const place = (y, fade) => {
     toast.style.transform = `translate(-50%, ${y}px)`;
     toast.style.opacity = String(fade);
   };
   const reset = () => { toast.style.transition = ''; toast.style.transform = ''; toast.style.opacity = ''; };
-  toast.addEventListener('pointerdown', e => {
-    if (!toastOn() || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    id = e.pointerId; y0 = e.clientY; dy = 0; t0 = performance.now(); dragging = false; moved = false;
-  });
-  toast.addEventListener('pointermove', e => {
-    if (e.pointerId !== id) return;
-    const d = e.clientY - y0;
+  const start = y => {
+    if (!toastOn()) return false;
+    active = true; y0 = y; dy = 0; t0 = performance.now(); dragging = false; moved = false;
+    return true;
+  };
+  const move = y => {
+    if (!active) return false;
+    const d = y - y0;
     if (!dragging) {
-      if (Math.abs(d) < 6) return;
+      if (Math.abs(d) < 6) return false;
       dragging = true; moved = true;
       clearTimeout(toastTimer);
-      try { toast.setPointerCapture(id); } catch { /* ignore */ }
       toast.style.transition = 'none';
     }
     dy = d > 0 ? d : Math.max(-8, d * 0.25);
     place(dy, Math.max(0, 1 - Math.max(0, dy) / 120));
-  });
-  const end = e => {
-    if (e.pointerId !== id) return;
-    id = null;
+    return true;
+  };
+  const finish = () => {
+    if (!active) return;
+    active = false;
     if (!dragging) return;
     dragging = false;
     const fast = dy > 14 && dy / Math.max(1, performance.now() - t0) > 0.45;
@@ -1332,8 +1333,29 @@ $('toast').addEventListener('pointerleave', () => { if (toastOn()) { clearTimeou
       toastTimer = setTimeout(hideToast, 2000);
     }
   };
-  toast.addEventListener('pointerup', end);
-  toast.addEventListener('pointercancel', end);
+  // vinger: touch-events (niet passief), zodat iOS de veeg niet overneemt om te scrollen en geen pointercancel stuurt
+  toast.addEventListener('touchstart', e => { if (e.touches.length === 1) start(e.touches[0].clientY); }, { passive: true });
+  toast.addEventListener('touchmove', e => {
+    if (!active) return;
+    if (e.touches.length !== 1) { finish(); return; }
+    e.preventDefault();
+    move(e.touches[0].clientY);
+  }, { passive: false });
+  toast.addEventListener('touchend', finish);
+  toast.addEventListener('touchcancel', finish);
+  // muis en pen: pointer-events
+  let pid = null;
+  toast.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch' || e.button !== 0 || !start(e.clientY)) return;
+    pid = e.pointerId;
+  });
+  toast.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    if (move(e.clientY)) { try { toast.setPointerCapture(pid); } catch { /* ignore */ } }
+  });
+  const endPointer = e => { if (e.pointerId === pid) { pid = null; finish(); } };
+  toast.addEventListener('pointerup', endPointer);
+  toast.addEventListener('pointercancel', endPointer);
   // een veeg die op de knop begon, is geen tik op Ongedaan maken
   toast.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
   resetToastDrag = reset;
