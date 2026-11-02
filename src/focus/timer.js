@@ -5,6 +5,8 @@
 // door de hals vallen kalme korrels in inkt, onder groeit een kegel. Geen omtrek of platen (glas oogde te antiek).
 // Ernaast of eronder de resterende tijd in de stippencijfers van de klok, 15 / 25 / 50 minuten en Start / Pauze.
 // Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
+// Compact (gsm, klasse is-compact, P3 van Victor, 02/11/2026): klein glas met de resterende minuten als groot, dun cijfer
+// (T3) rechts in de knoppenrij; duur, Start / Pauze en ↺ verschijnen pas bij een tik, in een pilletje erboven.
 // De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de pagina herlaadt.
 // Klaar: een golf door het zand, een paar stippen fonkelen uit als de vierpuntige ster en de afvinktik klinkt.
 import { setMatrix, twinkleDot } from '../scene/matrix.js';
@@ -58,7 +60,13 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
   durs.forEach(b => durWrap.append(b));
   durWrap.append(unit);
   row.append(durWrap, go, reset);
-  side.append(digits, row);
+  // compact: groot, dun minutencijfer met klein MIN erachter; een tik toont de bediening
+  const minBtn = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-min' });
+  const minNum = Object.assign(document.createElement('span'), { className: 'timer-num' });
+  const minUnit = document.createElement('small');
+  minBtn.append(minNum, minUnit);
+  minBtn.setAttribute('aria-expanded', 'false');
+  side.append(minBtn, digits, row);
   const expand = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-expand' });
   box.append(wrap, side, expand);
   const g = cv.getContext('2d');
@@ -86,10 +94,11 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
     if (!w || !h || (w === W && h === H)) return;
     W = w; H = h; dpr = Math.min(2, devicePixelRatio || 1);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    const sp = Math.max(3.6, Math.min(6.5, W / 30));         // afstand tussen de rasterpunten
+    const small = W < 40;                                     // compact glaasje op gsm: fijner raster, minder marge
+    const sp = small ? 3.3 : Math.max(3.6, Math.min(6.5, W / 30));   // afstand tussen de rasterpunten
     // vaste verhouding, gecentreerd in het vak: uitgeklapt werd het glas anders lang en smal (Victor, 29/10/2026)
-    const avail = H - 6, neckLen = sp * 0.5;
-    const R = Math.min(W / 2 - 4, (avail - neckLen) / 2 * RATIO);   // halve breedte van een bol
+    const avail = H - (small ? 2 : 6), neckLen = sp * 0.5;
+    const R = Math.min(W / 2 - (small ? 1.5 : 4), (avail - neckLen) / 2 * RATIO);   // halve breedte van een bol
     const bulb = R / RATIO;
     const top = (H - (bulb * 2 + neckLen)) / 2, bot = top + bulb * 2 + neckLen;
     const neck = Math.max(1.4, R * 0.075);
@@ -100,7 +109,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
       const w0 = neck + (R - neck) * shape(u0), w1 = neck + (R - neck) * shape(u1);
       area[i] = area[i - 1] + (w0 + w1) * bulb / STEPS;     // 2 × gemiddelde halve breedte × hoogte van de stap
     }
-    glass = { top, bot, neckLen, bulb, R, neck, area, sp, cx: W / 2, neckTop: top + bulb, neckBot: top + bulb + neckLen };
+    glass = { top, bot, neckLen, bulb, R, neck, area, sp, rimW: small ? 1.6 : 3, dot0: small ? 0.14 : 0.09, cx: W / 2, neckTop: top + bulb, neckBot: top + bulb + neckLen };
   }
   const halfAt = u => glass.neck + (glass.R - glass.neck) * shape(Math.min(1, Math.max(0, u)));
   // u waarop de inhoud van hals tot u gelijk is aan a
@@ -120,12 +129,18 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
     if (glass) drawGlass(left / total, live, now);
     // tijd en knoppen
     const s = Math.ceil(left / 1000), text = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-    if (text !== shownText) { setMatrix(digits, text); shownText = text; }
+    if (text + st.done !== shownText) {
+      setMatrix(digits, text); shownText = text + st.done;
+      const num = st.done ? '' : String(left >= 60000 ? Math.ceil(left / 60000) : s), unit = st.done ? tx('timer.done') : left >= 60000 ? 'min' : 's';
+      minNum.textContent = num; minUnit.textContent = unit;
+      minBtn.setAttribute('aria-label', tx('timer.tools', { time: num ? `${num} ${unit}` : unit }));
+    }
     go.textContent = tx(st.done ? 'timer.done' : st.endAt ? 'timer.pause' : left < total ? 'timer.resume' : 'timer.start');
     go.disabled = st.done;
     durs.forEach(b => { b.setAttribute('aria-pressed', String(Number(b.textContent) === st.dur)); b.disabled = Boolean(st.endAt); });   // een lopend blok wissel je niet per ongeluk
     reset.hidden = !st.done && !st.endAt && left >= total;
     box.classList.toggle('is-running', Boolean(st.endAt));
+    box.classList.toggle('is-paused', !st.endAt && !st.done && left < total);
     if (st.endAt && left <= 0) finish();
   }
 
@@ -136,7 +151,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
   let pausedAt = -1e9, doneAt = -1e9;
 
   function drawGlass(q, live, now) {
-    const { top, bot, bulb, cx, neckTop, neckBot, area, sp } = glass;
+    const { top, bot, bulb, cx, neckTop, neckBot, area, sp, rimW, dot0 } = glass;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
     const vol = area[Math.round(FILL * STEPS)];
@@ -169,12 +184,12 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
         if (dx > hw - 1) continue;
         // zachte rand (Victor, 02/11/2026: "geleidelijk aan een klein beetje vervaagd, zodat het niet zo'n harde rand heeft"):
         // over ongeveer drie puntafstanden van de wand (en van boven- en onderkant) worden de punten kleiner en lichter
-        const k = 1 - dx / hw, rim = Math.min(hw - dx, up ? y - top : bot - y), edge = smooth(0, sp * 3, rim);
+        const k = 1 - dx / hw, rim = Math.min(hw - dx, up ? y - top : bot - y), edge = smooth(0, sp * rimW, rim);
         // hoeveel zand er op deze plek is (0..1), met een zacht verloop aan het oppervlak, en hoe diep onder het oppervlak
         let f, depth;
         if (up) { const d = (uTop - dip * k * k - u) * bulb; f = smooth(-soft, soft, d); depth = d / bulb; }
         else { const d = sandAt(dx) - (bot - y); f = smooth(-soft, soft, d); depth = d / bulb; }
-        let r = sp * (0.09 + 0.39 * f) * (0.5 + 0.5 * edge);
+        let r = sp * (dot0 + 0.39 * f) * (0.5 + 0.5 * edge);
         // volume, zoals de kern: grotere punten in het midden, kleiner naar de wand en naar het oppervlak
         if (f > 0.05) r *= (0.74 + 0.26 * Math.sqrt(k)) * (0.82 + 0.18 * smooth(0, 0.25, depth));
         if (waving && !up && f > 0.3) { const d = Math.hypot(x - cx, y - neckBot); r *= 1 + 0.22 * Math.exp(-(((d - waveR) / 14) ** 2)) * (1 - waveAge / 1.1); }
@@ -236,8 +251,21 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
     schedule();
     draw();
   }
+  // compact: de bediening verschijnt bij een tik en verdwijnt 2,5 s na de laatste aanraking (zoals de knoppen in de focus)
+  let toolsTimer = 0;
+  const compact = () => box.classList.contains('is-compact');
+  function tools(on) {
+    box.classList.toggle('is-tools', on);
+    minBtn.setAttribute('aria-expanded', String(on));
+    clearTimeout(toolsTimer);
+    if (on) toolsTimer = setTimeout(() => tools(row.contains(document.activeElement) && document.documentElement.dataset.input === 'keyboard'), 2500);
+  }
+  minBtn.addEventListener('click', () => tools(!box.classList.contains('is-tools')));
+  row.addEventListener('pointerdown', () => { if (compact()) tools(true); });
+  row.addEventListener('focusin', () => { if (compact()) tools(true); });
+  document.addEventListener('pointerdown', e => { if (box.classList.contains('is-tools') && !box.contains(e.target)) tools(false); }, true);
   go.addEventListener('click', toggle);
-  wrap.addEventListener('click', toggle);
+  wrap.addEventListener('click', () => { if (compact()) tools(!box.classList.contains('is-tools')); else toggle(); });
   reset.addEventListener('click', () => { st = { dur: st.dur, endAt: 0, left: st.dur * 60000, done: false }; save(); schedule(); draw(); });
   durs.forEach(b => b.addEventListener('click', () => {
     const m = Number(b.textContent);
@@ -270,7 +298,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
   schedule();
   return {
     start() { if (running) return; running = true; raf = requestAnimationFrame(loop); },
-    stop() { running = false; cancelAnimationFrame(raf); },
+    stop() { running = false; cancelAnimationFrame(raf); tools(false); },
     // toestand opnieuw lezen (gewijzigd op een ander toestel of in een ander tabblad)
     reload() { st = timerState(); if (st.endAt && Date.now() - st.endAt > 60000) finish(true); schedule(); draw(); },
   };

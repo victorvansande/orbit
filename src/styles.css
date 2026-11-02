@@ -616,6 +616,7 @@ body.is-focus .glass { display: none; }
 .timer-reset { margin-left: -6px; letter-spacing: 0 !important; font-size: 12px !important; }
 .timer-expand { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease), background .2s var(--ease); }
 .timer-expand:hover { color: var(--ink); background: var(--fill); }
+.timer-min { display: none; }   /* enkel compact op gsm (P3) */
 @media (max-width: 999px) { .fidget, .timer { display: none; } }
 .focus-info {
   position: fixed; z-index: 2;
@@ -676,7 +677,8 @@ body.is-focus .wheel { opacity: 0; visibility: hidden; translate: 24px 0; }
 body.is-focus .focus-info { opacity: 1; visibility: visible; transform: none; }
 body.is-focus .hud-right { visibility: hidden; }
 body.is-idle:not(:has(.toast.is-on, .feat-pop.is-on)) { cursor: none; }
-body.is-idle .controls { opacity: 0; }
+body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm blijft staan (P3) */
+.controls > * { transition: opacity .4s var(--ease); }
 
 /* ---- Toast ---- */
 .toast {
@@ -1045,29 +1047,37 @@ body.is-idle .controls { opacity: 0; }
   body.is-focus .focus-quote figcaption { margin-top: 8px; }
   /* de knoppen liggen over de onderrand (ze verdwijnen toch na 2,5 s); de scène krijgt die ruimte, het blok met klok
      en quote zakt naar onder en krijgt lucht */
-  body.is-focus .controls { order: 3; position: absolute; left: 0; right: 0; bottom: 0; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  body.is-focus .controls { order: 3; position: absolute; left: 0; right: 0; bottom: 0; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); justify-content: flex-start; }   /* links op de rand: rechts staat de zandloper (P3) */
   body.is-focus .focus-info { padding: 12px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 58px); }
   body.is-focus .focus-weather { margin-bottom: 14px; }
   body.is-focus .focus-due { margin-top: 24px; }
-  /* zandloper op gsm (Victor, 02/11/2026: "ook op gsm moet ik kunnen focussen"): compact rechts naast de klok, even hoog als
-     klok en datum samen, zonder het ingelaten vak; app.js zet #timer meteen na de klok (placeTimer) */
-  body.is-focus .focus-info { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 14px; align-items: start; }
-  body.is-focus .clock-date { white-space: nowrap; }
-  body.is-focus .focus-info > * { grid-column: 1 / -1; }
-  body.is-focus .focus-info > .clock, body.is-focus .focus-info > .clock-date { grid-column: 1; }
-  body.is-focus .timer, body.is-focus .timer.is-open {
-    display: grid; grid-column: 2; grid-row: span 2; align-self: stretch; justify-self: end;
-    position: static; width: auto; height: auto; padding: 0; border-radius: 0; background: none; box-shadow: none;
-    grid-template-columns: 36px auto; grid-template-rows: auto; gap: 10px; align-items: center;
+  /* zandloper op gsm in de focus (P3, Victor, 02/11/2026; eerst stond hij naast de klok en dat was een drukke rij):
+     rechts in de rij Boven / Zijkant / Focus, op dezelfde plek als het kleine glas buiten de focus, met de resterende
+     minuten als groot, dun cijfer (T3). Blijft staan als de knoppen vervagen. Een tik toont duur, Start / Pauze en ↺ in
+     een pilletje erboven (is-tools, 2,5 s). app.js zet #timer in .controls met de klasse is-compact (placeTimer). */
+  body.is-focus .timer.is-compact {
+    display: flex; flex-direction: row-reverse; align-items: center; gap: 8px;
+    position: absolute; z-index: 3; left: auto; right: var(--pad); top: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    width: auto; height: auto; padding: 0; border-radius: 0; background: none; box-shadow: none;
     opacity: 1; visibility: visible; transform: none; pointer-events: auto;
   }
-  body.is-focus .timer-glass { height: 100%; min-height: 64px; }
-  body.is-focus .timer-expand { display: none; }
-  body.is-focus .timer-side, body.is-focus .timer.is-open .timer-side { align-items: flex-start; gap: 8px; }
-  body.is-focus .timer-digits, body.is-focus .timer.is-open .timer-digits { height: 18px; gap: 3px; }
-  body.is-focus .timer-row { flex-wrap: wrap; gap: 6px 12px; }
-  body.is-focus .timer-durs { flex-basis: 100%; }
-  body.is-focus .timer-unit { display: none; }
+  .timer.is-compact .timer-glass { flex: none; width: 20px; height: 33px; min-height: 0; }
+  .timer.is-compact.is-paused .timer-glass { opacity: .55; }
+  .timer.is-compact .timer-side { flex-direction: row; align-items: center; gap: 0; }
+  .timer.is-compact .timer-digits, .timer.is-compact .timer-expand, .timer.is-compact .timer-unit { display: none; }
+  .timer.is-compact .timer-min { display: inline-flex; align-items: baseline; gap: 4px; min-height: 36px; padding: 0; position: relative; top: 2px;   /* basislijn gelijk met Boven / Zijkant / Focus */ color: var(--ink); cursor: pointer; }
+  .timer-num { font: 300 22px/1 var(--font); letter-spacing: -.02em; text-transform: none; font-variant-numeric: tabular-nums; }
+  .timer-min small { font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .timer.is-compact .timer-row {
+    position: absolute; right: 0; bottom: calc(100% + 4px); flex-wrap: nowrap; gap: 14px; white-space: nowrap;
+    padding: 0 16px; border-radius: 999px; background: var(--bg); box-shadow: 0 0 0 1px var(--line);
+    opacity: 0; visibility: hidden; transform: translateY(4px);
+    transition: opacity .25s var(--ease), transform .25s var(--ease), visibility .25s;
+  }
+  .timer.is-compact.is-tools .timer-row { opacity: 1; visibility: visible; transform: none; }
+  .timer.is-compact .timer-row button { min-height: 40px; }
+  .timer.is-compact .timer-durs { gap: 14px; }
+  .timer.is-compact .timer-go, .timer.is-compact .timer-go:hover:not(:disabled) { padding: 0; box-shadow: none; }
   .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
   /* smal scherm: twee regels in plaats van afkappen (zinnen als "Nieuwe hemel. Je vorige sterren ..." vielen weg) */
   .toast { border-radius: 22px; }
@@ -1241,4 +1251,3 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
 .recap-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
 .recap-open { display: block; margin: 4px 0 6px; }
 .recap-open:hover { color: var(--ink); }
-@media (max-width: 360px) { body.is-focus .clock { --dm-h: 42px; } }   /* ruimte voor de zandloper naast de klok */

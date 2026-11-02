@@ -1709,11 +1709,13 @@ const timer = createTimer($('timer'), {
   },
   onChange: () => notifySync(),
 });
-// Op gsm staat de zandloper compact rechts naast de klok (in .focus-info), op desktop in zijn eigen vak boven het bakje
+// Op gsm staat de zandloper compact rechts in de rij Boven / Zijkant / Focus (P3, Victor, 02/11/2026), op dezelfde plek
+// als het kleine glas buiten de focus; op desktop in zijn eigen vak boven het bakje
 function placeTimer() {
-  const el = $('timer');
+  const el = $('timer'), row = document.querySelector('.controls');
+  el.classList.toggle('is-compact', !desktop.matches);
   if (desktop.matches) { if (el.parentElement !== document.body) document.querySelector('.focus-info').before(el); }
-  else if (el.previousElementSibling !== $('clock')) $('clock').after(el);
+  else if (row && el.parentElement !== row) row.append(el);
 }
 desktop.addEventListener('change', placeTimer);
 placeTimer();
