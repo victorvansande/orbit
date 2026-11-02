@@ -22,17 +22,17 @@ def shape(path, text, axes=(), features=None, extra=None):
     order = f.getGlyphOrder()
     out=[]; x=0
     for i,(info,pos) in enumerate(zip(buf.glyph_infos, buf.glyph_positions)):
-        out.append((order[info.codepoint], x + pos.x_offset, pos.x_advance))
+        out.append((order[info.codepoint], x + pos.x_offset, pos.x_advance, pos.y_offset))
         x += pos.x_advance + (extra or {}).get(i, 0)
     return f, out, x
 
-def path_d(path, text, axes=(), size=100, x0=0, y0=0, extra=None):
+def path_d(path, text, axes=(), size=100, x0=0, y0=0, extra=None, features=None):
     """SVG path data, baseline at y0, font size in px (units scaled by size/upm)."""
-    f, glyphs, width = shape(path, text, axes, extra=extra)
+    f, glyphs, width = shape(path, text, axes, features=features, extra=extra)
     upm = f['head'].unitsPerEm; s = size/upm
     gs = f.getGlyphSet(); pen = SVGPathPen(gs)
-    for name, x, adv in glyphs:
-        tp = TransformPen(pen, (s, 0, 0, -s, x0 + x*s, y0))
+    for name, x, adv, yo in glyphs:
+        tp = TransformPen(pen, (s, 0, 0, -s, x0 + x*s, y0 - yo*s))
         gs[name].draw(tp)
     return pen.getCommands(), width*s, f
 
