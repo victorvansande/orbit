@@ -2043,7 +2043,7 @@ function showFeatPop() {
   const x = featQueue.shift(), pop = $('feat-pop');
   popId = x.id;
   pop.className = `feat-pop tier-${x.tier}`;
-  pop.innerHTML = `<span class="feat-pop-tail"></span><svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
+  pop.innerHTML = `<svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
   pop.querySelector('.feat-pop-name').textContent = x.name;
   pop.hidden = false;
   requestAnimationFrame(() => pop.classList.add('is-on'));
