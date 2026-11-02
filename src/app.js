@@ -1136,7 +1136,9 @@ function complete(id, row) {
     if (!task.demo) { checkFeats(false); notifySync(); }
   };
   // toast en geluid wachten tot de nacht voorbij is, zodat er niets over het moment loopt; de toast wacht via de regisseur
-  toastDone(next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), undoTask);
+  // voorbeeldtaak: geen ster en geen nacht (ze wordt nooit bewaard); zeg dat, anders lijkt het een fout (Victor, 02/11/2026)
+  toastDone(task.demo ? tx('toast.demoDone') : next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), undoTask);
+  if (!task.demo) noteStar(id, wait);
   if (night) fallNight(id, wait, sound, giveNight);
   else sound();
   // prestaties: de laatste Nu-taak, of de hele lijst leeg
@@ -1173,6 +1175,21 @@ function leaveRow(row) {
       Object.assign(target.style, { height: '0px', marginTop: '0px', borderBottomColor: 'transparent' });
     }, LEAVE_CLOSE);
   }, LEAVE_SLIDE);
+}
+
+// De nieuwe ster buiten beeld (gsm: gescrold naar de lijst): de teller fonkelt even, zodat je toch ziet dat er een ster
+// bijkwam (Victor, 02/11/2026). Rechtsboven het tellertje ✦ als het in beeld is, anders de stippenteller onder de lijst.
+function noteStar(id, wait) {
+  if (minimalFx || reducedMotion.matches) return;
+  setTimeout(() => {
+    if (document.hidden) return;
+    const star = scene.skyPoints().find(p => p.id === id);
+    if (star && star.x > 0 && star.x < innerWidth && star.y > 0 && star.y < innerHeight) return;   // de ster zelf is te zien
+    const inView = el => { if (!el || el.hidden || !el.offsetParent) return false; const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.width > 0; };
+    const mini = $('stat-mini');
+    if (inView(mini)) { mini.classList.remove('is-twinkle'); void mini.offsetWidth; mini.classList.add('is-twinkle'); }
+    else if (inView($('stat-total'))) [0, 260, 520].forEach(ms => setTimeout(() => twinkleDot($('stat-total')), ms));
+  }, wait);
 }
 
 let nightBusy = false;
