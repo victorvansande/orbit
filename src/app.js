@@ -2102,8 +2102,31 @@ function showFeatPop() {
   pop.innerHTML = `<svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
   pop.querySelector('.feat-pop-name').textContent = x.name;
   pop.hidden = false;
-  requestAnimationFrame(() => pop.classList.add('is-on'));
+  placeFeatPop();
+  requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(); });
   popTimer = setTimeout(hideFeatPop, FEAT_POP_MS);
+}
+// De melding staat midden boven de kern, niet midden op het scherm (Victor, 02/11/2026: "cleaner"). Op desktop ligt de
+// kern tussen lijst en wiel; nooit buiten beeld en nooit over het merk linksboven of de hoeklabels rechtsboven: past ze
+// daar niet, dan schuift ze zo weinig mogelijk opzij. Volgt de kern zolang ze in beeld is (focusmodus, venster herschalen).
+function placeFeatPop() {
+  const pop = $('feat-pop');
+  if (pop.hidden) return;
+  const w = pop.offsetWidth, m = 16, top = pop.getBoundingClientRect();
+  let lo = m + w / 2, hi = innerWidth - m - w / 2;
+  for (const sel of ['.brand', '.hud-right']) {   // wat bovenaan op dezelfde hoogte staat, ontwijken
+    const r = document.querySelector(sel)?.getBoundingClientRect();
+    if (!r || !r.width || r.bottom < top.top || r.top > top.bottom) continue;
+    if (r.right < innerWidth / 2) lo = Math.max(lo, r.right + m + w / 2); else hi = Math.min(hi, r.left - m - w / 2);
+  }
+  const core = $('scene').getBoundingClientRect().left + scene.centerX;
+  const x = lo > hi ? innerWidth / 2 : Math.min(hi, Math.max(lo, core));
+  pop.style.left = `${Math.round(x)}px`;
+}
+function followFeatPop() {
+  if ($('feat-pop').hidden) return;
+  placeFeatPop();
+  requestAnimationFrame(followFeatPop);
 }
 function hideFeatPop() {
   const pop = $('feat-pop');
