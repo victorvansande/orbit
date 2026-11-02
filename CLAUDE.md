@@ -79,6 +79,7 @@ Op vraag van Victor (01/11/2026: "zorg dat alle code mooi in logische mappenstru
 index.html, sw.js, manifest.webmanifest, favicon.*   alleen wat in de root moet staan (scope van de service worker, Pages)
 icons/                                               app-iconen en het script dat ze maakt
 worker/                                              sync-server op Cloudflare (eigen deploy)
+brand/                                               merkonderzoek en logobestanden (geen code van de app, niets laadt het)
 src/app.js                                           ingang en regisseur: verbindt de modules, houdt de toestand van de app
 src/styles.css                                       alle stijl, tokens bovenaan, secties /* ---- Naam ---- */
 src/core/    config, i18n, deadline, demo            fundament zonder DOM-logica: niveaus, teksten, datums, demo-opslag
@@ -127,6 +128,15 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 - App-icoon (`apple-touch-icon`, Android `any`) is volledig transparant buiten de orbit-elementen (Victor: liquid glass). Bolletje en ring zijn daarom middengrijs #8A8A94, leesbaar op lichte én donkere achtergronden. Alleen `maskable` heeft papier #F1F1EF (Android eist een vol vlak). Onzeker: iOS vulde transparantie bij webiconen vroeger met zwart; blijkt dat zo, terug naar een vol vlak.
 - Favicon is vetter en zonder stippelring (leesbaar op 16 px) en volgt licht/donker via een media query in de SVG.
 
+## Merk (identiteitstraject, 02/11/2026, loopt)
+
+Op vraag van Victor (02/11/2026): een volledig identiteitstraject voor Orbit (favicon, app-iconen, signatuur in de app; met en zonder naam; eigenschappen eigentijds, vloeiend, minimaal maar stijlvol; niet corporate, AI of techy; alleen open lettertypes). Nog niets ervan staat in de app: het huidige icoon (zie Icoon) blijft tot Victor een nieuw merk kiest.
+- **Onderzoek**: concurrenten (simple-icons 13: Todoist rood, TickTick en Google Tasks blauw met vinkje, Asana, ClickUp, Linear, Notion, Trello) gebruiken verzadigd blauw of rood en een vinkje. Naam: hoog risico, ORBIT serienummer 90211922 (Andrew Matuschak, VS, 2020, software om herhaalde taken in te plannen, status onbekend) en meerdere to-do-apps "Orbit" in de App Store; TMview, WIPO en BOIP waren vanuit de cloud niet bereikbaar, Victor moet ze zelf nazoeken (ORBIT en ORBIT TASKS, klasse 9 en 42). Geen juridisch advies.
+- **Woordmerk**: Instrument Sans Medium (SIL OFL), tracking -10, r-b -16 en i-t -10 extra, ronde i-punt (Ø 120 in plaats van een vierkant van 115 × 117). Geist viel af (te sterk verbonden met ontwikkelaarstools).
+- **Rondes 1 tot 4** (allemaal varianten van een baan: ellips met stip, komeet op de baan, komeet langs een kern; een spiraal las als 6 of G): drie keer blind beoordeeld door een aparte agent die enkel renders en brief zag, telkens onderscheidend vermogen 2 op 5 ("ring met bol is van iedereen"). Volgens het protocol gestopt vóór kleur en merkgids. Overzicht: artifact "Orbit merkverkenning". Bestanden van ronde 4 in `brand/ronde4-logo/` als archief.
+- **Ronde 5**: drie richtingen (A Zwaartekrachtput, B Halftoonkomeet, C Scheervlucht), artifact "Orbit merkrichtingen"; blinde eerste indruk rangschikte C, B, A. Victor koos geen van drie (02/11/2026): "ga verder met nieuwe ronde, baseer je niet al te veel op het al bestaande logo". Dus in ronde 6 geen rode kern, geen ring en geen bol of komeet die rondcirkelt.
+- **Werkwijze**: vormen worden met Python gebouwd (`brand/tools/`: `final.py` merk ronde 4, `word.py` woordmerk, `lockup3.py`, `tests3.py`, `build.py`, `r5.py` en `r5sheet.py` ronde 5) met fontTools, skia-pathops, cairosvg en svgo (svgo in een kladmap, nooit als dependency). De scripts verwachten een werkmap met `fonts/InstrumentSans[wdth,wght].ttf` (uit google/fonts). Elke ronde: renders op 16, 32, 64, 256 en 1024 px, omgekeerd, één kleur, app-masker, vervaging van 2 en 4 % en een blinde beoordeling.
+
 ## Bestanden
 
 | Bestand | Inhoud |
@@ -158,6 +168,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 | `src/vendor/topography.js` | Topography van React Bits zonder React (fidget Topo), zie Bakje water |
 | `src/vendor/qrcode.min.mjs`, `src/vendor/jsqr.min.js` | qrcode-generator 2.0.4 (MIT, QR maken) en jsQR 1.4.0 (Apache-2.0, QR lezen), met esbuild verkleind, pas geladen als nodig |
 | `worker/` | Eigen sync-server op Cloudflare (Worker + Durable Object), deploy via `.github/workflows/sync-worker.yml` |
+| `brand/` | Identiteitstraject (zie Merk): `onderzoek/` (concurrenten, letterkeuze), `rondes/` (renders van elke ronde en test), `ronde4-logo/` (svg, png, pdf en favicons van de verworpen ronde 4), `tools/` (Python-scripts die de vormen bouwen en testen) |
 
 ## Niveaus
 
@@ -523,3 +534,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 01/11/2026, Claude Code: Recent behaald bovenaan in Prestaties (vier, rood stipje als minder dan een dag, vandaag/gisteren). Voorstellen voor nieuwe labels bij de bollen volgen (artifact "Orbit labels").
 - 01/11/2026, Claude Code: labels bij de bollen vervangen door Nummers en legende (voorstel 3, met traag doorschuivende legende bij veel taken), maandrecap "4 nieuwe" en knoppen Delen/Bewaar als tekst met Klaar als pil. Niets openstaand.
 - 02/11/2026, Claude Code: maandrecap ordelijk uitgelijnd op de randen van de poster, regel Logisch uitgelijnd (Identiteit, checklist, ook in `AGENTS.md`, `GEMINI.md` en `.agent/rules/orbit.md`). Niets openstaand.
+- 02/11/2026, Claude Code: identiteitstraject gestart (onderzoek, letterkeuze, rondes 1 tot 5, blinde beoordelingen), werk bewaard in `brand/`. Open: ronde 6 met nieuwe richtingen, los van het huidige icoon; Victor kiest daarna.
