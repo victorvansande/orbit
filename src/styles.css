@@ -887,8 +887,9 @@ body.is-idle .controls { opacity: 0; }
 .intro { width: min(680px, calc(100vw - 32px)); }
 .intro-card:focus, .recap-card:focus { outline: none; }
 .intro-card { max-height: min(820px, calc(100dvh - 32px)); overflow-y: auto; gap: 14px; }
-.intro-mark { display: block; flex: none; align-self: flex-start; height: 44px; width: auto; margin: 6px 0 -2px; }
-.intro-title { margin: 2px 0 0; font: 600 24px/1.15 var(--font); letter-spacing: -.01em; }
+.intro-title { margin: 6px 0 0; line-height: 0; }
+/* merk v1 met woordmerk (Victor, 02/11/2026: "zet het logo naast het woord, het woord in de brand style, het effect mag weg") */
+.intro-lockup { display: block; height: 40px; width: auto; }
 .intro-lead { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 46ch; }
 .intro-levels { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .intro-levels li { display: flex; align-items: center; gap: 7px; font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
@@ -912,7 +913,7 @@ body.is-idle .controls { opacity: 0; }
 .intro[open] .intro-card { animation: pop-in .4s var(--pop); }
 @media (max-width: 540px) {
   .intro-grid { grid-template-columns: 1fr; gap: 12px; }
-  .intro-title { font-size: 21px; }
+  .intro-lockup { height: 36px; }
   .intro-note { display: none; }
   .intro-foot { justify-content: flex-end; }
 }
@@ -1061,15 +1062,10 @@ html.is-veiled::after { content: ''; position: fixed; inset: 0; z-index: 61; bac
 @keyframes veil-safety { to { opacity: 0; visibility: hidden; } }
 /* Minimaal (Instellingen → Effecten): wat in de DOM zit gaat ook weg */
 body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle { display: none !important; }
-/* Particle text: titel in de Uitleg uit puntjes; de echte tekst blijft voor schermlezers */
-.intro-title.has-fx { position: relative; font-size: 34px; color: transparent; }
-.fx-title { position: absolute; cursor: crosshair; touch-action: none; }
 /* Typographic wall: lege lijst na het afvinken */
 .fx-wall { position: relative; height: 230px; margin-top: 14px; -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent); mask-image: radial-gradient(closest-side, #000 62%, transparent); }
 .fx-wall canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fx-wall-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; padding: 6px 14px; border-radius: 999px; background: var(--bg); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; }
-@media (max-width: 999px) { .intro-title.has-fx { font-size: 28px; } }
-
 /* ---- Prestaties ---- */
 .feats-badge { display: inline-flex; align-items: center; gap: 6px; flex-basis: 100%; margin-top: 13px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease); --tier: var(--tier-gold); }
 .feats-badge:hover { color: var(--ink); }

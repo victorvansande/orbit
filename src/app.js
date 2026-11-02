@@ -19,7 +19,7 @@ import { playDone, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer } from './focus/timer.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './data/feats.js';
-import { softReveal, whiteBurst, nightFall, particleTitle, createWall } from './scene/fx.js';
+import { softReveal, whiteBurst, nightFall, createWall } from './scene/fx.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
 applyStatic();
@@ -1557,7 +1557,7 @@ renderSound();
 
 /* ---- Effecten: Alle of Minimaal ---- */
 // Minimaal zet alle extra effecten uit (intro, gloed, raster dat buigt en klopt, schokgolf, vallende ster,
-// sterrenbeeld, spoor op de baan, lichtpuntje, vortex, sonar, muur, avondtint, bakje water, puntjestitel, fonkelende klok).
+// sterrenbeeld, spoor op de baan, lichtpuntje, vortex, sonar, muur, avondtint, bakje water, fonkelende klok).
 // Wat blijft: de scène zelf (ringen, kometen, kern met gezicht, sterren) en het uitfonkelen bij afvinken.
 const FX_KEY = 'priority-orbit.fx.v1';
 let minimalFx = false;
@@ -1566,7 +1566,6 @@ const fxButtons = [...document.querySelectorAll('[data-fx]')];
 function applyFx() {
   document.body.classList.toggle('is-minimal', minimalFx);
   scene.setMinimal(minimalFx);
-  introTitle.setEnabled(!minimalFx);
   for (const b of fxButtons) b.setAttribute('aria-checked', String((b.dataset.fx === 'min') === minimalFx));
   if (minimalFx) fidget.stop();
   else if (document.body.classList.contains('is-focus') && desktop.matches) fidget.start();
@@ -2590,16 +2589,13 @@ if (matchMedia('(hover: none)').matches) setInput('pointer');
 const introDialog = $('intro');
 const INTRO_KEY = 'priority-orbit.intro.v1';
 for (const lv of LEVELS) { const li = el('li', '', lv.name); toneNode(li, lv); $('intro-levels').append(li); }
-const introTitle = particleTitle($('intro-title'), { reducedMotion });
 function openIntro() {
   if (!introDialog.open) introDialog.showModal();
-  requestAnimationFrame(() => introTitle.start());
   const card = introDialog.querySelector('.intro-card');
   card.scrollTop = 0;
   card.focus({ preventScroll: true });     // bovenaan beginnen, geen kader rond de knop
 }
 function closeIntro() { try { localStorage.setItem(INTRO_KEY, 'gezien'); } catch { /* geen opslag */ } introDialog.close(); }
-introDialog.addEventListener('close', () => introTitle.stop());
 $('intro-btn').addEventListener('click', openIntro);
 $('intro-close').addEventListener('click', closeIntro);
 introDialog.addEventListener('click', e => { if (e.target === introDialog) closeIntro(); });

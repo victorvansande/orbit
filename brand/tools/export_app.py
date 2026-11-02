@@ -36,10 +36,10 @@ def lockup(p, size=100):
     W=gx+w-(33+26)*size/1000
     return dict(w=round(W,2), h=round(max(h,base+0.012*size),2), tail=xf(tail_d(p),s,0,0,s,-bx*s,-by*s),
                 head=[round((hx-bx)*s,2),round((hy-by)*s,2),round(hr*s,2)], word=word, base=round(base,2))
-data=dict(SYMBOL=symbol(MASTER), SYMBOL_SMALL=symbol(SMALL), LOCKUP_SMALL=lockup(SMALL))
+data=dict(SYMBOL=symbol(MASTER), SYMBOL_SMALL=symbol(SMALL), LOCKUP=lockup(MASTER), LOCKUP_SMALL=lockup(SMALL))
 js='''// Beeldmerk en woordmerk van Orbit (merk v1, 02/11/2026), uit brand/tools/export_app.py. Niet met de hand aanpassen.
-// SYMBOL: master (vanaf 48 px), SYMBOL_SMALL: kleine tekening (16 tot 47 px), LOCKUP_SMALL: kleine tekening met woordmerk.
-// oc: optisch midden (om het merk in een icoon te centreren). Elk: w, h (vak), tail (pad van de baan met staart), head [cx, cy, r] (de kop, in --core); LOCKUP_SMALL ook word (pad) en base (basislijn).
+// SYMBOL: master (vanaf 48 px), SYMBOL_SMALL: kleine tekening (16 tot 47 px), LOCKUP en LOCKUP_SMALL: master of kleine tekening met woordmerk.
+// oc: optisch midden (om het merk in een icoon te centreren). Elk: w, h (vak), tail (pad van de baan met staart), head [cx, cy, r] (de kop, in --core); LOCKUP en LOCKUP_SMALL ook word (pad) en base (basislijn).
 '''
 for k,v in data.items(): js+=f'export const {k} = {json.dumps(v, separators=(",",":"))};\n'
 open(sys.argv[1] if len(sys.argv)>1 else 'mark.js','w').write(js)
@@ -52,4 +52,9 @@ S=data['SYMBOL']
 sym=(f'<svg class="intro-mark" viewBox="0 0 {S["w"]} {S["h"]}" aria-hidden="true">'
      f'<path class="bm-ink" d="{S["tail"]}"/><circle class="bm-head" cx="{S["head"][0]}" cy="{S["head"][1]}" r="{S["head"][2]}"/></svg>')
 open('intro_symbol.svg','w').write(sym)
+LM=data['LOCKUP']
+il=(f'<svg class="intro-lockup" viewBox="0 0 {LM["w"]} {LM["h"]}" role="img" aria-label="Orbit Tasks">'
+    f'<path class="bm-ink" d="{LM["tail"]}"/><circle class="bm-head" cx="{LM["head"][0]}" cy="{LM["head"][1]}" r="{LM["head"][2]}"/>'
+    f'<path class="bm-ink" d="{LM["word"]}"/></svg>')
+open('intro_lockup.svg','w').write(il)
 print({k:(v['w'],v['h']) for k,v in data.items()}, len(svg), len(sym))

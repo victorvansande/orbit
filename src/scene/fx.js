@@ -1,9 +1,8 @@
 /* ---- Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React) ---- */
-// Zachte intro vanuit de kern, particle text (titel in de Uitleg) en typographic wall (lege lijst).
+// Zachte intro vanuit de kern, witte gloed (maandwissel), nacht en typographic wall (lege lijst).
 // Zelfde taal als de scène: Geist Mono, inkt met lage dekking, rood alleen als accent.
 // Glyph sonar, vortex en mosaic wave zitten in scene.js.
 
-const TAU = Math.PI * 2;
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
@@ -243,101 +242,6 @@ export function nightFall({ star, stars = [], onOpen = () => {}, done = () => {}
   return { skip };
 }
 
-
-/* ---- Particle text: de titel in de Uitleg ---- */
-// De letters bestaan uit puntjes in een zeshoekig raster (zoals de kern). Bij het openen spiralen ze binnen zoals de
-// bollen bij de intro; de aanwijzer duwt ze opzij en kleurt ze even rood.
-const ARRIVE = 1.1;   // s, binnenkomen van de puntjes
-export function particleTitle(h, { reducedMotion }) {
-  const cv = document.createElement('canvas');
-  cv.className = 'fx-title';
-  cv.setAttribute('aria-hidden', 'true');
-  h.classList.add('has-fx');
-  h.append(cv);
-  let pts = [], g = null, W = 0, H = 0, raf = 0, running = false, pointer = null, t0 = 0;
-
-  function build() {
-    const r = h.getBoundingClientRect();
-    if (!r.width) return false;
-    const padX = 12, padY = 14;
-    W = Math.floor(r.width + padX * 2); H = Math.floor(r.height + padY * 2);
-    g = fitCanvas(cv, W, H);
-    cv.style.left = `${-padX}px`; cv.style.top = `${-padY}px`;
-    const off = document.createElement('canvas'); off.width = W; off.height = H;
-    const o = off.getContext('2d');
-    const st = getComputedStyle(h);
-    o.font = `${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
-    o.textBaseline = 'middle';
-    o.fillText(h.textContent.trim(), padX, H / 2);
-    const data = o.getImageData(0, 0, W, H).data, sp = W < 300 ? 1.9 : 2.2, out = [];
-    for (let y = 0, row = 0; y < H; y += sp * 0.866, row++) {
-      for (let x = (row % 2) * sp / 2; x < W; x += sp) {
-        if (data[(Math.round(y) * W + Math.round(x)) * 4 + 3] > 120) {
-          const a = Math.random() * TAU, d = 60 + Math.random() * W * 0.5;
-          out.push({ hx: x, hy: y, sx: W / 2 + Math.cos(a) * d - x, sy: H / 2 + Math.sin(a) * d * 0.35 - y, x, y, vx: 0, vy: 0, heat: 0, delay: Math.random() * 0.3 });
-        }
-      }
-    }
-    pts = out;
-    return true;
-  }
-
-  function draw(now) {
-    if (!running) return;
-    const t = (now - t0) / 1000, still = reducedMotion.matches;
-    g.clearRect(0, 0, W, H);
-    const ink = css('--ink'), red = css('--core');
-    const hot = [];
-    g.fillStyle = ink;
-    g.beginPath();
-    for (const p of pts) {
-      const arrive = Math.min(1, Math.max(0, (t - p.delay) / ARRIVE));
-      if (still) { p.x = p.hx; p.y = p.hy; }
-      else if (arrive < 1) {
-        // binnenkomen op tijd (niet op beelden): een draai naar binnen, zoals de bollen bij de intro
-        const e = 1 - Math.pow(1 - arrive, 3), k = 1 - e, a = k * 1.6;
-        p.x = p.hx + (p.sx * Math.cos(a) - p.sy * Math.sin(a)) * k;
-        p.y = p.hy + (p.sx * Math.sin(a) + p.sy * Math.cos(a)) * k;
-      } else {
-        let ax = (p.hx - p.x) * 0.09, ay = (p.hy - p.y) * 0.09;
-        if (pointer) {
-          const dx = p.x - pointer.x, dy = p.y - pointer.y, d = Math.hypot(dx, dy);
-          if (d < 34) { const f = (34 - d) / 34 * 2.6; ax += dx / (d || 1) * f; ay += dy / (d || 1) * f; p.heat = 1; }
-        }
-        p.vx = (p.vx + ax) * 0.78; p.vy = (p.vy + ay) * 0.78;
-        p.x += p.vx; p.y += p.vy;
-        p.heat *= 0.94;
-      }
-      if (p.heat > 0.08) { hot.push(p); continue; }
-      g.moveTo(p.x + 0.85, p.y); g.arc(p.x, p.y, 0.85, 0, TAU);
-    }
-    g.fill();
-    for (const p of hot) {
-      g.fillStyle = red; g.globalAlpha = 0.35 + 0.65 * p.heat;
-      g.beginPath(); g.arc(p.x, p.y, 0.95, 0, TAU); g.fill();
-    }
-    g.globalAlpha = 1;
-    raf = requestAnimationFrame(draw);
-  }
-
-  const local = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-  cv.addEventListener('pointermove', e => { pointer = local(e); });
-  cv.addEventListener('pointerdown', e => { pointer = local(e); });
-  cv.addEventListener('pointerleave', () => { pointer = null; });
-
-  let enabled = true;
-  return {
-    // uit (Minimaal): gewone tekst in de titel, geen puntjes
-    setEnabled(on) { enabled = on; h.classList.toggle('has-fx', on); cv.hidden = !on; if (!on) this.stop(); },
-    start() {
-      if (running || !enabled) return;
-      if (!build()) return;
-      running = true; t0 = performance.now();
-      raf = requestAnimationFrame(draw);
-    },
-    stop() { running = false; cancelAnimationFrame(raf); pointer = null; },
-  };
-}
 
 /* ---- Typographic wall: de lege lijst ---- */
 // Als alles afgevinkt is: een muur van wat je onlangs afvinkte, in kapitaaltjes, bijna onzichtbaar. Waar je aanwijst

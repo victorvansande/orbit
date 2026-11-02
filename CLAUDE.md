@@ -16,7 +16,7 @@ Wat Orbit is, afgeleid uit alle keuzes van Victor. Twijfel je over een nieuw ide
 
 **Beeldtaal**
 - Poster en risodruk: papier met korrel, inkt, kleur alleen in de bollen. Ringen, raster en lijnen zijn grafiet met lage dekking.
-- Rasterpunten in een zeshoekig raster als terugkerend motief: kern, zandloper, puntjestitel, matrixklok. Grootte van een punt = hoeveelheid.
+- Rasterpunten in een zeshoekig raster als terugkerend motief: kern, zandloper, matrixklok (de puntjestitel in de Uitleg is weg sinds 02/11/2026). Grootte van een punt = hoeveelheid.
 - De vierpuntige ster met holle zijden (`star4`) is het teken van iets afronden: afvinken, fonkelende teller en klok, zandloper klaar.
 - Rood (Nu, de kern) alleen als accent. Tekenset `·:+×#` voor alles in tekens. Geist voor tekst, Geist Mono in kapitaaltjes met letterafstand voor labels en tellers.
 - Geen glans, geen dikke 3D, geen zware schaduwen of `filter: blur` (traag op gsm, lijnen op iOS). Zachte gloed mag, heel licht.
@@ -154,7 +154,7 @@ Op vraag van Victor (02/11/2026): een volledig identiteitstraject voor Orbit (fa
 
 | Bestand | Inhoud |
 |---|---|
-| `src/core/mark.js` | Merk v1: padgegevens van beeldmerk (`SYMBOL`, master), kleine tekening (`SYMBOL_SMALL`) en kop met woordmerk (`LOCKUP_SMALL`), met kop, optisch midden en basislijn. Gegenereerd door `brand/tools/export_app.py`, niet met de hand aanpassen. Gebruikt door `icons/make_icons.py` en de maandrecap; de kop en de Uitleg hebben dezelfde vormen inline in `index.html` |
+| `src/core/mark.js` | Merk v1: padgegevens van beeldmerk (`SYMBOL`, master), kleine tekening (`SYMBOL_SMALL`), kop met woordmerk (`LOCKUP_SMALL`) en de grote horizontale lockup (`LOCKUP`, Uitleg), met kop, optisch midden en basislijn. Gegenereerd door `brand/tools/export_app.py`, niet met de hand aanpassen. Gebruikt door `icons/make_icons.py` en de maandrecap; de kop en de Uitleg hebben dezelfde vormen inline in `index.html` |
 | `src/core/config.js` | `LEVELS` (enige bron van waarheid: naam, ring, baan, omloop, kleur, grootte, staart), diepteprofiel, kleurhelpers, iconen voor het wiel |
 | `src/scene/scene.js` | Canvas-renderer met eigen 3D-projectie, animatie, hit-testing, slepen, bollen en kern |
 | `src/scene/wheel.js` | Het gebogen wiel (DOM, posities via JS) |
@@ -169,7 +169,7 @@ Op vraag van Victor (02/11/2026): een volledig identiteitstraject voor Orbit (fa
 | `src/core/i18n.js` | Taal: woordenboeken NL en EN, `tx(key, vars)`, `LANG`, `LOCALE`, `setLang`, `applyStatic`, `reasonText`, `DEMO_TITLES` |
 | `src/scene/greet.js` | Begroeting van de kern: `greeting(ctx)` en `coreLine(ctx)` (tik op de kern), zinnen in NL en EN |
 | `src/core/demo.js` | Demoversie: `DEMO_MODE` en een volledige voorbeeldlijst in de tijdelijke opslag; als eerste geïmporteerd in `app.js` |
-| `src/scene/fx.js` | Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React): `softReveal`, `whiteBurst` (maandwissel), `nightFall`, `particleTitle`, `createWall`. Zie Effecten |
+| `src/scene/fx.js` | Effecten buiten de scène (naar React Bits Pro, eigen versie zonder React): `softReveal`, `whiteBurst` (maandwissel), `nightFall`, `createWall`. Zie Effecten |
 | `src/focus/fidget.js` | Bakje in de focusmodus met vijf digitale fidgets: water en gelei in mono-tekens (2D-canvas), lava (metaballs) en gloed (grainient) in WebGL, topo (Topography, `src/vendor/topography.js`). `createFidget(box, {reducedMotion, label})` met `start`/`stop` |
 | `src/focus/timer.js` | Zandloper: focustimer boven het bakje in de focusmodus, `createTimer(box, {reducedMotion, tx, onDone})` met `start`/`stop` |
 | `src/data/recap.js` | Maandrecap Poster: `monthStats`, `drawPoster`, `loadRecap`/`saveRecap`, zie Maandrecap (de maandwissel zelf zit in `app.js`, `scene.js` en `fx.js`) |
@@ -257,7 +257,7 @@ Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev (text mor
 - **Vortex** (`drawVortex` in de scène): in het zijaanzicht spiraalt fijn stof (560 korrels, vierkantjes) langs de wand van de trechter naar de kern; het laatste stukje kleurt rood. Hoeveelheid volgt het aantal taken (45 tot 100 %), tempo de urgentie en het gekozen tempo (stil: staat stil). Glijdt mee met `cam.depth`, dus weg in het bovenaanzicht.
 - **Glyph sonar** (`scene.sonar(id)`, vanuit `tapCore`): een ring van tekens loopt van de kern naar buiten langs de trechter (1,7 s); waar hij de taak raakt waarover de kern praat, kaatsen twee dunne ringen terug rond die bol.
 - **Nieuwe hemel** (`scene.newSky()`, vóór `setSky`): dezelfde ring van tekens als de glyph sonar, maar sneller (`SKY_WAVE_SPEED` 330) en tot buiten beeld; de oude sterren verdwijnen pas als de ring langskomt, de nieuwe hemel begint erachter. Eerder een mozaïekgolf van tegeltjes: weggehaald, twee verschillende golven uit de kern was te veel (Victor, 28/10/2026).
-- **Particle text** (`particleTitle`, titel in de Uitleg, 34 px, gsm 28 px): de letters bestaan uit puntjes in een zeshoekig raster; bij het openen draaien ze binnen (op tijd, 1,1 s), de aanwijzer duwt ze opzij en kleurt ze even rood. De echte tekst blijft in de `h2` (doorzichtig) voor schermlezers.
+- **Particle text** (titel in de Uitleg uit puntjes in een zeshoekig raster): op vraag van Victor weggehaald (02/11/2026: "het effect mag weg"), de Uitleg toont nu het merk met woordmerk (zie Uitleg). `particleTitle` en de bijhorende CSS zijn verwijderd.
 - Text morph (momentlabel in het venster "nieuwe taak") is op vraag van Victor weer weggehaald (28/10/2026).
 - **Typographic wall** (`createWall`, lege lijst): als alles afgevinkt is en het archief iets bevat, een muur van recent afgevinkte titels in kapitaaltjes (dekking 0,06) met "Alles afgevinkt." in het midden; rond de aanwijzer (of een zacht rondzwervend licht) worden de woorden leesbaar. Loopt alleen als de muur in beeld is.
 - **Verdeling van de woorden** (`wallRows` in `fx.js`, voor beide muren): eerst koos een vast patroon (i × 7 + rij) het woord, waardoor met weinig titels dezelfde taak vlak naast of schuin onder zichzelf stond (Victor: "alsof er maar 1 tot 3 taken voltooid zijn"). Nu een geschud stapeltje (vast zaad, dus stabiel) dat helemaal doorlopen wordt voor een titel terugkomt, en nooit dezelfde titel als de buur links of als een titel die er in de rij erboven recht boven staat; heeft het stapeltje niets passends meer, dan uit alle titels. Getest: vanaf 5 titels geen enkele botsing.
@@ -267,9 +267,9 @@ Gekozen door Victor (28/10/2026): zeven effecten van pro.reactbits.dev (text mor
 ## Effecten: Alle of Minimaal
 
 - Instellingen → **Effecten**: Alle / Minimaal (`priority-orbit.fx.v1` = `min` of `all`, gaat mee naar de demo). Op vraag van Victor (28/10/2026): een rustige, sobere weergave. Bewust niet "zen" genoemd: dat is al een tempo.
-- Minimaal zet uit: de intro (zachte cirkel), de nacht na het afvinken, gloed rond de kometen, raster dat buigt, lichtpuntje bij afvinken, vallende ster, sterrenbeeld, spoor op de baan, vortex, glyph sonar (de kern praat nog wel), golf bij een nieuwe hemel, de opvallende geboorte van een nieuwe ster, muur (knopje verborgen) en muur in de lege lijst, avondtint, bakje water, puntjestitel in de Uitleg (gewone tekst), fonkelende klok en teller.
+- Minimaal zet uit: de intro (zachte cirkel), de nacht na het afvinken, gloed rond de kometen, raster dat buigt, lichtpuntje bij afvinken, vallende ster, sterrenbeeld, spoor op de baan, vortex, glyph sonar (de kern praat nog wel), golf bij een nieuwe hemel, de opvallende geboorte van een nieuwe ster, muur (knopje verborgen) en muur in de lege lijst, avondtint, bakje water, fonkelende klok en teller.
 - Blijft: ringen, kometen, kern met gezicht en hartslag, sterren, het uitfonkelen bij afvinken, geluid (eigen instelling).
-- Code: `scene.setMinimal(on)`, `body.is-minimal` (CSS verbergt `.warmth`, `.fidget`, `.wall-toggle`), `applyFx()` in `app.js`, `introTitle.setEnabled()`.
+- Code: `scene.setMinimal(on)`, `body.is-minimal` (CSS verbergt `.warmth`, `.fidget`, `.wall-toggle`), `applyFx()` in `app.js`.
 
 ## Wiel (`src/scene/wheel.js`)
 
@@ -465,7 +465,7 @@ Op vraag van Victor (01/11/2026: "vernieuw vanaf de eerste van de maand de sterr
 
 ## Uitleg (eerste bezoek)
 
-- Venster "Uitleg" (`#intro`, 680 px breed): het beeldmerk (`.intro-mark`, master, 44 px hoog, sinds 02/11/2026; `flex: none`, anders kromp het in de flexkolom tot 0), naam, één zin over de kern, de vijf momenten in hun kleur, tien korte blokken in twee kolommen, per rij ongeveer even lang (anders gaapte er een gat naast een lang blok): Toevoegen (deadline, herhalen, notitie) | Afvinken (lichtpuntje, nacht, ster), Sterren | Prestaties (punten, rang, `P`), De kern | Verplaatsen (ook dubbelklik op een titel), Kijken (met Muur) | Focus (klok, weer, zandloper, bakje), Rust | Toestellen, en een regel sneltoetsen (verborgen op touchscreens). Bijgewerkt 29/10/2026 op vraag van Victor. Sneltoetsen niet tussen haakjes zetten ("tempo (" brak af op het einde van een regel): "met <kbd>T</kbd>". Knop "Aan de slag" blijft onderaan staan tijdens het scrollen (`.sticky-foot`, gedeeld met Prestaties, met `bottom` en `margin-bottom` gelijk aan de onderste padding van de kaart, zachte overgang erboven). Nieuwe functies hier ook toevoegen.
+- Venster "Uitleg" (`#intro`, 680 px breed): als titel het merk met woordmerk (Victor, 02/11/2026: "zet hier het logo naast het woord en zet het woord ook in de brand style, het effect mag weg"; inline SVG `.intro-lockup` in `h2#intro-title`, `LOCKUP` uit `src/core/mark.js` (master, horizontale lockup), 40 px hoog, gsm 36 px, `aria-label` "Orbit Tasks"; links gelijk met de tekst eronder; vroeger een los beeldmerk `.intro-mark` boven de puntjestitel ORBIT TASKS), één zin over de kern, de vijf momenten in hun kleur, tien korte blokken in twee kolommen, per rij ongeveer even lang (anders gaapte er een gat naast een lang blok): Toevoegen (deadline, herhalen, notitie) | Afvinken (lichtpuntje, nacht, ster), Sterren | Prestaties (punten, rang, `P`), De kern | Verplaatsen (ook dubbelklik op een titel), Kijken (met Muur) | Focus (klok, weer, zandloper, bakje), Rust | Toestellen, en een regel sneltoetsen (verborgen op touchscreens). Bijgewerkt 29/10/2026 op vraag van Victor. Sneltoetsen niet tussen haakjes zetten ("tempo (" brak af op het einde van een regel): "met <kbd>T</kbd>". Knop "Aan de slag" blijft onderaan staan tijdens het scrollen (`.sticky-foot`, gedeeld met Prestaties, met `bottom` en `margin-bottom` gelijk aan de onderste padding van de kaart, zachte overgang erboven). Nieuwe functies hier ook toevoegen.
 - Opent vanzelf bij een eerste bezoek: nog geen taken bewaard (`lsEmptyAtStart`), uitleg nooit gezien (`priority-orbit.intro.v1`) en niet geopend via een koppellink. Altijd terug via "Uitleg" rechtsboven of `?`.
 - Start bovenaan zonder focuskader (focus op de kaart zelf, `preventScroll`).
 
@@ -555,3 +555,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 02/11/2026, Claude Code: merk v1 afgewerkt (testlus van vier blinde rondes, kleur, systeem, alle bestanden in `brand/merk/`, merkgids als artifact). Open: Victor beslist of het nieuwe icoon in de app komt.
 - 02/11/2026, Claude Code: merk v1 in de app gezet (favicon, app-iconen, kop, Uitleg, maandrecap), `src/core/mark.js`. Niets openstaand.
 - 02/11/2026, Claude Code: merkgids bewaard in `brand/merkgids/` (ook online via Pages) en aangevuld met hoe het merk in de app staat. Niets openstaand.
+- 02/11/2026, Claude Code: Uitleg toont het merk met woordmerk als titel, puntjestitel weg. Niets openstaand.
