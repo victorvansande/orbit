@@ -65,7 +65,9 @@ export function mergeStates(a, b) {
   const archDel = {};
   for (const src of [a.archDel, b.archDel]) for (const [id, t] of Object.entries(src || {})) if (Number.isFinite(t)) archDel[id] = Math.max(archDel[id] || 0, t);
   const archive = a.archive || b.archive ? mergeArchive(a.archive, b.archive, new Set(tasks.map(t => t.id)), archDel) : undefined;
-  return { tasks, gone, done, doneReset, skyCuts, feats, archive, archDel };
+  // zandloper (focustimer): één gedeelde toestand, het recentst gewijzigde toestel wint (`at`); een oudere versie stuurt er geen
+  const timer = [a.timer, b.timer].filter(t => t && typeof t === 'object').sort((x, y) => (y.at || 0) - (x.at || 0))[0];
+  return { tasks, gone, done, doneReset, skyCuts, feats, archive, archDel, timer };
 }
 
 // Twee toestanden zijn gelijk als dezelfde taken met dezelfde wijzigingstijd bestaan, dezelfde taken afgevinkt zijn
@@ -80,6 +82,7 @@ export function sameState(a, b) {
     featsSig(s.feats),
     (s.archive || []).map(x => `${x.id}:${x.doneAt}`).sort().join(','),
     Object.keys(s.archDel || {}).sort().join(','),
+    s.timer ? [s.timer.dur, s.timer.endAt, s.timer.left, s.timer.done ? 1 : 0, s.timer.at || 0].join(':') : '',
   ]);
   return sig(a) === sig(b);
 }

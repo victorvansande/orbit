@@ -1043,6 +1043,25 @@ body.is-idle .controls { opacity: 0; }
   body.is-focus .focus-info { padding: 12px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 58px); }
   body.is-focus .focus-weather { margin-bottom: 14px; }
   body.is-focus .focus-due { margin-top: 24px; }
+  /* zandloper op gsm (Victor, 02/11/2026: "ook op gsm moet ik kunnen focussen"): compact rechts naast de klok, even hoog als
+     klok en datum samen, zonder het ingelaten vak; app.js zet #timer meteen na de klok (placeTimer) */
+  body.is-focus .focus-info { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 14px; align-items: start; }
+  body.is-focus .clock-date { white-space: nowrap; }
+  body.is-focus .focus-info > * { grid-column: 1 / -1; }
+  body.is-focus .focus-info > .clock, body.is-focus .focus-info > .clock-date { grid-column: 1; }
+  body.is-focus .timer, body.is-focus .timer.is-open {
+    display: grid; grid-column: 2; grid-row: span 2; align-self: stretch; justify-self: end;
+    position: static; width: auto; height: auto; padding: 0; border-radius: 0; background: none; box-shadow: none;
+    grid-template-columns: 36px auto; grid-template-rows: auto; gap: 10px; align-items: center;
+    opacity: 1; visibility: visible; transform: none; pointer-events: auto;
+  }
+  body.is-focus .timer-glass { height: 100%; min-height: 64px; }
+  body.is-focus .timer-expand { display: none; }
+  body.is-focus .timer-side, body.is-focus .timer.is-open .timer-side { align-items: flex-start; gap: 8px; }
+  body.is-focus .timer-digits, body.is-focus .timer.is-open .timer-digits { height: 18px; gap: 3px; }
+  body.is-focus .timer-row { flex-wrap: wrap; gap: 6px 12px; }
+  body.is-focus .timer-durs { flex-basis: 100%; }
+  body.is-focus .timer-unit { display: none; }
   .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
   /* smal scherm: twee regels in plaats van afkappen (zinnen als "Nieuwe hemel. Je vorige sterren ..." vielen weg) */
   .toast { border-radius: 22px; }
@@ -1216,3 +1235,4 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
 .recap-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
 .recap-open { display: block; margin: 4px 0 6px; }
 .recap-open:hover { color: var(--ink); }
+@media (max-width: 360px) { body.is-focus .clock { --dm-h: 42px; } }   /* ruimte voor de zandloper naast de klok */

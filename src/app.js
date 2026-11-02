@@ -17,7 +17,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { greeting, coreLine } from './scene/greet.js';
 import { playDone, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
-import { createTimer } from './focus/timer.js';
+import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './data/feats.js';
 import { softReveal, whiteBurst, smallNight, createWall } from './scene/fx.js';
@@ -1078,7 +1078,8 @@ function complete(id, row) {
   row.classList.add('is-done');
   leaveRow(row);
   const box = row.querySelector('.t-check, .fn-check')?.getBoundingClientRect();
-  const spot = scene.complete(id, box && box.width ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : null);
+  // lichtpuntje van het rondje naar de bol: niet op gsm (Victor, 02/11/2026: "heel glitchy", de lijst staat daar onder de scène)
+  const spot = scene.complete(id, desktop.matches && box && box.width ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : null);
   scene.cheer();
   tasks = tasks.filter(t => t.id !== id);
   let next = null;
@@ -1694,7 +1695,28 @@ let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
 const fidget = createFidget($('fidget'), { reducedMotion, label: m => tx(`fidget.${m}`) });   // bakje water, alleen op desktop zichtbaar
 // zandloper boven het bakje (desktop): een focusblok van 15, 25 of 50 minuten; klaar = de afvinktik
-const timer = createTimer($('timer'), { reducedMotion, tx, onDone(minutes) { if (performance.now() - lastTick > 1500) playDone({ level: 1 }); recordFocus(feats, minutes); checkFeats(true); } });   // net afgevinkt: geen tweede tik
+// Een blok telt onder zijn eindtijd (`end`, zie timer.js): twee gekoppelde toestellen met dezelfde zandloper tellen het samen
+// één keer. Stil klaar (lang na het einde geopend): wel tellen, geen tik of melding.
+const timer = createTimer($('timer'), {
+  reducedMotion, tx,
+  onDone(minutes, end, quiet) {
+    recordFocus(feats, minutes, end);
+    saveFeats(feats);
+    notifySync();
+    if (quiet) return;
+    if (performance.now() - lastTick > 1500) playDone({ level: 1 });   // net afgevinkt: geen tweede tik
+    setTimeout(() => checkFeats(true), 0);   // kan al bij het opstarten gebeuren, vóór de rest van de app klaar is
+  },
+  onChange: () => notifySync(),
+});
+// Op gsm staat de zandloper compact rechts naast de klok (in .focus-info), op desktop in zijn eigen vak boven het bakje
+function placeTimer() {
+  const el = $('timer');
+  if (desktop.matches) { if (el.parentElement !== document.body) $('glass').before(el); }
+  else if (el.previousElementSibling !== $('clock')) $('clock').after(el);
+}
+desktop.addEventListener('change', placeTimer);
+placeTimer();
 // klein glas rechtsonder buiten de focus (desktop), zolang de zandloper loopt of gepauzeerd staat; een tik opent de focus
 const glass = createGlass($('glass'), { reducedMotion, tx, onOpen: () => setFocus(true) });
 function placeGlass() { if (desktop.matches && !document.body.classList.contains('is-focus')) glass.start(); else glass.stop(); }
@@ -1705,7 +1727,7 @@ function setFocus(on) {
   placeGlass();
   if (on) weather.start(); else weather.stop();
   if (on && desktop.matches && !minimalFx) fidget.start(); else fidget.stop();
-  if (on && desktop.matches) timer.start(); else timer.stop();
+  if (on) timer.start(); else timer.stop();   // ook op gsm (Victor, 02/11/2026: "ook op gsm moet ik kunnen focussen")
   if (on && !$('greeting').hidden) hideGreeting();   // anders botst de begroeting op gsm met de klok
   $('focus-btn').setAttribute('aria-pressed', String(on));
   if (on) {
@@ -2370,6 +2392,8 @@ window.addEventListener('storage', e => {
   } else if (e.key === FEATS_KEY) {
     feats = loadFeats();
     checkFeats(false);
+  } else if (e.key === TIMER_KEY) {
+    timer.reload();   // zandloper in een ander tabblad gestart of gepauzeerd
   }
 });
 
@@ -2380,9 +2404,14 @@ const syncDialog = $('sync');
 const SYNC_TEXT = { off: tx('sync.off'), connecting: tx('sync.connecting'), online: tx('sync.online'), offline: tx('sync.offline') };
 const DEVICE = deviceName();
 
+// zandloper van een ander toestel: recenter dan de eigen (at), dan overnemen en de timer opnieuw laten lezen
+function adoptTimer(t) {
+  if (!t || (t.at || 0) <= (timerState().at || 0)) return;
+  if (saveTimerState(t)) timer.reload();
+}
 const sync = createSync({
   deviceName: DEVICE,
-  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts, feats, archive, archDel }),
+  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts, feats, archive, archDel, timer: timerState() }),
   applyState(state) {
     gone = { ...state.gone };
     // het gedeelde archief (een oudere versie van Orbit stuurt er geen: dan blijft het eigen archief)
@@ -2406,6 +2435,7 @@ const sync = createSync({
     saveCuts(skyCuts);
     feats = mergeFeats(feats, state.feats);
     if (backfill(feats, archive)) saveFeats(feats);   // wat elders afgevinkt werd, telt ook hier mee voor de prestaties
+    adoptTimer(state.timer);
     for (const t of lost) if (!done[t.id] && (state.gone?.[t.id] || Date.now()) > doneReset) done[t.id] = state.gone?.[t.id] || Date.now();
     saveDone(done);
     saveReset(doneReset);
@@ -2437,6 +2467,7 @@ const sync = createSync({
     saveReset(doneReset);
     saveCuts(skyCuts);
     feats = mergeFeats(feats, state.feats);
+    adoptTimer(state.timer);
     for (const [id, t] of Object.entries(state.archDel || {})) archDel[id] = Math.max(archDel[id] || 0, t);
     saveArchDel(archDel);
     const ownArchive = archive.length;

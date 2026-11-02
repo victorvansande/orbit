@@ -9,7 +9,8 @@
 // Klaar: een golf door het zand, een paar stippen fonkelen uit als de vierpuntige ster en de afvinktik klinkt.
 import { setMatrix, twinkleDot } from '../scene/matrix.js';
 
-const KEY = 'priority-orbit.timer.v1';
+export const TIMER_KEY = 'priority-orbit.timer.v1';
+const KEY = TIMER_KEY;
 const UI_KEY = 'priority-orbit.timer.ui.v1';     // uitgeklapt of niet, per toestel
 const DURATIONS = [15, 25, 50];
 const FILL = 0.8;                                 // tot waar de bovenste bol bij de start gevuld is
@@ -24,14 +25,21 @@ const ICON_OPEN = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" s
 const ICON_CLOSE = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"/></svg>';
 
 // toestand zoals bewaard: duur (min), en ofwel een eindtijd (loopt), ofwel de resterende tijd (gepauzeerd of nog niet
-// gestart). Ook gelezen door het kleine glas buiten de focus (glass.js).
+// gestart), plus `at` (laatste wijziging, voor de sync). Ook gelezen door het kleine glas buiten de focus (glass.js).
 export function timerState() {
-  let st = { dur: 25, endAt: 0, left: 25 * 60000, done: false };
+  let st = { dur: 25, endAt: 0, left: 25 * 60000, done: false, at: 0 };
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && DURATIONS.includes(s.dur)) st = { ...st, ...s }; } catch { /* geen opslag */ }
   return st;
 }
+// toestand van een ander toestel overnemen (sync); geeft false als ze ongeldig is
+export function saveTimerState(s) {
+  if (!s || !DURATIONS.includes(s.dur)) return false;
+  const st = { dur: s.dur, endAt: Number(s.endAt) || 0, left: Number(s.left) || 0, done: !!s.done, at: Number(s.at) || 0 };
+  try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* geen opslag */ }
+  return true;
+}
 
-export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
+export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChange = () => {} }) {
   const wrap = Object.assign(document.createElement('div'), { className: 'timer-glass' });
   const cv = document.createElement('canvas');
   cv.setAttribute('aria-hidden', 'true');
@@ -56,7 +64,8 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   const g = cv.getContext('2d');
 
   let st = timerState();
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* geen opslag */ } };
+  // elke eigen wijziging krijgt een tijdstip en gaat naar de sync (onChange): het recentste toestel wint
+  const save = () => { st = { ...st, at: Date.now() }; try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* geen opslag */ } onChange(); };
   const remaining = (now = Date.now()) => st.endAt ? Math.max(0, st.endAt - now) : st.left;
 
   let open = false;
@@ -199,13 +208,18 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     g.globalAlpha = 1;
   }
 
+  // Klaar. Het blok telt onder zijn eindtijd (`end`): loopt dezelfde zandloper op twee gekoppelde toestellen, dan delen ze
+  // die eindtijd via de sync en valt het blok bij het samenvoegen samen tot één (nooit dubbel geteld). Ook stil klaar
+  // (lang na het einde geopend) telt het blok nu, zonder geluid of melding.
   function finish(quiet = false) {
+    const end = st.endAt || Date.now();
     st = { ...st, endAt: 0, left: 0, done: true };
     save();
-    if (quiet) return;
-    doneAt = performance.now();
-    if (!reducedMotion.matches) [0, 260, 520].forEach(ms => setTimeout(() => twinkleDot(digits), ms));
-    onDone(st.dur);
+    if (!quiet) {
+      doneAt = performance.now();
+      if (!reducedMotion.matches) [0, 260, 520].forEach(ms => setTimeout(() => twinkleDot(digits), ms));
+    }
+    onDone(st.dur, end, quiet);
   }
 
   function loop(now) {
@@ -257,5 +271,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
   return {
     start() { if (running) return; running = true; raf = requestAnimationFrame(loop); },
     stop() { running = false; cancelAnimationFrame(raf); },
+    // toestand opnieuw lezen (gewijzigd op een ander toestel of in een ander tabblad)
+    reload() { st = timerState(); if (st.endAt && Date.now() - st.endAt > 60000) finish(true); schedule(); draw(); },
   };
 }
