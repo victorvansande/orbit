@@ -1738,7 +1738,7 @@ function placeTimer() {
 desktop.addEventListener('change', placeTimer);
 placeTimer();
 // klein glas rechtsonder buiten de focus (desktop), zolang de zandloper loopt of gepauzeerd staat; een tik opent de focus
-const glass = createGlass($('glass'), { reducedMotion, tx, onOpen: () => setFocus(true) });
+const glass = createGlass($('glass'), { reducedMotion, tx, onOpen: () => setFocus(true), onToggle: () => timer.toggle(), onReset: () => timer.reset() });
 // desktop: rechtsonder in het venster; gsm: rechts in de rij Boven / Zijkant / Focus onder de scène, naast de knop Focus
 // (Victor, 02/11/2026: "op gsm geen zandloper als focus mode stopt")
 function placeGlass() {

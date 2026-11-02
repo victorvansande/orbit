@@ -1,23 +1,37 @@
 /* ---- Klein glas: de zandloper buiten de focus ---- */
 // F (Victor, 02/11/2026, uit twee rondes voorstellen: "als ik een focus ben gestart met de zandloper en uit de fullscreen
-// focus ga, moet er wel ergens blijven staan dat mijn timer loopt, in het klein"). Rechtsonder in de scène een glaasje van
-// rasterpunten, dezelfde zandloper als in de focus maar klein, met zand dat zakt. Geen cijfers tot je erover gaat; een tik
-// opent de focus. Gepauzeerd: stil, zonder vallende korrels. Klaar: fonkelt uit als de vierpuntige ster en verdwijnt.
+// focus ga, moet er wel ergens blijven staan dat mijn timer loopt, in het klein"). Rechtsonder een glaasje van
+// rasterpunten, dezelfde zandloper als in de focus maar klein, met zand dat zakt; een tik opent de focus. Gepauzeerd:
+// stil, zonder vallende korrels. Klaar: fonkelt uit als de vierpuntige ster en verdwijnt.
+// D1 op pc (Victor, 02/11/2026: "op pc ... wel heel minimal en klein"): groter glas met de resterende minuten als groot,
+// dun cijfer (T3, zoals de zandloper in de focus op gsm), altijd zichtbaar; aanwijzen toont Pauze / Verder en ↺ ernaast.
+// Op gsm blijft het glaasje met de tijd in Geist Mono. De maat van het glas komt uit de CSS (canvasmaat).
 // Leest de toestand van de zandloper uit de opslag (timerState in timer.js), dus loopt mee met herladen en tabbladen.
 import { timerState } from './timer.js';
 
-const W = 28, H = 46;                                  // maat van het glaasje in css-px
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 // halve breedte van een bol (0..1) op hoogte u van de hals (0) naar de rand (1): ronde schouders
 const shape = u => u < 0.62 ? Math.sin(u / 0.62 * Math.PI / 2) : Math.sqrt(Math.max(0, 1 - ((u - 0.62) / 0.4) ** 2));
 
-export function createGlass(btn, { reducedMotion, tx, onOpen }) {
+export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => {}, onReset = () => {} }) {
+  const open = Object.assign(document.createElement('button'), { type: 'button', className: 'glass-open' });
   const cv = document.createElement('canvas');
   cv.setAttribute('aria-hidden', 'true');
-  const time = Object.assign(document.createElement('span'), { className: 'glass-time' });
-  btn.append(time, cv);
+  const time = Object.assign(document.createElement('span'), { className: 'glass-time' });   // gsm: 08:57
+  const min = Object.assign(document.createElement('span'), { className: 'glass-min' });     // pc: 16 MIN
+  const minNum = document.createElement('span'), minUnit = document.createElement('small');
+  min.append(minNum, minUnit);
+  min.setAttribute('aria-hidden', 'true');
+  open.append(time, min, cv);
+  // pc: Pauze / Verder en ↺ verschijnen bij aanwijzen of toetsenbordfocus
+  const tools = Object.assign(document.createElement('div'), { className: 'glass-tools' });
+  const pause = Object.assign(document.createElement('button'), { type: 'button', className: 'glass-pause' });
+  const reset = Object.assign(document.createElement('button'), { type: 'button', className: 'glass-reset', textContent: '↺' });
+  reset.setAttribute('aria-label', tx('timer.reset')); reset.title = tx('timer.reset');
+  tools.append(pause, reset);
+  root.append(tools, open);
   const g = cv.getContext('2d');
-  let raf = 0, running = false, shown = false, endAt = 0, ink = '27,27,34', colAt = 0, lastRead = 0, st = null;
+  let raf = 0, running = false, shown = null, endAt = 0, ink = '27,27,34', colAt = 0, lastRead = 0, st = null, W = 28, H = 46;
 
   function colors(now) {
     if (now - colAt < 1000) return;
@@ -28,12 +42,13 @@ export function createGlass(btn, { reducedMotion, tx, onOpen }) {
   }
   function fit() {
     const dpr = Math.min(2, devicePixelRatio || 1);
-    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    W = cv.clientWidth || 28; H = cv.clientHeight || 46;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   // rasterpunten: zand boven (q, van de hals omhoog gevuld) en onder (1 - q, van de bodem op), zachte rand naar de wand
   function drawGlass(q, live, now) {
-    const sp = 3.3, bulb = (H - 2) / 2, R = W / 2 - 1.5, cx = W / 2, cy = H / 2;
+    const sp = W > 30 ? 3.7 : 3.3, bulb = (H - 2) / 2, R = W / 2 - 1.5, cx = W / 2, cy = H / 2;
     for (let row = 0, y = 1 + sp / 2; y < H - 1; row++, y += sp * 0.866) {
       const up = y < cy, u = Math.abs(y - cy) / bulb, hw = 0.8 + (R - 0.8) * shape(u);
       for (let x = cx - Math.ceil(hw / sp) * sp + (row % 2) * sp / 2; x <= cx + hw; x += sp) {
@@ -49,13 +64,13 @@ export function createGlass(btn, { reducedMotion, tx, onOpen }) {
     if (live && q > 0.002 && !reducedMotion.matches) {
       const ph = (now / 420) % 1;
       g.globalAlpha = 0.85 * (1 - ph);
-      g.beginPath(); g.arc(cx, cy + ph * bulb * 0.75, 0.75, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx, cy + ph * bulb * 0.75, W > 30 ? 0.95 : 0.75, 0, Math.PI * 2); g.fill();
     }
     g.globalAlpha = 1;
   }
   // klaar: de vierpuntige ster zwelt op, draait een kwartslag en krimpt tot niets
   function star(p) {
-    const r = 9 * (p < 0.3 ? p / 0.3 : 1 - (p - 0.3) / 0.7), rot = p * Math.PI / 2, cx = W / 2, cy = H / 2;
+    const r = Math.min(W, H) * 0.32 * (p < 0.3 ? p / 0.3 : 1 - (p - 0.3) / 0.7), rot = p * Math.PI / 2, cx = W / 2, cy = H / 2;
     g.beginPath();
     for (let i = 0; i < 4; i++) {
       const a = rot + i * Math.PI / 2, b = a + Math.PI / 4, c = a + Math.PI / 2;
@@ -69,9 +84,9 @@ export function createGlass(btn, { reducedMotion, tx, onOpen }) {
   function setShown(on) {
     if (on === shown) return;
     shown = on;
-    btn.classList.toggle('is-on', on);
-    btn.tabIndex = on ? 0 : -1;
-    btn.setAttribute('aria-hidden', String(!on));
+    root.classList.toggle('is-on', on);
+    for (const b of [open, pause, reset]) b.tabIndex = on ? 0 : -1;
+    root.setAttribute('aria-hidden', String(!on));
   }
 
   function frame(now) {
@@ -86,9 +101,15 @@ export function createGlass(btn, { reducedMotion, tx, onOpen }) {
       g.clearRect(0, 0, W, H); g.fillStyle = `rgb(${ink})`;
       drawGlass(left / total, st.endAt > 0, now);
       const txt = fmt(left);
-      if (time.textContent !== txt) time.textContent = txt;
-      btn.setAttribute('aria-label', tx(st.endAt ? 'glass.running' : 'glass.paused', { time: txt }));
-      btn.classList.toggle('is-paused', !st.endAt);
+      if (time.textContent !== txt) {
+        time.textContent = txt;
+        minNum.textContent = String(left >= 60000 ? Math.ceil(left / 60000) : Math.ceil(left / 1000));
+        minUnit.textContent = left >= 60000 ? 'min' : 's';
+      }
+      open.setAttribute('aria-label', tx(st.endAt ? 'glass.running' : 'glass.paused', { time: txt }));
+      const p = tx(st.endAt ? 'timer.pause' : 'timer.resume');
+      if (pause.textContent !== p) pause.textContent = p;
+      root.classList.toggle('is-paused', !st.endAt);
     } else if (shown) {
       // net klaar terwijl het glaasje in beeld stond: fonkelen en weg; anders gewoon weg
       if (st.done && !reducedMotion.matches) {
@@ -101,7 +122,9 @@ export function createGlass(btn, { reducedMotion, tx, onOpen }) {
     raf = requestAnimationFrame(frame);
   }
 
-  btn.addEventListener('click', () => { if (shown) onOpen(); });
+  open.addEventListener('click', () => { if (shown) onOpen(); });
+  pause.addEventListener('click', () => { if (shown) { onToggle(); lastRead = 0; } });
+  reset.addEventListener('click', () => { if (shown) { onReset(); lastRead = 0; } });
   setShown(false);
   return {
     start() { if (running) return; running = true; lastRead = 0; raf = requestAnimationFrame(frame); },

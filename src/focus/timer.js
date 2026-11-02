@@ -266,7 +266,8 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
   document.addEventListener('pointerdown', e => { if (box.classList.contains('is-tools') && !box.contains(e.target)) tools(false); }, true);
   go.addEventListener('click', toggle);
   wrap.addEventListener('click', () => { if (compact()) tools(!box.classList.contains('is-tools')); else toggle(); });
-  reset.addEventListener('click', () => { st = { dur: st.dur, endAt: 0, left: st.dur * 60000, done: false }; save(); schedule(); draw(); });
+  function restart() { st = { dur: st.dur, endAt: 0, left: st.dur * 60000, done: false }; save(); schedule(); draw(); }
+  reset.addEventListener('click', restart);
   durs.forEach(b => b.addEventListener('click', () => {
     const m = Number(b.textContent);
     st = { dur: m, endAt: 0, left: m * 60000, done: false };
@@ -299,6 +300,9 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
   return {
     start() { if (running) return; running = true; raf = requestAnimationFrame(loop); },
     stop() { running = false; cancelAnimationFrame(raf); tools(false); },
+    // ook van buiten de focus (het glas op pc): pauzeren of verder, en opnieuw
+    toggle() { st = timerState(); toggle(); },
+    reset() { st = timerState(); restart(); },
     // toestand opnieuw lezen (gewijzigd op een ander toestel of in een ander tabblad)
     reload() { st = timerState(); if (st.endAt && Date.now() - st.endAt > 60000) finish(true); schedule(); draw(); },
   };

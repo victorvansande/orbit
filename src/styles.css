@@ -578,21 +578,32 @@ body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer
   grid-template-columns: 100%; grid-template-rows: minmax(0, 1fr) auto; gap: 22px; padding: 30px 26px 24px;
 }
 .timer-glass { position: relative; height: 100%; min-height: 0; cursor: pointer; }
-.glass { position: fixed; z-index: 4; right: 28px; bottom: 30px; display: flex; align-items: center; gap: 10px; padding: 0; background: none; border: 0; color: var(--ink); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .6s var(--ease); }   /* klein glas buiten de focus (glass.js) */
+.glass { position: fixed; z-index: 4; right: 28px; bottom: 30px; display: flex; align-items: flex-end; gap: 14px; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity .6s var(--ease); }   /* klein glas buiten de focus (glass.js) */
 .glass.is-on { opacity: 1; pointer-events: auto; }
-.glass canvas { display: block; width: 28px; height: 46px; }
+.glass-open { display: flex; align-items: flex-end; gap: 10px; padding: 0; background: none; border: 0; color: inherit; cursor: pointer; }
+/* pc (D1, Victor, 02/11/2026): glas 36 × 60 px met het dunne minutencijfer (T3); de onderste rij punten ligt 1,5 px boven
+   de onderrand van het canvas; het cijfer staat zo dat zijn basislijn op de onderkant van het zand valt (gemeten) */
+.glass canvas { display: block; width: 36px; height: 60px; flex: none; }
 .glass.is-paused canvas { opacity: .55; }
-.glass-time { font: 500 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); font-variant-numeric: tabular-nums; opacity: 0; transform: translateX(4px); transition: opacity .25s var(--ease), transform .25s var(--ease); }
-.glass:hover .glass-time, .glass:focus-visible .glass-time { opacity: 1; transform: none; }
+.glass-min { display: inline-flex; align-items: baseline; gap: 5px; position: relative; top: .5px; font: 300 30px/.8 var(--font); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.glass-min small { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.glass-time { display: none; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.glass-tools { display: flex; align-items: baseline; gap: 14px; position: relative; top: .5px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: 0; transform: translateX(6px); pointer-events: none; transition: opacity .25s var(--ease), transform .25s var(--ease); }
+.glass-tools button { min-height: 32px; display: inline-flex; align-items: flex-end; padding: 0; color: var(--ink-3); letter-spacing: inherit; text-transform: inherit; font: inherit; cursor: pointer; transition: color .2s var(--ease); }
+.glass-tools button:hover { color: var(--ink); }
+.glass-reset { font-size: 13px !important; letter-spacing: 0 !important; }
+.glass.is-on:hover .glass-tools, .glass.is-on:focus-within .glass-tools { opacity: 1; transform: none; pointer-events: auto; }
 body.is-focus .glass { display: none; }
 @media (max-width: 999px) {
-  /* gsm: in de rij Boven / Zijkant / Focus, op de rechterrand van de inhoud, de tijd altijd zichtbaar (geen hover op touch) */
-  .glass { position: absolute; right: var(--pad); bottom: auto; top: 50%; transform: translateY(-50%); gap: 8px; }
+  /* gsm: in de rij Boven / Zijkant / Focus, op de rechterrand van de inhoud, klein glaasje met de tijd in Geist Mono (geen hover op touch) */
+  .glass { position: absolute; right: var(--pad); bottom: auto; top: 50%; transform: translateY(-50%); align-items: center; }
+  .glass-open { align-items: center; gap: 8px; }
   .glass canvas { width: 20px; height: 33px; }
-  .glass-time { opacity: 1; transform: none; }
+  .glass-min, .glass-tools { display: none; }
+  .glass-time { display: inline; }
 }
 @media (max-width: 360px) { .glass-time { display: none; } }   /* op 320 px raakte de tijd de knop Focus */
-@media (prefers-reduced-motion: reduce) { .glass, .glass-time { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .glass, .glass-tools { transition: none; } }
 .timer-glass canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .timer-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .timer.is-open .timer-side { align-items: center; gap: 16px; }
