@@ -141,7 +141,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
     // staan bij een pauze, zoals in een echte zandloper (eerst sprong hij bij de start meteen op volle diepte); ondieper
     // als er weinig over is (anders twee hoorntjes rond de hals)
     const dip = Math.min(uTop * 0.45, 0.09 * smooth(0, 0.12, 1 - q));
-    const soft = sp * 0.85;                               // verloop aan het oppervlak, in px: even scherp in een groot en een klein glas
+    const soft = sp * 1.3;                                // verloop aan het oppervlak, in px: even scherp in een groot en een klein glas (was 0,85, iets zachter sinds 02/11/2026)
     // golf door het zand als het laatste korreltje gevallen is
     const waveAge = (now - doneAt) / 1000, waving = !still && waveAge >= 0 && waveAge < 1.1, waveR = waveAge * 320;
     g.fillStyle = ink;
@@ -152,16 +152,18 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {} }) {
       for (let x = cx - Math.ceil(hw / sp) * sp + (row % 2) * sp / 2; x <= cx + hw; x += sp) {
         const dx = Math.abs(x - cx);
         if (dx > hw - 1) continue;
-        const k = 1 - dx / hw, edge = smooth(0, sp, hw - dx);
+        // zachte rand (Victor, 02/11/2026: "geleidelijk aan een klein beetje vervaagd, zodat het niet zo'n harde rand heeft"):
+        // over ongeveer drie puntafstanden van de wand (en van boven- en onderkant) worden de punten kleiner en lichter
+        const k = 1 - dx / hw, rim = Math.min(hw - dx, up ? y - top : bot - y), edge = smooth(0, sp * 3, rim);
         // hoeveel zand er op deze plek is (0..1), met een zacht verloop aan het oppervlak, en hoe diep onder het oppervlak
         let f, depth;
         if (up) { const d = (uTop - dip * k * k - u) * bulb; f = smooth(-soft, soft, d); depth = d / bulb; }
         else { const d = sandAt(dx) - (bot - y); f = smooth(-soft, soft, d); depth = d / bulb; }
-        let r = sp * (0.09 + 0.39 * f) * (0.55 + 0.45 * edge);
+        let r = sp * (0.09 + 0.39 * f) * (0.5 + 0.5 * edge);
         // volume, zoals de kern: grotere punten in het midden, kleiner naar de wand en naar het oppervlak
         if (f > 0.05) r *= (0.74 + 0.26 * Math.sqrt(k)) * (0.82 + 0.18 * smooth(0, 0.25, depth));
         if (waving && !up && f > 0.3) { const d = Math.hypot(x - cx, y - neckBot); r *= 1 + 0.22 * Math.exp(-(((d - waveR) / 14) ** 2)) * (1 - waveAge / 1.1); }
-        g.globalAlpha = 0.18 + 0.82 * Math.max(f, 0.05);
+        g.globalAlpha = (0.18 + 0.82 * Math.max(f, 0.05)) * (0.3 + 0.7 * edge);
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
     }
