@@ -108,7 +108,7 @@ Richting gekozen door Victor: posterstijl (lichte poster-reeks met wazige kleurb
 
 - Papier #F1F1EF met lichte korrel (`.grain`, SVG-ruis, opacity 0,14). Inkt #1B1B22, secundair #5E5E68, tertiair #9A9AA3.
 - Typografie: Geist (UI) en Geist Mono (kapitaaltjes in de hoeken, tellers), via Google Fonts, met systeemfont als terugval.
-- Hoeklabels zoals op een platenhoes: linksboven het merk (sinds 02/11/2026: kleine tekening met woordmerk, inline SVG `.brand-mark`, 22 px hoog, op gsm 20 px, inkt `--ink` en kop `--core`, wisselt mee met het thema; vroeger ORBIT TASKS in Geist 600, 13 px, kapitalen met letterafstand 0,18em) + samenvatting, rechtsboven weeknummer, datum en Uitleg / Archief / Koppelen, linksonder het knopje Instellingen (zie Instellingen).
+- Hoeklabels zoals op een platenhoes: linksboven het merk (sinds 02/11/2026: kleine tekening met woordmerk, inline SVG `.brand-mark`, 22 px hoog, op gsm 20 px, inkt `--ink` en kop `--core`, wisselt mee met het thema; vroeger ORBIT TASKS in Geist 600, 13 px, kapitalen met letterafstand 0,18em) + samenvatting, met 9 px lucht tussen merk en samenvatting op desktop (Victor, 02/11/2026: "dit staat net iets te dicht op elkaar"; was 4 px, `.summary` `margin-top`; op gsm al 11 px, ongewijzigd), rechtsboven weeknummer, datum en Uitleg / Archief / Koppelen, linksonder het knopje Instellingen (zie Instellingen).
 - Kleur zit alleen in de bollen. Ringen en raster zijn grafiet met lage dekking; een ring krijgt zijn kleur pas bij hover of als sleepdoel.
 - Desktop (≥ 1000 px): takenlijst links (300 px), scène in het midden, wiel rechts. Smaller: alles onder elkaar (kop, scène, aanzicht, horizontaal wiel, lijst).
 
@@ -598,3 +598,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 02/11/2026, Claude Code: favicon en app-iconen met `?v=2` in de url (browsers hielden het oude logo vast), service worker `orbit-v4`. Open: voorstellen voor de zandloper op pc buiten de focus.
 - 02/11/2026, Claude Code: knop Laat een ster vallen in de demo. Voorstellen voor de zandloper op pc klaargezet (artifact "Orbit zandloper op pc" (https://claude.ai/artifact/KdPRKV1HSso7VhuQtaQyfV): D1 groter met minutencijfer op dezelfde plek, D2 rij in de lijst boven de sterren, D3 regel bij de hoeklabels, D4 groot hoekbeeld, D5 onder de scène; advies D1). Victor koos D1, volgt.
 - 02/11/2026, Claude Code: zandloper op pc buiten de focus groter met het dunne minutencijfer, Pauze en ↺ bij aanwijzen (D1). Open: Victor test de sleutelhanger en de zandloper op zijn toestellen.
+- 02/11/2026, Claude Code: meer lucht tussen merk en samenvatting linksboven op desktop. Open: Victor test de sleutelhanger en de zandloper op zijn toestellen.
