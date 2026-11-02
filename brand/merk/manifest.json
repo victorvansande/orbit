@@ -1,0 +1,29 @@
+{
+ "files": [
+  "merk/svg/orbit-symbol-fullcolour.svg",
+  "merk/svg/orbit-symbol-fullcolour-reversed.svg",
+  "merk/svg/orbit-symbol-black.svg",
+  "merk/svg/orbit-symbol-white.svg",
+  "merk/svg/orbit-symbol-red.svg",
+  "merk/svg/orbit-symbol-small-fullcolour.svg",
+  "merk/svg/orbit-symbol-small-fullcolour-reversed.svg",
+  "merk/svg/orbit-symbol-small-black.svg",
+  "merk/svg/orbit-symbol-small-white.svg",
+  "merk/svg/orbit-symbol-small-red.svg",
+  "merk/svg/orbit-wordmark-fullcolour.svg",
+  "merk/svg/orbit-wordmark-fullcolour-reversed.svg",
+  "merk/svg/orbit-wordmark-black.svg",
+  "merk/svg/orbit-wordmark-white.svg",
+  "merk/svg/orbit-wordmark-red.svg",
+  "merk/svg/orbit-horizontal-fullcolour.svg",
+  "merk/svg/orbit-stacked-fullcolour.svg",
+  "merk/svg/orbit-horizontal-fullcolour-reversed.svg",
+  "merk/svg/orbit-stacked-fullcolour-reversed.svg",
+  "merk/svg/orbit-horizontal-black.svg",
+  "merk/svg/orbit-stacked-black.svg",
+  "merk/svg/orbit-horizontal-white.svg",
+  "merk/svg/orbit-stacked-white.svg",
+  "merk/svg/orbit-horizontal-red.svg",
+  "merk/svg/orbit-stacked-red.svg"
+ ]
+}
