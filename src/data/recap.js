@@ -179,15 +179,34 @@ export function drawPoster(cv, s, { theme = 'dark', fmt = 'post', tx, locale }) 
     label(g, String(s.levels[i]), L + 168 + len, y + 7, 17, rgba(ink, 1), 'left', 500, 0.05);
   });
 
-  // drie cijfers onderaan
+  // vier cijfers onderaan
   const busiest = s.busiest >= 0 ? new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(s.start.getFullYear(), s.start.getMonth(), s.busiest + 1)) : '–';
   const fm = s.focusMin, focus = fm >= 60 ? tx('recap.hm', { h: Math.floor(fm / 60), m: fm % 60 }) : tx('recap.min', { n: fm });
   const cells = [[busiest, tx('recap.busiest', { n: s.busiestN })], [tx('recap.days', { n: s.streak }), tx('recap.streak')], [focus, tx('recap.focus')], [tx('recap.featsN', { n: s.newFeats }), tx('recap.feats')]];
-  const cw = room / cells.length;
+  // elk cijfer zo breed als zijn tekst, het eerste op de linkerrand, het laatste eindigt op de rechterrand, gelijke tussenruimte
+  // van minstens GAP; past het niet, dan worden alle cijfers samen kleiner (Victor, 02/11/2026: "dit staat te dicht op elkaar",
+  // eerst vier gelijke kolommen, waarin een lange datum tot 20 px tegen het volgende cijfer liep)
+  const GAP = 56;
+  const valW = (v, sz) => { g.font = `500 ${sz}px ${SANS}`; return g.measureText(v).width; };
+  const labW = k => {
+    g.font = `500 15px ${MONO}`;
+    if ('letterSpacing' in g) g.letterSpacing = `${15 * 0.12}px`;
+    const w = g.measureText(String(k).toUpperCase()).width;
+    if ('letterSpacing' in g) g.letterSpacing = '0px';
+    return w;
+  };
+  let vs = 40, widths = [];
+  for (; vs >= 26; vs--) {
+    widths = cells.map(([v, k]) => Math.max(valW(v, vs), labW(k)));
+    if (widths.reduce((a, b) => a + b, 0) + GAP * (cells.length - 1) <= room) break;
+  }
+  vs = Math.max(vs, 26);
+  const space = Math.max(GAP / 2, (room - widths.reduce((a, b) => a + b, 0)) / (cells.length - 1));
+  let x = L;
   cells.forEach(([v, k], i) => {
-    const x = L + i * cw;
-    fitSans(g, v, x, H - 220, 40, cw - 20, rgba(ink, 1));
+    sans(g, v, x, H - 220, vs, rgba(ink, 1));
     label(g, k, x, H - 180, 15, ink3, 'left', 500, 0.12);
+    x += widths[i] + space;
   });
   return cv;
 }
