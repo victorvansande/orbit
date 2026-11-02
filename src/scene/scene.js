@@ -127,7 +127,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
   let wallWords = [], wallOn = false, wallK = 0, wallLayout = null, wallBase = null, wallKey = '', wallSweep = null;
   const lamp = { x: 0, y: 0 };
-  const starHold = new Set();   // nieuwe ster die wacht tot de nacht na het afvinken opengaat (app.js, nightFall)
+  const starHold = new Set();   // nieuwe ster die wacht tot de nacht na het afvinken opengaat (app.js, smallNight)
   let holdNext = false;
   let starDelay = 0, lastStarAt = 0;                         // ms tot de nieuwe ster verschijnt: pas na het uitfonkelen, nooit twee sterren tegelijk
   let skyKnown = null;

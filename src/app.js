@@ -19,7 +19,7 @@ import { playDone, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer } from './focus/timer.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './data/feats.js';
-import { softReveal, whiteBurst, nightFall, createWall } from './scene/fx.js';
+import { softReveal, whiteBurst, smallNight, createWall } from './scene/fx.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
 applyStatic();
@@ -1184,7 +1184,7 @@ function fallNight(id, wait, sound, give) {
     if (!seen || document.hidden) {   // ster niet in beeld (gsm, gescrold naar de lijst): gewoon verschijnen
       scene.releaseStars(true); nightBusy = false; sound(); setTimeout(give, 900); return;
     }
-    nightFall({
+    smallNight({
       star, stars: pts.filter(p => p !== star),
       onOpen() { scene.releaseStars(); sound(); },
       done() { nightBusy = false; give(); },

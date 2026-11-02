@@ -1067,6 +1067,8 @@ body.is-idle .controls { opacity: 0; }
 /* ---- Effecten (src/scene/fx.js) ---- */
 /* Intro: effen papier dat een zachte cirkel vanuit de kern wegwist; een tik slaat over */
 .fx-reveal { position: fixed; inset: 0; z-index: 60; }
+/* kleine nacht rond een nieuwe ster: boven de scène, maar alles blijft klikbaar */
+.fx-night { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
 /* Papier vanaf de eerste weergave tot de intro het overneemt; loopt het script vast, dan verdwijnt het na 6 s vanzelf */
 html.is-veiled::after { content: ''; position: fixed; inset: 0; z-index: 61; background: var(--bg); animation: veil-safety 0.4s ease 6s forwards; }
 @keyframes veil-safety { to { opacity: 0; visibility: hidden; } }
