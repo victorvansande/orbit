@@ -27,7 +27,9 @@ const THEMES = {
   light: { glow: 0.2, grid: 1, ink: [24, 24, 32], paper: [241, 241, 239], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
   dark:  { glow: 0.24, grid: 1.3, ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
 };
-const RING_GAP = 8, RING_ALPHA = 0.2, CORE_RING_ALPHA = 0.3;
+// Diepte in de banen (B1, Victor, 02/11/2026): hoe verder van de kern, hoe lichter en fijner de stippen. Vroeger overal 0,2
+// (Nu 0,3) en even groot. Ooit houdt een ondergrens van 0,12, anders verdwijnt hij op een zwak scherm.
+const RING_GAP = 8, RING_ALPHA = [0.36, 0.26, 0.2, 0.15, 0.12], RING_DOT = [1.3, 1.12, 1, 0.9, 0.82];
 const TAIL_GAP = 7, TAIL_LENGTH = 1.1, TRAIL_STEPS = 10;
 const BEND_R = 170, BEND_PX = 18;          // raster rond de aanwijzer: straal en diepte (px)
 const WAKE = 0.7;                          // spoor op de baan: hoek (rad) achter een komeet waarin ringstippen nagloeien
@@ -40,7 +42,9 @@ const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 // Kern: zeshoekig raster van puntjes (stage-eenheden), straal groeit van rustig naar dringend.
 // Op een klein scherm wordt het raster grover (min. CORE_MIN_PX tussen de puntjes), anders vervloeit het tot een vlek.
 const TWINKLE_LIFE = 1.1;   // afvinken: duur van het uitfonkelen (s)
-const CORE_RMIN = 15, CORE_RMAX = 25, CORE_SPACING = 3.1, CORE_MIN_PX = 5;   // 15 % groter sinds de oogjes
+// Fijner raster (K2, Victor, 02/11/2026): 2,35 in plaats van 3,1 eenheden tussen de puntjes, puntjes 0,78 keer zo groot (CORE_DOT);
+// op gsm blijft het grove raster via CORE_MIN_PX, daar is het effect gelijk aan vroeger.
+const CORE_RMIN = 15, CORE_RMAX = 25, CORE_SPACING = 2.35, CORE_DOT = 0.78, CORE_MIN_PX = 5;   // 15 % groter sinds de oogjes
 const coreGrids = new Map();
 function coreGrid(spacing) {
   const key = spacing.toFixed(2);
@@ -856,7 +860,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     rings.forEach((ring, idx) => {
       const lv = ring.lv;
       const hot = ringHot.get(lv.id);
-      const base = lv.id === URGENT_LEVEL ? CORE_RING_ALPHA : RING_ALPHA;
+      const base = RING_ALPHA[idx] ?? RING_ALPHA[RING_ALPHA.length - 1];
       const intro = introAlpha(now, 0.15 + idx * 0.12, 0.8);
       const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro;
       const z = ring.z * cam.depth;
@@ -864,7 +868,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
       // In het zijaanzicht worden de ringen platte ellipsen die elkaar kruisen. Twee ingrepen houden het rustig:
       // elke tweede stip vervaagt, en de achterkant van elke ring (van je af) krijgt minder dekking dan de voorkant.
-      const r = (1 + 0.35 * hot) * cam.du;
+      const r = (1 + 0.35 * hot) * (RING_DOT[idx] ?? 1) * cam.du;
       const cue = cam.depth * (1 - hot);
       const buckets = new Map();
       for (let i = 0, j = 0; i < ring.pts.length; i += 2, j++) {
@@ -956,7 +960,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const breathe = breatheAmp ? breatheAmp * Math.sin(t * (1.3 - 0.85 * sleepK) - d.r * 0.25) : 0;
       const size = base + bump + breathe;
       if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
-      paths[Math.round(eyes.ink(d.x, d.y) * 3)].push(pt.x, pt.y, size * grow * cam.s * pt.f);
+      paths[Math.round(eyes.ink(d.x, d.y) * 3)].push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
     }
     paths.forEach((list, i) => {
       if (!list.length) return;
