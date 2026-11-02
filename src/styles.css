@@ -831,6 +831,9 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 }
 .sync-input::placeholder { color: var(--placeholder); }
 .sync-error { font-size: 13px; color: var(--late); }
+.sync-vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* voor de sleutelhanger, niet te zien */
+.sync-keep { display: grid; gap: 6px; justify-items: start; }
+.sync-key { flex: none; width: 100%; }   /* in de kolom van het formulier, anders werd flex-basis 200px de hoogte */
 .sync-code { font: 500 clamp(16px, 5.2vw, 26px)/1.2 var(--mono); letter-spacing: .08em; white-space: nowrap; text-align: center; padding: 14px 0; border: 1px dashed var(--dash); border-radius: 14px; user-select: all; }
 .sync-meta { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); text-align: center; }
 /* QR-code: altijd donker op licht, ook in het donkere thema (scant het best) */

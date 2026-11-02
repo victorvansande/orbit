@@ -12,6 +12,7 @@ import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveR
 import { QUOTES } from './focus/quotes.js';
 import { createWeather } from './focus/weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './sync/pair.js';
+import { canStore, storeCode, wasOffered, markOffered } from './sync/keychain.js';
 import { loadArchive, saveArchive, loadArchDel, saveArchDel, mergeArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './data/store.js';
 import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './core/i18n.js';
 import { greeting, coreLine } from './scene/greet.js';
@@ -2640,6 +2641,10 @@ function renderSync({ status, lastSync, code } = { status: sync.status, lastSync
     $('sync-code').hidden = !showCode;
     $('sync-show-code').textContent = showCode ? tx('sync.hideCode') : tx('sync.showCode');
     $('sync-show-code').setAttribute('aria-expanded', String(showCode));
+    $('sync-keep-code').value = code;
+    const offered = wasOffered(code);
+    $('sync-keep-text').textContent = tx(offered ? 'sync.keepDone' : 'sync.keepText');
+    $('sync-keep-btn').textContent = tx(offered ? 'sync.keepAgain' : 'sync.keep');
     $('sync-meta').textContent = lastSync ? tx('sync.metaAt', { text: text.toLowerCase(), time: TIME_FMT.format(lastSync) }) : tx('sync.meta', { text: text.toLowerCase() });
   }
 }
@@ -2680,15 +2685,26 @@ $('sync-scan').addEventListener('click', startScan);
 $('sync-scan-cancel').addEventListener('click', () => { scanner.stop(); syncView = 'auto'; renderSync(); });
 $('sync-join-form').addEventListener('submit', e => {
   e.preventDefault();
-  const code = codeFromText($('sync-input').value.trim());     // een code of een geplakte koppellink
+  const code = codeFromText($('sync-input').value.trim() || $('sync-key').value.trim());     // een code, een geplakte koppellink of de code uit de sleutelhanger
   if (!code) {
     $('sync-error').textContent = tx('sync.badCode');
     $('sync-error').hidden = false;
     return;
   }
-  $('sync-input').value = '';
+  $('sync-input').value = ''; $('sync-key').value = '';
   $('sync-manual').open = false;
   receiveFrom(code);
+});
+// synccode uit de sleutelhanger: zodra het toestel het veld invult, meteen ontvangen (voorstel A)
+$('sync-key').addEventListener('input', () => { if (codeFromText($('sync-key').value.trim())) $('sync-join-form').requestSubmit(); });
+// synccode als wachtwoord aanbieden: Chrome en Android via de API, Safari en iOS via het formulier naar het onzichtbare kader
+$('sync-keep').addEventListener('submit', async e => {
+  const code = sync.code;
+  if (!code) { e.preventDefault(); return; }
+  $('sync-keep-code').value = code;
+  markOffered(code);
+  if (canStore()) { e.preventDefault(); await storeCode(code); }
+  setTimeout(renderSync, 0);
 });
 // Plakken: link of code van het klembord (bv. gekopieerd in de browser op dezelfde gsm)
 $('sync-paste').addEventListener('click', async () => {

@@ -399,6 +399,9 @@
             <button type="button" class="btn-ghost" id="sync-paste" data-i="sync.paste">Plak</button>
             <button type="submit" class="btn-ghost" id="sync-join" data-i="sync.join">Ontvang</button>
           </div>
+          <!-- synccode uit de sleutelhanger: het toestel vult het wachtwoordveld in (gebruiker Orbit), Orbit ontvangt meteen -->
+          <input class="sync-vh" type="text" name="username" autocomplete="username" value="Orbit" tabindex="-1" aria-hidden="true">
+          <input class="sync-input sync-key" id="sync-key" type="password" name="password" autocomplete="current-password" placeholder="Code uit je sleutelhanger" aria-label="Synccode uit je sleutelhanger" data-ia="aria-label:sync.keyPh;placeholder:sync.keyPh" maxlength="40">
           <p class="sync-error" id="sync-error" role="alert" hidden></p>
         </form>
       </details>
@@ -447,6 +450,15 @@
         <button type="button" class="btn-ghost" id="sync-show-code" aria-expanded="false">Toon code</button>
       </div>
       <p class="sync-code" id="sync-code" hidden></p>
+      <!-- voorstel A: de synccode als wachtwoord aanbieden aan de sleutelhanger; Safari en iOS bewaren een ingediend
+           wachtwoordformulier, daarom gaat het naar een onzichtbaar kader met about:blank (er gaat niets naar een server) -->
+      <form class="sync-keep" id="sync-keep" method="post" action="about:blank" target="sync-keep-sink">
+        <p class="sync-text sync-note" id="sync-keep-text" data-i="sync.keepText">Bewaar de synccode in je sleutelhanger. Verliest dit toestel ooit zijn gegevens, dan haal je met die code je taken terug van de Orbit-server.</p>
+        <input class="sync-vh" type="text" name="username" autocomplete="username" value="Orbit" tabindex="-1" aria-hidden="true">
+        <input class="sync-vh" type="password" name="password" id="sync-keep-code" autocomplete="new-password" tabindex="-1" aria-hidden="true">
+        <button type="submit" class="btn-ghost" id="sync-keep-btn" data-i="sync.keep">Bewaar in sleutelhanger</button>
+      </form>
+      <iframe name="sync-keep-sink" class="sync-vh" title="" tabindex="-1" aria-hidden="true"></iframe>
       <p class="sync-meta" id="sync-meta"></p>
       <div class="sync-row sync-end">
         <button type="button" class="btn-ghost" id="sync-stop" data-i="sync.stop">Ontkoppel dit toestel</button>
