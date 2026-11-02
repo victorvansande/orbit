@@ -568,3 +568,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 02/11/2026, Claude Code: wegvegen van meldingen via touch-events (iOS). Open: Victor test op zijn iPhone.
 - 02/11/2026, Claude Code: prestatiemelding als komeet zonder kader (voorstel C). Voorstellen voor de timer buiten de focus en voor kern en banen volgen.
 - 02/11/2026, Claude Code: zandloper met zachte randen. Voorstellen voor de timer buiten de focus en voor kern en banen volgen.
+- 02/11/2026, Claude Code: voorstellen klaargezet: timer buiten de focus (artifact "Orbit timer buiten focus", A samenvatting, B boog rond de kern, C naast Instellingen, D tabblad, E stippencijfers; advies A + D) en kern en banen (artifact "Orbit kern en banen", K1 zachte rand, K2 fijner raster, K3 concentrische rijen, K4 eigen maantje; B1 diepte, B2 fijne stippellijn, B3 wijzerplaat, B4 licht op de baan; advies K1 + B1). Open: Victor kiest.
