@@ -14,3 +14,4 @@ Kort de harde regels (de volledige staan in CLAUDE.md, sectie Samenwerking, en i
 - Testen op 1440×900 en 375 px, licht en donker, console foutloos.
 - Code staat in mappen per domein (`src/core`, `data`, `sync`, `scene`, `focus`, `vendor`). Volg de regels in CLAUDE.md, sectie **Structuur**: één bestand één taak, afhankelijkheden één kant op, nieuwe functies in een module en niet in `app.js`, geen dode code.
 - Logisch uitgelijnd: wat bij elkaar hoort deelt een rand of lijn (tekst en zichtbare randen op de randen van de inhoud), maar niets onnodig forceren. Zie CLAUDE.md, Identiteit, Gedrag.
+- Genoeg lucht: binnen een groep 2 tot 10 px, tussen groepen minstens 16 px, onder een groot vlak (poster, kaart, QR, scène) minstens 20 px, een regel onder een merk of titel minstens 8 px; gemeten tussen zichtbare tekst en randen. Zie CLAUDE.md, Identiteit, Gedrag.

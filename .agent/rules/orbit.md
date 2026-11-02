@@ -32,3 +32,4 @@ Dit project wordt afwisselend bewerkt met Claude Code en met Antigravity. Alle p
 - Desktop 1440×900 én gsm 375 px, licht én donker thema.
 - Console foutloos, geen horizontale scroll (`document.documentElement.scrollWidth === innerWidth`).
 - Logisch uitgelijnd: wat bij elkaar hoort deelt een rand of lijn (tekst en zichtbare randen op de randen van de inhoud), niets onnodig forceren. Nameten met `getBoundingClientRect`. Zie CLAUDE.md, Identiteit, Gedrag.
+- Genoeg lucht: binnen een groep 2 tot 10 px, tussen groepen minstens 16 px, onder een groot vlak (poster, kaart, QR, scène) minstens 20 px, een regel onder een merk of titel minstens 8 px. Nameten tussen zichtbare tekst en randen. Zie CLAUDE.md, Identiteit, Gedrag.
