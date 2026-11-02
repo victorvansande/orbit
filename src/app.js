@@ -1712,14 +1712,21 @@ const timer = createTimer($('timer'), {
 // Op gsm staat de zandloper compact rechts naast de klok (in .focus-info), op desktop in zijn eigen vak boven het bakje
 function placeTimer() {
   const el = $('timer');
-  if (desktop.matches) { if (el.parentElement !== document.body) $('glass').before(el); }
+  if (desktop.matches) { if (el.parentElement !== document.body) document.querySelector('.focus-info').before(el); }
   else if (el.previousElementSibling !== $('clock')) $('clock').after(el);
 }
 desktop.addEventListener('change', placeTimer);
 placeTimer();
 // klein glas rechtsonder buiten de focus (desktop), zolang de zandloper loopt of gepauzeerd staat; een tik opent de focus
 const glass = createGlass($('glass'), { reducedMotion, tx, onOpen: () => setFocus(true) });
-function placeGlass() { if (desktop.matches && !document.body.classList.contains('is-focus')) glass.start(); else glass.stop(); }
+// desktop: rechtsonder in het venster; gsm: rechts in de rij Boven / Zijkant / Focus onder de scène, naast de knop Focus
+// (Victor, 02/11/2026: "op gsm geen zandloper als focus mode stopt")
+function placeGlass() {
+  const el = $('glass'), row = document.querySelector('.controls');
+  if (desktop.matches) { if (el.parentElement !== document.body) $('timer').after(el); }
+  else if (row && el.parentElement !== row) row.append(el);
+  if (!document.body.classList.contains('is-focus')) glass.start(); else glass.stop();
+}
 desktop.addEventListener('change', placeGlass);
 placeGlass();
 function setFocus(on) {
