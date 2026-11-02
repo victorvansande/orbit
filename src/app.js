@@ -1976,6 +1976,12 @@ function runTurn(plan, { replay = false } = {}) {
   });
   return true;
 }
+// demo: een vallende ster laten vallen (Victor, 02/11/2026); op gsm eerst naar boven, de scène staat boven de lijst
+$('meteor-btn').hidden = !DEMO_MODE;
+$('meteor-btn').addEventListener('click', () => {
+  if (!desktop.matches && scrollY > 40) { scrollTo({ top: 0, behavior: reducedMotion.matches ? 'auto' : 'smooth' }); setTimeout(() => scene.meteorNow(), 600); }
+  else scene.meteorNow();
+});
 // demo: de maandwissel opnieuw afspelen vanuit de details van de teller
 $('turn-replay').hidden = !DEMO_MODE;
 $('turn-replay').addEventListener('click', () => {

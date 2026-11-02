@@ -113,7 +113,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // eye candy: raster buigt naar de aanwijzer, schokgolf door de ringen bij afvinken, af en toe een vallende ster,
   // sterrenbeeld bij elke 25e ster
   const bend = { k: 0, x: 0, y: 0 };
-  let meteor = null, nextMeteor = performance.now() + (90 + Math.random() * 150) * 1000;
+  let meteor = null, nextMeteor = performance.now() + (90 + Math.random() * 150) * 1000, forceMeteor = false;
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
   let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
@@ -714,13 +714,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.fill();
   }
   function drawMeteor(now) {
-    if (reducedMotion.matches || minimal) return;
+    if (reducedMotion.matches || (minimal && !forceMeteor && !meteor?.forced)) return;
     if (!meteor && now >= nextMeteor) {
       const ang = (0.2 + Math.random() * 0.35) * (Math.random() < 0.5 ? 1 : -1) + (Math.random() < 0.5 ? 0 : Math.PI);
       const dir = [Math.cos(ang), Math.abs(Math.sin(ang))];               // altijd een beetje naar beneden
       // enkel boven de scène, niet achter de lijst of het wiel (op desktop viel ze daar soms helemaal weg)
       const free = Math.max(200, W - insets.left - insets.right);
-      meteor = { t0: now, x: insets.left + free * (0.15 + Math.random() * 0.7), y: H * (0.08 + Math.random() * 0.35), dx: dir[0], dy: dir[1], dist: Math.min(W, H) * (0.38 + Math.random() * 0.2) };
+      meteor = { t0: now, x: insets.left + free * (0.15 + Math.random() * 0.7), y: H * (0.08 + Math.random() * 0.35), dx: dir[0], dy: dir[1], dist: Math.min(W, H) * (0.38 + Math.random() * 0.2), forced: forceMeteor };
+      forceMeteor = false;
       nextMeteor = now + (360 + Math.random() * 480) * 1000;
     }
     if (!meteor) return;
@@ -1564,6 +1565,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     get turning() { return Boolean(turn); },
     setMinimal(on) { minimal = on; if (on) { sonar = null; skyWave = null; meteor = null; constellation = null; sparks.length = 0; } },
     wake() { wakeUntil = performance.now() + 20000; },
+    // demo: meteen een vallende ster (knop in de details van de teller), ook met Minimaal; niet bij minder beweging
+    meteorNow() { meteor = null; nextMeteor = 0; forceMeteor = true; },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },
