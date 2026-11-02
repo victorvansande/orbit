@@ -1061,7 +1061,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
     width: auto; height: auto; padding: 0; border-radius: 0; background: none; box-shadow: none;
     opacity: 1; visibility: visible; transform: none; pointer-events: auto;
   }
-  .timer.is-compact .timer-glass { flex: none; width: 20px; height: 33px; min-height: 0; }
+  .timer.is-compact .timer-glass { flex: none; width: 20px; height: 33px; min-height: 0; top: -10px; }   /* onderste rij punten (3,5 px boven de onderrand van het canvas) op de basislijn van het cijfer en de knoppen (gemeten) */
   .timer.is-compact.is-paused .timer-glass { opacity: .55; }
   .timer.is-compact .timer-side { flex-direction: row; align-items: center; gap: 0; }
   .timer.is-compact .timer-digits, .timer.is-compact .timer-expand, .timer.is-compact .timer-unit { display: none; }
@@ -1069,7 +1069,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .timer-num { font: 300 22px/1 var(--font); letter-spacing: -.02em; text-transform: none; font-variant-numeric: tabular-nums; }
   .timer-min small { font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
   .timer.is-compact .timer-row {
-    position: absolute; right: 0; bottom: calc(100% + 4px); flex-wrap: nowrap; gap: 14px; white-space: nowrap;
+    position: absolute; right: 0; bottom: calc(100% + 14px); flex-wrap: nowrap; gap: 14px; white-space: nowrap;
     padding: 0 16px; border-radius: 999px; background: var(--bg); box-shadow: 0 0 0 1px var(--line);
     opacity: 0; visibility: hidden; transform: translateY(4px);
     transition: opacity .25s var(--ease), transform .25s var(--ease), visibility .25s;
