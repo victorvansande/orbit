@@ -581,3 +581,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 02/11/2026, Claude Code: klein glas rechtsonder buiten de focus zolang de zandloper loopt (F), `src/focus/glass.js`. Niets openstaand.
 - 02/11/2026, Claude Code: zandloper ook op gsm (naast de klok), gelijk op gekoppelde toestellen en per blok één keer geteld, geen lichtpuntje bij afvinken op gsm. Open: echte test met twee gekoppelde toestellen door Victor.
 - 02/11/2026, Claude Code: klein glas ook op gsm buiten de focus (naast de knop Focus). Niets openstaand.
+- 02/11/2026, Claude Code: voorstellen voor de tijd naast de zandloper in de focus op gsm, zonder stippencijfers (artifact "Orbit tijd naast de zandloper" (https://claude.ai/artifact/1dGvgcAqQagwhaX4DHSnFE): T1 kapitaaltjes zoals de datum "NOG 24 MIN", T2 Geist Mono "24:59", T3 groot dun minutencijfer, T4 geen tijd, T5 in de datumregel; advies T1). Open: Victor kiest.
