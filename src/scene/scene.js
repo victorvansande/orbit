@@ -152,6 +152,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let INK = theme.ink, PAPER = theme.paper;
   const coreColor = [...theme.calm];
   let introStart = performance.now(), last = performance.now();
+  // Bollen wijken tijdens de maandwissel (Victor, 03/11/2026: "de orbs die nog draaien even verbergen dat we echt enkel de
+  // sterretjes naar de kern zien vertrekken"): 0 zolang er een maandwissel klaarstaat of loopt, daarna zacht terug.
+  let orbVeil = 1;
   let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
   let pointer = { x: -1, y: -1, inside: false };
   // Gezicht van de kern ("Uitgespaard", gekozen door Victor): twee oogvormen uitgespaard in het raster, met een pupil
@@ -374,6 +377,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ringHot.set(lv.id, smooth(ringHot.get(lv.id), lit ? 1 : 0, 9, dt));
     }
 
+    orbVeil = motion ? smooth(orbVeil, turn ? 0 : 1, turn ? 5 : 1.6, dt) : (turn ? 0 : 1);
     for (const o of orbs.values()) {
       const lvO = LEVEL_BY_ID.get(o.level), target = lvO.orbit;
       const r0 = o.r, off0 = o.offset + (o.lag || 0);
@@ -661,8 +665,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const r0 = Math.hypot(x0 - cx, y0 - cy), a0 = Math.atan2(y0 - cy, x0 - cx);
       const pos = q => { const r = r0 * (1 - q), an = a0 + Math.pow(q, 1.7) * 4.4; return [cx + Math.cos(an) * r, cy + Math.sin(an) * r]; };
       const [x, y] = pos(p);
-      const R = starR(st, dense, small) * (1 + b * 0.7) * (1 - p * 0.5);
-      const alpha = a * (0.45 + 0.55 * b);
+      // vlak bij de kern krimpt de ster verder en lost ze op in de kern, in plaats van op halve grootte te verdwijnen
+      const sink = smoothstep(0.82, 1, p);
+      const R = starR(st, dense, small) * (1 + b * 0.7) * (1 - p * 0.5) * (1 - 0.7 * sink);
+      const alpha = a * (0.45 + 0.55 * b) * (1 - sink);
       if (p > 0.004) {   // taps lichtstaartje langs de werkelijke spiraal (waar de ster de laatste 0,36 s was), dooft uit naar achteren
         trailPts.length = 0;
         for (let k = 0; k <= TURN_TAIL_N; k++) { const [px, py] = pos(pullAt(t - k * TURN_TAIL_DT)); trailPts.push(px, py); }
@@ -953,7 +959,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
             let glow = 0;
             for (const a of heads) {
               const behind = wrapAngle(a - j / n * TAU);
-              if (behind > 0 && behind < WAKE) glow = Math.max(glow, (1 - behind / WAKE) ** 2);
+              if (behind > 0 && behind < WAKE) glow = Math.max(glow, (1 - behind / WAKE) ** 2 * orbVeil);   // weg met de bollen tijdens de maandwissel
             }
             if (glow < 0.04) continue;
             const x = ring.pts[2 * j], y = ring.pts[2 * j + 1];
@@ -1133,7 +1139,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // baan (ook tijdens binnenvliegen of van ring wisselen). Effen staarten oogden te speels.
   // Lengte volgt de snelheid: op kruissnelheid de gewone staart, sneller (binnenvliegen) tot 2,5 keer zo lang.
   function drawOrb(o, it, lv, sp, moving) {
-    ctx.globalAlpha = o.alpha;
+    ctx.globalAlpha = o.alpha * orbVeil;
     // heel zachte gloed rond de kop (op vraag van Victor): een radiaal verloop van de eigen kleur naar niets,
     // in het donker iets sterker. Geen schaduwfilter: dat is traag op gsm.
     if (!minimal) {
@@ -1195,7 +1201,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   function drawOrbs() {
-    const list = [...orbs.values()].filter(o => o.wait <= 0 && o.alpha > 0.01);
+    const list = orbVeil < 0.01 ? [] : [...orbs.values()].filter(o => o.wait <= 0 && o.alpha > 0.01);
     const items = [];
     for (const o of list) {
       const lv = LEVEL_BY_ID.get(o.level);
