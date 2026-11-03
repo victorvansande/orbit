@@ -15,9 +15,9 @@ const SPIN_PERIOD = 160;
 const ZEN_BASE = 8;                     // omlooptijd van Nu in zen (s)
 const zenFactor = lv => lv.period / (ZEN_BASE * Math.pow(lv.period / LEVELS[0].period, 0.55));
 const TEMPO = {
-  normaal: { orbit: () => 1, spin: 1, beat: 1, waves: 1, tail: 1 },
-  zen:     { orbit: zenFactor, spin: 0.35, beat: 0.5, waves: 1, tail: 0.75 },
-  stil:    { orbit: () => 0, spin: 0, beat: 0, waves: 0, tail: 0 },
+  normaal: { orbit: () => 1, spin: 1, beat: 1, waves: 1, tail: 1, arrive: 1.7, gap: 0.07 },
+  zen:     { orbit: zenFactor, spin: 0.35, beat: 0.5, waves: 1, tail: 0.75, arrive: 2.6, gap: 0.1 },
+  stil:    { orbit: () => 0, spin: 0, beat: 0, waves: 0, tail: 0, arrive: 2.2, gap: 0.09 },
 };
 const FIT = 440;                        // zoveel stage-eenheden passen in min(breedte, hoogte)
 const FIT_NARROW = 372;                 // gsm: de ringen vullen bijna de hele breedte (Victor: de orbit moet de hoofdzaak zijn)
@@ -61,6 +61,19 @@ function coreGrid(spacing) {
 const GRID_ALPHA = 0.18, GRID_MAX = 3600;   // 0,13 was op sommige schermen amper zichtbaar
 const EDGE = 180;   // net buiten de buitenste ring (Ooit, 174): rand van de scène voor tekst ernaast
 const ARRIVE_R = 320;
+// Invliegen (Victor, 03/11/2026: "soms nog wat hakkelig ... niet aangepast aan de snelheid"): op de klok in plaats van per
+// beeld, met een eigen duur per tempo. De straal krimpt als 1 − (1 − u)^2,6 (snel waar de bol nog doorzichtig is, zacht
+// op zijn ring). Ver buiten zijn ring draait hij niet even snel rond als op zijn baan (een Nu-bol raasde zo tot 1800
+// eenheden per seconde): zijn hoeksnelheid is ω × ring / straal, dus overal ongeveer zijn gewone snelheid. Het verschil zit
+// in `lag`, een voorsprong die tijdens de vlucht tot 0 afneemt, zodat hij precies op zijn plek uitkomt.
+const ARRIVE_POW = 2.6;
+const arriveR = (target, u) => target + (ARRIVE_R - target) * Math.pow(1 - u, ARRIVE_POW);
+function arriveLag(target, u, dur) {
+  let sum = 0;
+  const N = 16, du = (1 - u) / N;
+  for (let k = 0; k < N; k++) sum += 1 - target / arriveR(target, u + (k + 0.5) * du);
+  return sum * du * dur;
+}
 
 const ease = cubicBezier(0.4, 0, 0.2, 1);
 
@@ -248,7 +261,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       // de nieuwe plek kon achteruit gaan. Het hele patroon draait daarom mee tot geen enkele bol terug moet; wie verder
       // moet, versnelt even, wie al goed staat, blijft op zijn baan.
       let back = 0;
-      for (const o of own) back = Math.min(back, wrapAngle(o.targetOffset - o.offset));
+      for (const o of own) if (!o.fresh) back = Math.min(back, wrapAngle(o.targetOffset - o.offset));
       if (back < 0) for (const o of own) o.targetOffset -= back;
     }
   }
@@ -263,16 +276,18 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         o = {
           id: task.id, level: task.level, createdAt: task.createdAt, title: task.title,
           r: reducedMotion.matches ? LEVEL_BY_ID.get(task.level).orbit : ARRIVE_R,
-          alpha: reducedMotion.matches ? 1 : 0, offset: 0, targetOffset: 0, fresh: true,
-          wait: intro && !reducedMotion.matches ? 0.55 + i * 0.07 : 0,
+          alpha: reducedMotion.matches ? 1 : 0, offset: 0, targetOffset: 0, fresh: true, lag: 0,
+          wait: 0,
+          arrive: reducedMotion.matches ? null : { t0: performance.now() + (intro ? (0.55 + i * tempo.gap) * 1000 : 0), dur: tempo.arrive },
           sx: null, sy: null, sr: 0, blend: null,
         };
         orbs.set(task.id, o);
         i++;
       } else if (o.level !== task.level) {
         // absolute hoek behouden bij een niveauwissel, daarna zacht herschikken
-        const a = phase.get(o.level) + o.offset;
+        const a = phase.get(o.level) + o.offset + (o.lag || 0);
         o.offset = a - phase.get(task.level);
+        o.lag = 0; o.arrive = null;
         o.level = task.level;
       }
       o.title = task.title;
@@ -360,17 +375,26 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
 
     for (const o of orbs.values()) {
-      if (o.wait > 0) { o.wait -= dt; continue; }
-      const target = LEVEL_BY_ID.get(o.level).orbit;
-      const r0 = o.r, off0 = o.offset;
-      o.r = motion ? smooth(o.r, target, 2.6, dt) : target;
+      const lvO = LEVEL_BY_ID.get(o.level), target = lvO.orbit;
+      const r0 = o.r, off0 = o.offset + (o.lag || 0);
+      if (o.arrive) {
+        const u = (now - o.arrive.t0) / 1000 / o.arrive.dur;
+        o.wait = u < 0 ? 1 : 0;
+        if (u < 0) { if (o.leaving) orbs.delete(o.id); continue; }
+        if (u >= 1 || !motion) { o.r = target; o.lag = 0; o.arrive = null; }
+        else {
+          o.r = arriveR(target, u);
+          o.lag = TAU / lvO.period * speed.get(o.level) * arriveLag(target, u, o.arrive.dur);
+          if (!o.leaving) o.alpha = Math.max(o.alpha, smoothstep(0, 0.3, u));
+        }
+      } else o.r = motion ? smooth(o.r, target, 2.6, dt) : target;
       let dOff = wrapAngle(o.targetOffset - o.offset);
       if (dOff < -1e-3) dOff += TAU;   // nooit achteruit (zie layoutOffsets)
       o.offset += dOff * (motion ? 1 - Math.exp(-4 * dt) : 1);
       // werkelijke snelheid (radiaal en extra hoeksnelheid) voor een staart die de echte baan volgt
       o.vr = dt > 0 ? (o.r - r0) / dt : 0;
-      o.vo = dt > 0 ? wrapAngle(o.offset - off0) / dt : 0;
-      o.alpha = smooth(o.alpha, o.leaving ? 0 : 1, o.leaving ? 8 : 3, dt);
+      o.vo = dt > 0 ? wrapAngle(o.offset + (o.lag || 0) - off0) / dt : 0;
+      if (!o.arrive || o.leaving) o.alpha = smooth(o.alpha, o.leaving ? 0 : 1, o.leaving ? 8 : 3, dt);
       if (o.leaving && o.alpha < 0.01) orbs.delete(o.id);
       if (o.blend) { o.blend.p += dt / 0.45; if (o.blend.p >= 1) o.blend = null; }
     }
@@ -1062,7 +1086,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   const isHot = o => hover.orb === o.id || external.task === o.id || pinned === o.id;
 
-  function orbAngle(o) { return phase.get(o.level) + o.offset; }
+  function orbAngle(o) { return phase.get(o.level) + o.offset + (o.lag || 0); }
 
   function orbFunnel(o, a, r = o.r) {
     const z = r < RIM ? depthAt(r) * cam.depth : 0;
