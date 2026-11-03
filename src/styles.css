@@ -318,12 +318,8 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .stat-dm { --dm-h: 22px; display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
 .stat-dm .dm { display: block; height: 100%; width: auto; overflow: visible; }
 .stats-total > span:last-child { padding-bottom: 2px; transition: opacity .3s var(--ease); }
-/* wissel maand / alles: de stippen springen kolom per kolom op en zakken tot schim, de nieuwe lichten op in dezelfde golf */
-.stat-dm .o { transform-box: fill-box; transform-origin: center; }
-.stat-dm.is-out .o { animation: dm-out .34s cubic-bezier(.4, 0, .2, 1) both; animation-delay: var(--x); }
-.dm .o.w { animation: dm-wave .52s cubic-bezier(.3, .7, .3, 1) both; animation-delay: var(--d); }
-@keyframes dm-out { 35% { opacity: 1; transform: scale(1.3); } 100% { opacity: var(--dm-ghost); transform: scale(.82); } }
-@keyframes dm-wave { 0% { opacity: var(--dm-ghost); transform: scale(.82); } 55% { opacity: 1; transform: scale(1.3); } 100% { opacity: 1; transform: scale(1); } }
+/* wissel maand / alles (V5 Ruis): stippen springen aan en uit zonder de oplicht-animatie van een gewoon cijfer */
+.dm .o.n { animation: none; }
 #stat-stars-label.is-swap { opacity: 0; }
 .stats-detail { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--fill); }
 .stats-detail[hidden] { display: none; }
@@ -1168,7 +1164,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .track, .tracks, .wheel, .focus-info, .focus-now li, .fn-check::after, .toast { transition-duration: .01s; }
   .track.is-done .t-check::before { animation: none; }
   .t-check svg path, .fn-check svg path { transition: none !important; }
-  .dm .o, .dm .o.w, .stat-dm.is-out .o { animation: none; }
+  .dm .o { animation: none; }
 }
 
 /* ---- Effecten (src/scene/fx.js) ---- */

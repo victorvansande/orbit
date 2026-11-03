@@ -17,10 +17,8 @@ const GLYPHS = {
 };
 
 const NS = 'http://www.w3.org/2000/svg';
-const WAVE_COL = 0.034, WAVE_ROW = 0.012;   // golf bij een wissel: s per kolom en per rij
 
-// col: kolom waar dit teken begint (voor de golf bij een wissel), null = gewone vertraging
-function glyph(ch, col = null) {
+function glyph(ch) {
   const rows = GLYPHS[ch];
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', ch === ':' ? 'dm dm-colon' : 'dm');
@@ -31,10 +29,9 @@ function glyph(ch, col = null) {
     c.setAttribute('cx', x);
     c.setAttribute('cy', y);
     c.setAttribute('r', v === '#' ? 0.4 : 0.33);
-    c.setAttribute('class', v === '#' ? (col === null ? 'o' : 'o w') : 'g');
-    // elke stip licht op met een eigen kleine vertraging; bij een wissel kolom per kolom van links naar rechts
-    if (v === '#') c.style.setProperty('--d', col === null ? `${(((x * 7 + y * 13) % 17) / 17 * 0.55).toFixed(2)}s`
-      : `${((col + x) * WAVE_COL + y * WAVE_ROW).toFixed(3)}s`);
+    c.setAttribute('class', v === '#' ? 'o' : 'g');
+    // elke stip licht op met een eigen kleine vertraging
+    if (v === '#') c.style.setProperty('--d', `${(((x * 7 + y * 13) % 17) / 17 * 0.55).toFixed(2)}s`);
     svg.append(c);
   }));
   return svg;
@@ -56,29 +53,55 @@ export function setMatrix(root, text) {
   root.setAttribute('aria-label', text);
 }
 
-// Wissel met een golf: de verlichte stippen springen kolom per kolom even op en zakken terug tot schim,
-// daarna lichten de stippen van de nieuwe tekst op in dezelfde richting. Zonder animatie gewoon setMatrix.
+// Wissel met ruis (V5, Victor 03/11/2026): het raster vervalt in flikkerende ruis die van links naar rechts
+// bezinkt in de nieuwe tekst; elke stip valt op zijn eigen moment vast, met een klein opspringen. Enkel voor
+// cijfers (5 stippen breed). Zonder animatie gewoon setMatrix. onSwap loopt halverwege (label wisselen).
+const NOISE_MS = 1250, NOISE_TICKS = 26;
+const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+const litAt = (chars, x, y) => { const i = Math.floor(x / 6), cx = x % 6; return i < chars.length && cx < 5 && GLYPHS[chars[i]][y][cx] === '#'; };
 export function morphMatrix(root, text, { still = false, onSwap } = {}) {
-  clearTimeout(root._morphT); root._morphT = 0;
-  root.classList.remove('is-out');
-  if (still || !root.children.length) { setMatrix(root, text); onSwap?.(); return; }
-  let col = 0;
-  for (const svg of root.children) {
-    svg.querySelectorAll('.o').forEach(c => c.style.setProperty('--x', `${((col + +c.getAttribute('cx')) * WAVE_COL).toFixed(3)}s`));
-    col += +svg.getAttribute('viewBox').split(' ')[2] + 1;
-  }
+  cancelAnimationFrame(root._morphT); root._morphT = 0;
+  const from = root._chars || [], to = [...text].filter(ch => GLYPHS[ch]);
+  if (still || !root.children.length || [...from, ...to].some(ch => ch === ':')) { setMatrix(root, text); onSwap?.(); return; }
+  const n = Math.max(from.length, to.length), w = n * 6 - 1, cells = [];
+  const svgs = Array.from({ length: n }, (_, i) => {
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'dm'); svg.setAttribute('viewBox', '-0.5 -0.5 5 7'); svg.setAttribute('aria-hidden', 'true');
+    for (let y = 0; y < 7; y++) for (let x = 0; x < 5; x++) {
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', y);
+      const gx = i * 6 + x;
+      cells.push({ c, x: gx, y, go: hash(gx, y + 9) * 0.18, lock: 0.32 + gx / w * 0.4 + hash(gx, y) * 0.2, k: '' });
+      svg.append(c);
+    }
+    return svg;
+  });
+  const set = (cell, on, pop) => {
+    const k = on ? (pop ? 'p' : 'o') : 'g';
+    if (k === cell.k) return;
+    cell.k = k;
+    cell.c.setAttribute('class', on ? 'o n' : 'g');   // n: zonder de oplicht-animatie van een gewoon cijfer
+    cell.c.setAttribute('r', on ? (pop ? 0.5 : 0.4) : 0.33);
+  };
+  cells.forEach(cell => set(cell, litAt(from, cell.x, cell.y), false));
+  root.replaceChildren(...svgs);
   root._pending = text;
-  root.classList.add('is-out');
-  root._morphT = setTimeout(() => {
+  let swapped = false;
+  const t0 = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - t0) / NOISE_MS), tick = Math.floor(p * NOISE_TICKS);
+    for (const cell of cells) {
+      const on = p < cell.go ? litAt(from, cell.x, cell.y) : p >= cell.lock ? litAt(to, cell.x, cell.y) : hash(cell.x * 7 + tick, cell.y * 3 + tick) < 0.42;
+      set(cell, on, p >= cell.lock && p < cell.lock + 0.08);
+    }
+    if (!swapped && p >= 0.5) { swapped = true; onSwap?.(); }
+    if (p < 1) { root._morphT = requestAnimationFrame(step); return; }
     root._morphT = 0;
-    root.classList.remove('is-out');
-    const chars = [...root._pending].filter(ch => GLYPHS[ch]);
-    let at = 0;
-    root.replaceChildren(...chars.map(ch => { const g = glyph(ch, at); at += GLYPHS[ch][0].length + 1; return g; }));
-    root._chars = chars;
-    root.setAttribute('aria-label', root._pending);
-    onSwap?.();
-  }, Math.round(col * WAVE_COL * 1000) + 340);
+    for (let i = to.length; i < n; i++) svgs[i].remove();
+    root._chars = to;   // aria-label zet de aanroeper (onSwap)
+    if (root._pending !== text) setMatrix(root, root._pending);   // intussen een nieuwe ster
+  };
+  root._morphT = requestAnimationFrame(step);
 }
 
 // Knipoog naar de sterrenhemel: één verlichte stip fonkelt even uit als dezelfde vierpuntige ster (holle zijden)

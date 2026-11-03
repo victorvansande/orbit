@@ -493,7 +493,7 @@ function renderStats({ quiet = false } = {}) {
   $('stats-rows').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', '', k), el('dd', '', String(v))]));
 }
 // De stippenteller wisselt om de 8 s tussen de sterren van deze maand en alle sterren (Victor, 03/11/2026),
-// met een golf door de stippen (morphMatrix). Enkel als de teller in beeld is; stil met Minimaal of minder beweging.
+// met ruis die bezinkt in het nieuwe getal (morphMatrix, V5). Enkel als de teller in beeld is; stil met Minimaal of minder beweging.
 const STAT_SWAP_MS = 8000;
 let statMode = 'all', statN = { all: 0, month: 0 }, statSwapT = 0;
 function statLabel() {
