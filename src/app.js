@@ -16,6 +16,7 @@ import { canStore, storeCode, wasOffered, markOffered } from './sync/keychain.js
 import { loadArchive, saveArchive, loadArchDel, saveArchDel, mergeArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './data/store.js';
 import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './core/i18n.js';
 import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
+import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
 import { playDone, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
@@ -2035,6 +2036,7 @@ function checkFeats(pop) {
   renderFeatsBadge(r);
   if (featsDialog.open) renderFeats();
   if (featQueue.length) showFeatPop();
+  noteRank(r, pop);
 }
 function renderFeatsBadge(r = featsNow()) {
   const b = $('feats-badge');
@@ -2131,8 +2133,7 @@ function showFeatPop() {
 // De melding staat midden boven de kern, niet midden op het scherm (Victor, 02/11/2026: "cleaner"). Op desktop ligt de
 // kern tussen lijst en wiel; nooit buiten beeld en nooit over het merk linksboven of de hoeklabels rechtsboven: past ze
 // daar niet, dan schuift ze zo weinig mogelijk opzij. Volgt de kern zolang ze in beeld is (focusmodus, venster herschalen).
-function placeFeatPop() {
-  const pop = $('feat-pop');
+function placeFeatPop(pop = $('feat-pop')) {
   if (pop.hidden) return;
   const w = pop.offsetWidth, m = 16, top = pop.getBoundingClientRect();
   let lo = m + w / 2, hi = innerWidth - m - w / 2;
@@ -2145,10 +2146,10 @@ function placeFeatPop() {
   const x = lo > hi ? innerWidth / 2 : Math.min(hi, Math.max(lo, core));
   pop.style.left = `${Math.round(x)}px`;
 }
-function followFeatPop() {
-  if ($('feat-pop').hidden) return;
-  placeFeatPop();
-  requestAnimationFrame(followFeatPop);
+function followFeatPop(pop = $('feat-pop')) {
+  if (pop.hidden) return;
+  placeFeatPop(pop);
+  requestAnimationFrame(() => followFeatPop(pop));
 }
 function hideFeatPop() {
   const pop = $('feat-pop');
@@ -2159,6 +2160,63 @@ function hideFeatPop() {
 $('feat-pop').addEventListener('pointerenter', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) clearTimeout(popTimer); });
 $('feat-pop').addEventListener('pointerleave', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) { clearTimeout(popTimer); popTimer = setTimeout(hideFeatPop, 2400); } });
 $('feat-pop').addEventListener('click', () => { hideFeatPop(); openFeats(); });
+
+// Nieuwe rang: P1 Het teken groeit (Victor, 03/11/2026). Alleen na een eigen actie (afvinken, focusblok, ...), zoals een
+// prestatie; wat via de sync binnenkomt, stijgt stil. `rankSeen` (per toestel) is de hoogste rang die hier al getoond werd,
+// zodat ongedaan maken en opnieuw afvinken de promotie niet herhaalt, tenzij de rang echt zakte. Komt na de prestaties,
+// via de regisseur, en houdt zolang het podium vast (de toast komt erna).
+const RANK_KEY = 'priority-orbit.rank.v1';
+let rankSeen = (() => { try { return Number(localStorage.getItem(RANK_KEY)) || 0; } catch { return 0; } })();
+let rankQueue = null, rankShown = null, rankBusy = false, rankWaiting = false, rankTimer = 0, rankGive = null;
+const promo = createPromo($('rank-pop-badge'), { reducedMotion });
+function saveRankSeen(lv) { rankSeen = lv; try { localStorage.setItem(RANK_KEY, String(lv)); } catch { /* geen opslag */ } }
+function noteRank(r, pop) {
+  const lv = r.rank.level;
+  if (!rankSeen) { saveRankSeen(lv); return; }   // eerste keer op dit toestel: stil onthouden
+  if (lv > rankSeen) {
+    if (pop) rankQueue = { from: rankQueue ? rankQueue.from : rankSeen, to: lv, name: r.rank.name };
+    saveRankSeen(lv);
+  } else if (lv < rankSeen) {   // gezakt (ongedaan maken): een promotie die nog moest komen of in beeld is, vervalt
+    saveRankSeen(lv);
+    if (rankQueue && rankQueue.to > lv) rankQueue = null;
+    if (rankBusy && rankShown && rankShown.to > lv) hideRankPop();
+  }
+  if (rankQueue) showRankPop();
+}
+function showRankPop() {
+  if (rankBusy || rankWaiting || !rankQueue) return;
+  if (!stageFree()) { rankWaiting = true; whenCalm(() => { rankWaiting = false; showRankPop(); }, 1); return; }
+  if (popBusy || featQueue.length || document.querySelector('dialog[open], .fx-reveal')) { rankWaiting = true; setTimeout(() => { rankWaiting = false; showRankPop(); }, 400); return; }
+  rankBusy = true;
+  const q = rankShown = rankQueue, pop = $('rank-pop'), cs = getComputedStyle(document.documentElement);
+  rankQueue = null;
+  rankGive = takeStage(PROMO_MS + 1200);
+  const still = minimalFx || reducedMotion.matches;
+  $('rank-pop-name').textContent = q.name;
+  pop.setAttribute('aria-label', tx('rank.newAria', { name: q.name }));
+  pop.style.setProperty('--rank-text', `${landAt(q.from, q.to) + 200}ms`);
+  pop.classList.toggle('is-still', still);
+  pop.hidden = false;
+  placeFeatPop(pop);
+  const cols = { bg: cs.getPropertyValue('--bg') };
+  for (const m of ['bronze', 'silver', 'gold', 'platinum']) cols[m] = cs.getPropertyValue(`--tier-${m}`);
+  promo.play(q.from, q.to, cols, { still });
+  requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(pop); });
+  rankTimer = setTimeout(hideRankPop, PROMO_MS);
+}
+function hideRankPop() {
+  const pop = $('rank-pop');
+  clearTimeout(rankTimer);
+  pop.classList.remove('is-on');
+  rankTimer = setTimeout(() => {
+    pop.hidden = true; promo.stop(); rankBusy = false; rankShown = null;
+    if (rankGive) { rankGive(); rankGive = null; }
+    showRankPop();
+  }, 450);
+}
+$('rank-pop').addEventListener('pointerenter', () => { if (rankBusy && $('rank-pop').classList.contains('is-on')) clearTimeout(rankTimer); });
+$('rank-pop').addEventListener('pointerleave', () => { if (rankBusy && $('rank-pop').classList.contains('is-on')) { clearTimeout(rankTimer); rankTimer = setTimeout(hideRankPop, 2400); } });
+$('rank-pop').addEventListener('click', () => { hideRankPop(); openFeats(); });
 
 /* ---- Scrollen met een venster of menu open: enkel binnen dat venster ---- */
 // Anders scrolde de pagina (of de takenlijst, of het wiel) erachter mee, en op sommige toestellen bleef een lang venster

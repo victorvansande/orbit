@@ -33,16 +33,23 @@ const RANK_METAL = ['bronze', 'bronze', 'bronze', 'silver', 'silver', 'silver', 
 const RANK_STEP = [1, 2, 3, 1, 2, 3, 1, 2, 1, 2];
 export const RANK_BOX = '-13.5 -13.5 27 27';
 export const rankMetal = level => RANK_METAL[Math.min(10, Math.max(1, level)) - 1];
+// De vormen van een rangteken, voor `rankSvg` en voor de animatie bij een nieuwe rang (`src/scene/promo.js`).
+const DOT_STEP = 34;
+export function rankParts(level) {
+  const i = Math.min(10, Math.max(1, level)) - 1, metal = RANK_METAL[i], t = ['bronze', 'silver', 'gold', 'platinum'].indexOf(metal), k = RANK_STEP[i];
+  const rings = [{ r: 10.6, w: 1.3 }];
+  if (t >= 1) rings.push({ r: 8.4, w: 0.9 });
+  if (t >= 2) rings.push({ r: 6.4, w: 0.8 });
+  return { metal, rings, starR: [6.6, 5.4, 4.2, 4.2][t], dots: Array.from({ length: k }, (_, j) => -90 + (j - (k - 1) / 2) * DOT_STEP), comet: t === 3 ? -40 : null };
+}
 export function rankSvg(level) {
-  const i = Math.min(10, Math.max(1, level)) - 1, t = ['bronze', 'silver', 'gold', 'platinum'].indexOf(RANK_METAL[i]), k = RANK_STEP[i];
-  let s = '<circle class="fb-ring" r="10.6"/>';
-  if (t >= 1) s += '<circle class="fb-ring fb-orbit" r="8.4"/>';
-  if (t >= 2) s += '<circle class="fb-ring fb-orbit fb-orbit-in" r="6.4"/>';
-  s += `<path class="fb-star" d="${starPath([6.6, 5.4, 4.2, 4.2][t])}"/>`;
-  if (t === 3) {   // komeetje op de buitenste baan, rechtsboven, met een taps staartje achter zich
-    const [x0, y0] = at(-40 - 57, 10.6), [x1, y1] = at(-40, 10.6);
+  const p = rankParts(level);
+  let s = p.rings.map((g, j) => `<circle class="fb-ring${j ? ' fb-orbit' : ''}${j === 2 ? ' fb-orbit-in' : ''}" r="${g.r}"/>`).join('');
+  s += `<path class="fb-star" d="${starPath(p.starR)}"/>`;
+  if (p.comet !== null) {   // komeetje op de buitenste baan, rechtsboven, met een taps staartje achter zich
+    const [x0, y0] = at(p.comet - 57, 10.6), [x1, y1] = at(p.comet, 10.6);
     s += `<path class="fb-trail" d="M${x0.toFixed(2)} ${y0.toFixed(2)} A10.6 10.6 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}"/><circle class="fb-moon fb-comet" cx="${x1.toFixed(2)}" cy="${y1.toFixed(2)}" r="2.3"/>`;
   }
-  for (let j = 0; j < k; j++) { const [x, y] = at(-90 + (j - (k - 1) / 2) * 34, 10.6); s += `<circle class="fb-moon" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.75"/>`; }
+  for (const a of p.dots) { const [x, y] = at(a, 10.6); s += `<circle class="fb-moon" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.75"/>`; }
   return s;
 }

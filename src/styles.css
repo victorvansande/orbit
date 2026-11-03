@@ -1229,6 +1229,28 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .wall-toggle {
   .feats-rankname { font-size: 22px; }
 }
 @media (prefers-reduced-motion: reduce) { .feat-pop, .feat-pop::before, .feat-pop.is-on, .feat-pop.is-on::before, .feat-pop.is-on .fb-star, .feat-pop.is-on .fb-spark, .feat-pop.is-on .fb-ring, .feat-pop.is-on .feat-pop-text, .feat-pop.is-on .feat-pop-pts { transition: none; animation: none; } }
+/* nieuwe rang (P1): boven de kern op de plek van de prestatiemelding, het teken groot met "Nieuwe rang" en de naam eronder.
+   Zelfde zachte vlek papier als de prestatiemelding; de tekst komt pas als de nieuwe stip geland is (--rank-text). */
+.rank-pop {
+  position: fixed; z-index: 70; top: 18px; left: 50%;
+  width: max-content; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 24px 10px;
+  background: none; border: 0; border-radius: 999px; color: var(--ink); cursor: pointer; font: inherit;
+  transform: translate(-50%, 0); opacity: 0; transition: opacity .45s var(--ease);
+}
+.rank-pop::before {
+  content: ''; position: absolute; inset: -34px -70px; z-index: 0; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, var(--bg) 62%, color-mix(in srgb, var(--bg) 78%, transparent) 80%, transparent);
+}
+.rank-pop.is-on { opacity: 1; transition-duration: .5s; }
+.rank-pop.is-on::before { animation: feat-halo .7s cubic-bezier(.4, 0, .2, 1) both; }
+.rank-pop > * { position: relative; z-index: 2; }
+.rank-pop-badge { width: 64px; height: 64px; margin-bottom: 4px; }
+.rank-pop-kicker { font: 500 9.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+.rank-pop-name { font-size: 16px; font-weight: 500; line-height: 1.2; }
+.rank-pop.is-on .rank-pop-kicker, .rank-pop.is-on .rank-pop-name { animation: feat-text .6s var(--rank-text, 2.4s) cubic-bezier(.4, 0, .2, 1) both; }
+.rank-pop.is-still .rank-pop-kicker, .rank-pop.is-still .rank-pop-name { animation: none; }
+@media (prefers-reduced-motion: reduce) { .rank-pop, .rank-pop.is-on, .rank-pop.is-on::before, .rank-pop.is-on .rank-pop-kicker, .rank-pop.is-on .rank-pop-name { transition: none; animation: none; } }
 
 /* wat in een venster scrolt, rolt niet door naar de pagina erachter (de rest houdt de scrollwacht in app.js tegen;
    overflow: hidden op de pagina zette op gsm de scrollpositie terug naar boven) */
