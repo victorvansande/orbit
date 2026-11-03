@@ -2245,8 +2245,8 @@ function showRankPop() {
   pop.classList.toggle('is-still', still);
   pop.hidden = false;
   placeFeatPop(pop);
-  const cols = { bg: cs.getPropertyValue('--bg') };
-  for (const m of ['bronze', 'silver', 'gold', 'platinum']) cols[m] = cs.getPropertyValue(`--tier-${m}`);
+  const cols = { bg: cs.getPropertyValue('--pop-bg') };   // omgekeerde melding: ondergrond en metaal van het andere thema
+  for (const m of ['bronze', 'silver', 'gold', 'platinum']) cols[m] = cs.getPropertyValue(`--pop-tier-${m}`);
   promo.play(q.from, q.to, cols, { still });
   requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(pop); });
   rankTimer = setTimeout(hideRankPop, PROMO_MS);

@@ -114,7 +114,9 @@ export function doneSummary(done, now = new Date()) {
 
 /* ---- Sterrenhemel ---- */
 // Coördinaten in stage-eenheden rond het midden van de scène (los van de 3D-camera: de hemel hangt erachter).
-const SKY_MIN = 24, SKY_MAX = 250;     // tussen de kern en net buiten de wijzerplaat
+// buiten de ring Nu (38) met wat lucht, tot net buiten de buitenste ring. Victor, 03/11/2026: "laat sterren nooit binnen de
+// eerste ring van NOW verschijnen, dat is te dicht bij de kern" (vroeger vanaf 24). Zelfde grens als SKY_IN in scene.js.
+const SKY_MIN = 50, SKY_MAX = 250;
 const GAPS = [11, 9, 7.5, 6.5];         // gewenste afstand; pas bij een heel volle hemel wat dichter, nooit overlap
 
 export function loadStars() {
@@ -135,6 +137,12 @@ export function syncStars(sky, done) {
     const star = orphans.shift();
     if (star) star.id = id;
     else placeStar(sky, id, null, false);
+    changed = true;
+  }
+  // sterren die nog van vroeger binnen de grens staan, krijgen een nieuwe plek (zelfde id, dus dezelfde ster)
+  for (const st of sky.stars.filter(st => Math.hypot(st.x, st.y) < SKY_MIN)) {
+    sky.stars.splice(sky.stars.indexOf(st), 1);
+    placeStar(sky, st.id, null, false);
     changed = true;
   }
   if (orphans.length) {

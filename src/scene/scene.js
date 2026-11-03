@@ -61,6 +61,7 @@ function coreGrid(spacing) {
 const GRID_ALPHA = 0.18, GRID_MAX = 3600;   // 0,13 was op sommige schermen amper zichtbaar
 const EDGE = 180;   // net buiten de buitenste ring (Ooit, 174): rand van de scène voor tekst ernaast
 const ARRIVE_R = 320;
+const SKY_IN = 50;   // binnengrens van de sterrenhemel in stage-eenheden, buiten de ring Nu (38); zelfde als SKY_MIN in stats.js
 // Invliegen (Victor, 03/11/2026: "soms nog wat hakkelig ... niet aangepast aan de snelheid"): op de klok in plaats van per
 // beeld, met een eigen duur per tempo. De straal krimpt als 1 − (1 − u)^2,6 (snel waar de bol nog doorzichtig is, zacht
 // op zijn ring). Ver buiten zijn ring draait hij niet even snel rond als op zijn baan (een Nu-bol raasde zo tot 1800
@@ -387,13 +388,22 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         const u = (now - o.arrive.t0) / 1000 / o.arrive.dur;
         o.wait = u < 0 ? 1 : 0;
         if (u < 0) { if (o.leaving) orbs.delete(o.id); continue; }
-        if (u >= 1 || !motion) { o.r = target; o.lag = 0; o.arrive = null; }
+        const w = TAU / lvO.period * speed.get(o.level);
+        if (!motion) { o.r = target; o.lag = 0; o.arrive = null; }
+        else if (u >= 1) { o.r = target; o.arrive = null; }
         else {
+          // De voorsprong wordt één keer bepaald en daarna elk beeld afgebouwd met de snelheid van dat moment, nooit sneller
+          // dan de ring zelf draait: zo gaat de bol altijd vooruit, ook als zijn ring stilvalt omdat je een rij aanwijst
+          // (Victor, 03/11/2026: een nieuwe weektaak "verandert in het midden van de inspring-animatie van richting";
+          // de voorsprong hing aan de snelheid van dat moment en sprong terug als die wegviel).
+          if (!o.arrive.lagSet) { o.lag = w * arriveLag(target, u, o.arrive.dur); o.arrive.lagSet = true; }
+          else o.lag = Math.max(0, o.lag - w * (1 - target / Math.max(target, o.r)) * dt);
           o.r = arriveR(target, u);
-          o.lag = TAU / lvO.period * speed.get(o.level) * arriveLag(target, u, o.arrive.dur);
           if (!o.leaving) o.alpha = Math.max(o.alpha, smoothstep(0, 0.3, u));
         }
       } else o.r = motion ? smooth(o.r, target, 2.6, dt) : target;
+      // wat er na de vlucht nog over is (de ring stond even stil), lost zacht op: hooguit 60 % van de ringsnelheid, dus nooit achteruit
+      if (!o.arrive && o.lag > 0) o.lag = motion ? Math.max(0, o.lag - TAU / lvO.period * speed.get(o.level) * 0.6 * dt) : 0;
       let dOff = wrapAngle(o.targetOffset - o.offset);
       if (dOff < -1e-3) dOff += TAU;   // nooit achteruit (zie layoutOffsets)
       o.offset += dOff * (motion ? 1 - Math.exp(-4 * dt) : 1);
@@ -623,6 +633,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
 
   function skyXY(x, y, ks, st = null) {
+    // Moet de hemel op een klein scherm naar binnen (skyScale), dan schuift hij tussen SKY_IN en de rand samen in plaats
+    // van alles naar de kern toe: zo komt geen ster binnen de ring Nu (Victor, 03/11/2026).
+    if (ks < cam.s) {
+      const kk = Math.max(0, (250 * ks / cam.s - SKY_IN) / (250 - SKY_IN)), r = Math.hypot(x, y);
+      if (r > 0) { const f = (SKY_IN + Math.max(0, r - SKY_IN) * kk) / r; x *= f; y *= f; }
+      ks = cam.s;
+    }
     const { pFactor } = starLayer(st);
     const baseTilt = (VIEW.top.tilt + (VIEW.side.tilt - VIEW.top.tilt) * cam.depth) * DEG * SKY_TILT;
     const a = baseTilt * pFactor;
