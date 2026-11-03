@@ -290,7 +290,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 2px;
+  padding: 0 0 0 2px;   /* het bolletje staat op de rechterrand van de inhoud */
   margin-bottom: 1.5px;
   font: 500 10.5px/1 var(--mono);
   letter-spacing: .12em;
@@ -301,6 +301,14 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .wall-toggle::before { content: ''; position: absolute; inset: -10px -8px; }
 .wall-toggle:hover { color: var(--ink-2); }
 .wall-toggle[aria-pressed="true"] { color: var(--ink); }
+/* aan of uit in één oogopslag (Victor, 03/11/2026: "laat het iets duidelijker zijn wanneer het knopje wall in of
+   uitgeschakeld is"): een bolletje achter het woord, hol als de muur uit staat, vol als hij aan staat */
+.wall-toggle::after {
+  content: ''; flex: none; width: 6px; height: 6px; box-sizing: border-box; border-radius: 50%;
+  border: 1.2px solid currentColor; background: transparent;
+  transition: background-color .2s var(--ease), transform .2s var(--ease);
+}
+.wall-toggle[aria-pressed="true"]::after { background: currentColor; }
 .stats-total {
   display: flex; align-items: flex-end; gap: 10px; min-height: 32px; text-align: left;
   font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
