@@ -647,13 +647,18 @@ function trackRow(t) {
 // traag naar links tot het einde leesbaar is, wacht even en glijdt terug. Zolang je blijft aanwijzen, herhaalt het.
 const MQ_SPEED = 50;   // px per seconde
 function runMarquee(box, keep = false) {
-  const inner = box.firstElementChild;
-  if (!inner || reducedMotion.matches || !box.isConnected) return;
+  if (!box.firstElementChild || reducedMotion.matches || !box.isConnected) return;
   if (keep) box._keep = true;
-  if (box._mq) return;
+  if (box._mq || box._pend) return;
+  // pas meten nadat de rij zich aanpaste (bij aanwijzen schuift het prullenbakje in en wordt de titel smaller)
+  box._pend = setTimeout(() => { box._pend = 0; startMarquee(box); }, 420);
+}
+function startMarquee(box) {
+  const inner = box.firstElementChild;
+  if (!inner || !box.isConnected || box._mq) return;
   const d = Math.ceil(inner.offsetWidth - (box.clientWidth - 6)) + 4;
   if (d <= 6) return;
-  const move = d / MQ_SPEED * 1000, back = Math.max(450, d / 160 * 1000), h0 = 450, h1 = 1300, T = h0 + move + h1 + back;
+  const move = d / MQ_SPEED * 1000, back = Math.max(450, d / 160 * 1000), h0 = 150, h1 = 1300, T = h0 + move + h1 + back;
   const ease = 'cubic-bezier(.4,0,.2,1)';
   const a = inner.animate([
     { transform: 'translateX(0)', offset: 0 },
@@ -664,7 +669,7 @@ function runMarquee(box, keep = false) {
   ], { duration: T });
   box._mq = a;
   clearTimeout(box._mqIn); clearTimeout(box._mqOut);
-  box._mqIn = setTimeout(() => box.classList.add('is-marquee'), h0 - 150);
+  box._mqIn = setTimeout(() => box.classList.add('is-marquee'), 0);
   box._mqOut = setTimeout(() => box.classList.remove('is-marquee'), h0 + move + h1 + back * 0.3);
   a.onfinish = () => {
     box._mq = null;
@@ -673,6 +678,7 @@ function runMarquee(box, keep = false) {
 }
 function stopMarquee(box) {
   box._keep = false;
+  clearTimeout(box._pend); box._pend = 0;
   clearTimeout(box._again);
   const a = box._mq, inner = box.firstElementChild;
   if (!a || !inner) return;
