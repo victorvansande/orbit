@@ -2543,6 +2543,13 @@ const sync = createSync({
     // Eigen wijzigingen die nog niet bij de server waren (bv. offline toegevoegd op een al gekoppeld toestel) blijven
     const unsynced = pending.n > 0 && pending.confirmedAt > 0
       ? realTasks().filter(t => (t.updatedAt || 0) > pending.confirmedAt && !state.tasks.some(r => r.id === t.id)) : [];
+    // Eigen taken die de verzender niet kent (bv. een taak die je in een nieuwe webapp toevoegde vóór het koppelen): niet
+    // stil overnemen (de lijst wordt vervangen, zo blijft er niets ouds of afgevinkts terugkomen), maar ook niet vergeten.
+    // Ze staan in de momentopname "Voor ontvangen" en een toast biedt aan ze terug te zetten (Victor, 03/11/2026: "dit
+    // moet echt waterdicht zijn"). Wat de verzender als afgevinkt of verwijderd kent, telt niet als eigen taak.
+    const theirs = new Set(state.tasks.map(t => t.id));
+    const known = id => theirs.has(id) || state.gone?.[id] || state.archDel?.[id] || state.done?.[id] || (state.archive || []).some(a => a.id === id);
+    const leftover = realTasks().filter(t => !known(t.id) && !unsynced.includes(t) && !demoIds(realTasks()).has(t.id));
     gone = { ...state.gone };
     tasks = [...dropDemo(state.tasks.filter(isTask).map(t => ({ ...t })), 'demo'), ...unsynced];
     // het logboek van beide toestellen samen: niemand verliest zijn telling
@@ -2568,6 +2575,13 @@ const sync = createSync({
     saveTasks({ notify: false, reason: 'receive' });
     render();
     renderArchive();
+    if (leftover.length) {
+      showToast(tx('toast.ownLeft', { n: leftover.length }), () => {
+        const now = Date.now();
+        for (const t of leftover) if (!tasks.some(x => x.id === t.id)) { delete gone[t.id]; tasks.push({ ...t, updatedAt: now }); }
+        applyDeadlines(); saveTasks(); render(); notifySync();
+      }, tx('toast.restore'));
+    }
   },
   onStatus: renderSync,
   onPair: renderPair,

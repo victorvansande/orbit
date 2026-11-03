@@ -28,7 +28,10 @@ const signature = tasks => tasks.map(t => `${t.id}:${t.updatedAt || 0}`).sort().
 // lijst staat, valt eruit; wat voorgoed verwijderd werd, blijft weg via een verwijdermarkering (`archDel`).
 export function loadArchDel() {
   const limit = Date.now() - KEEP_DAYS * 86400000, out = {};
-  for (const [id, t] of Object.entries(read(ARCHDEL_KEY, {}) || {})) if (Number.isFinite(t) && t > limit) out[id] = t;
+  // `read` aanvaardt enkel lijsten; dit is een object, dus zelf inlezen (anders kwam er altijd {} terug, gevonden 03/11/2026)
+  let raw = {};
+  try { const v = JSON.parse(localStorage.getItem(ARCHDEL_KEY)); if (v && typeof v === 'object' && !Array.isArray(v)) raw = v; } catch { /* leeg */ }
+  for (const [id, t] of Object.entries(raw)) if (Number.isFinite(t) && t > limit) out[id] = t;
   return out;
 }
 // Een object, geen lijst: `write` kan het niet inkorten (slice) en bewaarde het daardoor nooit (gevonden 03/11/2026).

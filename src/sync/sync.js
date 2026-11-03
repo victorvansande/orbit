@@ -48,11 +48,13 @@ export function mergeStates(a, b) {
     const cur = byId.get(t.id);
     if (!cur || (t.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(t.id, t);
   }
-  const tasks = [...byId.values()].filter(t => !(gone[t.id] >= (t.updatedAt || 0)));
-  const limit = Date.now() - GONE_DAYS * 86400000;
-  for (const [id, t] of Object.entries(gone)) if (t < limit) delete gone[id];
   const done = {};
   for (const src of [a.done, b.done]) for (const [id, t] of Object.entries(src || {})) if (Number.isFinite(t) && !id.startsWith('handmatig-')) done[id] = Math.max(done[id] || 0, t);
+  // Afgevinkt blijft afgevinkt: `gone` wordt na 60 dagen opgeruimd, het logboek `done` nooit. Zo brengt een toestel dat
+  // lang niet open was (of een oude reservekopie) een taak die elders al afgevinkt is niet terug (03/11/2026).
+  const tasks = [...byId.values()].filter(t => !(gone[t.id] >= (t.updatedAt || 0)) && !(done[t.id] >= (t.updatedAt || 0)));
+  const limit = Date.now() - GONE_DAYS * 86400000;
+  for (const [id, t] of Object.entries(gone)) if (t < limit) delete gone[id];
   for (const t of tasks) if (done[t.id] && (t.updatedAt || 0) > done[t.id]) delete done[t.id];
   const doneReset = Math.max(a.doneReset || 0, b.doneReset || 0);
   // nieuwe hemels: alle sneden van beide kanten
@@ -289,7 +291,8 @@ export function createSync({ getState, applyState, onReceive = applyState, onSta
   async function receiveAck(text) {
     let info;
     try { info = await unseal(key, text); } catch { return; }
-    if (info?.ack) onPair({ role: 'send', step: 'received', count: info.count, by: info.from || '' });
+    // enkel de verzender meldt "Verstuurd naar ...": anders zag ook de ontvanger (of een ander toestel) zijn eigen bevestiging
+    if (info?.ack && mode === 'send') onPair({ role: 'send', step: 'received', count: info.count, by: info.from || '' });
   }
 
   function changed() {
