@@ -157,6 +157,16 @@ export function entryFor(task, t) {
 export function recordDone(f, task, t = Date.now()) { if (task?.id && !task.demo) f.log[task.id] = entryFor(task, t); }
 export function recordEvent(f, key, t = Date.now()) { if (!f.ev[key]) f.ev[key] = t; }
 export function recordFocus(f, minutes, t = Date.now()) { f.focus[String(t)] = minutes; }
+// De focusblokken van 1 november 2026 tot de opkuis op 03/11/2026 waren tests van de zandloper (Victor: "kan je ze terug
+// op 0 zetten voor november"): ze tellen nergens mee, ook niet als een ander toestel ze nog stuurt.
+const FOCUS_VOID = [new Date(2026, 10, 1).getTime(), 1793698200000];
+// haalt uit de prestaties wat geen echte prestatie is: afgevinkte taken die geen ster zijn (`skip(id)`) en de testblokken
+export function purge(f, skip) {
+  let changed = false;
+  for (const id of Object.keys(f.log || {})) if (skip(id)) { delete f.log[id]; changed = true; }
+  for (const t of Object.keys(f.focus || {})) if (+t >= FOCUS_VOID[0] && +t < FOCUS_VOID[1]) { delete f.focus[t]; changed = true; }
+  return changed;
+}
 // afgevinkte taken uit het archief die nog niet in het logboek staan (eerste keer, of een ouder toestel)
 export function backfill(f, archive) {
   let n = 0;

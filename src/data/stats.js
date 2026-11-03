@@ -19,7 +19,20 @@ function writeObj(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); 
 
 /* ---- Logboek ---- */
 // 'handmatig-…' waren opvulsterren van een eenmalig consolescript (teller op 3, 28/10/2026), geen echte taken: weg ermee
-export const isFiller = id => id.startsWith('handmatig-');
+// Geen echte sterren (Victor, 03/11/2026): acht voorbeeldtaken die op 27/10/2026 om 22:25 uit de lijst werden opgeruimd
+// en daarbij als "elders afgevinkt" in het logboek kwamen (aangemaakt en "afgevinkt" in dezelfde minuut). Ze gaven valse
+// prestaties en tellen nergens meer mee, ook niet als een ander toestel ze nog stuurt.
+export const NOT_DONE = new Set([
+  '0c20239e-c739-4f44-8141-5a7ff9e135b7',
+  '8b815e92-a272-486b-a6bd-50251e124fd2',
+  '0b734618-956f-4d20-af37-8439c6487775',
+  '8b29335e-9d82-49a9-b399-a2a228b7d54d',
+  'ee1167e1-3e74-4185-bb1e-6b597fac473b',
+  '976e7ebe-85a4-46b7-b3bd-c39d1e60b4b2',
+  '82c5a2aa-9222-4b16-88f2-101bd19b84f8',
+  '8a63a723-b89b-4ac0-9345-aecf6622ac9f',
+]);
+export const isFiller = id => id.startsWith('handmatig-') || NOT_DONE.has(id);
 export const cleanDone = done => Object.fromEntries(Object.entries(done || {}).filter(([id, t]) => Number.isFinite(t) && !isFiller(id)));
 
 // Eerste keer: opbouwen uit het archief (echte taken) en de vroegere telling per dag. Wat de telling meer had dan

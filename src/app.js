@@ -7,7 +7,7 @@ import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync/sync.js';
 import { mirror, readMirror } from './data/backup.js';
 import { setMatrix, twinkleDot } from './scene/matrix.js';
-import { loadDone, saveDone, cleanDone, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
+import { loadDone, saveDone, cleanDone, isFiller, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
   loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView } from './data/stats.js';
 import { QUOTES } from './focus/quotes.js';
 import { createWeather } from './focus/weather.js';
@@ -20,7 +20,7 @@ import { playDone, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
-import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, evaluate, revoke } from './data/feats.js';
+import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
 import { softReveal, whiteBurst, smallNight, createWall } from './scene/fx.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
@@ -184,7 +184,7 @@ let done = loadDone(archive);                    // logboek van afgevinkte taken
 // dan komt ze erbij. Geeft true als er iets bijkwam.
 function archiveIntoDone() {
   let added = false;
-  for (const a of archive) if (Number.isFinite(a.doneAt) && done[a.id] === undefined) { done[a.id] = a.doneAt; added = true; }
+  for (const a of archive) if (Number.isFinite(a.doneAt) && done[a.id] === undefined && !isFiller(a.id)) { done[a.id] = a.doneAt; added = true; }
   return added;
 }
 if (archiveIntoDone()) saveDone(done);
@@ -195,6 +195,7 @@ const starVisible = id => done[id] !== undefined && inView(done[id], skyView, sk
 let sky = syncStars(loadStars(), done);           // één ster per afgevinkte taak
 let feats = loadFeats();                          // prestaties: logboek, ontgrendeld, focusblokken, gebeurtenissen
 if (backfill(feats, archive)) saveFeats(feats);   // wat al in het archief zat, telt mee
+if (purge(feats, isFiller)) saveFeats(feats);      // opgeruimde voorbeeldtaken en testblokken van de zandloper tellen niet (03/11/2026)
 applyDeadlines();
 saveTasks({ notify: false });
 // Vraag de browser om de opslag niet op te ruimen als er plaats tekort is
@@ -2478,7 +2479,10 @@ const sync = createSync({
     // Taken die hier verdwijnen omdat ze elders afgevinkt zijn: eerst een momentopname, dan naar het archief, en melden
     // elders verwijderd (archDel) gaat niet naar het archief, maar krijgt wel eerst een momentopname: niets verdwijnt zonder spoor
     if (realTasks().some(t => !keep.has(t.id))) snapshot(tasks, 'sync');
-    const lost = realTasks().filter(t => !keep.has(t.id) && !state.archDel?.[t.id] && !archDel[t.id]);
+    // opgeruimde voorbeeldtaken (elders weggehaald door dropDemo) zijn niet afgevinkt: stil weg, geen archief en geen ster
+    // (Victor, 03/11/2026: zo kwamen er op 27/10 acht valse sterren en later vier valse prestaties bij)
+    const demoLike = demoIds(realTasks());
+    const lost = realTasks().filter(t => !keep.has(t.id) && !demoLike.has(t.id) && !state.archDel?.[t.id] && !archDel[t.id]);
     if (lost.length) {
       const now = Date.now();
       archive = saveArchive([...lost.map(t => ({ ...t, doneAt: state.gone?.[t.id] || now, by: 'elders' })), ...archive]);
@@ -2491,6 +2495,7 @@ const sync = createSync({
     saveCuts(skyCuts);
     feats = mergeFeats(feats, state.feats);
     if (backfill(feats, archive)) saveFeats(feats);   // wat elders afgevinkt werd, telt ook hier mee voor de prestaties
+    if (purge(feats, isFiller)) saveFeats(feats);
     adoptTimer(state.timer);
     for (const t of lost) if (!done[t.id] && (state.gone?.[t.id] || Date.now()) > doneReset) done[t.id] = state.gone?.[t.id] || Date.now();
     saveDone(done);
@@ -2529,6 +2534,7 @@ const sync = createSync({
     const ownArchive = archive.length;
     archive = saveArchive(mergeArchive(archive, state.archive || [], new Set(tasks.map(t => t.id)), archDel));
     if (backfill(feats, archive)) saveFeats(feats);
+    if (purge(feats, isFiller)) saveFeats(feats);
     syncStars(sky, done);
     renderStats();
     checkFeats(false);
@@ -2999,6 +3005,17 @@ document.documentElement.classList.remove('is-veiled');   // geen intro: het pap
 renderStats();
 if (turnShow && !turnAfterReveal) setTimeout(() => runTurn(turnPlan), 250);   // zonder intro: de scène bouwt op terwijl de sterren oplichten
 if (new Date().getHours() === 3) recordEvent(feats, 'night');
+// Eenmalig (Victor, 03/11/2026: "die achievements heb ik niet oprecht verdiend en moeten weg"): wat sinds 2 november
+// ontgrendeld werd maar enkel steunde op de opgeruimde voorbeeldtaken of de testblokken van de zandloper (die nu niet meer
+// meetellen), wordt ingetrokken met een markering in feats.rev, zodat ook gekoppelde toestellen het laten vallen.
+try {
+  if (!DEMO_MODE && localStorage.getItem('priority-orbit.fix.v1') !== '2026-11-03') {
+    const since = new Date(2026, 10, 2).getTime();
+    const wrong = featsNow().list.filter(x => x.at >= since && x.value < x.goal).map(x => x.id);
+    if (wrong.length) { revoke(feats, { unlocked: wrong }); saveFeats(feats); setTimeout(() => notifySync(), 0); }
+    localStorage.setItem('priority-orbit.fix.v1', '2026-11-03');
+  }
+} catch { /* geen opslag */ }
 checkFeats(turnFeatLater);   // bij het laden stil: wat al gehaald was, staat meteen goed (behalve de nieuwe hemel van de maandwissel)
 booted = true;
 renderSync();
