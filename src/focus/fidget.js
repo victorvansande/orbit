@@ -595,7 +595,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   const chr = new Array(CELLS).fill(''), want = new Float32Array(CELLS), agit = new Float32Array(CELLS), pos = new Float32Array(CELLS * 2);
   let palette = null, paletteAt = 0;
   let raf = 0, running = false, acc = 0, last = 0;
-  let press = null, nudgeAt = 0, kick = 0;   // het bakje staat vast (Victor); een duwtje is een korte schok op de inhoud
+  let press = null;   // het bakje staat vast (Victor), en sinds 03/11/2026 ook geen duwtje meer op de inhoud
 
   let modeName = 'lava';   // standaard (Victor); zonder WebGL valt renderBar terug op water
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) modeName = m; } catch { /* geen opslag */ }
@@ -725,17 +725,10 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     if (!running) return;
     acc += Math.min(100, now - (last || now));
     last = now;
-    // af en toe een zacht duwtje, zodat het nooit lang helemaal stil ligt
-    if (now > nudgeAt) {
-      kick = (Math.random() < 0.5 ? -1 : 1) * (0.25 + 0.2 * Math.random());
-      nudgeAt = now + 9000 + Math.random() * 7000;
-    }
     let n = 0;
     while (acc >= STEP_MS && n < 3) {
-      const ax = kick, m = mode();
-      kick *= 0.8;
-      // zwaartekracht recht naar onder, plus de korte schok van een duwtje
-      m.step({ gx: -ax / GRAVITY, gy: 1, ax, ay: 0 });
+      // zwaartekracht recht naar onder; ax en ay blijven voor een schok op de inhoud, maar die is er niet meer
+      mode().step({ gx: 0, gy: 1, ax: 0, ay: 0 });
       acc -= STEP_MS; n++;
     }
     if (n === 3) acc = 0;
@@ -767,12 +760,11 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
       if (running) return;
       if (reducedMotion.matches) { render(performance.now()); return; }
       running = true; last = 0; acc = 0;
-      nudgeAt = performance.now() + 2500;
       raf = requestAnimationFrame(frame);
     },
     stop() {
       running = false; cancelAnimationFrame(raf);
-      press = null; kick = 0; mode().leave();
+      press = null; mode().leave();
       for (const m of Object.values(modes)) m.unmount?.();   // topo: eigen lus en WebGL-context opruimen
     },
   };
