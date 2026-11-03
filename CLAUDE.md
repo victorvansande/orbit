@@ -194,6 +194,7 @@ Op vraag van Victor (02/11/2026): een volledig identiteitstraject voor Orbit (fa
 | `worker/` | Eigen sync-server op Cloudflare (Worker + Durable Object), deploy via `.github/workflows/sync-worker.yml` |
 | `brand/` | Identiteitstraject (zie Merk): `merkgids/` (de merkgids als pagina), `merk/` (alle merkbestanden), `onderzoek/` (concurrenten, letterkeuze), `rondes/` (renders van elke ronde en test), `ronde4-logo/` (svg, png, pdf en favicons van de verworpen ronde 4), `tools/` (Python-scripts die de vormen bouwen en testen) |
 | `ontwerp/paneel/` | Voorstellen voor de fidget Paneel (zie Bakje, Paneel): `favorieten.html` (de favorieten van Victor, nu dertien), `ronde1.html` (P1 tot P7), `ronde2.html` (R1 tot R6), `ronde3.html` (R7 tot R12), `ronde4.html` (R13 tot R18). Losse pagina's met `noindex`, online via Pages op https://victorvansande.github.io/orbit/ontwerp/paneel/favorieten.html; niets in de app laadt ze, niet in `SHELL` |
+| `ontwerp/geluid/` | `prompt.md`: uitgebreide opdracht (Engels, voor een model) om als sounddesigner een geluidsidentiteit voor Orbit te ontwerpen: rol, Orbit vertaald naar klank, huidige stand van `sound.js`, principes, anti-sloplijst, momenten met hun plek in de code, technische grenzen (Web Audio, geen bestanden of build-stap, metingen met `OfflineAudioContext`), werkwijze met drie richtingen in een speelbaar artifact, acceptatiecriteria. Op vraag van Victor (03/11/2026) |
 
 ## Niveaus
 
@@ -657,3 +658,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 03/11/2026, Claude Code: R13, R14, R15, R16 en R17 bij de favorieten gezet (nu dertien, artifact "Orbit paneel favorieten" en `ontwerp/paneel/favorieten.html`). Open: Victor kiest wat er in het bakje komt; datum in de focusmodus (D1 tot D5).
 - 03/11/2026, Claude Code: fidget Paneel gebouwd met alle dertien favorieten, fosfor uit de kleurkiezer, momentkleuren vast, subtiel pijltje onder het bakje om te wisselen (`src/focus/panel.js`). Open: Victor test het op zijn pc; datum in de focusmodus (D1 tot D5).
 - 03/11/2026, Claude Code: label Volgende deadline en de auteur van de quote in de focusmodus in het Orbit-rood (`--core`). Open: Victor beslist of het label NU (`--late`) ook `--core` wordt; datum in de focusmodus (D1 tot D5).
+- 03/11/2026, Claude Code: opdracht voor sounddesign geschreven en bewaard (`ontwerp/geluid/prompt.md`). Open: Victor beslist of het geluidstraject start; datum in de focusmodus (D1 tot D5).
