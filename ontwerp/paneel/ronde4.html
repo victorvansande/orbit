@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Orbit CRT-paneel 4</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&family=VT323&display=swap">
+<style>
+/* Layout: per variant het bakje op ware grootte (326 × 227) als monitor, licht en donker naast elkaar, levend. */
+:root {
+  --page: #E9E9E6; --page-ink: #1B1B22; --page-ink-2: #5E5E68; --page-line: rgba(27,27,34,.12);
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0A0A0D; --page-ink: #ECECF1; --page-ink-2: #A0A0AA; --page-line: rgba(255,255,255,.12); color-scheme: dark; } }
+:root[data-theme="dark"] { --page: #0A0A0D; --page-ink: #ECECF1; --page-ink-2: #A0A0AA; --page-line: rgba(255,255,255,.12); color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--page); color: var(--page-ink); font: 15px/1.5 var(--sans); }
+main { max-width: 1120px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header h1 { font: 500 13px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; margin: 0; }
+header p { max-width: 68ch; color: var(--page-ink-2); margin: 10px 0 0; text-wrap: pretty; }
+section { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--page-line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: start; }
+@media (max-width: 860px) { section { grid-template-columns: minmax(0, 1fr); } }
+section h2 { margin: 0; font: 500 20px/1.2 var(--sans); text-wrap: balance; }
+section h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; margin-right: 10px; color: var(--page-ink-2); }
+.txt p { max-width: 54ch; color: var(--page-ink-2); margin: 8px 0 0; }
+.txt dl { margin: 12px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; font-size: 14px; }
+.txt dt { font: 500 10px/1.9 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--page-ink-2); }
+.txt dd { margin: 0; }
+.advice { display: inline-block; margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--page-ink); color: var(--page); vertical-align: 3px; }
+.pair { display: flex; flex-wrap: wrap; gap: 12px; }
+.cell { min-width: 0; width: 326px; max-width: 100%; }
+.cap { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--page-ink-2); margin-bottom: 7px; }
+.box { position: relative; width: 100%; aspect-ratio: 326 / 227; border-radius: 16px; overflow: hidden; }
+.box.light { background: #E4E4E0; box-shadow: inset 0 1.5px 3px rgba(27,27,34,.16), inset 0 1px 1px rgba(27,27,34,.1), 0 1px 0 rgba(255,255,255,.8); }
+.box.dark { background: #0A0A0D; box-shadow: inset 0 1.5px 3px rgba(0,0,0,.7), inset 0 1px 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.06); }
+.box canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+.modes { position: absolute; top: 12px; left: 14px; right: 14px; display: flex; gap: 6px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
+.light .modes { color: #9A9AA3; } .dark .modes { color: #6E6E78; }
+.modes b { font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.light .modes b { color: #1B1B22; } .dark .modes b { color: #ECECF1; }
+.modes i { font-style: normal; opacity: .5; }
+.phos { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; align-items: center; }
+.phos span { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--page-ink-2); margin-right: 4px; }
+.phos button { font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--page-ink); background: none; border: 1px solid var(--page-line); border-radius: 99px; padding: 7px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.phos button i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.phos button[aria-pressed="true"] { border-color: var(--page-ink); }
+.phos button:focus-visible { outline: 2px solid var(--page-ink); outline-offset: 2px; }
+footer { margin-top: 48px; color: var(--page-ink-2); max-width: 72ch; }
+footer p { margin: 0 0 10px; }
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<main>
+  <header>
+    <h1>Orbit · CRT-paneel, ronde 4</h1>
+    <p>Ronde 4, gebouwd op je acht favorieten (R7 Telescoop, R10 Mainframe, R11 Baanplotter, R2 Commandocentrum, R5 Tekstconsole, P5 Schakelbord, P7 Draadmodel, P2 Radar). Wat ze delen: veel echte informatie in een raster, lampjes, tabellen en kaarten, en dingen die getekend of gescand worden. Elke variant hier combineert of verdiept er twee. Zoals in je favorieten krijgt alles wat een taak is de kleur van zijn moment; met de knop Kleur zet je het terug op één fosforkleur.</p>
+    <div class="phos" role="group" aria-label="Fosforkleur">
+      <span>Fosfor</span>
+      <button type="button" id="ph-gloed" data-ph="gloed" aria-pressed="true"><i style="background:#FB923C"></i>Gloed (rood naar amber)</button>
+      <button type="button" id="ph-kern" data-ph="kern" aria-pressed="false"><i style="background:#F0306A"></i>Kernrood</button>
+      <button type="button" id="ph-amber" data-ph="amber" aria-pressed="false"><i style="background:#FFB347"></i>Amber</button>
+      <button type="button" id="ph-groen" data-ph="groen" aria-pressed="false"><i style="background:#5CFF9B"></i>Groen</button>
+      <button type="button" id="ph-wit" data-ph="wit" aria-pressed="false"><i style="background:#DDE6FF"></i>Wit</button>
+    </div>
+    <div class="phos" role="group" aria-label="Kleur van de taken">
+      <span>Kleur</span>
+      <button type="button" id="multi-on" data-multi="1" aria-pressed="true"><i style="background:conic-gradient(#F0306A,#F5A623,#20E08A,#38A0F0,#B3B9D6,#F0306A)"></i>Momentkleuren</button>
+      <button type="button" id="multi-off" data-multi="0" aria-pressed="false"><i style="background:#FB923C"></i>Eén fosfor</button>
+    </div>
+  </header>
+
+  <section>
+    <div class="txt">
+      <h2><span class="code">R13</span>Kaartkamer</h2>
+      <p>Telescoop en baanplotter samen: op de sterrenkaart trekt een pen traag het sterrenbeeld van een week, ster na ster, terwijl rechts een catalogus meeloopt met nummer, dag en uur van elke ster. Daarna vervaagt het en komt de volgende week.</p>
+      <dl><dt>Komt van</dt><dd>R7 Telescoop + R11 Baanplotter</dd><dt>Leest</dt><dd>sterren per week, wanneer ze verdiend zijn</dd><dt>Tik</dt><dd>volgende week</dd></dl>
+    </div>
+    <div class="pair" data-v="chartroom"></div>
+  </section>
+
+  <section>
+    <div class="txt">
+      <h2><span class="code">R14</span>Rekkast <span class="advice">advies</span></h2>
+      <p>Het serverrek uit je eerste voorbeeld: vijf eenheden onder elkaar, één per moment, met schroefjes, een klein lcd-schermpje met naam en aantal, een lampje per taak dat knippert op het ritme van zijn baan, schijfledjes die flikkeren en een belastingsbalk. Het meest "Orbit draait op zware hardware", en het leest in één oogopslag.</p>
+      <dl><dt>Komt van</dt><dd>R10 Mainframe + P5 Schakelbord</dd><dt>Leest</dt><dd>taken per moment, omlooptijden</dd><dt>Tik</dt><dd>pingt de eenheid die je raakt</dd></dl>
+    </div>
+    <div class="pair" data-v="rack2"></div>
+  </section>
+
+  <section>
+    <div class="txt">
+      <h2><span class="code">R15</span>Console met kaarten</h2>
+      <p>Links een grote console die commando's typt en antwoordt, rechts twee kleine schermen: een geheugenkaart en een radar. Minder vensters dan het commandocentrum, meer tekst, en toch druk.</p>
+      <dl><dt>Komt van</dt><dd>R5 Tekstconsole + R2 Commandocentrum</dd><dt>Leest</dt><dd>stand per moment, sync, sterren, focus, taken op hun baan</dd><dt>Tik</dt><dd>de console typt sneller</dd></dl>
+    </div>
+    <div class="pair" data-v="termmap"></div>
+  </section>
+
+  <section>
+    <div class="txt">
+      <h2><span class="code">R16</span>Draadplotter</h2>
+      <p>De plotter tekent de trechter van Orbit als draadmodel, lijn per lijn: eerst de vijf ringen, dan de meridianen. Is hij af, dan verschijnen de taken als stipjes en draait het model een paar seconden, waarna het opnieuw begint.</p>
+      <dl><dt>Komt van</dt><dd>P7 Draadmodel + R11 Baanplotter</dd><dt>Leest</dt><dd>de scène, taken per ring</dd><dt>Tik</dt><dd>opnieuw tekenen</dd></dl>
+    </div>
+    <div class="pair" data-v="wireplot"></div>
+  </section>
+
+  <section>
+    <div class="txt">
+      <h2><span class="code">R17</span>Lampenwand</h2>
+      <p>Het schakelbord in het groot: zeventig drukknoplampen in kolommen per moment. Om de 6 s een ander patroon (golf, taken, scan, raster); in het patroon Taken zijn de lampjes echt je taken. Tik een lamp om ze een paar seconden vast te zetten.</p>
+      <dl><dt>Komt van</dt><dd>P5 Schakelbord + R2 Commandocentrum</dd><dt>Leest</dt><dd>taken per moment (in Taken), verder sfeer</dd><dt>Tik</dt><dd>zet een lamp vast</dd></dl>
+    </div>
+    <div class="pair" data-v="lampwall"></div>
+  </section>
+
+  <section>
+    <div class="txt">
+      <h2><span class="code">R18</span>Radar met contactlijst</h2>
+      <p>De radar met daarnaast een lijst contacten zoals in een mainframe: taak, peiling en afstand. Raakt de zwaai een taak, dan licht ook haar regel in de lijst op. Zo lees je de radar echt.</p>
+      <dl><dt>Komt van</dt><dd>P2 Radar + R10 Mainframe</dd><dt>Leest</dt><dd>taken op hun baan, hoek, ring</dd><dt>Tik</dt><dd>een ping vanuit je vinger</dd></dl>
+    </div>
+    <div class="pair" data-v="radarlist"></div>
+  </section>
+
+  <footer>
+    <p>Voor alle varianten: een gewoon canvas zonder WebGL. De nagloed is een verkleinde kopie die weer wordt opgeschaald (geen blurfilter, dus licht genoeg). Alles is tijdgebaseerd, en bij minder beweging blijft het een stil beeld zonder flikkering. De fosforkleur volgt de kleurkiezer van het bakje; de knoppen bovenaan tonen er een paar.</p>
+    <p>Letter: VT323 (open lettertype) voor de schermtekst, voor het echte gevoel van een oude terminal. Het is een nieuw lettertype naast Geist. Alternatief: Geist Mono, wat strakker is en minder retro.</p>
+  </footer>
+</main>
+
+<script>
+const W = 326, H = 227, TAU = Math.PI * 2;
+const S = { x: 10, y: 32, w: 306, h: 185 };   // het scherm in het bakje
+const PHOS = {
+  gloed: { hi: [253, 230, 138], mid: [251, 146, 60], lo: [224, 71, 59], bg: [14, 8, 6] },
+  kern:  { hi: [255, 196, 210], mid: [240, 48, 106], lo: [170, 20, 60], bg: [12, 5, 8] },
+  amber: { hi: [255, 230, 170], mid: [255, 179, 71], lo: [200, 110, 30], bg: [12, 8, 4] },
+  groen: { hi: [200, 255, 220], mid: [92, 255, 155], lo: [30, 160, 90], bg: [4, 10, 7] },
+  wit:   { hi: [255, 255, 255], mid: [221, 230, 255], lo: [130, 145, 190], bg: [7, 8, 12] },
+};
+let P = PHOS.gloed;
+const LV = ['#F0306A', '#F5A623', '#20E08A', '#38A0F0', '#B3B9D6'];
+const LEVELS = [{ n: 'NU', count: 5, ring: 38, period: 1.1 }, { n: 'VANDAAG', count: 5, ring: 72, period: 2.8 }, { n: 'WEEK', count: 6, ring: 106, period: 7 }, { n: 'MAAND', count: 5, ring: 140, period: 16 }, { n: 'OOIT', count: 5, ring: 174, period: 38 }];
+const TASKS = ['OFFERTE TERUGSTUREN', 'FACTUUR BETALEN', 'KLANT TERUGBELLEN', 'VERSLAG AFWERKEN', 'HUUR OVERSCHRIJVEN', 'SPORTEN', 'PAKJE OPHALEN', 'KAPPER BOEKEN', 'FIETS HERSTELLEN', 'VUILNIS BUITEN'];
+const BPM = 72, FOCUS_END = performance.now() + 16 * 60000 + 42000, BOOT = performance.now();
+const c = (col, a = 1) => `rgba(${col[0]},${col[1]},${col[2]},${a})`;
+const hi = a => c(P.hi, a), mid = a => c(P.mid, a), lo = a => c(P.lo, a);
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const ease = u => u * u * (3 - 2 * u);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FONT = s => `${s}px VT323, "Geist Mono", ui-monospace, monospace`;
+function txt(g, s, x, y, size = 12, col = mid(0.95), align = 'left') { g.font = FONT(size); g.textAlign = align; g.textBaseline = 'alphabetic'; g.fillStyle = col; g.fillText(s, x, y); g.textAlign = 'left'; }
+function focusLeft() { const s = Math.max(0, Math.round((FOCUS_END - performance.now()) / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
+function uptime() { const s = Math.floor((performance.now() - BOOT) / 1000) + 3 * 3600 + 1240; return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
+
+// venster met titelbalk, zoals in de retro-HUD
+function win(g, x, y, w, h, title, act = 0) {
+  g.strokeStyle = mid(0.75); g.lineWidth = 1;
+  g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  g.fillStyle = act ? mid(0.9) : mid(0.12); g.fillRect(x + 1, y + 1, w - 2, 11);
+  g.strokeStyle = mid(0.6); g.beginPath(); g.moveTo(x, y + 12.5); g.lineTo(x + w, y + 12.5); g.stroke();
+  txt(g, title, x + 4, y + 10, 11, act ? c(P.bg, 1) : hi(0.9));
+  g.strokeStyle = act ? c(P.bg, 0.9) : mid(0.7); g.strokeRect(x + w - 10.5, y + 3.5, 6, 6);
+}
+// draadkubus
+function cube(g, cx, cy, s, rx, ry, col) {
+  const V = [];
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
+    let X = x, Y = y, Z = z;
+    let t1 = X * Math.cos(ry) + Z * Math.sin(ry); Z = -X * Math.sin(ry) + Z * Math.cos(ry); X = t1;
+    t1 = Y * Math.cos(rx) - Z * Math.sin(rx); Z = Y * Math.sin(rx) + Z * Math.cos(rx); Y = t1;
+    const f = 3 / (3 + Z * 0.5); V.push([cx + X * s * f, cy + Y * s * f]);
+  }
+  g.strokeStyle = col; g.beginPath();
+  for (const [a, b] of [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]]) { g.moveTo(...V[a]); g.lineTo(...V[b]); }
+  g.stroke();
+}
+// trechter als draadmodel
+const PROF = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
+const depth = r => { for (let i = 1; i < PROF.length; i++) if (r <= PROF[i][0]) { const [r0, z0] = PROF[i - 1], [r1, z1] = PROF[i]; return z0 + (r - r0) / (r1 - r0) * (z1 - z0); } return 0; };
+function funnel(g, cx, cy, s, tilt, spin, t, dots = true) {
+  const Pt = (r, a, z) => { const x = Math.cos(a + spin) * r, y = Math.sin(a + spin) * r; return [cx + x * s, cy + (y * Math.cos(tilt) - z * Math.sin(tilt)) * s]; };
+  for (const r of [38, 72, 106, 140, 174]) {
+    g.strokeStyle = mid(r === 174 ? 0.8 : 0.45); g.beginPath();
+    for (let k = 0; k <= 40; k++) { const [x, y] = Pt(r, k / 40 * TAU, depth(r)); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.stroke();
+  }
+  for (let m = 0; m < 14; m++) {
+    const a = m / 14 * TAU; g.strokeStyle = mid(0.25); g.beginPath();
+    for (let k = 0; k <= 16; k++) { const r = 8 + k / 16 * 166, [x, y] = Pt(r, a, depth(r)); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.stroke();
+  }
+  if (dots) LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const [x, y] = Pt(lv.ring, k / lv.count * TAU + t * TAU / (lv.period * 4), depth(lv.ring)); g.fillStyle = hi(0.95); g.fillRect(x - 1, y - 1, 2.2, 2.2); } });
+  const [kx, ky] = Pt(0, 0, -300); g.fillStyle = hi(1); g.beginPath(); g.arc(kx, ky, 2.4, 0, TAU); g.fill();
+}
+// navkaart
+function chart(g, cx, cy, R, t, o = {}) {
+  const rot = t * 0.06;
+  for (let d = 0; d < 72; d++) {
+    const a = rot + d / 72 * TAU, l = d % 6 === 0 ? 4 : 1.8;
+    g.strokeStyle = mid(d % 6 === 0 ? 0.8 : 0.4);
+    g.beginPath(); g.moveTo(cx + Math.cos(a) * (R + 3), cy + Math.sin(a) * (R + 3)); g.lineTo(cx + Math.cos(a) * (R + 3 + l), cy + Math.sin(a) * (R + 3 + l)); g.stroke();
+    if (o.degrees && d % 12 === 0) txt(g, String(d * 5).padStart(3, '0'), cx + Math.cos(a) * (R + 13), cy + Math.sin(a) * (R + 13) + 3, 9, mid(0.6), 'center');
+  }
+  g.strokeStyle = mid(0.5); g.beginPath(); g.arc(cx, cy, R + 1, 0, TAU); g.stroke();
+  LEVELS.forEach(lv => { g.strokeStyle = mid(0.28); g.beginPath(); g.arc(cx, cy, R * (lv.ring + 6) / 180, 0, TAU); g.stroke(); });
+  const marks = [];
+  LEVELS.forEach((lv, i) => { for (let k = 0; k < Math.min(lv.count, i < 2 ? 3 : 2); k++) { const a = hash(i * 11 + k) * TAU + t * TAU / (lv.period * 14), r = R * (lv.ring + 6) / 180; marks.push({ i, k, a, r, x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, w: TAU / (lv.period * 14) }); } });
+  for (const m of marks) {
+    if (o.trails) for (let s = 1; s <= 10; s++) { const a = m.a - m.w * s * 0.35, x = cx + Math.cos(a) * m.r, y = cy + Math.sin(a) * m.r; g.fillStyle = mid(0.4 * (1 - s / 11)); g.fillRect(x - 0.8, y - 0.8, 1.6, 1.6); }
+    if (m.i < 2) {
+      g.strokeStyle = mid(0.45); g.beginPath(); g.moveTo(m.x, m.y); g.lineTo(cx, cy); g.stroke();
+      const u = (t * 0.35 + hash(m.i * 7 + m.k)) % 1, px = m.x + (cx - m.x) * u, py = m.y + (cy - m.y) * u;
+      g.fillStyle = hi(Math.sin(u * Math.PI)); g.fillRect(px - 1.2, py - 1.2, 2.4, 2.4);
+    }
+  }
+  for (const m of marks) { g.strokeStyle = m.i === 0 ? hi(1) : mid(0.95); g.lineWidth = 1.2; g.beginPath(); g.arc(m.x, m.y, 3.2, 0, TAU); g.stroke(); g.lineWidth = 1; }
+  const k = Math.exp(-((t * BPM / 60) % 1) * 6);
+  g.strokeStyle = hi(1); g.beginPath(); g.arc(cx, cy, 4.5 + 2 * k, 0, TAU); g.stroke();
+  g.fillStyle = hi(1); g.beginPath(); g.arc(cx, cy, 1.8, 0, TAU); g.fill();
+  return marks;
+}
+function halfRadar(g, cx, cy, R, t) {
+  g.strokeStyle = mid(0.45);
+  for (let k = 1; k <= 4; k++) { g.beginPath(); g.arc(cx, cy, R * k / 4, Math.PI, TAU); g.stroke(); }
+  for (let k = 0; k <= 6; k++) { const a = Math.PI + k / 6 * Math.PI; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); g.stroke(); }
+  g.beginPath(); g.moveTo(cx - R - 3, cy); g.lineTo(cx + R + 3, cy); g.stroke();
+  const sw = Math.PI + (Math.sin(t * 0.6) * 0.5 + 0.5) * Math.PI;
+  const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, lo(0.15)); gr.addColorStop(1, lo(0.55));
+  g.fillStyle = gr; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, sw - 0.5, sw); g.closePath(); g.fill();
+  g.strokeStyle = hi(0.9); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(sw) * R, cy + Math.sin(sw) * R); g.stroke();
+  g.fillStyle = hi(1); g.fillRect(cx + Math.cos(sw + 0.4) * R * 0.6 - 1.5, cy + Math.sin(sw + 0.4) * R * 0.6 - 1.5, 3, 3);
+  return sw;
+}
+function scopeTrace(g, x, y, w, h, t, which = 1) {
+  g.fillStyle = mid(0.2);
+  for (let i = 0; i <= 8; i++) for (let yy = 0; yy <= h; yy += 3) g.fillRect(x + i * w / 8, y + yy, 1, 1);
+  for (let j = 0; j <= 4; j++) for (let xx = 0; xx <= w; xx += 3) g.fillRect(x + xx, y + j * h / 4, 1, 1);
+  const T = 2.4, head = (t % T) / T, N = 90;
+  const f = u => {
+    const time = (t - (head - u) * T);
+    if (which === 1) { const ph = (time * BPM / 60) % 1; return -Math.exp(-((((ph - 0.12) / 0.025)) ** 2)) * 0.9 + Math.exp(-((((ph - 0.2) / 0.04)) ** 2)) * 0.25; }
+    let s = 0; LEVELS.forEach((lv, i) => { s += Math.sin(time * TAU / lv.period + i) / (i + 1.5); }); return s * 0.45;
+  };
+  g.lineWidth = 1.3;
+  for (let k = 0; k < N; k++) {
+    const u0 = k / N, u1 = (k + 1) / N, age = u1 <= head ? head - u1 : head + 1 - u1;
+    g.strokeStyle = u1 <= head ? hi(0.2 + 0.8 * Math.exp(-age * 2.5)) : mid(0.15 * (1 - age));
+    g.beginPath(); g.moveTo(x + u0 * w, y + h / 2 + f(u0) * h * 0.45); g.lineTo(x + u1 * w, y + h / 2 + f(u1) * h * 0.45); g.stroke();
+  }
+  g.lineWidth = 1;
+}
+function terrain(g, x, y, w, h, t, amp = 1) {
+  const rows = 14, cols = 18, vy = y + h * 0.18, sp = 0.5;
+  const H2 = (i, j) => (Math.sin(i * 0.7 + j * 0.3) + Math.sin(i * 0.31 - j * 0.9 + 2) * 0.7 + hash(Math.floor(i) * 13 + j) * 0.2) * amp;
+  const pts = [];
+  for (let r = 0; r < rows; r++) {
+    const zf = (r + (t * sp) % 1) / rows, z = zf * zf;
+    const row = [];
+    for (let k = 0; k <= cols; k++) {
+      const u = k / cols - 0.5, px = x + w / 2 + u * w * (0.15 + 1.3 * z), py = vy + z * (h * 0.82) - H2(Math.floor(t * sp) - r, k) * 9 * z;
+      row.push([px, py, z]);
+    }
+    pts.push(row);
+  }
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  for (const row of pts) { g.strokeStyle = mid(0.15 + 0.7 * row[0][2]); g.beginPath(); row.forEach(([px, py], k) => k ? g.lineTo(px, py) : g.moveTo(px, py)); g.stroke(); }
+  for (let k = 0; k <= cols; k++) { g.strokeStyle = mid(0.35); g.beginPath(); pts.forEach((row, r) => r ? g.lineTo(row[k][0], row[k][1]) : g.moveTo(row[k][0], row[k][1])); g.stroke(); }
+  g.restore();
+}
+// typende tekst
+function typer(lines, speed = 26) {
+  return (g, x, y, w, nLines, t, size = 11, lh = 11) => {
+    const total = lines.reduce((a, l) => a + l.length + 6, 0), pos = (t * speed) % total;
+    let acc = 0, shown = [];
+    for (const l of lines) { const n = Math.max(0, Math.min(l.length, pos - acc)); shown.push(l.slice(0, Math.floor(n))); acc += l.length + 6; if (pos < acc) break; }
+    shown = shown.slice(-nLines);
+    shown.forEach((s, i) => txt(g, s, x, y + i * lh, size, i === shown.length - 1 ? hi(0.95) : mid(0.75)));
+    const last = shown[shown.length - 1] || '';
+    g.font = FONT(size);
+    if (Math.floor(t * 2.5) % 2 === 0) { g.fillStyle = hi(0.9); g.fillRect(x + g.measureText(last).width + 1, y + (shown.length - 1) * lh - size + 3, size * 0.45, size - 2); }
+  };
+}
+function bar(g, x, y, w, h, frac, segs, vertical) {
+  for (let s = 0; s < segs; s++) {
+    const on = s < Math.round(frac * segs);
+    g.fillStyle = on ? (s >= segs * 0.75 ? hi(0.95) : mid(0.5 + 0.5 * s / segs)) : mid(0.1);
+    if (vertical) { const sh = (h - (segs - 1) * 2) / segs; g.fillRect(x, y + h - (s + 1) * sh - s * 2, w, sh); }
+    else { const sw = (w - (segs - 1) * 2) / segs; g.fillRect(x + s * (sw + 2), y, sw, h); }
+  }
+}
+
+/* ---- Momentkleuren: taken in de kleur van hun moment (Victor: "ook graag meerdere kleuren") ---- */
+let MULTI = true;
+const LVRGB = LV.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+const lvc = (i, a = 1) => MULTI ? c(LVRGB[i], a) : (i === 0 ? hi(a) : mid(a));
+
+/* ---- R13 Kaartkamer (telescoop + plotter) ---- */
+function chartroom() {
+  const stars = Array.from({ length: 70 }, (_, i) => ({ x: 10 + hash(i * 3.1) * 210, y: 18 + hash(i * 7.7) * 150, m: 0.6 + hash(i * 1.9) * 1.3, ph: hash(i) * TAU, n: 98 - i }));
+  const weeks = [0, 1, 2].map(w => { const set = [Math.floor(hash(w * 13 + 1) * 70)]; while (set.length < 8) { const l = stars[set[set.length - 1]]; let b = -1, bd = 1e9; stars.forEach((s, i) => { if (set.includes(i)) return; const d = Math.hypot(s.x - l.x, s.y - l.y) + hash(i * 7 + w) * 20; if (d < bd) { bd = d; b = i; } }); set.push(b); } return set; });
+  let wk = 0, start = 0, first = true;
+  const DUR = 6.5;
+  return {
+    tap() { wk = (wk + 1) % 3; start = performance.now() / 1000; },
+    draw(g, t) {
+      if (first) { start = t; first = false; }
+      if (t - start > DUR + 2) { wk = (wk + 1) % 3; start = t; }
+      g.strokeStyle = mid(0.12); g.setLineDash([2, 3]);
+      for (let x = 30; x < 226; x += 40) { g.beginPath(); g.moveTo(x, 12); g.lineTo(x, 176); g.stroke(); }
+      for (let y = 30; y < 176; y += 36) { g.beginPath(); g.moveTo(6, y); g.lineTo(226, y); g.stroke(); }
+      g.setLineDash([]);
+      txt(g, `KAART · WEEK ${43 + wk}`, 6, 11, 10, mid(0.8));
+      for (const s of stars) { g.fillStyle = hi(0.45 + 0.35 * Math.sin(t * 2 + s.ph)); g.fillRect(s.x - s.m / 2, s.y - s.m / 2, s.m + 0.4, s.m + 0.4); }
+      const set = weeks[wk], u = Math.min(1, (t - start) / DUR), fade = t - start > DUR ? Math.max(0, 1 - (t - start - DUR) / 2) : 1;
+      const segs = set.length - 1, pos = u * segs, k = Math.floor(pos), f = pos - k;
+      g.strokeStyle = hi(0.9 * fade); g.lineWidth = 1.2; g.beginPath();
+      for (let i = 0; i <= Math.min(k, segs); i++) { const s = stars[set[i]]; i ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y); }
+      let px = stars[set[Math.min(k, segs)]].x, py = stars[set[Math.min(k, segs)]].y;
+      if (k < segs) { const a = stars[set[k]], b = stars[set[k + 1]]; px = a.x + (b.x - a.x) * f; py = a.y + (b.y - a.y) * f; g.lineTo(px, py); }
+      g.stroke(); g.lineWidth = 1;
+      set.forEach((i, j) => { if (j > k) return; const s = stars[i]; g.strokeStyle = lvc(Math.floor(hash(i * 11) * 5), 0.95 * fade); g.beginPath(); g.arc(s.x, s.y, 3.5, 0, TAU); g.stroke(); });
+      g.strokeStyle = hi(fade); g.beginPath(); g.moveTo(px - 6, py); g.lineTo(px + 6, py); g.moveTo(px, py - 6); g.lineTo(px, py + 6); g.stroke();
+      // catalogus
+      g.strokeStyle = mid(0.6); g.strokeRect(230.5, 4.5, 72, 176);
+      txt(g, 'CATALOGUS', 234, 15, 10, hi(0.9));
+      g.strokeStyle = mid(0.4); g.beginPath(); g.moveTo(231, 19); g.lineTo(302, 19); g.stroke();
+      set.forEach((i, j) => {
+        const y = 31 + j * 17, on = j <= k;
+        g.fillStyle = lvc(Math.floor(hash(i * 11) * 5), on ? 1 : 0.3); g.beginPath(); g.arc(237, y - 3.5, 2.2, 0, TAU); g.fill();
+        txt(g, String(stars[i].n).padStart(3, '0'), 243, y, 11, j === k ? hi(1) : on ? mid(0.9) : mid(0.35));
+        txt(g, ['MA', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO', 'MA'][j], 262, y, 10, on ? mid(0.7) : mid(0.3));
+        txt(g, `${String(8 + Math.floor(hash(i) * 14)).padStart(2, '0')}:${String(Math.floor(hash(i * 3) * 60)).padStart(2, '0')}`, 299, y, 10, on ? mid(0.7) : mid(0.3), 'right');
+      });
+      txt(g, `${Math.round(u * 100)}%`, 299, 176, 10, hi(0.9), 'right');
+    },
+  };
+}
+
+/* ---- R14 Rekkast (mainframe + schakelbord) ---- */
+function rack2() {
+  let ping = -1, pingAt = -9;
+  return {
+    tap(x, y) { ping = Math.floor((y - 16) / 32); pingAt = performance.now() / 1000; },
+    draw(g, t) {
+      txt(g, 'REK 01 · ORBIT', 6, 11, 10, mid(0.8)); txt(g, uptime(), S.w - 6, 11, 10, mid(0.7), 'right');
+      LEVELS.forEach((lv, i) => {
+        const y = 16 + i * 32, pg = ping === i ? Math.max(0, 1 - (t - pingAt) / 1.2) : 0;
+        g.strokeStyle = mid(0.55 + 0.4 * pg); g.strokeRect(4.5, y + 0.5, S.w - 9, 29);
+        for (const sx of [10, S.w - 10]) { g.strokeStyle = mid(0.4); g.beginPath(); g.arc(sx, y + 15, 2.2, 0, TAU); g.stroke(); }
+        // lcd
+        g.fillStyle = mid(0.1); g.fillRect(18, y + 5, 62, 20);
+        txt(g, lv.n.slice(0, 7), 22, y + 14, 11, lvc(i, 0.95));
+        txt(g, `${String(lv.count).padStart(2, '0')} TAAK`, 22, y + 23, 9, mid(0.6));
+        // lampjes per taak
+        for (let k = 0; k < 8; k++) {
+          const has = k < lv.count, ph = (t / lv.period + hash(i * 31 + k)) % 1, on = has ? (ph < 0.45 ? 1 : 0.25) : 0.06;
+          g.fillStyle = has ? lvc(i, Math.max(on, pg)) : mid(on);
+          g.fillRect(88 + k * 11, y + 9, 7, 5);
+          g.fillStyle = mid(has ? 0.25 : 0.06); g.fillRect(88 + k * 11, y + 17, 7, 3);
+        }
+        // schijfactiviteit
+        for (let d = 0; d < 2; d++) { g.fillStyle = hi(hash(i * 5 + d + Math.floor(t * (8 + i * 3))) > 0.55 ? 0.95 : 0.12); g.beginPath(); g.arc(186 + d * 9, y + 15, 2, 0, TAU); g.fill(); }
+        // belasting
+        bar(g, 204, y + 11, 60, 8, 0.2 + 0.65 * (Math.sin(t * (0.5 + i * 0.2) + i) * 0.5 + 0.5), 12, false);
+        txt(g, pg > 0 ? 'PING' : lv.period.toFixed(1) + 'S', S.w - 18, y + 19, 10, pg > 0 ? hi(1) : mid(0.7), 'right');
+      });
+    },
+  };
+}
+
+/* ---- R15 Console met kaarten (tekstconsole + commandocentrum) ---- */
+function termmap() {
+  const ty = typer(['orbit> status', 'nu 5  vandaag 5  week 6', 'maand 5  ooit 5', 'orbit> sync', 'ok, 0 wachten', 'orbit> ster', '098, hemel 3', 'orbit> focus', 'nog 16 min', 'orbit> geheugen', '64% bezet, defrag ok'], 20);
+  const cells = Array.from({ length: 22 * 12 }, (_, i) => hash(i * 1.7) > 0.4 ? Math.floor(hash(i * 3.3) * 5) : -1);
+  let fast = -9;
+  return {
+    tap() { fast = performance.now() / 1000; },
+    draw(g, t) {
+      win(g, 4, 4, 170, 177, 'CONSOLE', 0);
+      ty(g, 10, 28, 156, 13, t + (t - fast < 3 ? (t - fast) * 30 : 0), 12, 11.4);
+      win(g, 178, 4, 124, 84, 'GEHEUGEN', 0);
+      const cur = (t * 14) % cells.length;
+      cells.forEach((v, i) => { const x = 183 + (i % 22) * 5.2, y = 21 + Math.floor(i / 22) * 5.4; let a = v < 0 ? 0.06 : 0.45 + (4 - v) * 0.1; if (v === 0 && hash(i + Math.floor(t * 5)) > 0.5) a = 1; const curOn = Math.abs(i - cur) < 1; g.fillStyle = curOn ? hi(1) : v < 0 ? mid(a) : lvc(v, a); g.fillRect(x, y, 4.2, 4.2); });
+      win(g, 178, 92, 124, 89, 'RADAR', 0);
+      const cx = 240, cy = 140, R = 36, sw = (t * 1.4) % TAU;
+      LEVELS.forEach(lv => { g.strokeStyle = mid(0.22); g.beginPath(); g.arc(cx, cy, R * lv.ring / 174, 0, TAU); g.stroke(); });
+      const cg = g.createConicGradient(sw - 1, cx, cy); cg.addColorStop(0, mid(0)); cg.addColorStop(1 / TAU, mid(0.3)); cg.addColorStop(1 / TAU + 0.001, mid(0)); cg.addColorStop(1, mid(0));
+      g.fillStyle = cg; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, sw - 1, sw); g.fill();
+      LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const a = hash(i * 9 + k) * TAU + t * TAU / (lv.period * 6), behind = ((sw - a) % TAU + TAU) % TAU, life = Math.exp(-behind * 0.9); g.fillStyle = lvc(i, 0.15 + 0.85 * life); g.fillRect(cx + Math.cos(a) * R * lv.ring / 174 - 1, cy + Math.sin(a) * R * lv.ring / 174 - 1, 2.4, 2.4); } });
+    },
+  };
+}
+
+/* ---- R16 Draadplotter (draadmodel + plotter) ---- */
+function wireplot() {
+  let start = 0, first = true;
+  const DRAW = 8, HOLD = 3.5;
+  return {
+    tap() { start = performance.now() / 1000; },
+    draw(g, t) {
+      if (first) { start = t; first = false; }
+      if (t - start > DRAW + HOLD) start = t;
+      const el = t - start, u = Math.min(1, el / DRAW), spin = el > DRAW ? (el - DRAW) * 0.5 : 0;
+      const cx = 108, cy = 66, s = 0.5, tilt = 1.0;
+      const Pt = (r, a, z) => { const x = Math.cos(a + spin) * r, y = Math.sin(a + spin) * r; return [cx + x * s, cy + (y * Math.cos(tilt) - z * Math.sin(tilt)) * s]; };
+      const lines = [];
+      [174, 140, 106, 72, 38].forEach(r => { const l = []; for (let k = 0; k <= 48; k++) l.push(Pt(r, k / 48 * TAU, depth(r))); lines.push(l); });
+      for (let m = 0; m < 16; m++) { const l = []; for (let k = 0; k <= 18; k++) { const r = 174 - k / 18 * 166; l.push(Pt(r, m / 16 * TAU, depth(r))); } lines.push(l); }
+      const total = lines.reduce((a, l) => a + l.length - 1, 0); let budget = u * total, pen = null;
+      g.strokeStyle = mid(0.12); for (let x = 8; x < 216; x += 16) { g.beginPath(); g.moveTo(x, 8); g.lineTo(x, 176); g.stroke(); }
+      for (const l of lines) {
+        if (budget <= 0) break;
+        const n = Math.min(l.length - 1, budget); budget -= n;
+        g.strokeStyle = n < l.length - 1 ? hi(0.95) : mid(0.65); g.beginPath();
+        for (let k = 0; k <= Math.floor(n); k++) k ? g.lineTo(...l[k]) : g.moveTo(...l[k]);
+        const fk = Math.floor(n), fr = n - fk;
+        if (fr > 0 && fk + 1 < l.length) { const a = l[fk], b = l[fk + 1]; pen = [a[0] + (b[0] - a[0]) * fr, a[1] + (b[1] - a[1]) * fr]; g.lineTo(...pen); }
+        else pen = l[fk];
+        g.stroke();
+      }
+      if (u >= 1) { LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const [x, y] = Pt(lv.ring, k / lv.count * TAU + t * TAU / (lv.period * 4), depth(lv.ring)); g.fillStyle = lvc(i, 0.95); g.fillRect(x - 1, y - 1, 2.4, 2.4); } }); const [kx, ky] = Pt(0, 0, -300); g.fillStyle = hi(1); g.beginPath(); g.arc(kx, ky, 2.5, 0, TAU); g.fill(); }
+      else if (pen) { g.strokeStyle = hi(1); g.beginPath(); g.moveTo(pen[0] - 6, pen[1]); g.lineTo(pen[0] + 6, pen[1]); g.moveTo(pen[0], pen[1] - 6); g.lineTo(pen[0], pen[1] + 6); g.stroke(); }
+      g.strokeStyle = mid(0.6); g.strokeRect(222.5, 4.5, 80, 176);
+      [['MODEL', 'TRECHTER'], ['LIJNEN', `${Math.round(u * 21)}/21`], ['PEN', u < 1 ? 'TEKENT' : 'RUST'], ['DRAAI', `${String(Math.round((spin % TAU) / TAU * 360)).padStart(3, '0')}°`], ['BOLLEN', u < 1 ? '--' : '26']].forEach(([k, v], i) => { txt(g, k, 227, 20 + i * 30, 10, mid(0.6)); txt(g, v, 227, 33 + i * 30, 13, i === 2 && u < 1 ? hi(1) : mid(0.95)); });
+      bar(g, 227, 168, 71, 6, u, 10, false);
+    },
+  };
+}
+
+/* ---- R17 Lampenwand (schakelbord groot) ---- */
+function lampwall() {
+  const COLS = 10, ROWS = 7, MODES = ['GOLF', 'TAKEN', 'SCAN', 'RASTER'], user = new Map();
+  return {
+    tap(x, y) { const cc = Math.floor((x - 8) / 29.6), r = Math.floor((y - 22) / 21); if (cc >= 0 && cc < COLS && r >= 0 && r < ROWS) user.set(r * COLS + cc, performance.now() / 1000); },
+    draw(g, t) {
+      const mode = Math.floor(t / 6) % 4, mt = t % 6;
+      LEVELS.forEach((lv, i) => txt(g, lv.n.slice(0, 3), 8 + i * 59.2 + 29.6, 15, 10, lvc(i, 0.85), 'center'));
+      for (let r = 0; r < ROWS; r++) for (let cc = 0; cc < COLS; cc++) {
+        const x = 8 + cc * 29.6, y = 22 + r * 21, lvI = Math.floor(cc / 2), lv = LEVELS[lvI];
+        let on = 0;
+        if (mode === 0) on = Math.sin((cc + r) * 0.7 - t * 3) > 0.4 ? 1 : 0.1;
+        else if (mode === 1) { const idx = (cc % 2) * ROWS + r; on = idx < lv.count ? ((t / lv.period + idx * 0.13) % 1 < 0.5 ? 1 : 0.3) : 0.06; }
+        else if (mode === 2) on = Math.floor(mt * 4) % ROWS === r ? 1 : (Math.floor(mt * 4) - 1) % ROWS === r ? 0.4 : 0.08;
+        else on = hash(r * 31 + cc + Math.floor(t * 3)) > 0.6 ? 1 : 0.1;
+        const ut = user.get(r * COLS + cc), held = ut !== undefined && t - ut < 4;
+        g.fillStyle = mid(0.05); g.fillRect(x, y, 25.6, 17);
+        g.fillStyle = held ? hi(1) : lvc(lvI, on);
+        g.fillRect(x + 3, y + 3, 19.6, 11);
+        if (held || on > 0.9) { g.fillStyle = c(P.hi, 0.35); g.fillRect(x + 5, y + 4, 8, 2); }
+      }
+      txt(g, `PATROON ${MODES[mode]}`, 8, 178, 11, hi(0.9));
+      MODES.forEach((m, i) => { g.fillStyle = i === mode ? hi(1) : mid(0.25); g.beginPath(); g.arc(S.w - 50 + i * 12, 175, 3, 0, TAU); g.fill(); });
+    },
+  };
+}
+
+/* ---- R18 Radar met contactlijst (radar + mainframe) ---- */
+function radarlist() {
+  const R = 78, cx = 86, cy = 96, SWEEP = 4;
+  const contacts = []; LEVELS.forEach((lv, i) => { for (let k = 0; k < Math.min(lv.count, 2); k++) contacts.push({ i, off: hash(i * 7 + k) * TAU, w: TAU / (lv.period * 6), r: R * lv.ring / 174, name: TASKS[(i * 2 + k) % TASKS.length], last: -99 }); });
+  let ping = null;
+  return {
+    tap(x, y) { ping = { x, y, t: performance.now() / 1000 }; },
+    draw(g, t) {
+      LEVELS.forEach(lv => { const r = R * lv.ring / 174; g.strokeStyle = mid(0.25); g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.stroke(); });
+      g.strokeStyle = mid(0.15); g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+      for (let d = 0; d < 36; d++) { const a = d / 36 * TAU, l = d % 9 ? 2 : 5; g.strokeStyle = mid(d % 9 ? 0.35 : 0.8); g.beginPath(); g.moveTo(cx + Math.cos(a) * (R + 2), cy + Math.sin(a) * (R + 2)); g.lineTo(cx + Math.cos(a) * (R + 2 + l), cy + Math.sin(a) * (R + 2 + l)); g.stroke(); }
+      const sw = (t / SWEEP * TAU) % TAU;
+      const cg = g.createConicGradient(sw - 1.3, cx, cy); cg.addColorStop(0, mid(0)); cg.addColorStop(1.3 / TAU, mid(0.32)); cg.addColorStop(1.3 / TAU + 0.001, mid(0)); cg.addColorStop(1, mid(0));
+      g.fillStyle = cg; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, sw - 1.3, sw); g.fill();
+      g.strokeStyle = hi(0.9); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(sw) * R, cy + Math.sin(sw) * R); g.stroke();
+      let pr = -1; if (ping) { pr = (t - ping.t) * 120; if (pr > 220) ping = null; else { g.strokeStyle = hi(0.5 * (1 - pr / 220)); g.beginPath(); g.arc(ping.x, ping.y, pr, 0, TAU); g.stroke(); } }
+      contacts.forEach(o => {
+        const a = ((o.off + t * o.w) % TAU + TAU) % TAU, x = cx + Math.cos(a) * o.r, y = cy + Math.sin(a) * o.r, behind = ((sw - a) % TAU + TAU) % TAU;
+        if (behind < 0.1) o.last = t; if (ping && Math.abs(Math.hypot(x - ping.x, y - ping.y) - pr) < 5) o.last = t;
+        o.a = a; o.life = Math.exp(-(t - o.last) / 1.8);
+        g.fillStyle = lvc(o.i, 0.15 + 0.85 * o.life); g.beginPath(); g.arc(x, y, 2 + o.life, 0, TAU); g.fill();
+      });
+      g.fillStyle = hi(1); g.beginPath(); g.arc(cx, cy, 2.5 + 1.5 * Math.exp(-((t * BPM / 60) % 1) * 6), 0, TAU); g.fill();
+      // contactlijst
+      g.strokeStyle = mid(0.6); g.strokeRect(176.5, 4.5, 126, 176);
+      txt(g, 'CONTACT', 180, 15, 10, mid(0.7)); txt(g, 'PEIL', 252, 15, 10, mid(0.7)); txt(g, 'AFST', 299, 15, 10, mid(0.7), 'right');
+      g.strokeStyle = mid(0.4); g.beginPath(); g.moveTo(177, 19); g.lineTo(302, 19); g.stroke();
+      contacts.forEach((o, j) => {
+        const y = 31 + j * 15.5, col = o.life > 0.6 ? hi(1) : mid(0.45 + 0.4 * o.life);
+        if (o.life > 0.6) { g.fillStyle = mid(0.15); g.fillRect(177, y - 9, 125, 12); }
+        g.fillStyle = lvc(o.i, 0.4 + 0.6 * o.life); g.fillRect(180, y - 6, 3, 6);
+        txt(g, o.name.slice(0, 10), 186, y, 10, col);
+        txt(g, String(Math.round(o.a / TAU * 360)).padStart(3, '0'), 254, y, 10, col);
+        txt(g, String(LEVELS[o.i].ring), 299, y, 10, col, 'right');
+      });
+    },
+  };
+}
+
+/* ---- CRT: nagloed, scanlijnen, vignet, rollende band, flikkering ---- */
+const MAKERS = { chartroom, rack2, termmap, wireplot, lampwall, radarlist };
+const panes = [];
+const scan = (() => { const cv = document.createElement('canvas'); cv.width = 4; cv.height = 3; const g = cv.getContext('2d'); g.fillStyle = 'rgba(0,0,0,.32)'; g.fillRect(0, 2, 4, 1); return cv; })();
+for (const row of document.querySelectorAll('.pair')) {
+  for (const th of ['light', 'dark']) {
+    const cell = document.createElement('div'); cell.className = 'cell';
+    cell.innerHTML = `<div class="cap">${th === 'light' ? 'Licht' : 'Donker'}</div><div class="box ${th}"><canvas aria-label="Voorbeeld ${row.dataset.v}, ${th === 'light' ? 'licht' : 'donker'}"></canvas><div class="modes"><span>Water</span><i>/</i><span>Lava</span><i>/</i><span>Gloed</span><i>/</i><span>Topo</span><i>/</i><b>Paneel</b></div></div>`;
+    row.append(cell);
+    const cv = cell.querySelector('canvas'), dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr;
+    const g = cv.getContext('2d'); g.scale(dpr, dpr);
+    const off = document.createElement('canvas'); off.width = S.w * dpr; off.height = S.h * dpr;
+    const og = off.getContext('2d'); og.scale(dpr, dpr);
+    const small = document.createElement('canvas'); small.width = Math.round(S.w / 3); small.height = Math.round(S.h / 3);
+    const sg = small.getContext('2d');
+    const fx = MAKERS[row.dataset.v]();
+    const pane = { cv, g, og, off, small, sg, fx, th, visible: true, pat: g.createPattern(scan, 'repeat') };
+    cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); fx.tap((e.clientX - r.left) / r.width * W - S.x, (e.clientY - r.top) / r.height * H - S.y); });
+    panes.push(pane);
+  }
+}
+function compose(p, t) {
+  const { g, og, off, small, sg } = p;
+  og.clearRect(0, 0, S.w, S.h);
+  p.fx.draw(og, t);
+  g.clearRect(0, 0, W, H);
+  g.save();
+  g.beginPath(); g.roundRect(S.x, S.y, S.w, S.h, 10); g.clip();
+  // achtergrond: warm zwart, iets lichter in het midden
+  const bg = g.createRadialGradient(S.x + S.w / 2, S.y + S.h / 2, 10, S.x + S.w / 2, S.y + S.h / 2, S.w * 0.7);
+  bg.addColorStop(0, c(P.bg.map(v => v + 10), 1)); bg.addColorStop(1, c(P.bg, 1));
+  g.fillStyle = bg; g.fillRect(S.x, S.y, S.w, S.h);
+  const flick = reduced ? 1 : 0.94 + 0.06 * hash(Math.floor(t * 24));
+  // nagloed: verkleinde kopie, opgeschaald
+  sg.clearRect(0, 0, small.width, small.height); sg.drawImage(off, 0, 0, small.width, small.height);
+  g.globalCompositeOperation = 'lighter';
+  g.imageSmoothingEnabled = true;
+  g.globalAlpha = 0.7 * flick; g.drawImage(small, S.x - 2, S.y - 2, S.w + 4, S.h + 4);
+  g.globalAlpha = flick; g.drawImage(off, S.x, S.y, S.w, S.h);
+  // rollende band
+  if (!reduced) { const by = S.y + ((t * 22) % (S.h + 60)) - 30, bgr = g.createLinearGradient(0, by - 24, 0, by + 24); bgr.addColorStop(0, 'rgba(255,255,255,0)'); bgr.addColorStop(0.5, c(P.mid, 0.05)); bgr.addColorStop(1, 'rgba(255,255,255,0)'); g.globalAlpha = 1; g.fillStyle = bgr; g.fillRect(S.x, by - 24, S.w, 48); }
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  // scanlijnen en vignet
+  g.fillStyle = p.pat; g.fillRect(S.x, S.y, S.w, S.h);
+  const v = g.createRadialGradient(S.x + S.w / 2, S.y + S.h / 2, S.h * 0.35, S.x + S.w / 2, S.y + S.h / 2, S.w * 0.62);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+  g.fillStyle = v; g.fillRect(S.x, S.y, S.w, S.h);
+  // glas: heel lichte reflectie linksboven
+  const gl = g.createLinearGradient(S.x, S.y, S.x + S.w * 0.5, S.y + S.h * 0.6);
+  gl.addColorStop(0, 'rgba(255,255,255,.05)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gl; g.fillRect(S.x, S.y, S.w, S.h);
+  g.restore();
+  // rand van het scherm
+  g.strokeStyle = p.th === 'light' ? 'rgba(27,27,34,.35)' : 'rgba(255,255,255,.08)';
+  g.lineWidth = 1; g.beginPath(); g.roundRect(S.x - 0.5, S.y - 0.5, S.w + 1, S.h + 1, 10.5); g.stroke();
+}
+const io = new IntersectionObserver(es => es.forEach(e => { const p = panes.find(p => p.cv === e.target); if (p) p.visible = e.isIntersecting; }));
+panes.forEach(p => io.observe(p.cv));
+function frame(now) {
+  const t = reduced ? 14 : now / 1000;
+  for (const p of panes) if (p.visible) compose(p, t);
+  if (!reduced) requestAnimationFrame(frame);
+}
+document.querySelectorAll('[data-multi]').forEach(b => b.addEventListener('click', () => {
+  MULTI = b.dataset.multi === '1';
+  document.querySelectorAll('[data-multi]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (reduced) requestAnimationFrame(frame);
+}));
+document.querySelectorAll('[data-ph]').forEach(b => b.addEventListener('click', () => {
+  P = PHOS[b.dataset.ph];
+  document.querySelectorAll('[data-ph]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (reduced) requestAnimationFrame(frame);
+}));
+document.fonts.ready.then(() => requestAnimationFrame(frame));
+requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
