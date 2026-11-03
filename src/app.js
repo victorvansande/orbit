@@ -6,7 +6,7 @@ import { createLegend } from './scene/legend.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync/sync.js';
 import { mirror, readMirror } from './data/backup.js';
-import { setMatrix, twinkleDot } from './scene/matrix.js';
+import { setMatrix, morphMatrix, twinkleDot } from './scene/matrix.js';
 import { loadDone, saveDone, cleanDone, isFiller, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
   loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView } from './data/stats.js';
 import { QUOTES } from './focus/quotes.js';
@@ -477,11 +477,10 @@ function renderStats({ quiet = false } = {}) {
   const total = all;
   $('stat-mini-n').textContent = String(total);
   $('stat-mini').setAttribute('aria-label', tx('stars.mini', { n: total }));
-  setMatrix($('stat-total'), String(total));
-  $('stat-total').setAttribute('aria-label', tx('stats.total', { n: total }));
-  $('stat-stars-label').textContent = total === 1 ? tx('stats.label1') : tx('stats.label');
   renderSkies();
   const sum = doneSummary(done, now);
+  statN = { all: total, month: sum.month };
+  showStatDm();
   const day = ts => LONG_DAY.format(ts);
   const bestDay = sum.best ? (([y, m, d]) => new Date(y, m - 1, d))(sum.best.day.split('-').map(Number)) : null;
   const rows = [
@@ -492,6 +491,37 @@ function renderStats({ quiet = false } = {}) {
     [tx('stats.first'), sum.first ? day(sum.first) : '-'],
   ];
   $('stats-rows').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', '', k), el('dd', '', String(v))]));
+}
+// De stippenteller wisselt om de 8 s tussen de sterren van deze maand en alle sterren (Victor, 03/11/2026),
+// met een golf door de stippen (morphMatrix). Enkel als de teller in beeld is; stil met Minimaal of minder beweging.
+const STAT_SWAP_MS = 8000;
+let statMode = 'all', statN = { all: 0, month: 0 }, statSwapT = 0;
+function statLabel() {
+  const n = statN[statMode];
+  return statMode === 'month' ? (n === 1 ? tx('stats.month1') : tx('stats.month')) : (n === 1 ? tx('stats.label1') : tx('stats.label'));
+}
+function statAria() {
+  $('stat-total').setAttribute('aria-label', tx(statMode === 'month' ? 'stats.monthAria' : 'stats.total', { n: statN[statMode] }));
+}
+function showStatDm() {
+  setMatrix($('stat-total'), String(statN[statMode]));
+  if (!$('stat-total')._morphT) { $('stat-stars-label').textContent = statLabel(); statAria(); }
+  clearTimeout(statSwapT);
+  statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS);
+}
+function swapStatDm() {
+  const dm = $('stat-total'), label = $('stat-stars-label');
+  const r = dm.getBoundingClientRect();
+  const seen = !document.hidden && !$('stats').hidden && r.width > 0 && r.bottom > 0 && r.top < innerHeight;
+  if (!seen) { statSwapT = setTimeout(swapStatDm, 1000); return; }
+  statMode = statMode === 'all' ? 'month' : 'all';
+  const still = minimalFx || reducedMotion.matches;
+  if (!still) label.classList.add('is-swap');
+  morphMatrix(dm, String(statN[statMode]), {
+    still,
+    onSwap: () => { label.textContent = statLabel(); label.classList.remove('is-swap'); statAria(); },
+  });
+  statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS);
 }
 // Hemels: een nieuwe, lege hemel zonder iets te wissen; vorige hemels of alle sterren samen kun je terug tonen
 const SKY_DATE = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' });

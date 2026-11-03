@@ -62,7 +62,9 @@ const NL = {
 
   // statistiek
   'stats.total': n('{n} ster aan de hemel', '{n} sterren aan de hemel'),
-  'stats.label1': 'star collected', 'stats.label': 'stars collected',
+  'stats.label1': 'star all time', 'stats.label': 'stars all time',
+  'stats.month1': 'star this month', 'stats.month': 'stars this month',
+  'stats.monthAria': n('{n} ster deze maand', '{n} sterren deze maand'),
   'stats.today': 'Vandaag', 'stats.week': 'Deze week', 'stats.best': 'Beste dag', 'stats.first': 'Eerste ster',
   'skies.title': 'Hemels', 'skies.current': 'Deze hemel', 'skies.currentSince': 'Deze hemel, sinds {date}', 'skies.all': 'Alle sterren',
   'skies.until': 'Tot {date}', 'skies.range': '{from} tot {to}', 'skies.new': 'Nieuwe hemel',
@@ -234,7 +236,9 @@ const EN = {
     'Buy a present for Saturday', 'Fold the laundry', 'Call the dentist', 'File the tax return', 'Learn Japanese', 'Clear out the attic'],
 
   'stats.total': n('{n} star in the sky', '{n} stars in the sky'),
-  'stats.label1': 'star collected', 'stats.label': 'stars collected',
+  'stats.label1': 'star all time', 'stats.label': 'stars all time',
+  'stats.month1': 'star this month', 'stats.month': 'stars this month',
+  'stats.monthAria': n('{n} star this month', '{n} stars this month'),
   'stats.today': 'Today', 'stats.week': 'This week', 'stats.best': 'Best day', 'stats.first': 'First star',
   'skies.title': 'Skies', 'skies.current': 'This sky', 'skies.currentSince': 'This sky, since {date}', 'skies.all': 'All stars',
   'skies.until': 'Until {date}', 'skies.range': '{from} to {to}', 'skies.new': 'New sky',
