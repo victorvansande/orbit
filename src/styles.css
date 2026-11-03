@@ -530,6 +530,17 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transform: translate(-50%, -100%);
   font-size: 14px; padding: 5px 11px;
 }
+/* ---- W1 Rustig (Victor, 03/11/2026): op desktop een uitdovende boog, open pillen, de keuze zacht gekleurd met een fijne rand,
+   het label als gewone tekst en een korter merkstreepje. Gsm blijft zoals hij was (taps uitlopende boog, B). */
+.wheel[data-orientation="vertical"] .wheel-arc path { stroke: url(#wheel-arc-fade); stroke-width: 1; }
+.wheel[data-orientation="vertical"] .wheel-handle { width: 10px; height: 1.5px; margin: -.75px 0 0 -5px; }
+.wheel[data-orientation="vertical"] .wi-pill {
+  border: 1px solid color-mix(in srgb, var(--c) calc(var(--sel) * 40%), transparent);
+  background: color-mix(in srgb, var(--c) calc(var(--sel) * 9%), transparent);
+}
+.wheel[data-orientation="vertical"] .wheel-item:hover .wi-pill { background: color-mix(in srgb, var(--c) calc(6% + var(--sel) * 6%), transparent); }
+.wheel[data-orientation="vertical"] .wi-label { font-size: 15px; }
+.wheel[data-orientation="vertical"] .wheel-item.is-selected .wi-label { background: transparent; border-color: transparent; box-shadow: none; padding-right: 4px; }
 
 /* ---- Focusmodus ---- */
 /* Bakje water: rustig fidget-venster rechtsonder in de focusmodus (alleen desktop) */

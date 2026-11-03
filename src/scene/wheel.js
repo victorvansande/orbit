@@ -17,6 +17,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
   const list = root.querySelector('.wheel-list');
   const arcPath = root.querySelector('.wheel-arc path');
   const arcGrad = root.querySelector('#wheel-arc-grad');
+  const arcFade = root.querySelector('#wheel-arc-fade');   // desktop: boog dooft uit naar boven en onder (W1)
   const handle = root.querySelector('.wheel-handle');
 
   let index = 2, pos = 2, raf = 0, drag = null, wheelAcc = 0, wheelLock = 0;
@@ -77,6 +78,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
         pts.push(`${k ? 'L' : 'M'}${(cx - g.R * Math.cos(th)).toFixed(1)} ${(cy + g.R * Math.sin(th)).toFixed(1)}`);
       }
       arcPath.setAttribute('d', pts.join(' '));
+      if (arcFade) { arcFade.setAttribute('x1', '0'); arcFade.setAttribute('y1', '0'); arcFade.setAttribute('x2', '0'); arcFade.setAttribute('y2', box.height.toFixed(1)); }
     } else {
       const maxDrop = g.arc - 2;
       const halfW = Math.max(20, Math.min(cx - 16, Math.sqrt(2 * g.R * maxDrop - maxDrop * maxDrop)));
