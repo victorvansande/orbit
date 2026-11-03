@@ -557,16 +557,8 @@ $('stat-mini').addEventListener('click', () => {
   $('stats').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
 });
 
-// Af en toe fonkelt één stip, net als de sterren in de scène: van de klok in de focusmodus, anders van de teller
-(function wink() {
-  setTimeout(() => {
-    if (!reducedMotion.matches && !document.hidden && !minimalFx) {
-      if (document.body.classList.contains('is-focus')) twinkleDot($('clock'));
-      else if (!$('stats').hidden && $('stats').offsetParent) twinkleDot($('stat-total'));
-    }
-    wink();
-  }, 7000 + Math.random() * 9000);
-})();
+// Het periodieke fonkelen van één stip (klok in de focus, anders de teller, om de 7 tot 16 s) is weg (Victor, 03/11/2026).
+// `twinkleDot` blijft voor wat er echt gebeurt: een nieuwe ster buiten beeld (`noteStar`) en een afgelopen zandloper.
 
 /* ---- Takenlijst ---- */
 const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
