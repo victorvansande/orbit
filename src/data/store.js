@@ -31,7 +31,11 @@ export function loadArchDel() {
   for (const [id, t] of Object.entries(read(ARCHDEL_KEY, {}) || {})) if (Number.isFinite(t) && t > limit) out[id] = t;
   return out;
 }
-export function saveArchDel(del) { write(ARCHDEL_KEY, del); return del; }
+// Een object, geen lijst: `write` kan het niet inkorten (slice) en bewaarde het daardoor nooit (gevonden 03/11/2026).
+export function saveArchDel(del) {
+  try { localStorage.setItem(ARCHDEL_KEY, JSON.stringify(del)); } catch { /* geblokkeerd: blijft in het geheugen en in de sync */ }
+  return del;
+}
 export function mergeArchive(a = [], b = [], liveIds = new Set(), del = {}) {
   const limit = Date.now() - KEEP_DAYS * 86400000, byId = new Map();
   for (const x of [...a, ...b]) {

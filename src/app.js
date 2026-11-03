@@ -1096,7 +1096,14 @@ function complete(id, row) {
   if (!task.demo) {
     const now = Date.now();
     gone[id] = now;
-    archive = saveArchive([{ ...task, doneAt: now }, ...archive]);
+    // herhalende taak: meteen de volgende, met de eerstvolgende datum na vandaag; het archief onthoudt welke (`next`),
+    // zodat terugzetten die volgende weer weghaalt in plaats van de taak dubbel te zetten
+    if (task.repeat && task.due) {
+      const due = nextDue(task.due, task.repeat);
+      next = { id: uid(), title: task.title, level: levelForDue(due), due, repeat: task.repeat, createdAt: now, updatedAt: now, levelAt: now };
+      tasks.push(next);
+    }
+    archive = saveArchive([{ ...task, doneAt: now, ...(next ? { next: next.id } : {}) }, ...archive]);
     done[id] = now;
     saveDone(done);
     recordDone(feats, task, now);
@@ -1108,12 +1115,6 @@ function complete(id, row) {
       scene.constellation(25);
       if (motion && !minimalFx) takeStage(wait + (night ? 5000 : 3600));
     }
-    // herhalende taak: meteen de volgende, met de eerstvolgende datum na vandaag
-    if (task.repeat && task.due) {
-      const due = nextDue(task.due, task.repeat);
-      next = { id: uid(), title: task.title, level: levelForDue(due), due, repeat: task.repeat, createdAt: now, updatedAt: now, levelAt: now };
-      tasks.push(next);
-    }
   }
   const sound = () => { lastTick = performance.now(); playDone({ level: task.level, n: totalDone(done) - 1 }); };
   saveTasks();
@@ -1122,7 +1123,7 @@ function complete(id, row) {
   renderArchive();
   scene.setTasks(tasks);
   const back = task.demo ? () => { tasks.push(task); render(); } : () => {
-    if (next) { tasks = tasks.filter(t => t.id !== next.id); gone[next.id] = Date.now(); }
+    if (next) { tasks = tasks.filter(t => t.id !== next.id); gone[next.id] = archDel[next.id] = Date.now(); saveArchDel(archDel); }
     restore([id]);
   };
   // ongedaan maken trekt ook in wat deze taak opleverde (prestaties, gebeurtenissen; Victor koos "A")
@@ -1216,15 +1217,37 @@ function fallNight(id, wait, sound, give) {
 
 // Taken uit het archief terugzetten. Een nieuwe wijzigingstijd maakt ze recenter dan het afvinken,
 // dus komen ze via de synchronisatie ook op andere toestellen terug.
+// Een herhalende taak terugzetten haalt de volgende uit dezelfde reeks weg, anders stond ze er twee keer (Victor,
+// 03/11/2026). De volgende is de taak die het archief onthield (`next`); bij oudere archiefregels zonder `next` (of afgevinkt
+// op een ander toestel) een taak met dezelfde titel en herhaling die later aangemaakt is. Eerst een momentopname; de
+// volgende krijgt een afvinkmarkering en een verwijdermarkering (`archDel`), zodat ze ook op gekoppelde toestellen verdwijnt
+// zonder daar als afgevinkt te tellen. Een notitie die enkel de volgende
+// had, gaat mee naar de teruggezette taak.
+function successors(a) {
+  if (!a.repeat) return [];
+  const byId = a.next ? tasks.filter(t => t.id === a.next) : [];
+  if (byId.length) return byId;
+  return tasks.filter(t => t.id !== a.id && t.repeat === a.repeat && t.title === a.title && !t.demo && (t.createdAt || 0) > (a.createdAt || 0));
+}
 function restore(ids) {
   const want = new Set(ids);
   const back = archive.filter(a => want.has(a.id) && !tasks.some(t => t.id === a.id));
   if (!back.length) return 0;
+  if (back.some(a => successors(a).length)) snapshot(tasks, 'restore');
   for (const a of back) {
     delete done[a.id];
     delete feats.log[a.id];
     removeStar(sky, a.id);
-    const { doneAt, by, ...task } = a;
+    const { doneAt, by, next, ...task } = a;
+    const later = successors(a);
+    if (later.length) {
+      if (!task.note) task.note = later.find(t => t.note)?.note;
+      if (!task.note) delete task.note;
+      const drop = new Set(later.map(t => t.id)), now = Date.now();
+      tasks = tasks.filter(t => !drop.has(t.id));
+      for (const d of drop) { gone[d] = now; archDel[d] = now; }   // archDel: elders niet als afgevinkt tellen (geen ster)
+      saveArchDel(archDel);
+    }
     touch(task);
     delete gone[task.id];
     tasks.push(task);
