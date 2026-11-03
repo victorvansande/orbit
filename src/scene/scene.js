@@ -313,17 +313,18 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const spot = o.sx == null ? null : [(o.sx - cam.cx) / cam.s, (o.sy - cam.cy) / cam.s];
     if (reducedMotion.matches || o.sx == null) return spot;
     // A Opgebrand (Victor, 03/11/2026): de bol brandt op langs zijn eigen baan, zonder ster (de enige ster is de nieuwe in de hemel)
-    const lv = LEVEL_BY_ID.get(o.level);
-    const w0 = Math.max(TAU / lv.period * (speed.get(o.level) || 0) + (o.vo || 0), 0.35 * TAU / lv.period);
-    const v0 = o.r * w0, trail = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH / Math.max(v0, 1e-3);
-    // afgevinkt in de lijst: eerst vliegt een lichtpuntje van de rij naar de bol, dan brandt die op
-    let wait = 0;
-    if (from && !minimal) {
+    // De bol draait gewoon door met zijn ring (Victor, 03/11/2026: "het sprongetje naar de orb die dan verdwijnt is nog
+    // steeds wat raar"): vroeger bevroor hij op de plek van de klik, wachtte tot het lichtpuntje aankwam en vertrok dan uit
+    // stilstand; en verdween hij bij de klik meteen kaal (zonder de gloed en de grootte van een aangewezen bol). Nu volgt
+    // hij elk beeld de echte snelheid van zijn ring (die na het aanwijzen weer op gang komt), het lichtpuntje volgt hem,
+    // en pas als het aankomt remt hij af en brandt op.
+    const wait = from && !minimal ? SPARK_MS / 1000 : 0;
+    const burn = { level: o.level, r: o.r, a: orbAngle(o), w: 0, age: -wait, alpha: o.alpha ?? 1, k: isHot(o) ? 1.2 : 1 };
+    burns.push(burn);
+    if (wait) {
       const r = canvas.getBoundingClientRect();
-      sparks.push({ x0: from.x - r.left, y0: from.y - r.top, x1: o.sx, y1: o.sy, t0: performance.now(), level: o.level });
-      wait = SPARK_MS / 1000;
+      sparks.push({ x0: from.x - r.left, y0: from.y - r.top, burn, t0: performance.now(), level: o.level });
     }
-    burns.push({ level: o.level, r: o.r, a0: orbAngle(o), w0, trail: Math.min(trail, 0.9), cont: wait === 0, age: -wait, alpha: o.alpha ?? 1 });
     starDelay = (wait + BURN_LIFE) * 1000 + 120;
     return spot;
   }
@@ -409,8 +410,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (pointer.inside) { bend.x = smooth(bend.x || pointer.x, pointer.x, 8, dt); bend.y = smooth(bend.y || pointer.y, pointer.y, 8, dt); }
 
     for (let i = burns.length - 1; i >= 0; i--) {
-      burns[i].age += dt;
-      if (burns[i].age > BURN_LIFE) burns.splice(i, 1);
+      const q = burns[i];
+      q.age += dt;
+      if (q.age > BURN_LIFE) { burns.splice(i, 1); continue; }
+      // snelheid van zijn ring, na de aankomst van het lichtpuntje afremmend naar 0
+      const lvq = LEVEL_BY_ID.get(q.level);
+      q.w = motion ? TAU / lvq.period * speed.get(q.level) * (1 - Math.min(1, Math.max(0, q.age) / BURN_LIFE)) : 0;
+      q.a += q.w * dt;
     }
 
     // slapende kern: geen taken, of 's nachts (23 tot 6 u) zonder iets dringends; een aanwijzer maakt hem 20 s wakker
@@ -1247,37 +1253,25 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
 
   // Opbranden (A, Victor, 03/11/2026, uit vier voorstellen in artifact "Orbit afvinkmoment"; vervangt "Zilver", het uitfonkelen
   // als vierpuntige ster, dat vlak voor de nieuwe ster in de hemel als een tweede ster las). Zoals de vallende ster: de bol
-  // remt af langs zijn baan, flakkert nog even op en krimpt tot niets; zijn staart is de plek waar hij de laatste `trail` s
-  // was en lost daarna op. Na een lichtpuntje vertrekt hij uit stilstand (de staart groeit), anders loopt hij gewoon door.
-  function burnAngle(q, t) {
-    if (t <= 0) return q.cont ? q.a0 + q.w0 * t : q.a0;
-    const u = Math.min(1, t / BURN_LIFE), L = BURN_LIFE * q.w0;
-    // doorlopen: snelheid w0 → 0 (u − u²/2); uit stilstand: 0 → piek → 0 (2u² − 4u³/3, piek w0 halverwege)
-    return q.a0 + L * (q.cont ? u - u * u / 2 : 2 * u * u - 4 * u * u * u / 3);
-  }
+  // remt af langs zijn baan, flakkert nog even op en krimpt tot niets; zijn staart krimpt mee met zijn snelheid en lost op.
   function drawEffects() {
     for (const q of burns) {
       const lv = LEVEL_BY_ID.get(q.level), c = colors.get(q.level);
       const o = { r: q.r };
-      if (!project(...orbFunnel(o, burnAngle(q, q.age)), true)) continue;
-      const hx = pt.x, hy = pt.y, r = lv.size / 2 * ORB_SCALE * cam.du * pt.f;
+      if (!project(...orbFunnel(o, q.a), true)) continue;
+      const hx = pt.x, hy = pt.y, r = lv.size / 2 * ORB_SCALE * cam.du * pt.f * (q.k || 1);
       ctx.globalAlpha = q.alpha;
-      if (q.age < 0 && !q.cont) {
-        // wacht op het lichtpuntje: de bol blijft even staan waar hij was
-        ctx.fillStyle = rgba(c, 1);
-        ctx.beginPath(); ctx.arc(hx, hy, r, 0, TAU); ctx.fill();
-        ctx.globalAlpha = 1;
-        continue;
-      }
       const p = Math.max(0, q.age) / BURN_LIFE;
       const head = Math.min(1, p / 0.8);
       const flick = 1 + 0.35 * Math.sin(Math.max(0, Math.min(1, (head - 0.5) / 0.35)) * Math.PI);
-      const rh = r * Math.pow(1 - head, 1.3) * flick;
+      const hit = 1 + 0.22 * Math.sin(Math.min(1, Math.max(0, q.age) / 0.22) * Math.PI);   // het lichtpuntje komt aan: kleine opflakkering
+      const rh = r * Math.pow(1 - head, 1.3) * flick * hit;
       const fadeT = 1 - smoothstep(0.5, 1, p);
-      // staart: waar de kop de laatste `trail` s was (krimpt mee als hij afremt), lost na het opbranden op
+      // staart langs de baan, zo lang als bij een gewone bol op die snelheid (krimpt mee als hij afremt), lost na het opbranden op
+      const span = (lv.tail + 1) * TAIL_GAP * TAIL_LENGTH / lv.orbit * Math.min(2.5, q.w / (TAU / lv.period));
       trailPts.length = 0;
       for (let k = 0; k <= TRAIL_STEPS; k++) {
-        if (!project(...orbFunnel(o, burnAngle(q, q.age - k / TRAIL_STEPS * q.trail)), true)) break;
+        if (!project(...orbFunnel(o, q.a - k / TRAIL_STEPS * span), true)) break;
         trailPts.push(pt.x, pt.y);
       }
       const n = trailPts.length / 2;
@@ -1287,7 +1281,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.fillStyle = g;
         taper(2 * Math.max(rh, r * 0.6 * (1 - p)), r * 0.3 * (1 - p));
       }
-      if (rh > 0.2) { ctx.fillStyle = rgba(c, 1); ctx.beginPath(); ctx.arc(hx, hy, rh, 0, TAU); ctx.fill(); }
+      if (rh > 0.2) {
+        if (!minimal) {   // dezelfde zachte gloed als een gewone bol, dooft mee
+          const R = rh * 3.2, g = ctx.createRadialGradient(hx, hy, rh * 0.6, hx, hy, R);
+          g.addColorStop(0, rgba(c, theme.glow)); g.addColorStop(0.45, rgba(c, theme.glow * 0.35)); g.addColorStop(1, rgba(c, 0));
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(hx, hy, R, 0, TAU); ctx.fill();
+        }
+        ctx.fillStyle = rgba(c, 1); ctx.beginPath(); ctx.arc(hx, hy, rh, 0, TAU); ctx.fill();
+      }
       ctx.globalAlpha = 1;
     }
   }
@@ -1297,18 +1298,26 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (let i = sparks.length - 1; i >= 0; i--) {
       const s = sparks[i], p = (now - s.t0) / SPARK_MS;
       if (p >= 1) { sparks.splice(i, 1); continue; }
+      // eindpunt = waar de bol nu is (hij draait door), zodat het lichtpuntje hem echt raakt
+      if (!project(...orbFunnel({ r: s.burn.r }, s.burn.a), true)) continue;
+      const x1 = pt.x, y1 = pt.y;
       const at = q => {
         const e = ease(Math.max(0, Math.min(1, q)));
-        const mx = (s.x0 + s.x1) / 2, my = Math.min(s.y0, s.y1) - 60;   // boogje omhoog
+        const mx = (s.x0 + x1) / 2, my = Math.min(s.y0, y1) - 60;   // boogje omhoog
         const u = 1 - e;
-        return [u * u * s.x0 + 2 * u * e * mx + e * e * s.x1, u * u * s.y0 + 2 * u * e * my + e * e * s.y1];
+        return [u * u * s.x0 + 2 * u * e * mx + e * e * x1, u * u * s.y0 + 2 * u * e * my + e * e * y1];
       };
-      const [hx, hy] = at(p), [tx, ty] = at(p - 0.18);
+      const [hx, hy] = at(p);
       const c = colors.get(s.level);
-      const g = ctx.createLinearGradient(hx, hy, tx, ty);
-      g.addColorStop(0, rgba(c, 0.9)); g.addColorStop(1, rgba(c, 0));
-      ctx.strokeStyle = g; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+      trailPts.length = 0;
+      for (let k = 0; k <= 8; k++) { const [x, y] = at(p - k * 0.016); trailPts.push(x, y); }
+      const n = trailPts.length / 2;
+      if (Math.hypot(trailPts[2 * n - 2] - hx, trailPts[2 * n - 1] - hy) > 1) {
+        const g = ctx.createLinearGradient(hx, hy, trailPts[2 * n - 2], trailPts[2 * n - 1]);
+        g.addColorStop(0, rgba(c, 0.9)); g.addColorStop(1, rgba(c, 0));
+        ctx.fillStyle = g;
+        taper(4.4, 0.3);
+      }
       ctx.fillStyle = rgba(c, 1);   // in de kleur van het moment (A): geen inktstip die als ster leest
       ctx.beginPath(); ctx.arc(hx, hy, 2.4, 0, TAU); ctx.fill();
     }
