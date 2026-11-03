@@ -152,8 +152,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let INK = theme.ink, PAPER = theme.paper;
   const coreColor = [...theme.calm];
   let introStart = performance.now(), last = performance.now();
-  // Bollen wijken tijdens de maandwissel (Victor, 03/11/2026: "de orbs die nog draaien even verbergen dat we echt enkel de
-  // sterretjes naar de kern zien vertrekken"): 0 zolang er een maandwissel klaarstaat of loopt, daarna zacht terug.
+  // Bollen en ringen wijken tijdens de maandwissel (Victor, 03/11/2026: "de orbs die nog draaien even verbergen dat we echt
+  // enkel de sterretjes naar de kern zien vertrekken", daarna "ook tijdelijk de orbits zelf, enkel de kern in beeld"):
+  // 0 zolang er een maandwissel klaarstaat of loopt, daarna zacht terug.
   let orbVeil = 1;
   let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
   let pointer = { x: -1, y: -1, inside: false };
@@ -922,7 +923,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const hot = ringHot.get(lv.id);
       const base = RING_ALPHA[idx] ?? RING_ALPHA[RING_ALPHA.length - 1];
       const intro = introAlpha(now, 0.15 + idx * 0.12, 0.8);
-      const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro;
+      const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro * orbVeil;   // tijdens de maandwissel wijken ook de ringen: enkel de kern en de sterren
       const z = ring.z * cam.depth;
       // stippen
       ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
