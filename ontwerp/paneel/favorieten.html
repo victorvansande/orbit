@@ -60,7 +60,7 @@ footer p { margin: 0 0 10px; }
 <main>
   <header>
     <h1>Orbit · paneel, favorieten</h1>
-    <p>De acht favorieten van Victor (03/11/2026) uit de drie rondes voor de fidget Paneel, apart gezet: vijf als oude CRT-monitor (R7 Telescoop, R10 Mainframe, R11 Baanplotter, R2 Commandocentrum, R5 Tekstconsole) en drie in de vlakke inkt van Orbit (P5 Schakelbord, P7 Draadmodel, P2 Radar). De fosforkleur geldt voor de CRT-schermen. Tik in een scherm om het te zien reageren.</p>
+    <p>De favorieten van Victor uit vier rondes voor de fidget Paneel (03/11/2026), apart gezet: tien als oude CRT-monitor (R7 Telescoop, R10 Mainframe, R11 Baanplotter, R2 Commandocentrum, R5 Tekstconsole, en uit ronde 4 R13 Kaartkamer, R14 Rekkast, R15 Console met kaarten, R16 Draadplotter, R17 Lampenwand) en drie in de vlakke inkt van Orbit (P5 Schakelbord, P7 Draadmodel, P2 Radar). Fosfor en Kleur gelden voor de CRT-schermen; de momentkleuren werken in die van ronde 4. Tik in een scherm om het te zien reageren.</p>
     <div class="phos" role="group" aria-label="Fosforkleur">
       <span>Fosfor</span>
       <button type="button" id="ph-gloed" data-ph="gloed" aria-pressed="true"><i style="background:#FB923C"></i>Gloed (rood naar amber)</button>
@@ -68,6 +68,11 @@ footer p { margin: 0 0 10px; }
       <button type="button" id="ph-amber" data-ph="amber" aria-pressed="false"><i style="background:#FFB347"></i>Amber</button>
       <button type="button" id="ph-groen" data-ph="groen" aria-pressed="false"><i style="background:#5CFF9B"></i>Groen</button>
       <button type="button" id="ph-wit" data-ph="wit" aria-pressed="false"><i style="background:#DDE6FF"></i>Wit</button>
+    </div>
+    <div class="phos" role="group" aria-label="Kleur van de taken">
+      <span>Kleur</span>
+      <button type="button" id="multi-on" data-multi="1" aria-pressed="true"><i style="background:conic-gradient(#F0306A,#F5A623,#20E08A,#38A0F0,#B3B9D6,#F0306A)"></i>Momentkleuren</button>
+      <button type="button" id="multi-off" data-multi="0" aria-pressed="false"><i style="background:#FB923C"></i>Eén fosfor</button>
     </div>
   </header>
   <div id="crt">
@@ -111,6 +116,46 @@ footer p { margin: 0 0 10px; }
     </div>
     <div class="pair" data-v="console"></div>
   </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R13</span>Kaartkamer</h2>
+      <p>Telescoop en baanplotter samen: op de sterrenkaart trekt een pen traag het sterrenbeeld van een week, ster na ster, terwijl rechts een catalogus meeloopt met nummer, dag en uur van elke ster. Daarna vervaagt het en komt de volgende week.</p>
+      <dl><dt>Komt van</dt><dd>R7 Telescoop + R11 Baanplotter</dd><dt>Leest</dt><dd>sterren per week, wanneer ze verdiend zijn</dd><dt>Tik</dt><dd>volgende week</dd></dl>
+    </div>
+    <div class="pair" data-v="chartroom"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R14</span>Rekkast</h2>
+      <p>Het serverrek uit je eerste voorbeeld: vijf eenheden onder elkaar, één per moment, met schroefjes, een klein lcd-schermpje met naam en aantal, een lampje per taak dat knippert op het ritme van zijn baan, schijfledjes die flikkeren en een belastingsbalk. Het meest "Orbit draait op zware hardware", en het leest in één oogopslag.</p>
+      <dl><dt>Komt van</dt><dd>R10 Mainframe + P5 Schakelbord</dd><dt>Leest</dt><dd>taken per moment, omlooptijden</dd><dt>Tik</dt><dd>pingt de eenheid die je raakt</dd></dl>
+    </div>
+    <div class="pair" data-v="rack2"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R15</span>Console met kaarten</h2>
+      <p>Links een grote console die commando's typt en antwoordt, rechts twee kleine schermen: een geheugenkaart en een radar. Minder vensters dan het commandocentrum, meer tekst, en toch druk.</p>
+      <dl><dt>Komt van</dt><dd>R5 Tekstconsole + R2 Commandocentrum</dd><dt>Leest</dt><dd>stand per moment, sync, sterren, focus, taken op hun baan</dd><dt>Tik</dt><dd>de console typt sneller</dd></dl>
+    </div>
+    <div class="pair" data-v="termmap"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R16</span>Draadplotter</h2>
+      <p>De plotter tekent de trechter van Orbit als draadmodel, lijn per lijn: eerst de vijf ringen, dan de meridianen. Is hij af, dan verschijnen de taken als stipjes en draait het model een paar seconden, waarna het opnieuw begint.</p>
+      <dl><dt>Komt van</dt><dd>P7 Draadmodel + R11 Baanplotter</dd><dt>Leest</dt><dd>de scène, taken per ring</dd><dt>Tik</dt><dd>opnieuw tekenen</dd></dl>
+    </div>
+    <div class="pair" data-v="wireplot"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R17</span>Lampenwand</h2>
+      <p>Het schakelbord in het groot: zeventig drukknoplampen in kolommen per moment. Om de 6 s een ander patroon (golf, taken, scan, raster); in het patroon Taken zijn de lampjes echt je taken. Tik een lamp om ze een paar seconden vast te zetten.</p>
+      <dl><dt>Komt van</dt><dd>P5 Schakelbord + R2 Commandocentrum</dd><dt>Leest</dt><dd>taken per moment (in Taken), verder sfeer</dd><dt>Tik</dt><dd>zet een lamp vast</dd></dl>
+    </div>
+    <div class="pair" data-v="lampwall"></div>
+  </section>
   </div>
   <div id="flat">
   <section>
@@ -139,7 +184,7 @@ footer p { margin: 0 0 10px; }
   </section>
   </div>
   <footer>
-    <p>Rondes in volle lengte: ronde 1 (P1 tot P7), ronde 2 (R1 tot R6) en ronde 3 (R7 tot R12), bewaard naast dit blad: <a href="ronde1.html" style="color:inherit">ronde 1</a>, <a href="ronde2.html" style="color:inherit">ronde 2</a>, <a href="ronde3.html" style="color:inherit">ronde 3</a>, <a href="ronde4.html" style="color:inherit">ronde 4</a>.</p>
+    <p>Rondes in volle lengte: ronde 1 (P1 tot P7), ronde 2 (R1 tot R6), ronde 3 (R7 tot R12) en ronde 4 (R13 tot R18), bewaard naast dit blad: <a href="ronde1.html" style="color:inherit">ronde 1</a>, <a href="ronde2.html" style="color:inherit">ronde 2</a>, <a href="ronde3.html" style="color:inherit">ronde 3</a>, <a href="ronde4.html" style="color:inherit">ronde 4</a>.</p>
   </footer>
 </main>
 
@@ -307,6 +352,210 @@ function bar(g, x, y, w, h, frac, segs, vertical) {
   }
 }
 
+/* ---- Momentkleuren: taken in de kleur van hun moment (Victor: "ook graag meerdere kleuren") ---- */
+let MULTI = true;
+const LVRGB = LV.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+const lvc = (i, a = 1) => MULTI ? c(LVRGB[i], a) : (i === 0 ? hi(a) : mid(a));
+
+/* ---- R13 Kaartkamer (telescoop + plotter) ---- */
+function chartroom() {
+  const stars = Array.from({ length: 70 }, (_, i) => ({ x: 10 + hash(i * 3.1) * 210, y: 18 + hash(i * 7.7) * 150, m: 0.6 + hash(i * 1.9) * 1.3, ph: hash(i) * TAU, n: 98 - i }));
+  const weeks = [0, 1, 2].map(w => { const set = [Math.floor(hash(w * 13 + 1) * 70)]; while (set.length < 8) { const l = stars[set[set.length - 1]]; let b = -1, bd = 1e9; stars.forEach((s, i) => { if (set.includes(i)) return; const d = Math.hypot(s.x - l.x, s.y - l.y) + hash(i * 7 + w) * 20; if (d < bd) { bd = d; b = i; } }); set.push(b); } return set; });
+  let wk = 0, start = 0, first = true;
+  const DUR = 6.5;
+  return {
+    tap() { wk = (wk + 1) % 3; start = performance.now() / 1000; },
+    draw(g, t) {
+      if (first) { start = t; first = false; }
+      if (t - start > DUR + 2) { wk = (wk + 1) % 3; start = t; }
+      g.strokeStyle = mid(0.12); g.setLineDash([2, 3]);
+      for (let x = 30; x < 226; x += 40) { g.beginPath(); g.moveTo(x, 12); g.lineTo(x, 176); g.stroke(); }
+      for (let y = 30; y < 176; y += 36) { g.beginPath(); g.moveTo(6, y); g.lineTo(226, y); g.stroke(); }
+      g.setLineDash([]);
+      txt(g, `KAART · WEEK ${43 + wk}`, 6, 11, 10, mid(0.8));
+      for (const s of stars) { g.fillStyle = hi(0.45 + 0.35 * Math.sin(t * 2 + s.ph)); g.fillRect(s.x - s.m / 2, s.y - s.m / 2, s.m + 0.4, s.m + 0.4); }
+      const set = weeks[wk], u = Math.min(1, (t - start) / DUR), fade = t - start > DUR ? Math.max(0, 1 - (t - start - DUR) / 2) : 1;
+      const segs = set.length - 1, pos = u * segs, k = Math.floor(pos), f = pos - k;
+      g.strokeStyle = hi(0.9 * fade); g.lineWidth = 1.2; g.beginPath();
+      for (let i = 0; i <= Math.min(k, segs); i++) { const s = stars[set[i]]; i ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y); }
+      let px = stars[set[Math.min(k, segs)]].x, py = stars[set[Math.min(k, segs)]].y;
+      if (k < segs) { const a = stars[set[k]], b = stars[set[k + 1]]; px = a.x + (b.x - a.x) * f; py = a.y + (b.y - a.y) * f; g.lineTo(px, py); }
+      g.stroke(); g.lineWidth = 1;
+      set.forEach((i, j) => { if (j > k) return; const s = stars[i]; g.strokeStyle = lvc(Math.floor(hash(i * 11) * 5), 0.95 * fade); g.beginPath(); g.arc(s.x, s.y, 3.5, 0, TAU); g.stroke(); });
+      g.strokeStyle = hi(fade); g.beginPath(); g.moveTo(px - 6, py); g.lineTo(px + 6, py); g.moveTo(px, py - 6); g.lineTo(px, py + 6); g.stroke();
+      // catalogus
+      g.strokeStyle = mid(0.6); g.strokeRect(230.5, 4.5, 72, 176);
+      txt(g, 'CATALOGUS', 234, 15, 10, hi(0.9));
+      g.strokeStyle = mid(0.4); g.beginPath(); g.moveTo(231, 19); g.lineTo(302, 19); g.stroke();
+      set.forEach((i, j) => {
+        const y = 31 + j * 17, on = j <= k;
+        g.fillStyle = lvc(Math.floor(hash(i * 11) * 5), on ? 1 : 0.3); g.beginPath(); g.arc(237, y - 3.5, 2.2, 0, TAU); g.fill();
+        txt(g, String(stars[i].n).padStart(3, '0'), 243, y, 11, j === k ? hi(1) : on ? mid(0.9) : mid(0.35));
+        txt(g, ['MA', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO', 'MA'][j], 262, y, 10, on ? mid(0.7) : mid(0.3));
+        txt(g, `${String(8 + Math.floor(hash(i) * 14)).padStart(2, '0')}:${String(Math.floor(hash(i * 3) * 60)).padStart(2, '0')}`, 299, y, 10, on ? mid(0.7) : mid(0.3), 'right');
+      });
+      txt(g, `${Math.round(u * 100)}%`, 299, 176, 10, hi(0.9), 'right');
+    },
+  };
+}
+
+/* ---- R14 Rekkast (mainframe + schakelbord) ---- */
+function rack2() {
+  let ping = -1, pingAt = -9;
+  return {
+    tap(x, y) { ping = Math.floor((y - 16) / 32); pingAt = performance.now() / 1000; },
+    draw(g, t) {
+      txt(g, 'REK 01 · ORBIT', 6, 11, 10, mid(0.8)); txt(g, uptime(), S.w - 6, 11, 10, mid(0.7), 'right');
+      LEVELS.forEach((lv, i) => {
+        const y = 16 + i * 32, pg = ping === i ? Math.max(0, 1 - (t - pingAt) / 1.2) : 0;
+        g.strokeStyle = mid(0.55 + 0.4 * pg); g.strokeRect(4.5, y + 0.5, S.w - 9, 29);
+        for (const sx of [10, S.w - 10]) { g.strokeStyle = mid(0.4); g.beginPath(); g.arc(sx, y + 15, 2.2, 0, TAU); g.stroke(); }
+        // lcd
+        g.fillStyle = mid(0.1); g.fillRect(18, y + 5, 62, 20);
+        txt(g, lv.n.slice(0, 7), 22, y + 14, 11, lvc(i, 0.95));
+        txt(g, `${String(lv.count).padStart(2, '0')} TAAK`, 22, y + 23, 9, mid(0.6));
+        // lampjes per taak
+        for (let k = 0; k < 8; k++) {
+          const has = k < lv.count, ph = (t / lv.period + hash(i * 31 + k)) % 1, on = has ? (ph < 0.45 ? 1 : 0.25) : 0.06;
+          g.fillStyle = has ? lvc(i, Math.max(on, pg)) : mid(on);
+          g.fillRect(88 + k * 11, y + 9, 7, 5);
+          g.fillStyle = mid(has ? 0.25 : 0.06); g.fillRect(88 + k * 11, y + 17, 7, 3);
+        }
+        // schijfactiviteit
+        for (let d = 0; d < 2; d++) { g.fillStyle = hi(hash(i * 5 + d + Math.floor(t * (8 + i * 3))) > 0.55 ? 0.95 : 0.12); g.beginPath(); g.arc(186 + d * 9, y + 15, 2, 0, TAU); g.fill(); }
+        // belasting
+        bar(g, 204, y + 11, 60, 8, 0.2 + 0.65 * (Math.sin(t * (0.5 + i * 0.2) + i) * 0.5 + 0.5), 12, false);
+        txt(g, pg > 0 ? 'PING' : lv.period.toFixed(1) + 'S', S.w - 18, y + 19, 10, pg > 0 ? hi(1) : mid(0.7), 'right');
+      });
+    },
+  };
+}
+
+/* ---- R15 Console met kaarten (tekstconsole + commandocentrum) ---- */
+function termmap() {
+  const ty = typer(['orbit> status', 'nu 5  vandaag 5  week 6', 'maand 5  ooit 5', 'orbit> sync', 'ok, 0 wachten', 'orbit> ster', '098, hemel 3', 'orbit> focus', 'nog 16 min', 'orbit> geheugen', '64% bezet, defrag ok'], 20);
+  const cells = Array.from({ length: 22 * 12 }, (_, i) => hash(i * 1.7) > 0.4 ? Math.floor(hash(i * 3.3) * 5) : -1);
+  let fast = -9;
+  return {
+    tap() { fast = performance.now() / 1000; },
+    draw(g, t) {
+      win(g, 4, 4, 170, 177, 'CONSOLE', 0);
+      ty(g, 10, 28, 156, 13, t + (t - fast < 3 ? (t - fast) * 30 : 0), 12, 11.4);
+      win(g, 178, 4, 124, 84, 'GEHEUGEN', 0);
+      const cur = (t * 14) % cells.length;
+      cells.forEach((v, i) => { const x = 183 + (i % 22) * 5.2, y = 21 + Math.floor(i / 22) * 5.4; let a = v < 0 ? 0.06 : 0.45 + (4 - v) * 0.1; if (v === 0 && hash(i + Math.floor(t * 5)) > 0.5) a = 1; const curOn = Math.abs(i - cur) < 1; g.fillStyle = curOn ? hi(1) : v < 0 ? mid(a) : lvc(v, a); g.fillRect(x, y, 4.2, 4.2); });
+      win(g, 178, 92, 124, 89, 'RADAR', 0);
+      const cx = 240, cy = 140, R = 36, sw = (t * 1.4) % TAU;
+      LEVELS.forEach(lv => { g.strokeStyle = mid(0.22); g.beginPath(); g.arc(cx, cy, R * lv.ring / 174, 0, TAU); g.stroke(); });
+      const cg = g.createConicGradient(sw - 1, cx, cy); cg.addColorStop(0, mid(0)); cg.addColorStop(1 / TAU, mid(0.3)); cg.addColorStop(1 / TAU + 0.001, mid(0)); cg.addColorStop(1, mid(0));
+      g.fillStyle = cg; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, sw - 1, sw); g.fill();
+      LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const a = hash(i * 9 + k) * TAU + t * TAU / (lv.period * 6), behind = ((sw - a) % TAU + TAU) % TAU, life = Math.exp(-behind * 0.9); g.fillStyle = lvc(i, 0.15 + 0.85 * life); g.fillRect(cx + Math.cos(a) * R * lv.ring / 174 - 1, cy + Math.sin(a) * R * lv.ring / 174 - 1, 2.4, 2.4); } });
+    },
+  };
+}
+
+/* ---- R16 Draadplotter (draadmodel + plotter) ---- */
+function wireplot() {
+  let start = 0, first = true;
+  const DRAW = 8, HOLD = 3.5;
+  return {
+    tap() { start = performance.now() / 1000; },
+    draw(g, t) {
+      if (first) { start = t; first = false; }
+      if (t - start > DRAW + HOLD) start = t;
+      const el = t - start, u = Math.min(1, el / DRAW), spin = el > DRAW ? (el - DRAW) * 0.5 : 0;
+      const cx = 108, cy = 66, s = 0.5, tilt = 1.0;
+      const Pt = (r, a, z) => { const x = Math.cos(a + spin) * r, y = Math.sin(a + spin) * r; return [cx + x * s, cy + (y * Math.cos(tilt) - z * Math.sin(tilt)) * s]; };
+      const lines = [];
+      [174, 140, 106, 72, 38].forEach(r => { const l = []; for (let k = 0; k <= 48; k++) l.push(Pt(r, k / 48 * TAU, depth(r))); lines.push(l); });
+      for (let m = 0; m < 16; m++) { const l = []; for (let k = 0; k <= 18; k++) { const r = 174 - k / 18 * 166; l.push(Pt(r, m / 16 * TAU, depth(r))); } lines.push(l); }
+      const total = lines.reduce((a, l) => a + l.length - 1, 0); let budget = u * total, pen = null;
+      g.strokeStyle = mid(0.12); for (let x = 8; x < 216; x += 16) { g.beginPath(); g.moveTo(x, 8); g.lineTo(x, 176); g.stroke(); }
+      for (const l of lines) {
+        if (budget <= 0) break;
+        const n = Math.min(l.length - 1, budget); budget -= n;
+        g.strokeStyle = n < l.length - 1 ? hi(0.95) : mid(0.65); g.beginPath();
+        for (let k = 0; k <= Math.floor(n); k++) k ? g.lineTo(...l[k]) : g.moveTo(...l[k]);
+        const fk = Math.floor(n), fr = n - fk;
+        if (fr > 0 && fk + 1 < l.length) { const a = l[fk], b = l[fk + 1]; pen = [a[0] + (b[0] - a[0]) * fr, a[1] + (b[1] - a[1]) * fr]; g.lineTo(...pen); }
+        else pen = l[fk];
+        g.stroke();
+      }
+      if (u >= 1) { LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const [x, y] = Pt(lv.ring, k / lv.count * TAU + t * TAU / (lv.period * 4), depth(lv.ring)); g.fillStyle = lvc(i, 0.95); g.fillRect(x - 1, y - 1, 2.4, 2.4); } }); const [kx, ky] = Pt(0, 0, -300); g.fillStyle = hi(1); g.beginPath(); g.arc(kx, ky, 2.5, 0, TAU); g.fill(); }
+      else if (pen) { g.strokeStyle = hi(1); g.beginPath(); g.moveTo(pen[0] - 6, pen[1]); g.lineTo(pen[0] + 6, pen[1]); g.moveTo(pen[0], pen[1] - 6); g.lineTo(pen[0], pen[1] + 6); g.stroke(); }
+      g.strokeStyle = mid(0.6); g.strokeRect(222.5, 4.5, 80, 176);
+      [['MODEL', 'TRECHTER'], ['LIJNEN', `${Math.round(u * 21)}/21`], ['PEN', u < 1 ? 'TEKENT' : 'RUST'], ['DRAAI', `${String(Math.round((spin % TAU) / TAU * 360)).padStart(3, '0')}°`], ['BOLLEN', u < 1 ? '--' : '26']].forEach(([k, v], i) => { txt(g, k, 227, 20 + i * 30, 10, mid(0.6)); txt(g, v, 227, 33 + i * 30, 13, i === 2 && u < 1 ? hi(1) : mid(0.95)); });
+      bar(g, 227, 168, 71, 6, u, 10, false);
+    },
+  };
+}
+
+/* ---- R17 Lampenwand (schakelbord groot) ---- */
+function lampwall() {
+  const COLS = 10, ROWS = 7, MODES = ['GOLF', 'TAKEN', 'SCAN', 'RASTER'], user = new Map();
+  return {
+    tap(x, y) { const cc = Math.floor((x - 8) / 29.6), r = Math.floor((y - 22) / 21); if (cc >= 0 && cc < COLS && r >= 0 && r < ROWS) user.set(r * COLS + cc, performance.now() / 1000); },
+    draw(g, t) {
+      const mode = Math.floor(t / 6) % 4, mt = t % 6;
+      LEVELS.forEach((lv, i) => txt(g, lv.n.slice(0, 3), 8 + i * 59.2 + 29.6, 15, 10, lvc(i, 0.85), 'center'));
+      for (let r = 0; r < ROWS; r++) for (let cc = 0; cc < COLS; cc++) {
+        const x = 8 + cc * 29.6, y = 22 + r * 21, lvI = Math.floor(cc / 2), lv = LEVELS[lvI];
+        let on = 0;
+        if (mode === 0) on = Math.sin((cc + r) * 0.7 - t * 3) > 0.4 ? 1 : 0.1;
+        else if (mode === 1) { const idx = (cc % 2) * ROWS + r; on = idx < lv.count ? ((t / lv.period + idx * 0.13) % 1 < 0.5 ? 1 : 0.3) : 0.06; }
+        else if (mode === 2) on = Math.floor(mt * 4) % ROWS === r ? 1 : (Math.floor(mt * 4) - 1) % ROWS === r ? 0.4 : 0.08;
+        else on = hash(r * 31 + cc + Math.floor(t * 3)) > 0.6 ? 1 : 0.1;
+        const ut = user.get(r * COLS + cc), held = ut !== undefined && t - ut < 4;
+        g.fillStyle = mid(0.05); g.fillRect(x, y, 25.6, 17);
+        g.fillStyle = held ? hi(1) : lvc(lvI, on);
+        g.fillRect(x + 3, y + 3, 19.6, 11);
+        if (held || on > 0.9) { g.fillStyle = c(P.hi, 0.35); g.fillRect(x + 5, y + 4, 8, 2); }
+      }
+      txt(g, `PATROON ${MODES[mode]}`, 8, 178, 11, hi(0.9));
+      MODES.forEach((m, i) => { g.fillStyle = i === mode ? hi(1) : mid(0.25); g.beginPath(); g.arc(S.w - 50 + i * 12, 175, 3, 0, TAU); g.fill(); });
+    },
+  };
+}
+
+/* ---- R18 Radar met contactlijst (radar + mainframe) ---- */
+function radarlist() {
+  const R = 78, cx = 86, cy = 96, SWEEP = 4;
+  const contacts = []; LEVELS.forEach((lv, i) => { for (let k = 0; k < Math.min(lv.count, 2); k++) contacts.push({ i, off: hash(i * 7 + k) * TAU, w: TAU / (lv.period * 6), r: R * lv.ring / 174, name: TASKS[(i * 2 + k) % TASKS.length], last: -99 }); });
+  let ping = null;
+  return {
+    tap(x, y) { ping = { x, y, t: performance.now() / 1000 }; },
+    draw(g, t) {
+      LEVELS.forEach(lv => { const r = R * lv.ring / 174; g.strokeStyle = mid(0.25); g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.stroke(); });
+      g.strokeStyle = mid(0.15); g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+      for (let d = 0; d < 36; d++) { const a = d / 36 * TAU, l = d % 9 ? 2 : 5; g.strokeStyle = mid(d % 9 ? 0.35 : 0.8); g.beginPath(); g.moveTo(cx + Math.cos(a) * (R + 2), cy + Math.sin(a) * (R + 2)); g.lineTo(cx + Math.cos(a) * (R + 2 + l), cy + Math.sin(a) * (R + 2 + l)); g.stroke(); }
+      const sw = (t / SWEEP * TAU) % TAU;
+      const cg = g.createConicGradient(sw - 1.3, cx, cy); cg.addColorStop(0, mid(0)); cg.addColorStop(1.3 / TAU, mid(0.32)); cg.addColorStop(1.3 / TAU + 0.001, mid(0)); cg.addColorStop(1, mid(0));
+      g.fillStyle = cg; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, sw - 1.3, sw); g.fill();
+      g.strokeStyle = hi(0.9); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(sw) * R, cy + Math.sin(sw) * R); g.stroke();
+      let pr = -1; if (ping) { pr = (t - ping.t) * 120; if (pr > 220) ping = null; else { g.strokeStyle = hi(0.5 * (1 - pr / 220)); g.beginPath(); g.arc(ping.x, ping.y, pr, 0, TAU); g.stroke(); } }
+      contacts.forEach(o => {
+        const a = ((o.off + t * o.w) % TAU + TAU) % TAU, x = cx + Math.cos(a) * o.r, y = cy + Math.sin(a) * o.r, behind = ((sw - a) % TAU + TAU) % TAU;
+        if (behind < 0.1) o.last = t; if (ping && Math.abs(Math.hypot(x - ping.x, y - ping.y) - pr) < 5) o.last = t;
+        o.a = a; o.life = Math.exp(-(t - o.last) / 1.8);
+        g.fillStyle = lvc(o.i, 0.15 + 0.85 * o.life); g.beginPath(); g.arc(x, y, 2 + o.life, 0, TAU); g.fill();
+      });
+      g.fillStyle = hi(1); g.beginPath(); g.arc(cx, cy, 2.5 + 1.5 * Math.exp(-((t * BPM / 60) % 1) * 6), 0, TAU); g.fill();
+      // contactlijst
+      g.strokeStyle = mid(0.6); g.strokeRect(176.5, 4.5, 126, 176);
+      txt(g, 'CONTACT', 180, 15, 10, mid(0.7)); txt(g, 'PEIL', 252, 15, 10, mid(0.7)); txt(g, 'AFST', 299, 15, 10, mid(0.7), 'right');
+      g.strokeStyle = mid(0.4); g.beginPath(); g.moveTo(177, 19); g.lineTo(302, 19); g.stroke();
+      contacts.forEach((o, j) => {
+        const y = 31 + j * 15.5, col = o.life > 0.6 ? hi(1) : mid(0.45 + 0.4 * o.life);
+        if (o.life > 0.6) { g.fillStyle = mid(0.15); g.fillRect(177, y - 9, 125, 12); }
+        g.fillStyle = lvc(o.i, 0.4 + 0.6 * o.life); g.fillRect(180, y - 6, 3, 6);
+        txt(g, o.name.slice(0, 10), 186, y, 10, col);
+        txt(g, String(Math.round(o.a / TAU * 360)).padStart(3, '0'), 254, y, 10, col);
+        txt(g, String(LEVELS[o.i].ring), 299, y, 10, col, 'right');
+      });
+    },
+  };
+}
+
 /* ---- R7 Telescoop ---- */
 function scope3() {
   const stars = Array.from({ length: 64 }, (_, i) => ({ x: 8 + hash(i * 3.1) * (S.w - 16), y: 18 + hash(i * 7.7) * (S.h - 30), m: 0.6 + hash(i * 1.9) * 1.4, ph: hash(i) * TAU, n: 98 - i, d: 1 + Math.floor(hash(i * 5.3) * 30) }));
@@ -343,79 +592,6 @@ function scope3() {
       g.closePath(); g.fill();
       txt(g, `STER ${String(B.n).padStart(3, '0')}`, zx + 5, zy + 77, 10, hi(0.9));
       txt(g, `${B.d} OKT`, zx + 82, zy + 77, 10, mid(0.8), 'right');
-    },
-  };
-}
-
-/* ---- R8 Spectrum ---- */
-function spectrum() {
-  const N = 36, peaks = new Float32Array(N), rows = [];
-  let lastRow = 0, burst = -9;
-  const freq = LEVELS.map(lv => 1 - Math.log(lv.period / 1.1) / Math.log(38 / 1.1));   // Nu rechts (hoog), Ooit links
-  return {
-    tap() { burst = performance.now() / 1000; },
-    draw(g, t) {
-      const x0 = 8, y0 = 16, w = S.w - 16, h = 92, bw = w / N;
-      const kick = Math.exp(-((t * BPM / 60) % 1) * 7), bst = Math.max(0, 1 - (t - burst) / 0.8);
-      const vals = new Float32Array(N);
-      for (let i = 0; i < N; i++) {
-        const f = i / (N - 1); let v = 0.05;
-        LEVELS.forEach((lv, k) => { const d = (f - freq[k]) / 0.07; v += Math.exp(-d * d) * (0.12 + lv.count * 0.1) * (0.75 + 0.25 * Math.sin(t * TAU / lv.period + i)); });
-        v += (f > 0.85 ? kick * 0.35 : 0) + hash(i + Math.floor(t * 12)) * 0.06 + bst * (0.6 * (1 - Math.abs(f - 0.5)));
-        vals[i] = Math.min(1, v);
-        peaks[i] = Math.max(vals[i], peaks[i] - 0.006);
-      }
-      // staven in segmenten
-      for (let i = 0; i < N; i++) {
-        const segs = Math.round(vals[i] * 18);
-        for (let s = 0; s < 18; s++) { g.fillStyle = s < segs ? (s > 14 ? hi(0.95) : mid(0.45 + s * 0.03)) : mid(0.06); g.fillRect(x0 + i * bw + 1, y0 + h - (s + 1) * (h / 18) + 1, bw - 2, h / 18 - 2); }
-        g.fillStyle = hi(0.9); g.fillRect(x0 + i * bw + 1, y0 + h - peaks[i] * h - 1, bw - 2, 1.5);
-      }
-      // labels per moment
-      LEVELS.forEach((lv, k) => txt(g, lv.n.slice(0, 3), x0 + freq[k] * w, y0 + h + 10, 9, mid(0.7), 'center'));
-      txt(g, 'SPECTRUM · BANEN', 8, 11, 10, mid(0.8)); txt(g, `${BPM} BPM`, S.w - 8, 11, 10, hi(0.85), 'right');
-      // waterval
-      if (t - lastRow > 0.08) { rows.unshift(vals.slice()); if (rows.length > 26) rows.pop(); lastRow = t; }
-      const wy = y0 + h + 15, rh = 2.2;
-      rows.forEach((r, j) => { for (let i = 0; i < N; i++) { g.fillStyle = (r[i] > 0.6 ? hi : mid)(Math.min(1, r[i] * 1.1) * (1 - j / 28)); g.fillRect(x0 + i * bw, wy + j * rh, bw - 0.5, rh - 0.4); } });
-    },
-  };
-}
-
-/* ---- R9 Kernmonitor ---- */
-function patient() {
-  let wink = -9;
-  const dots = [];
-  const RF = 50, SP = 4.4;
-  for (let y = -RF; y <= RF; y += SP * 0.87) for (let x = -RF; x <= RF; x += SP) { const xx = x + ((Math.round(y / (SP * 0.87)) % 2) ? SP / 2 : 0); if (Math.hypot(xx, y) < RF) dots.push([xx, y]); }
-  return {
-    tap() { wink = performance.now() / 1000; },
-    draw(g, t) {
-      win(g, 4, 4, 132, 177, 'KERN · 01', 0);
-      const cx = 70, cy = 86, beat = (t * BPM / 60) % 1, k = Math.exp(-beat * 6);
-      const blink = (t % 4.3) < 0.14, w = t - wink < 0.6;
-      const eye = (x, y, right) => { const ex = right ? 13 : -13, open = blink || (w && right) ? 0.12 : 1; return Math.abs(x - ex) < 3.6 && Math.abs(y + 5) < 10 * open + 1; };
-      for (const [x, y] of dots) {
-        if (eye(x, y, x > 0)) continue;
-        const r = Math.hypot(x, y), front = beat * 60, bump = Math.exp(-(((r - front) / 5) ** 2)) * k;
-        const s = 0.5 + 1.1 * Math.pow(1 - r / RF, 0.7) + bump * 0.8;
-        g.fillStyle = bump > 0.3 ? hi(0.95) : mid(0.5 + 0.5 * (1 - r / RF));
-        g.beginPath(); g.arc(cx + x, cy + y, s, 0, TAU); g.fill();
-      }
-      txt(g, w ? 'KNIPOOG' : blink ? 'KNIPPERT' : 'KIJKT', 10, 172, 10, mid(0.8));
-      txt(g, 'P1', 130, 172, 10, mid(0.5), 'right');
-      // vitale waarden
-      win(g, 140, 4, 162, 177, 'VITALE WAARDEN', 0);
-      txt(g, 'HARTSLAG', 146, 30, 10, mid(0.7));
-      txt(g, String(BPM), 146, 54, 30, hi(0.95));
-      g.fillStyle = hi(k); g.beginPath(); g.arc(196, 44, 3, 0, TAU); g.fill();
-      txt(g, 'URGENTIE', 226, 30, 10, mid(0.7)); txt(g, '5/26', 226, 50, 18, mid(0.95));
-      txt(g, 'STATUS', 226, 64, 10, mid(0.7)); txt(g, 'WAKKER', 262, 64, 10, hi(0.9));
-      scopeTrace(g, 146, 72, 150, 52, t, 1);
-      txt(g, 'ADEM', 146, 142, 10, mid(0.7));
-      const breath = Math.sin(t * 0.9) * 0.5 + 0.5; bar(g, 176, 135, 120, 8, 0.2 + 0.7 * breath, 16, false);
-      txt(g, `T+${uptime()}`, 146, 172, 10, mid(0.6));
-      txt(g, Math.floor(t * 1.5) % 2 ? '●' : '○', 296, 172, 10, hi(0.9), 'right');
     },
   };
 }
@@ -495,43 +671,6 @@ function plotter() {
       [['BAAN', lv.n], ['OMLOOP', lv.period.toFixed(1) + ' S'], ['TAKEN', String(lv.count)], ['STRAAL', String(lv.ring)], ['VOORTGANG', Math.round(u * 100) + '%'], ['ΔV', (0.2 + 0.3 * Math.sin(t)).toFixed(2)]].forEach(([k, v], i) => {
         txt(g, k, 241, 22 + i * 26, 10, mid(0.6)); txt(g, v, 241, 34 + i * 26, 13, i === 4 ? hi(0.95) : mid(0.95));
       });
-    },
-  };
-}
-
-/* ---- R12 Lanceertelling ---- */
-function launch() {
-  const SYS = [['KERN', '72/MIN'], ['BANEN', '5 ACTIEF'], ['SYNC', 'VERBONDEN'], ['ARCHIEF', '37 REGELS'], ['STERREN', '098'], ['FOCUS', 'LOOPT']];
-  let start = 0, first = true;
-  return {
-    tap() { start = performance.now() / 1000; },
-    draw(g, t) {
-      if (first) { start = t; first = false; }
-      if (t - start > SYS.length * 1.1 + 4) start = t;
-      win(g, 4, 4, 216, 44, 'AFTELLING', 0);
-      const colon = Math.floor(t * 2) % 2 ? ':' : ' ', tl = focusLeft().replace(':', colon);
-      txt(g, `T- 00${colon}${tl}`, 12, 42, 30, hi(0.95));
-      // systemen
-      win(g, 4, 52, 216, 129, 'SYSTEMEN', 0);
-      SYS.forEach(([name, val], i) => {
-        const y = 78 + i * 16, el = t - start - i * 1.1;
-        txt(g, name, 12, y, 12, mid(0.9));
-        txt(g, el > 0 ? val : '', 82, y, 11, mid(0.6));
-        let st = '', col = mid(0.5);
-        if (el < 0) st = '';
-        else if (el < 0.8) { st = '.'.repeat(1 + Math.floor(el * 5) % 4); col = mid(0.8); }
-        else { st = 'GO'; col = hi(1); }
-        txt(g, st, 212, y, 12, col, 'right');
-        g.strokeStyle = mid(0.15); g.beginPath(); g.moveTo(12, y + 4); g.lineTo(212, y + 4); g.stroke();
-      });
-      // stuwkracht
-      win(g, 224, 4, 78, 177, 'STUWKRACHT', 0);
-      const thrust = Math.min(1, Math.max(0, (t - start) / (SYS.length * 1.1))) * (0.9 + 0.1 * Math.sin(t * 7));
-      bar(g, 236, 22, 22, 130, thrust, 14, true);
-      for (let k = 0; k <= 4; k++) { const y = 22 + k * 32.5; g.strokeStyle = mid(0.6); g.beginPath(); g.moveTo(262, y); g.lineTo(268, y); g.stroke(); txt(g, String(100 - k * 25), 296, y + 3, 9, mid(0.6), 'right'); }
-      txt(g, `${Math.round(thrust * 100)}%`, 263, 172, 12, hi(0.95), 'center');
-      const all = t - start > SYS.length * 1.1;
-      if (all) txt(g, 'ALLE SYSTEMEN GO', 112, 178, 11, Math.floor(t * 3) % 2 ? hi(1) : mid(0.5), 'center');
     },
   };
 }
@@ -619,7 +758,7 @@ function console_() {
 }
 
 /* ---- CRT: nagloed, scanlijnen, vignet, rollende band, flikkering ---- */
-const MAKERS = { scope3, mainframe, plotter, cmd, console: console_ };
+const MAKERS = { scope3, mainframe, plotter, cmd, console: console_, chartroom, rack2, termmap, wireplot, lampwall };
 const panes = [];
 const scan = (() => { const cv = document.createElement('canvas'); cv.width = 4; cv.height = 3; const g = cv.getContext('2d'); g.fillStyle = 'rgba(0,0,0,.32)'; g.fillRect(0, 2, 4, 1); return cv; })();
 for (const row of document.querySelectorAll('#crt .pair')) {
@@ -682,9 +821,14 @@ function frame(now) {
   for (const p of panes) if (p.visible) compose(p, t);
   if (!reduced) requestAnimationFrame(frame);
 }
-document.querySelectorAll('.phos button').forEach(b => b.addEventListener('click', () => {
+document.querySelectorAll('[data-multi]').forEach(b => b.addEventListener('click', () => {
+  MULTI = b.dataset.multi === '1';
+  document.querySelectorAll('[data-multi]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (reduced) requestAnimationFrame(frame);
+}));
+document.querySelectorAll('[data-ph]').forEach(b => b.addEventListener('click', () => {
   P = PHOS[b.dataset.ph];
-  document.querySelectorAll('.phos button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  document.querySelectorAll('[data-ph]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   if (reduced) requestAnimationFrame(frame);
 }));
 document.fonts.ready.then(() => requestAnimationFrame(frame));
