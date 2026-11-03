@@ -605,7 +605,9 @@ function trackRow(t) {
   check.setAttribute('aria-label', tx('task.check', { title: t.title }));
   check.addEventListener('click', () => complete(t.id, li));
 
-  const title = el('span', 't-title', t.title);
+  const title = el('span', 't-title');
+  title.append(el('span', 't-title-in', t.title));
+  title.addEventListener('click', () => runMarquee(title));   // touch: een tik laat een lange titel één keer doorschuiven
   title.title = t.title + ' · ' + tx('task.dbl');
   title.addEventListener('dblclick', () => editTitle(t.id, title));
 
@@ -633,9 +635,52 @@ function trackRow(t) {
   li.append(notePanel(t, li));
   attachSwipe(li, row, t, del);
 
-  li.addEventListener('pointerenter', () => scene.highlight({ task: t.id }));
-  li.addEventListener('pointerleave', () => scene.highlight({}));
+  li.addEventListener('pointerenter', e => { scene.highlight({ task: t.id }); if (e.pointerType === 'mouse') runMarquee(title, true); });
+  li.addEventListener('pointerleave', e => { scene.highlight({}); if (e.pointerType === 'mouse' && !li.contains(document.activeElement)) stopMarquee(title); });
+  li.addEventListener('focusin', () => runMarquee(title, true));
+  li.addEventListener('focusout', e => { if (!li.contains(e.relatedTarget)) stopMarquee(title); });
   return li;
+}
+
+/* ---- Lange titel schuift door ---- */
+// Victor, 03/11/2026: een titel die niet past, schuift bij aanwijzen (rij of bol in de scène), toetsenbordfocus of een tik
+// traag naar links tot het einde leesbaar is, wacht even en glijdt terug. Zolang je blijft aanwijzen, herhaalt het.
+const MQ_SPEED = 50;   // px per seconde
+function runMarquee(box, keep = false) {
+  const inner = box.firstElementChild;
+  if (!inner || reducedMotion.matches || !box.isConnected) return;
+  if (keep) box._keep = true;
+  if (box._mq) return;
+  const d = Math.ceil(inner.offsetWidth - (box.clientWidth - 6)) + 4;
+  if (d <= 6) return;
+  const move = d / MQ_SPEED * 1000, back = Math.max(450, d / 160 * 1000), h0 = 450, h1 = 1300, T = h0 + move + h1 + back;
+  const ease = 'cubic-bezier(.4,0,.2,1)';
+  const a = inner.animate([
+    { transform: 'translateX(0)', offset: 0 },
+    { transform: 'translateX(0)', offset: h0 / T, easing: 'cubic-bezier(.25,0,.75,1)' },
+    { transform: `translateX(${-d}px)`, offset: (h0 + move) / T },
+    { transform: `translateX(${-d}px)`, offset: (h0 + move + h1) / T, easing: ease },
+    { transform: 'translateX(0)', offset: 1 },
+  ], { duration: T });
+  box._mq = a;
+  clearTimeout(box._mqIn); clearTimeout(box._mqOut);
+  box._mqIn = setTimeout(() => box.classList.add('is-marquee'), h0 - 150);
+  box._mqOut = setTimeout(() => box.classList.remove('is-marquee'), h0 + move + h1 + back * 0.3);
+  a.onfinish = () => {
+    box._mq = null;
+    if (box._keep) box._again = setTimeout(() => { if (box._keep) runMarquee(box); }, 900);
+  };
+}
+function stopMarquee(box) {
+  box._keep = false;
+  clearTimeout(box._again);
+  const a = box._mq, inner = box.firstElementChild;
+  if (!a || !inner) return;
+  const cur = getComputedStyle(inner).transform;
+  clearTimeout(box._mqIn); clearTimeout(box._mqOut);
+  a.onfinish = null; a.cancel(); box._mq = null;
+  box.classList.remove('is-marquee');
+  if (cur && cur !== 'none') inner.animate([{ transform: cur }, { transform: 'translateX(0)' }], { duration: 320, easing: 'cubic-bezier(.4,0,.2,1)' });
 }
 
 function attachSwipe(li, row, t, del) {
@@ -878,7 +923,11 @@ function repeatSelect(value) {
 }
 
 function markHot() {
-  for (const row of groupsEl.querySelectorAll('.track')) row.classList.toggle('is-hot', row.dataset.id === hotTask);
+  for (const row of groupsEl.querySelectorAll('.track')) {
+    const hot = row.dataset.id === hotTask, title = row.querySelector('.t-title');
+    row.classList.toggle('is-hot', hot);
+    if (title) { if (hot) runMarquee(title, true); else if (title._keep && !row.contains(document.activeElement)) stopMarquee(title); }
+  }
   for (const g of groupsEl.querySelectorAll('.group')) g.classList.toggle('is-hot', !hotTask && Number(g.dataset.level) === hotLevel);
 }
 

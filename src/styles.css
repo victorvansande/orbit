@@ -416,9 +416,16 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .t-title {
   padding: 10px 4px 10px 2px; font-size: 14.5px;
   white-space: nowrap; overflow: hidden; text-overflow: clip; min-width: 0; cursor: default;
-  mask-image: linear-gradient(to right, black calc(100% - 34px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 34px), transparent 100%);
+  --mql: 0px; --mqr: 34px;
+  mask-image: linear-gradient(to right, transparent 0, black var(--mql), black calc(100% - var(--mqr)), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black var(--mql), black calc(100% - var(--mqr)), transparent 100%);
+  transition: --mql .4s var(--ease), --mqr .4s var(--ease);
 }
+@property --mql { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --mqr { syntax: '<length>'; inherits: false; initial-value: 34px; }
+.t-title-in { display: inline-block; }
+/* tijdens het doorschuiven vervaagt het begin in plaats van het einde (zacht, via geregistreerde eigenschappen) */
+.t-title.is-marquee { --mql: 14px; --mqr: 4px; }
 .t-edit { min-width: 0; width: 100%; padding: 9px 6px 9px 2px; border: 0; border-bottom: 1px solid var(--ink); background: transparent; font: 14.5px var(--font); color: var(--ink); outline: none; }
 .t-level { width: 32px; height: 42px; display: grid; place-items: center; border-radius: 8px; }
 .t-level .orb-dot { transition: transform .2s var(--pop); }
