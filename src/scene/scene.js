@@ -134,6 +134,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // vortex: stof dat in het zijaanzicht langs de trechter naar de kern spiraalt; meer en sneller bij een volle lijst
   const dust = Array.from({ length: DUST }, (_, i) => ({ r: 20 + Math.random() * 190, a: Math.random() * TAU, s: 0.55 + Math.random() * 0.9, k: i / DUST }));
   let dustAmount = 0;
+  // De trechter mondt uit op de rand van de kern, niet in een punt (Victor, 03/11/2026): tussen de ring Nu en de kern
+  // loopt de wand naar de bodem op de straal van de kern; `coreR` volgt de kern (groter als het dringend is).
+  let coreR = CORE_RMIN;
+  const NU_RING = LEVELS[0].ring, NU_Z = depthAt(NU_RING);
+  function funnelZ(r) {
+    if (r >= NU_RING) return depthAt(r);
+    return NU_Z + (TIP_Z - NU_Z) * Math.min(1, (NU_RING - r) / (NU_RING - coreR));
+  }
   let sonar = null;                          // {t0, target}: ring van tekens vanuit de kern, de gezochte bol licht op
   let turn = null;                           // maandwissel: {t0, old, onBurst, fired}, de oude hemel spiraalt naar de kern
   let skyWave = null;                        // {t0, old}: nieuwe hemel, de ring van tekens neemt de oude sterren mee
@@ -448,8 +456,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const pace = (0.6 + 0.3 * Math.min(2, urgency)) * spinScale;
       for (const d of dust) {
         d.a += dt * d.s * (0.25 + 34 / (d.r + 10)) * pace;
-        d.r -= dt * d.s * (3 + 520 / (d.r + 24)) * pace;
-        if (d.r < 12) { d.r = 175 + Math.random() * 35; d.a = Math.random() * TAU; }
+        // vlak boven de kern remt het stof af, zodat de wand zichtbaar doorloopt tot op de rand van de kern
+        d.r -= dt * d.s * (3 + 520 / (d.r + 24)) * pace * (0.3 + 0.7 * smoothstep(coreR, coreR + 26, d.r));
+        if (d.r < coreR) { d.r = 175 + Math.random() * 35; d.a = Math.random() * TAU; }
       }
     }
     if (sonar && (now - sonar.t0) / 1000 > (sonar.far ? 6 : SONAR_LIFE + 2.4)) sonar = null;
@@ -871,13 +880,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const buckets = Array.from({ length: 8 }, () => []), red = [];
     for (let i = 0; i < n; i++) {
       const d = dust[i];
-      if (!project(Math.cos(d.a) * d.r, Math.sin(d.a) * d.r, depthAt(d.r) * cam.depth, true)) continue;
+      if (!project(Math.cos(d.a) * d.r, Math.sin(d.a) * d.r, funnelZ(d.r) * cam.depth, true)) continue;
       const near = 1 - d.r / 210;
-      const fadeIn = smoothstep(210, 168, d.r);                 // zacht verschijnen aan de rand
+      const fadeIn = smoothstep(210, 168, d.r) * smoothstep(coreR, coreR + 3, d.r);   // zacht verschijnen aan de rand, opgaan in de kern
       const back = (Math.sin(d.a + spin + spinDrag) + 1) / 2;   // achterkant van de trechter iets zwakker
       const a = (0.2 + 0.6 * near * near) * fadeIn * (0.55 + 0.45 * back) * amount;
       const size = (1 + 0.7 * near) * cam.du * pt.f;
-      if (d.r < 34) red.push(pt.x, pt.y, size, a * smoothstep(34, 16, d.r));
+      if (d.r < coreR + 18) red.push(pt.x, pt.y, size, a * smoothstep(coreR + 18, coreR + 4, d.r));
       buckets[Math.min(7, Math.floor(a * 14))].push(pt.x, pt.y, size);
     }
     ctx.fillStyle = rgba(INK, 1);
@@ -1025,6 +1034,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const still = reducedMotion.matches;
     const live = Math.min(1, urgency / 0.3);                // 0 = rustig, 1 = Vandaag of Nu
     const rMax = CORE_RMIN + (CORE_RMAX - CORE_RMIN) * strength * live + 4 * live;
+    coreR = rMax;
     const p = ((beat % 1) + 1) % 1;
     const front = p * (rMax + 8);   // golf rolt van het midden tot net buiten het raster
     const rippleAmp = still ? 0 : (0.5 + 0.9 * strength) * (1 - p * 0.6) * live * waveVis * beatScale;
@@ -1446,6 +1456,14 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (let k = 1; k < scr.length; k += 2) if (scr[k] > max) max = scr[k];
     return max;
   }
+  // Onderkant en bovenkant van wat er van de orbit te zien is: in het zijaanzicht hangt de trechter met de kern onder de
+  // ringen (Victor, 03/11/2026: de legende stond over de trechter), dus telt de kern mee. Boven: de buitenste ring.
+  function sceneBottom() { return Math.max(ringsBottom(), coreHit ? coreHit.y + coreHit.r : 0); }
+  function ringsTop() {
+    const scr = rings[rings.length - 1].screen; let min = Infinity;
+    for (let k = 1; k < scr.length; k += 2) if (scr[k] < min) min = scr[k];
+    return min;
+  }
 
   function ringBox(level, isDrop) {
     const lv = LEVEL_BY_ID.get(level);
@@ -1657,6 +1675,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     lookAt(goal) { face.lookGoal = goal; },
     get centerX() { return cam.cx; },
     ringsBottom,
+    sceneBottom,
+    ringsTop,
     // linkerrand van de buitenste ring (px) op schermhoogte y, zodat tekst ernaast tot aan die ring kan lopen
     edgeLeft(y) {
       if (!project(-EDGE, 0, 0, false)) return null;

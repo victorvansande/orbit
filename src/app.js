@@ -254,12 +254,25 @@ const legend = createLegend($('legend'), { reducedMotion });
 let legendItems = null;
 // Op gsm is er onder de ringen maar plaats voor twee rijen: daar neemt de legende ook de rij Boven / Zijkant / Focus in,
 // die zolang vervaagt (`body.has-legend`), zodat er vier rijen passen.
+// Onder de orbit, en in het zijaanzicht onder de trechter met de kern (nooit erover). Is daar te weinig plaats voor de
+// regels die nodig zijn, en boven de ringen wel, dan erboven, met lucht voor het ringlabel ("WEEK · 3").
 function legendWhere() {
-  const mobile = !desktop.matches, lineH = mobile ? 19 : 23;
+  const mobile = !desktop.matches, lineH = mobile ? 19 : 23, gap = mobile ? 18 : 26;
   const st = $('scene').getBoundingClientRect();
-  const top = scene.ringsBottom() + (mobile ? 18 : 26);
-  const bottom = mobile ? document.querySelector('.controls').getBoundingClientRect().bottom - st.top - 4 : st.height - 28;
-  return { top, left: mobile ? null : scene.centerX, lineH, rows: Math.max(1, Math.min(5, Math.floor((bottom - top) / lineH))) };
+  const want = Math.max(1, Math.min(5, (legendItems || []).length || 1));
+  const top = scene.sceneBottom() + gap;
+  const bottom = mobile ? document.querySelector('.controls').getBoundingClientRect().bottom - st.top - 4 : st.height - 16;   // desktop: tot net boven de onderrand (Instellingen en de wielhint staan opzij)
+  const below = Math.floor((bottom - top) / lineH);
+  if (below < want) {
+    const head = mobile ? 4 : 64;   // desktop: kop met merk en hoeklabels
+    const roof = scene.ringsTop() - gap - 30;   // 30 px voor het ringlabel boven de ring
+    const above = Math.floor((roof - head) / lineH);
+    if (above > below) {
+      const rows = Math.max(1, Math.min(want, above));
+      return { top: roof - rows * lineH, left: mobile ? null : scene.centerX, lineH, rows };
+    }
+  }
+  return { top, left: mobile ? null : scene.centerX, lineH, rows: Math.max(1, Math.min(5, below)) };
 }
 let legendOff = 0;
 function showLegend(items) {
