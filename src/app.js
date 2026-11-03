@@ -15,6 +15,7 @@ import { renderQr, codeFromText, createScanner, deviceName } from './sync/pair.j
 import { canStore, storeCode, wasOffered, markOffered } from './sync/keychain.js';
 import { loadArchive, saveArchive, loadArchDel, saveArchDel, mergeArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './data/store.js';
 import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './core/i18n.js';
+import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
 import { greeting, coreLine } from './scene/greet.js';
 import { playDone, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
@@ -2035,39 +2036,19 @@ function checkFeats(pop) {
   if (featsDialog.open) renderFeats();
   if (featQueue.length) showFeatPop();
 }
-// vierpuntige ster met holle zijden in een ring, zoals de sterren in de hemel
-const starPath = (R, cx = 0, cy = 0, w = 0.2) => {
-  const p = a => `${(cx + Math.cos(a) * R).toFixed(2)} ${(cy + Math.sin(a) * R).toFixed(2)}`;
-  let d = `M${p(-Math.PI / 2)}`;
-  for (let i = 0; i < 4; i++) {
-    const a = -Math.PI / 2 + i * Math.PI / 2;
-    d += ` Q${(cx + Math.cos(a + Math.PI / 4) * R * w).toFixed(2)} ${(cy + Math.sin(a + Math.PI / 4) * R * w).toFixed(2)} ${p(a + Math.PI / 2)}`;
-  }
-  return d + 'Z';
-};
-const STAR4 = starPath(6.6);
-// T3 Fonkeling in de ring (Victor, 03/11/2026: "T3 maar dan nog steeds in een cirkel altijd"): elk niveau een eigen vorm,
-// niet enkel een eigen kleur. Brons een kleine ster, zilver een volle, goud met vier sterretjes schuin eromheen, platina
-// met acht (vier schuin, vier kleinere recht). Altijd binnen de ring. Zonder niveau (de rang) blijft het de volle ster.
-const SPARK_D = [45, 135, 225, 315].map(a => starPath(1.9, Math.cos(a * Math.PI / 180) * 7.9, Math.sin(a * Math.PI / 180) * 7.9, 0.25));
-const SPARK_A = [0, 90, 180, 270].map(a => starPath(1.15, Math.cos(a * Math.PI / 180) * 8.7, Math.sin(a * Math.PI / 180) * 8.7, 0.25));
-const TIER_STAR = { bronze: starPath(5), silver: STAR4, gold: starPath(5.6), platinum: starPath(5.6) };
-const badgeSvg = (secret = false, tier = null) => {
-  if (secret) return '<circle class="fb-ring" r="10.6"/><text class="fb-q" y="4">?</text>';
-  const sparks = tier === 'gold' ? SPARK_D : tier === 'platinum' ? [...SPARK_D, ...SPARK_A] : [];
-  return `<circle class="fb-ring" r="10.6"/><path class="fb-star" d="${TIER_STAR[tier] || STAR4}"/>${sparks.map(d => `<path class="fb-spark" d="${d}"/>`).join('')}`;
-};
 function renderFeatsBadge(r = featsNow()) {
   const b = $('feats-badge');
   b.hidden = !r.stars;
-  b.innerHTML = `<svg viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg()}</svg><span>${tx('feats.badge', { rank: r.rank.name, n: r.points.toLocaleString(LOCALE) })}</span>`;
+  b.style.setProperty('--tier', `var(--tier-${rankMetal(r.rank.level)})`);
+  b.innerHTML = `<svg viewBox="${RANK_BOX}" aria-hidden="true">${rankSvg(r.rank.level)}</svg><span>${tx('feats.badge', { rank: r.rank.name, n: r.points.toLocaleString(LOCALE) })}</span>`;
 }
 function renderFeats() {
   const r = featsNow();
   $('feats-count').textContent = tx('feats.count', { a: r.earned, b: FEATS.length });
   $('feats-level').textContent = tx('feats.level', { n: r.rank.level });
   $('feats-rankname').textContent = r.rank.name;
-  $('feats-rank-badge').innerHTML = badgeSvg();
+  $('feats-rank-badge').innerHTML = rankSvg(r.rank.level);
+  $('feats-rank').style.setProperty('--tier', `var(--tier-${rankMetal(r.rank.level)})`);
   const pts = tx('feats.points', { n: r.points.toLocaleString(LOCALE) });
   $('feats-points').textContent = r.rank.next ? `${pts} · ${tx('feats.next', { n: (r.rank.next.at - r.points).toLocaleString(LOCALE), name: r.rank.next.name })}` : `${pts} · ${tx('feats.max')}`;
   $('feats-bar').style.width = `${r.rank.next ? Math.round((r.points - r.rank.from) / (r.rank.next.at - r.rank.from) * 100) : 100}%`;
