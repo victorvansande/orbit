@@ -33,7 +33,7 @@
   /* bakje: verloop van stil naar woelig, in de kleuren van de Grainient dusk (#BE123C, #FB923C, #FDE68A) */
   --water-calm: #5E5E68; --water-mid: #BE123C; --water-hot: #FB923C;   /* kleuren van de Grainient dusk */
   --fidget-on-dark: rgba(255, 255, 255, .6); --fidget-on-dark-strong: #FFFFFF;   /* keuzerij boven het donkere verloop van gloed */
-  --tier-bronze: #A8693D; --tier-silver: #7F8994; --tier-gold: #B8860B; --tier-platinum: #3C8DA8;   /* prestaties */
+  --tier-bronze: #A95C3E; --tier-silver: #798994; --tier-gold: #BF934A; --tier-platinum: #2C8494;   /* prestaties: R2 klassiek metaal (koper, tin, honing, ijsblauw) */
   --well: #E9E9E6; --well-shade: rgba(27, 27, 34, .16); --well-shade-2: rgba(27, 27, 34, .07); --well-lip: rgba(255, 255, 255, .85);   /* bakje, ingelaten in het papier */
   --grain-blend: multiply;
   --grain-opacity: .14;
@@ -54,7 +54,7 @@
   --dm-ghost: .1;
   --core: #F0306A;
   --water-calm: #A3A3AD; --water-mid: #BE123C; --water-hot: #FDE68A;
-  --tier-bronze: #D39A6A; --tier-silver: #B7C0CA; --tier-gold: #E8B83A; --tier-platinum: #7CC6DD;
+  --tier-bronze: #D8916C; --tier-silver: #B0C0CD; --tier-gold: #EBC57D; --tier-platinum: #5ABFCA;
   --well: #0A0A0D; --well-shade: rgba(0, 0, 0, .7); --well-shade-2: rgba(0, 0, 0, .4); --well-lip: rgba(255, 255, 255, .07);
   --bg: #0F0F12;
   --surface: #19191D;
