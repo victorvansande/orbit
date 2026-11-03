@@ -411,6 +411,9 @@ void main() {
 // Naar Grainient van React Bits, preset dusk zoals Victor hem doorgaf: kleuren #120F17, #3F0D1A, #BE123C, #FB923C,
 // #FDE68A, hoek 150°, silk 0,4. Een verloop dat traag golft als zijde, met filmkorrel. Om mee te spelen: de aanwijzer
 // draait een zachte wervel in het verloop, een tik stuurt een kring door de zijde, slepen laat het verloop meeschuiven.
+// Uit zichzelf (Victor, 03/11/2026: "meer bewegen op zichzelf, zonder inmenging van de gebruiker, maar hou de animatie
+// rustig"): de zijde schuift iets sneller en dieper, de hoek ademt traag (±14° over ongeveer 70 s), het verloop deint
+// heen en weer, en een eigen zachte wervel zwerft in een trage lus door het vak (wijkt zolang de aanwijzer er is).
 function grain() {
   const COLORS = ['#120f17', '#3f0d1a', '#be123c', '#fb923c', '#fde68a'].map(hexRgb).flat();
   const ANGLE = 150, SILK = 0.4;
@@ -418,9 +421,10 @@ function grain() {
   const ptr = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, k: 0, on: false };
   const rip = { x: 0.5, y: 0.5, t: -10 };
   const off = { x: 0, y: 0 };
+  const wand = { x: 0.5, y: 0.5 };
   const FRAG = `precision highp float;
 uniform vec2 uRes; uniform float uTime; uniform vec3 uCol[5]; uniform float uAngle; uniform float uSilk;
-uniform vec3 uPtr; uniform vec3 uRip; uniform vec2 uOff;
+uniform vec3 uPtr; uniform vec3 uRip; uniform vec2 uOff; uniform vec3 uWand;
 // hash zonder sinus (Dave Hoskins): geen strepen of patronen, ook niet op gsm-GPU's
 float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 // simplexruis (Ashima, MIT): glad en zonder raster; blokjesruis gaf rechte naden in het verloop
@@ -460,9 +464,14 @@ void main() {
   float asp = uRes.x / uRes.y;
   vec2 p = (uv - 0.5) * vec2(asp, 1.0) + uOff;
   // zijde: twee lagen ruis die traag over elkaar schuiven en het verloop vervormen
-  float n1 = fbm(p * 0.9 + vec2(uTime * 0.05, -uTime * 0.035));
-  float n2 = fbm(p * 1.2 + vec2(-uTime * 0.03, uTime * 0.05) + n1 * 0.8);
-  vec2 q = p + uSilk * 0.75 * (vec2(n1, n2) - 0.5);
+  float n1 = fbm(p * 0.9 + vec2(uTime * 0.08, -uTime * 0.055));
+  float n2 = fbm(p * 1.2 + vec2(-uTime * 0.05, uTime * 0.08) + n1 * 0.8);
+  float silk = uSilk * (0.95 + 0.3 * sin(uTime * 0.09));   // de zijde golft afwisselend dieper en vlakker
+  vec2 q = p + silk * 0.75 * (vec2(n1, n2) - 0.5);
+  // eigen wervel die traag rondzwerft
+  vec2 wp = (uWand.xy - 0.5) * vec2(asp, 1.0), wd = q - wp;
+  float wa = exp(-dot(wd, wd) * 5.0) * uWand.z * 1.1;
+  q = wp + mat2(cos(wa), -sin(wa), sin(wa), cos(wa)) * wd;
   // wervel rond de aanwijzer
   vec2 pp = (uPtr.xy - 0.5) * vec2(asp, 1.0);
   vec2 d = q - pp;
@@ -477,6 +486,7 @@ void main() {
   float a = radians(uAngle);
   vec2 dir = vec2(sin(a), cos(a));                 // zoals CSS: 150° wijst naar rechtsonder (y loopt hier omhoog)
   float t = dot(q, dir) / (0.5 * (abs(dir.x) * asp + abs(dir.y))) * 0.5 + 0.5;
+  t += 0.07 * sin(uTime * 0.06);                   // het verloop deint traag heen en weer
   vec3 col = ramp(t);
   // filmkorrel
   float g = hash(gl_FragCoord.xy + fract(uTime * 7.3) * vec2(171.0, 97.0)) - 0.5;
@@ -489,6 +499,8 @@ void main() {
     ptr.k += ((ptr.on ? 1 : 0) - ptr.k) * 0.05;
     // slepen: het verloop schuift mee met de schok en veert terug
     off.x = (off.x - ax * 0.02) * 0.97; off.y = (off.y + ay * 0.02) * 0.97;
+    // eigen wervel: een trage lus (Lissajous) door het vak
+    wand.x = 0.5 + 0.34 * Math.sin(t * 0.11); wand.y = 0.5 + 0.3 * Math.sin(t * 0.077 + 1.3);
   }
   function render(gl) {
     if (!prog) prog = program(gl, FRAG);
@@ -497,7 +509,8 @@ void main() {
     gl.uniform2f(prog.loc('uRes'), gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.uniform1f(prog.loc('uTime'), t);
     gl.uniform3fv(prog.loc('uCol'), ACCENT ? accentRamp(ACCENT).flat() : COLORS);
-    gl.uniform1f(prog.loc('uAngle'), ANGLE);
+    gl.uniform1f(prog.loc('uAngle'), ANGLE + 14 * Math.sin(t * 0.09));
+    gl.uniform3f(prog.loc('uWand'), wand.x, wand.y, 0.75 * (1 - ptr.k));
     gl.uniform1f(prog.loc('uSilk'), SILK);
     gl.uniform3f(prog.loc('uPtr'), ptr.x, ptr.y, ptr.k);
     gl.uniform3f(prog.loc('uRip'), rip.x, rip.y, rip.t);
