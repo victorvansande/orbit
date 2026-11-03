@@ -545,7 +545,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     g.globalCompositeOperation = 'source-over';
   }
   function wallRadius() { return Math.min(Math.max(200, W - insets.left - insets.right), H) * 0.62; }
-  const SWEEP_ANGLE = 34 * DEG, SWEEP_BEAM = 440;
+  const SWEEP_ANGLE = 34 * DEG;
+  const SWEEP_R = R => Math.min(300, Math.max(150, R * 0.62));   // straal van de lichtcirkel over de muur (px)
   function drawWall(now) {
     if (wallK < 0.005 || !wallWords.length) return;
     layoutWall();
@@ -564,10 +565,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         // afgebroken (details dicht, of de regisseur geeft het podium aan iets anders): zacht uitdoven in 0,7 s
         if (wallSweep.outAt) { const o = (now - wallSweep.outAt) / 700; if (o >= 1) wallSweep = null; sweepFade *= 1 - smoothstep(0, 1, Math.min(1, o)); }
 
-        const maxDist = W * Math.cos(SWEEP_ANGLE) + H * Math.sin(SWEEP_ANGLE);
-        // Gelijkmatige, statige drift (smoothstep) zonder plotse versnelling in het midden
-        const progressMotion = smoothstep(0, 1, p);
-        beamPos = -SWEEP_BEAM * 0.7 + progressMotion * (maxDist + SWEEP_BEAM * 1.4);
+        // Gelijkmatige, statige drift (smoothstep) zonder plotse versnelling in het midden: de cirkel komt van linksboven
+        // buiten de muur en verlaat haar rechtsonder, langs de diagonaal door het midden van de scène
+        const span = R + SWEEP_R(R);
+        beamPos = -span + smoothstep(0, 1, p) * span * 2;
       }
     }
 
@@ -596,14 +597,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
           lit = Math.max(lit, 0.45 * l * l * wallK);
         }
       }
-      // 2. Diagonale veeg: zeer brede (880 px), zachte gradiënt van donkergrijs (0.07) naar witte focus (0.65)
-      // Beweegt statig en rustig zodat je ontspannen alle titels kunt lezen
+      // 2. Lichtcirkel (Victor, 03/11/2026: "een cirkel die helder is in het midden maar geleidelijk aan vager wordt naar de
+      // uiteinden", in plaats van de diagonale bundel): helder in het midden, uitdovend tot de rand, schuift traag over de muur
       if (sweepFade > 0.01) {
-        const proj = midX * cosA + midY * sinA;
-        const dist = Math.abs(proj - beamPos);
-        const normDist = Math.min(1, dist / SWEEP_BEAM);
-        // Brede kosinusboog met zachte schouders
-        const focusCurve = Math.pow(Math.cos(normDist * (Math.PI / 2)), 1.3);
+        const cxS = cam.cx + cosA * beamPos, cyS = cam.cy + sinA * beamPos;
+        const normDist = Math.min(1, Math.hypot(midX - cxS, midY - cyS) / SWEEP_R(R));
+        // vol in het hart, daarna een zachte klokvorm naar de rand (geen zichtbare cirkelrand)
+        const focusCurve = Math.pow(1 - smoothstep(0, 1, normDist), 1.6);
         const darkGray = 0.07 * theme.grid;
         const whiteFocus = 0.65;
         const sweepLit = (darkGray + (whiteFocus - darkGray) * focusCurve) * sweepFade;
