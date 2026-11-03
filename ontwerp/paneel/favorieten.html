@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Orbit paneel favorieten</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&family=VT323&display=swap">
+<style>
+/* Layout: per variant het bakje op ware grootte (326 × 227) als monitor, licht en donker naast elkaar, levend. */
+:root {
+  --page: #E9E9E6; --page-ink: #1B1B22; --page-ink-2: #5E5E68; --page-line: rgba(27,27,34,.12);
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0A0A0D; --page-ink: #ECECF1; --page-ink-2: #A0A0AA; --page-line: rgba(255,255,255,.12); color-scheme: dark; } }
+:root[data-theme="dark"] { --page: #0A0A0D; --page-ink: #ECECF1; --page-ink-2: #A0A0AA; --page-line: rgba(255,255,255,.12); color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--page); color: var(--page-ink); font: 15px/1.5 var(--sans); }
+main { max-width: 1120px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header h1 { font: 500 13px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; margin: 0; }
+header p { max-width: 68ch; color: var(--page-ink-2); margin: 10px 0 0; text-wrap: pretty; }
+section { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--page-line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: start; }
+@media (max-width: 860px) { section { grid-template-columns: minmax(0, 1fr); } }
+section h2 { margin: 0; font: 500 20px/1.2 var(--sans); text-wrap: balance; }
+section h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; margin-right: 10px; color: var(--page-ink-2); }
+.txt p { max-width: 54ch; color: var(--page-ink-2); margin: 8px 0 0; }
+.txt dl { margin: 12px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; font-size: 14px; }
+.txt dt { font: 500 10px/1.9 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--page-ink-2); }
+.txt dd { margin: 0; }
+.advice { display: inline-block; margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--page-ink); color: var(--page); vertical-align: 3px; }
+.pair { display: flex; flex-wrap: wrap; gap: 12px; }
+.cell { min-width: 0; width: 326px; max-width: 100%; }
+.cap { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--page-ink-2); margin-bottom: 7px; }
+.box { position: relative; width: 100%; aspect-ratio: 326 / 227; border-radius: 16px; overflow: hidden; }
+.box.light { background: #E4E4E0; box-shadow: inset 0 1.5px 3px rgba(27,27,34,.16), inset 0 1px 1px rgba(27,27,34,.1), 0 1px 0 rgba(255,255,255,.8); }
+.box.dark { background: #0A0A0D; box-shadow: inset 0 1.5px 3px rgba(0,0,0,.7), inset 0 1px 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.06); }
+.box canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+.modes { position: absolute; top: 12px; left: 14px; right: 14px; display: flex; gap: 6px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
+.light .modes { color: #9A9AA3; } .dark .modes { color: #6E6E78; }
+.modes b { font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.light .modes b { color: #1B1B22; } .dark .modes b { color: #ECECF1; }
+.modes i { font-style: normal; opacity: .5; }
+.phos { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; align-items: center; }
+.phos span { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--page-ink-2); margin-right: 4px; }
+.phos button { font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--page-ink); background: none; border: 1px solid var(--page-line); border-radius: 99px; padding: 7px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.phos button i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.phos button[aria-pressed="true"] { border-color: var(--page-ink); }
+.phos button:focus-visible { outline: 2px solid var(--page-ink); outline-offset: 2px; }
+footer { margin-top: 48px; color: var(--page-ink-2); max-width: 72ch; }
+footer p { margin: 0 0 10px; }
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<main>
+  <header>
+    <h1>Orbit · paneel, favorieten</h1>
+    <p>De acht favorieten van Victor (03/11/2026) uit de drie rondes voor de fidget Paneel, apart gezet: vijf als oude CRT-monitor (R7 Telescoop, R10 Mainframe, R11 Baanplotter, R2 Commandocentrum, R5 Tekstconsole) en drie in de vlakke inkt van Orbit (P5 Schakelbord, P7 Draadmodel, P2 Radar). De fosforkleur geldt voor de CRT-schermen. Tik in een scherm om het te zien reageren.</p>
+    <div class="phos" role="group" aria-label="Fosforkleur">
+      <span>Fosfor</span>
+      <button type="button" id="ph-gloed" data-ph="gloed" aria-pressed="true"><i style="background:#FB923C"></i>Gloed (rood naar amber)</button>
+      <button type="button" id="ph-kern" data-ph="kern" aria-pressed="false"><i style="background:#F0306A"></i>Kernrood</button>
+      <button type="button" id="ph-amber" data-ph="amber" aria-pressed="false"><i style="background:#FFB347"></i>Amber</button>
+      <button type="button" id="ph-groen" data-ph="groen" aria-pressed="false"><i style="background:#5CFF9B"></i>Groen</button>
+      <button type="button" id="ph-wit" data-ph="wit" aria-pressed="false"><i style="background:#DDE6FF"></i>Wit</button>
+    </div>
+  </header>
+  <div id="crt">
+  <section>
+    <div class="txt">
+      <h2><span class="code">R7</span>Telescoop</h2>
+      <p>Je eigen sterrenhemel door een telescoop: de sterren van je afgevinkte taken met een raster van coördinaten en lijntjes van een sterrenbeeld. Een vizier zwenkt van ster naar ster, en in een venster rechtsonder zie je de ster ingezoomd met haar nummer en de dag dat je ze verdiende.</p>
+      <dl><dt>Leest</dt><dd>sterren uit het logboek, wanneer ze verdiend zijn</dd><dt>Tik</dt><dd>het vizier zwenkt naar de ster die je aanraakt</dd></dl>
+    </div>
+    <div class="pair" data-v="scope3"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R10</span>Mainframe</h2>
+      <p>Een geheugenkaart van honderden cellen: elke taak is een blok cellen, dringende taken flikkeren, een cursor loopt rij per rij over het geheugen. Onderaan een procestabel met elke Nu-taak als proces, met een balkje rekenkracht dat op en neer gaat.</p>
+      <dl><dt>Leest</dt><dd>alle taken als geheugenblokken, Nu-taken als processen</dd><dt>Tik</dt><dd>start een snelle defragmentatie</dd></dl>
+    </div>
+    <div class="pair" data-v="mainframe"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R11</span>Baanplotter</h2>
+      <p>Een plotter die banen tekent: een pen trekt traag een ellips, de rest van de baan staat gestippeld als voorspelling, met snijpunten en metingen erbij. Is een baan af, dan vervaagt ze en begint de volgende (Nu, Vandaag, Week, ...). Rustiger dan de andere, als een tekenmachine die nooit stopt.</p>
+      <dl><dt>Leest</dt><dd>banen, omlooptijd, aantal taken per baan</dd><dt>Tik</dt><dd>volgende baan</dd></dl>
+    </div>
+    <div class="pair" data-v="plotter"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R2</span>Commandocentrum</h2>
+      <p>Het schakelbord als wand van zes schermpjes, elk met een etiket: oscilloscoop met de kern, lampjes per taak (in de kleur van het moment), een hexdump die doorloopt, een halve radar, tellers die tikken (sterren, focus, uptime) en staafjes per moment. Onderaan een lichtkrant.</p>
+      <dl><dt>Leest</dt><dd>alles tegelijk</dd><dt>Tik</dt><dd>het schermpje dat je raakt, zoomt even in</dd></dl>
+    </div>
+    <div class="pair" data-v="cmd"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">R5</span>Tekstconsole</h2>
+      <p>Alles in tekens, zoals een oude terminal: een tabel met de vijf momenten en balkjes uit de tekenset van Orbit (·:+×#), uptime en kern die tikken, een logboek dat getypt wordt met knipperende cursor. Het minst figuratief en het dichtst bij Water en Gelei.</p>
+      <dl><dt>Leest</dt><dd>taken per moment, omloop, sterren, focus, logboek</dd><dt>Tik</dt><dd>typt een nieuw commando ("status")</dd></dl>
+    </div>
+    <div class="pair" data-v="console"></div>
+  </section>
+  </div>
+  <div id="flat">
+  <section>
+    <div class="txt">
+      <h2><span class="code">P5</span>Schakelbord</h2>
+      <p>Een paneel uit modules, zoals in een filmcockpit: een raster drukknoplampjes, een schermpje met staafjes per moment, een logboek dat regel per regel doorloopt en een rij ledjes. Het meest "Orbit is druk bezig". Lampjes wisselen in rustige patronen, niet willekeurig flikkerend.</p>
+      <dl><dt>Leest</dt><dd>taken per moment, sync, sterren, focus, wat er net gebeurde</dd><dt>Tik</dt><dd>een lampje of knop schakelt aan of uit</dd><dt>Risico</dt><dd>veel elementen op 326 px; kan rommelig ogen</dd></dl>
+    </div>
+    <div class="pair" data-v="panel"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">P7</span>Draadmodel</h2>
+      <p>Naar je voorbeeld van de retro-HUD: de trechter van Orbit als draadmodel dat langzaam draait, met de bollen als stipjes op hun ringen. Rechts een halve radar met een zwaaiende sector en een gestapelde niveaubalk met het percentage van vandaag.</p>
+      <dl><dt>Leest</dt><dd>de vorm van de scène zelf, taken per ring, voortgang van vandaag</dd><dt>Tik</dt><dd>de trechter kantelt naar het zijaanzicht en terug</dd><dt>Risico</dt><dd>herhaalt de scène; draadmodellen ogen snel als sjabloon</dd></dl>
+    </div>
+    <div class="pair" data-v="wire"></div>
+  </section>
+  <section>
+    <div class="txt">
+      <h2><span class="code">P2</span>Radar</h2>
+      <p>Een radarscherm met de vijf ringen van Orbit. Een zwaai draait rond; waar hij een taak raakt, licht die op als een stip in haar kleur en dooft dan na, zoals fosfor. De kern in het midden klopt mee. Dit is letterlijk de orbit, vertaald naar een instrument: het meest eigen aan Orbit, en rustig genoeg om naast de klok te staan.</p>
+      <dl><dt>Leest</dt><dd>elke taak op haar ring en hoek, urgentie van de kern, aantal doelen</dd><dt>Tik</dt><dd>een ping loopt van de tik naar buiten, de stippen die hij raakt lichten op</dd><dt>Risico</dt><dd>dicht bij de scène zelf, dus minder verrassend</dd></dl>
+    </div>
+    <div class="pair" data-v="radar"></div>
+  </section>
+  </div>
+  <footer>
+    <p>Rondes in volle lengte: ronde 1 (P1 tot P7), ronde 2 (R1 tot R6) en ronde 3 (R7 tot R12), bewaard naast dit blad: <a href="ronde1.html" style="color:inherit">ronde 1</a>, <a href="ronde2.html" style="color:inherit">ronde 2</a>, <a href="ronde3.html" style="color:inherit">ronde 3</a>.</p>
+  </footer>
+</main>
+
+<script>
+(() => {
+
+const W = 326, H = 227, TAU = Math.PI * 2;
+const S = { x: 10, y: 32, w: 306, h: 185 };   // het scherm in het bakje
+const PHOS = {
+  gloed: { hi: [253, 230, 138], mid: [251, 146, 60], lo: [224, 71, 59], bg: [14, 8, 6] },
+  kern:  { hi: [255, 196, 210], mid: [240, 48, 106], lo: [170, 20, 60], bg: [12, 5, 8] },
+  amber: { hi: [255, 230, 170], mid: [255, 179, 71], lo: [200, 110, 30], bg: [12, 8, 4] },
+  groen: { hi: [200, 255, 220], mid: [92, 255, 155], lo: [30, 160, 90], bg: [4, 10, 7] },
+  wit:   { hi: [255, 255, 255], mid: [221, 230, 255], lo: [130, 145, 190], bg: [7, 8, 12] },
+};
+let P = PHOS.gloed;
+const LV = ['#F0306A', '#F5A623', '#20E08A', '#38A0F0', '#B3B9D6'];
+const LEVELS = [{ n: 'NU', count: 5, ring: 38, period: 1.1 }, { n: 'VANDAAG', count: 5, ring: 72, period: 2.8 }, { n: 'WEEK', count: 6, ring: 106, period: 7 }, { n: 'MAAND', count: 5, ring: 140, period: 16 }, { n: 'OOIT', count: 5, ring: 174, period: 38 }];
+const TASKS = ['OFFERTE TERUGSTUREN', 'FACTUUR BETALEN', 'KLANT TERUGBELLEN', 'VERSLAG AFWERKEN', 'HUUR OVERSCHRIJVEN', 'SPORTEN', 'PAKJE OPHALEN', 'KAPPER BOEKEN', 'FIETS HERSTELLEN', 'VUILNIS BUITEN'];
+const BPM = 72, FOCUS_END = performance.now() + 16 * 60000 + 42000, BOOT = performance.now();
+const c = (col, a = 1) => `rgba(${col[0]},${col[1]},${col[2]},${a})`;
+const hi = a => c(P.hi, a), mid = a => c(P.mid, a), lo = a => c(P.lo, a);
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const ease = u => u * u * (3 - 2 * u);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FONT = s => `${s}px VT323, "Geist Mono", ui-monospace, monospace`;
+function txt(g, s, x, y, size = 12, col = mid(0.95), align = 'left') { g.font = FONT(size); g.textAlign = align; g.textBaseline = 'alphabetic'; g.fillStyle = col; g.fillText(s, x, y); g.textAlign = 'left'; }
+function focusLeft() { const s = Math.max(0, Math.round((FOCUS_END - performance.now()) / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
+function uptime() { const s = Math.floor((performance.now() - BOOT) / 1000) + 3 * 3600 + 1240; return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
+
+// venster met titelbalk, zoals in de retro-HUD
+function win(g, x, y, w, h, title, act = 0) {
+  g.strokeStyle = mid(0.75); g.lineWidth = 1;
+  g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  g.fillStyle = act ? mid(0.9) : mid(0.12); g.fillRect(x + 1, y + 1, w - 2, 11);
+  g.strokeStyle = mid(0.6); g.beginPath(); g.moveTo(x, y + 12.5); g.lineTo(x + w, y + 12.5); g.stroke();
+  txt(g, title, x + 4, y + 10, 11, act ? c(P.bg, 1) : hi(0.9));
+  g.strokeStyle = act ? c(P.bg, 0.9) : mid(0.7); g.strokeRect(x + w - 10.5, y + 3.5, 6, 6);
+}
+// draadkubus
+function cube(g, cx, cy, s, rx, ry, col) {
+  const V = [];
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
+    let X = x, Y = y, Z = z;
+    let t1 = X * Math.cos(ry) + Z * Math.sin(ry); Z = -X * Math.sin(ry) + Z * Math.cos(ry); X = t1;
+    t1 = Y * Math.cos(rx) - Z * Math.sin(rx); Z = Y * Math.sin(rx) + Z * Math.cos(rx); Y = t1;
+    const f = 3 / (3 + Z * 0.5); V.push([cx + X * s * f, cy + Y * s * f]);
+  }
+  g.strokeStyle = col; g.beginPath();
+  for (const [a, b] of [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]]) { g.moveTo(...V[a]); g.lineTo(...V[b]); }
+  g.stroke();
+}
+// trechter als draadmodel
+const PROF = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
+const depth = r => { for (let i = 1; i < PROF.length; i++) if (r <= PROF[i][0]) { const [r0, z0] = PROF[i - 1], [r1, z1] = PROF[i]; return z0 + (r - r0) / (r1 - r0) * (z1 - z0); } return 0; };
+function funnel(g, cx, cy, s, tilt, spin, t, dots = true) {
+  const Pt = (r, a, z) => { const x = Math.cos(a + spin) * r, y = Math.sin(a + spin) * r; return [cx + x * s, cy + (y * Math.cos(tilt) - z * Math.sin(tilt)) * s]; };
+  for (const r of [38, 72, 106, 140, 174]) {
+    g.strokeStyle = mid(r === 174 ? 0.8 : 0.45); g.beginPath();
+    for (let k = 0; k <= 40; k++) { const [x, y] = Pt(r, k / 40 * TAU, depth(r)); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.stroke();
+  }
+  for (let m = 0; m < 14; m++) {
+    const a = m / 14 * TAU; g.strokeStyle = mid(0.25); g.beginPath();
+    for (let k = 0; k <= 16; k++) { const r = 8 + k / 16 * 166, [x, y] = Pt(r, a, depth(r)); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.stroke();
+  }
+  if (dots) LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const [x, y] = Pt(lv.ring, k / lv.count * TAU + t * TAU / (lv.period * 4), depth(lv.ring)); g.fillStyle = hi(0.95); g.fillRect(x - 1, y - 1, 2.2, 2.2); } });
+  const [kx, ky] = Pt(0, 0, -300); g.fillStyle = hi(1); g.beginPath(); g.arc(kx, ky, 2.4, 0, TAU); g.fill();
+}
+// navkaart
+function chart(g, cx, cy, R, t, o = {}) {
+  const rot = t * 0.06;
+  for (let d = 0; d < 72; d++) {
+    const a = rot + d / 72 * TAU, l = d % 6 === 0 ? 4 : 1.8;
+    g.strokeStyle = mid(d % 6 === 0 ? 0.8 : 0.4);
+    g.beginPath(); g.moveTo(cx + Math.cos(a) * (R + 3), cy + Math.sin(a) * (R + 3)); g.lineTo(cx + Math.cos(a) * (R + 3 + l), cy + Math.sin(a) * (R + 3 + l)); g.stroke();
+    if (o.degrees && d % 12 === 0) txt(g, String(d * 5).padStart(3, '0'), cx + Math.cos(a) * (R + 13), cy + Math.sin(a) * (R + 13) + 3, 9, mid(0.6), 'center');
+  }
+  g.strokeStyle = mid(0.5); g.beginPath(); g.arc(cx, cy, R + 1, 0, TAU); g.stroke();
+  LEVELS.forEach(lv => { g.strokeStyle = mid(0.28); g.beginPath(); g.arc(cx, cy, R * (lv.ring + 6) / 180, 0, TAU); g.stroke(); });
+  const marks = [];
+  LEVELS.forEach((lv, i) => { for (let k = 0; k < Math.min(lv.count, i < 2 ? 3 : 2); k++) { const a = hash(i * 11 + k) * TAU + t * TAU / (lv.period * 14), r = R * (lv.ring + 6) / 180; marks.push({ i, k, a, r, x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, w: TAU / (lv.period * 14) }); } });
+  for (const m of marks) {
+    if (o.trails) for (let s = 1; s <= 10; s++) { const a = m.a - m.w * s * 0.35, x = cx + Math.cos(a) * m.r, y = cy + Math.sin(a) * m.r; g.fillStyle = mid(0.4 * (1 - s / 11)); g.fillRect(x - 0.8, y - 0.8, 1.6, 1.6); }
+    if (m.i < 2) {
+      g.strokeStyle = mid(0.45); g.beginPath(); g.moveTo(m.x, m.y); g.lineTo(cx, cy); g.stroke();
+      const u = (t * 0.35 + hash(m.i * 7 + m.k)) % 1, px = m.x + (cx - m.x) * u, py = m.y + (cy - m.y) * u;
+      g.fillStyle = hi(Math.sin(u * Math.PI)); g.fillRect(px - 1.2, py - 1.2, 2.4, 2.4);
+    }
+  }
+  for (const m of marks) { g.strokeStyle = m.i === 0 ? hi(1) : mid(0.95); g.lineWidth = 1.2; g.beginPath(); g.arc(m.x, m.y, 3.2, 0, TAU); g.stroke(); g.lineWidth = 1; }
+  const k = Math.exp(-((t * BPM / 60) % 1) * 6);
+  g.strokeStyle = hi(1); g.beginPath(); g.arc(cx, cy, 4.5 + 2 * k, 0, TAU); g.stroke();
+  g.fillStyle = hi(1); g.beginPath(); g.arc(cx, cy, 1.8, 0, TAU); g.fill();
+  return marks;
+}
+function halfRadar(g, cx, cy, R, t) {
+  g.strokeStyle = mid(0.45);
+  for (let k = 1; k <= 4; k++) { g.beginPath(); g.arc(cx, cy, R * k / 4, Math.PI, TAU); g.stroke(); }
+  for (let k = 0; k <= 6; k++) { const a = Math.PI + k / 6 * Math.PI; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); g.stroke(); }
+  g.beginPath(); g.moveTo(cx - R - 3, cy); g.lineTo(cx + R + 3, cy); g.stroke();
+  const sw = Math.PI + (Math.sin(t * 0.6) * 0.5 + 0.5) * Math.PI;
+  const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, lo(0.15)); gr.addColorStop(1, lo(0.55));
+  g.fillStyle = gr; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, sw - 0.5, sw); g.closePath(); g.fill();
+  g.strokeStyle = hi(0.9); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(sw) * R, cy + Math.sin(sw) * R); g.stroke();
+  g.fillStyle = hi(1); g.fillRect(cx + Math.cos(sw + 0.4) * R * 0.6 - 1.5, cy + Math.sin(sw + 0.4) * R * 0.6 - 1.5, 3, 3);
+  return sw;
+}
+function scopeTrace(g, x, y, w, h, t, which = 1) {
+  g.fillStyle = mid(0.2);
+  for (let i = 0; i <= 8; i++) for (let yy = 0; yy <= h; yy += 3) g.fillRect(x + i * w / 8, y + yy, 1, 1);
+  for (let j = 0; j <= 4; j++) for (let xx = 0; xx <= w; xx += 3) g.fillRect(x + xx, y + j * h / 4, 1, 1);
+  const T = 2.4, head = (t % T) / T, N = 90;
+  const f = u => {
+    const time = (t - (head - u) * T);
+    if (which === 1) { const ph = (time * BPM / 60) % 1; return -Math.exp(-((((ph - 0.12) / 0.025)) ** 2)) * 0.9 + Math.exp(-((((ph - 0.2) / 0.04)) ** 2)) * 0.25; }
+    let s = 0; LEVELS.forEach((lv, i) => { s += Math.sin(time * TAU / lv.period + i) / (i + 1.5); }); return s * 0.45;
+  };
+  g.lineWidth = 1.3;
+  for (let k = 0; k < N; k++) {
+    const u0 = k / N, u1 = (k + 1) / N, age = u1 <= head ? head - u1 : head + 1 - u1;
+    g.strokeStyle = u1 <= head ? hi(0.2 + 0.8 * Math.exp(-age * 2.5)) : mid(0.15 * (1 - age));
+    g.beginPath(); g.moveTo(x + u0 * w, y + h / 2 + f(u0) * h * 0.45); g.lineTo(x + u1 * w, y + h / 2 + f(u1) * h * 0.45); g.stroke();
+  }
+  g.lineWidth = 1;
+}
+function terrain(g, x, y, w, h, t, amp = 1) {
+  const rows = 14, cols = 18, vy = y + h * 0.18, sp = 0.5;
+  const H2 = (i, j) => (Math.sin(i * 0.7 + j * 0.3) + Math.sin(i * 0.31 - j * 0.9 + 2) * 0.7 + hash(Math.floor(i) * 13 + j) * 0.2) * amp;
+  const pts = [];
+  for (let r = 0; r < rows; r++) {
+    const zf = (r + (t * sp) % 1) / rows, z = zf * zf;
+    const row = [];
+    for (let k = 0; k <= cols; k++) {
+      const u = k / cols - 0.5, px = x + w / 2 + u * w * (0.15 + 1.3 * z), py = vy + z * (h * 0.82) - H2(Math.floor(t * sp) - r, k) * 9 * z;
+      row.push([px, py, z]);
+    }
+    pts.push(row);
+  }
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  for (const row of pts) { g.strokeStyle = mid(0.15 + 0.7 * row[0][2]); g.beginPath(); row.forEach(([px, py], k) => k ? g.lineTo(px, py) : g.moveTo(px, py)); g.stroke(); }
+  for (let k = 0; k <= cols; k++) { g.strokeStyle = mid(0.35); g.beginPath(); pts.forEach((row, r) => r ? g.lineTo(row[k][0], row[k][1]) : g.moveTo(row[k][0], row[k][1])); g.stroke(); }
+  g.restore();
+}
+// typende tekst
+function typer(lines, speed = 26) {
+  return (g, x, y, w, nLines, t, size = 11, lh = 11) => {
+    const total = lines.reduce((a, l) => a + l.length + 6, 0), pos = (t * speed) % total;
+    let acc = 0, shown = [];
+    for (const l of lines) { const n = Math.max(0, Math.min(l.length, pos - acc)); shown.push(l.slice(0, Math.floor(n))); acc += l.length + 6; if (pos < acc) break; }
+    shown = shown.slice(-nLines);
+    shown.forEach((s, i) => txt(g, s, x, y + i * lh, size, i === shown.length - 1 ? hi(0.95) : mid(0.75)));
+    const last = shown[shown.length - 1] || '';
+    g.font = FONT(size);
+    if (Math.floor(t * 2.5) % 2 === 0) { g.fillStyle = hi(0.9); g.fillRect(x + g.measureText(last).width + 1, y + (shown.length - 1) * lh - size + 3, size * 0.45, size - 2); }
+  };
+}
+function bar(g, x, y, w, h, frac, segs, vertical) {
+  for (let s = 0; s < segs; s++) {
+    const on = s < Math.round(frac * segs);
+    g.fillStyle = on ? (s >= segs * 0.75 ? hi(0.95) : mid(0.5 + 0.5 * s / segs)) : mid(0.1);
+    if (vertical) { const sh = (h - (segs - 1) * 2) / segs; g.fillRect(x, y + h - (s + 1) * sh - s * 2, w, sh); }
+    else { const sw = (w - (segs - 1) * 2) / segs; g.fillRect(x + s * (sw + 2), y, sw, h); }
+  }
+}
+
+/* ---- R7 Telescoop ---- */
+function scope3() {
+  const stars = Array.from({ length: 64 }, (_, i) => ({ x: 8 + hash(i * 3.1) * (S.w - 16), y: 18 + hash(i * 7.7) * (S.h - 30), m: 0.6 + hash(i * 1.9) * 1.4, ph: hash(i) * TAU, n: 98 - i, d: 1 + Math.floor(hash(i * 5.3) * 30) }));
+  const chain = [3]; while (chain.length < 7) { const l = stars[chain[chain.length - 1]]; let b = -1, bd = 1e9; stars.forEach((s, i) => { if (chain.includes(i)) return; const d = Math.hypot(s.x - l.x, s.y - l.y); if (d < bd) { bd = d; b = i; } }); chain.push(b); }
+  let cur = 0, from = 0, at = -9, user = false;
+  return {
+    tap(x, y) { let b = 0, bd = 1e9; stars.forEach((s, i) => { const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; b = i; } }); from = cur; cur = b; at = performance.now() / 1000; user = true; },
+    draw(g, t) {
+      if (!user && t - at > 3.2) { from = cur; cur = Math.floor(hash(Math.floor(t / 3.2) + 0.5) * stars.length); at = t; }
+      if (user && t - at > 6) user = false;
+      // raster van coördinaten
+      g.strokeStyle = mid(0.12); g.setLineDash([2, 3]);
+      for (let x = 30; x < S.w; x += 50) { g.beginPath(); g.moveTo(x, 12); g.lineTo(x, S.h - 4); g.stroke(); }
+      for (let y = 30; y < S.h; y += 40) { g.beginPath(); g.moveTo(4, y); g.lineTo(S.w - 4, y); g.stroke(); }
+      g.setLineDash([]);
+      for (let x = 30, k = 0; x < S.w; x += 50, k++) txt(g, `${String(k * 2).padStart(2, '0')}H`, x + 2, S.h - 6, 9, mid(0.45));
+      // sterrenbeeld
+      g.strokeStyle = mid(0.35); g.beginPath(); chain.forEach((i, k) => k ? g.lineTo(stars[i].x, stars[i].y) : g.moveTo(stars[i].x, stars[i].y)); g.stroke();
+      for (const s of stars) { const tw = 0.7 + 0.3 * Math.sin(t * 2 + s.ph); g.fillStyle = hi(0.5 + 0.5 * tw); g.fillRect(s.x - s.m / 2, s.y - s.m / 2, s.m + 0.5, s.m + 0.5); }
+      // vizier
+      const u = ease(Math.min(1, (t - at) / 0.9)), A = stars[from], B = stars[cur];
+      const rx = A.x + (B.x - A.x) * u, ry = A.y + (B.y - A.y) * u, R = 14 - 4 * u;
+      g.strokeStyle = hi(0.9); g.beginPath(); g.arc(rx, ry, R, 0, TAU); g.stroke();
+      for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + t * 0.4; g.beginPath(); g.moveTo(rx + Math.cos(a) * (R + 2), ry + Math.sin(a) * (R + 2)); g.lineTo(rx + Math.cos(a) * (R + 7), ry + Math.sin(a) * (R + 7)); g.stroke(); }
+      txt(g, `RA ${(rx / S.w * 24).toFixed(2)}  DEC +${(90 - ry / S.h * 90).toFixed(1)}`, 6, 12, 10, mid(0.8));
+      // zoomvenster
+      const zx = S.w - 92, zy = S.h - 88;
+      g.fillStyle = c(P.bg, 0.92); g.fillRect(zx, zy, 86, 82);
+      win(g, zx, zy, 86, 82, 'ZOOM ×40', 0);
+      const cx = zx + 43, cy = zy + 44, pulse = 1 + 0.08 * Math.sin(t * 3);
+      g.strokeStyle = mid(0.3); g.beginPath(); g.moveTo(zx + 6, cy); g.lineTo(zx + 80, cy); g.moveTo(cx, zy + 16); g.lineTo(cx, zy + 78); g.stroke();
+      const r = 13 * pulse * (0.4 + 0.6 * u); g.fillStyle = hi(0.95); g.beginPath();
+      for (let k = 0; k < 8; k++) { const a = -Math.PI / 2 + k * Math.PI / 4, rr = k % 2 ? r * 0.22 : r; k ? g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr) : g.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
+      g.closePath(); g.fill();
+      txt(g, `STER ${String(B.n).padStart(3, '0')}`, zx + 5, zy + 77, 10, hi(0.9));
+      txt(g, `${B.d} OKT`, zx + 82, zy + 77, 10, mid(0.8), 'right');
+    },
+  };
+}
+
+/* ---- R8 Spectrum ---- */
+function spectrum() {
+  const N = 36, peaks = new Float32Array(N), rows = [];
+  let lastRow = 0, burst = -9;
+  const freq = LEVELS.map(lv => 1 - Math.log(lv.period / 1.1) / Math.log(38 / 1.1));   // Nu rechts (hoog), Ooit links
+  return {
+    tap() { burst = performance.now() / 1000; },
+    draw(g, t) {
+      const x0 = 8, y0 = 16, w = S.w - 16, h = 92, bw = w / N;
+      const kick = Math.exp(-((t * BPM / 60) % 1) * 7), bst = Math.max(0, 1 - (t - burst) / 0.8);
+      const vals = new Float32Array(N);
+      for (let i = 0; i < N; i++) {
+        const f = i / (N - 1); let v = 0.05;
+        LEVELS.forEach((lv, k) => { const d = (f - freq[k]) / 0.07; v += Math.exp(-d * d) * (0.12 + lv.count * 0.1) * (0.75 + 0.25 * Math.sin(t * TAU / lv.period + i)); });
+        v += (f > 0.85 ? kick * 0.35 : 0) + hash(i + Math.floor(t * 12)) * 0.06 + bst * (0.6 * (1 - Math.abs(f - 0.5)));
+        vals[i] = Math.min(1, v);
+        peaks[i] = Math.max(vals[i], peaks[i] - 0.006);
+      }
+      // staven in segmenten
+      for (let i = 0; i < N; i++) {
+        const segs = Math.round(vals[i] * 18);
+        for (let s = 0; s < 18; s++) { g.fillStyle = s < segs ? (s > 14 ? hi(0.95) : mid(0.45 + s * 0.03)) : mid(0.06); g.fillRect(x0 + i * bw + 1, y0 + h - (s + 1) * (h / 18) + 1, bw - 2, h / 18 - 2); }
+        g.fillStyle = hi(0.9); g.fillRect(x0 + i * bw + 1, y0 + h - peaks[i] * h - 1, bw - 2, 1.5);
+      }
+      // labels per moment
+      LEVELS.forEach((lv, k) => txt(g, lv.n.slice(0, 3), x0 + freq[k] * w, y0 + h + 10, 9, mid(0.7), 'center'));
+      txt(g, 'SPECTRUM · BANEN', 8, 11, 10, mid(0.8)); txt(g, `${BPM} BPM`, S.w - 8, 11, 10, hi(0.85), 'right');
+      // waterval
+      if (t - lastRow > 0.08) { rows.unshift(vals.slice()); if (rows.length > 26) rows.pop(); lastRow = t; }
+      const wy = y0 + h + 15, rh = 2.2;
+      rows.forEach((r, j) => { for (let i = 0; i < N; i++) { g.fillStyle = (r[i] > 0.6 ? hi : mid)(Math.min(1, r[i] * 1.1) * (1 - j / 28)); g.fillRect(x0 + i * bw, wy + j * rh, bw - 0.5, rh - 0.4); } });
+    },
+  };
+}
+
+/* ---- R9 Kernmonitor ---- */
+function patient() {
+  let wink = -9;
+  const dots = [];
+  const RF = 50, SP = 4.4;
+  for (let y = -RF; y <= RF; y += SP * 0.87) for (let x = -RF; x <= RF; x += SP) { const xx = x + ((Math.round(y / (SP * 0.87)) % 2) ? SP / 2 : 0); if (Math.hypot(xx, y) < RF) dots.push([xx, y]); }
+  return {
+    tap() { wink = performance.now() / 1000; },
+    draw(g, t) {
+      win(g, 4, 4, 132, 177, 'KERN · 01', 0);
+      const cx = 70, cy = 86, beat = (t * BPM / 60) % 1, k = Math.exp(-beat * 6);
+      const blink = (t % 4.3) < 0.14, w = t - wink < 0.6;
+      const eye = (x, y, right) => { const ex = right ? 13 : -13, open = blink || (w && right) ? 0.12 : 1; return Math.abs(x - ex) < 3.6 && Math.abs(y + 5) < 10 * open + 1; };
+      for (const [x, y] of dots) {
+        if (eye(x, y, x > 0)) continue;
+        const r = Math.hypot(x, y), front = beat * 60, bump = Math.exp(-(((r - front) / 5) ** 2)) * k;
+        const s = 0.5 + 1.1 * Math.pow(1 - r / RF, 0.7) + bump * 0.8;
+        g.fillStyle = bump > 0.3 ? hi(0.95) : mid(0.5 + 0.5 * (1 - r / RF));
+        g.beginPath(); g.arc(cx + x, cy + y, s, 0, TAU); g.fill();
+      }
+      txt(g, w ? 'KNIPOOG' : blink ? 'KNIPPERT' : 'KIJKT', 10, 172, 10, mid(0.8));
+      txt(g, 'P1', 130, 172, 10, mid(0.5), 'right');
+      // vitale waarden
+      win(g, 140, 4, 162, 177, 'VITALE WAARDEN', 0);
+      txt(g, 'HARTSLAG', 146, 30, 10, mid(0.7));
+      txt(g, String(BPM), 146, 54, 30, hi(0.95));
+      g.fillStyle = hi(k); g.beginPath(); g.arc(196, 44, 3, 0, TAU); g.fill();
+      txt(g, 'URGENTIE', 226, 30, 10, mid(0.7)); txt(g, '5/26', 226, 50, 18, mid(0.95));
+      txt(g, 'STATUS', 226, 64, 10, mid(0.7)); txt(g, 'WAKKER', 262, 64, 10, hi(0.9));
+      scopeTrace(g, 146, 72, 150, 52, t, 1);
+      txt(g, 'ADEM', 146, 142, 10, mid(0.7));
+      const breath = Math.sin(t * 0.9) * 0.5 + 0.5; bar(g, 176, 135, 120, 8, 0.2 + 0.7 * breath, 16, false);
+      txt(g, `T+${uptime()}`, 146, 172, 10, mid(0.6));
+      txt(g, Math.floor(t * 1.5) % 2 ? '●' : '○', 296, 172, 10, hi(0.9), 'right');
+    },
+  };
+}
+
+/* ---- R10 Mainframe ---- */
+function mainframe() {
+  const COLS = 50, ROWS = 14, cells = [];
+  let p = 0;
+  LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const len = 6 + Math.floor(hash(i * 9 + k) * 14); for (let j = 0; j < len; j++) cells[p + j] = { lv: i, task: i * 10 + k }; p += len + 2 + Math.floor(hash(k + i) * 5); } });
+  let defrag = -9;
+  return {
+    tap() { defrag = performance.now() / 1000; },
+    draw(g, t) {
+      const cw = (S.w - 12) / COLS, ch = 6.2, x0 = 6, y0 = 16;
+      txt(g, 'GEHEUGEN · 0X0000-0X02BC', 6, 11, 10, mid(0.8)); txt(g, `${Math.round(p / (COLS * ROWS) * 100)}% BEZET`, S.w - 6, 11, 10, hi(0.85), 'right');
+      const fast = t - defrag < 2.5, cursor = fast ? ((t - defrag) / 2.5) * COLS * ROWS : (t * 9) % (COLS * ROWS);
+      for (let i = 0; i < COLS * ROWS; i++) {
+        const x = x0 + (i % COLS) * cw, y = y0 + Math.floor(i / COLS) * ch, cell = cells[i];
+        let a = 0.07;
+        if (cell) { a = cell.lv === 0 ? 0.55 + 0.45 * (hash(cell.task + Math.floor(t * 6)) > 0.4) : 0.3 + 0.12 * (4 - cell.lv); }
+        if (Math.abs(i - cursor) < 1) a = 1;
+        else if (i < cursor && i > cursor - 6) a = Math.max(a, 0.5 * (1 - (cursor - i) / 6));
+        g.fillStyle = cell && cell.lv === 0 ? hi(a) : mid(a); g.fillRect(x, y, cw - 1, ch - 1.2);
+      }
+      // procestabel
+      const ty = y0 + ROWS * ch + 8;
+      g.strokeStyle = mid(0.5); g.beginPath(); g.moveTo(6, ty - 3); g.lineTo(S.w - 6, ty - 3); g.stroke();
+      txt(g, 'PID   TAAK                  CPU', 8, ty + 8, 10, mid(0.6));
+      TASKS.slice(0, 5).forEach((name, i) => {
+        const y = ty + 19 + i * 10, cpu = 0.2 + 0.7 * (Math.sin(t * (0.8 + i * 0.37) + i) * 0.5 + 0.5);
+        txt(g, String(i + 1).padStart(4, '0'), 8, y, 10, i === 0 ? hi(0.95) : mid(0.8));
+        txt(g, name.slice(0, 20), 46, y, 10, i === 0 ? hi(0.95) : mid(0.8));
+        bar(g, 214, y - 6, 60, 5, cpu, 10, false);
+        txt(g, `${Math.round(cpu * 100)}%`, S.w - 8, y, 10, mid(0.8), 'right');
+      });
+      if (fast) txt(g, 'DEFRAGMENTEREN...', S.w - 8, ty + 8, 10, Math.floor(t * 4) % 2 ? hi(1) : mid(0.5), 'right');
+    },
+  };
+}
+
+/* ---- R11 Baanplotter ---- */
+function plotter() {
+  let idx = 0, start = 0, first = true;
+  const DUR = 7;
+  return {
+    tap() { idx = (idx + 1) % LEVELS.length; start = performance.now() / 1000; },
+    draw(g, t) {
+      if (first) { start = t; first = false; }
+      if (t - start > DUR + 1.2) { idx = (idx + 1) % LEVELS.length; start = t; }
+      const cx = 118, cy = 98, el = (i, a) => { const lv = LEVELS[i], rx = 22 + lv.ring * 0.52, ry = rx * (0.55 + 0.08 * i), rot = -0.35 + i * 0.25; const x = Math.cos(a) * rx, y = Math.sin(a) * ry; return [cx + x * Math.cos(rot) - y * Math.sin(rot), cy + x * Math.sin(rot) + y * Math.cos(rot)]; };
+      // assen en raster
+      g.strokeStyle = mid(0.18);
+      for (let x = 8; x < 230; x += 20) { g.beginPath(); g.moveTo(x, 8); g.lineTo(x, S.h - 8); g.stroke(); }
+      for (let y = 8; y < S.h; y += 20) { g.beginPath(); g.moveTo(8, y); g.lineTo(228, y); g.stroke(); }
+      g.strokeStyle = mid(0.5); g.beginPath(); g.moveTo(8, cy); g.lineTo(228, cy); g.moveTo(cx, 8); g.lineTo(cx, S.h - 8); g.stroke();
+      // vorige banen, vaag
+      for (let i = 0; i < LEVELS.length; i++) {
+        if (i === idx) continue;
+        g.strokeStyle = mid(0.16); g.beginPath(); for (let k = 0; k <= 80; k++) { const [x, y] = el(i, k / 80 * TAU); k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+      }
+      // huidige baan: getekend deel en voorspelling
+      const u = Math.min(1, (t - start) / DUR), fade = t - start > DUR ? 1 - (t - start - DUR) / 1.2 : 1;
+      g.setLineDash([2, 4]); g.strokeStyle = mid(0.45 * fade); g.beginPath();
+      for (let k = Math.floor(u * 120); k <= 120; k++) { const [x, y] = el(idx, k / 120 * TAU); k === Math.floor(u * 120) ? g.moveTo(x, y) : g.lineTo(x, y); }
+      g.stroke(); g.setLineDash([]);
+      g.strokeStyle = hi(0.95 * fade); g.lineWidth = 1.5; g.beginPath();
+      for (let k = 0; k <= Math.floor(u * 120); k++) { const [x, y] = el(idx, k / 120 * TAU); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.stroke(); g.lineWidth = 1;
+      const [px, py] = el(idx, u * TAU);
+      g.strokeStyle = hi(1); g.beginPath(); g.moveTo(px - 6, py); g.lineTo(px + 6, py); g.moveTo(px, py - 6); g.lineTo(px, py + 6); g.stroke();
+      g.fillStyle = hi(1); g.beginPath(); g.arc(px, py, 1.8, 0, TAU); g.fill();
+      for (let k = 0; k < LEVELS[idx].count; k++) { const a = k / LEVELS[idx].count * TAU; if (a > u * TAU) continue; const [x, y] = el(idx, a); g.strokeStyle = mid(0.9); g.beginPath(); g.moveTo(x - 3, y - 3); g.lineTo(x + 3, y + 3); g.moveTo(x + 3, y - 3); g.lineTo(x - 3, y + 3); g.stroke(); }
+      g.fillStyle = hi(1); g.beginPath(); g.arc(cx, cy, 3, 0, TAU); g.fill();
+      // metingen
+      const lv = LEVELS[idx];
+      g.strokeStyle = mid(0.6); g.strokeRect(236.5, 8.5, 64, 169);
+      [['BAAN', lv.n], ['OMLOOP', lv.period.toFixed(1) + ' S'], ['TAKEN', String(lv.count)], ['STRAAL', String(lv.ring)], ['VOORTGANG', Math.round(u * 100) + '%'], ['ΔV', (0.2 + 0.3 * Math.sin(t)).toFixed(2)]].forEach(([k, v], i) => {
+        txt(g, k, 241, 22 + i * 26, 10, mid(0.6)); txt(g, v, 241, 34 + i * 26, 13, i === 4 ? hi(0.95) : mid(0.95));
+      });
+    },
+  };
+}
+
+/* ---- R12 Lanceertelling ---- */
+function launch() {
+  const SYS = [['KERN', '72/MIN'], ['BANEN', '5 ACTIEF'], ['SYNC', 'VERBONDEN'], ['ARCHIEF', '37 REGELS'], ['STERREN', '098'], ['FOCUS', 'LOOPT']];
+  let start = 0, first = true;
+  return {
+    tap() { start = performance.now() / 1000; },
+    draw(g, t) {
+      if (first) { start = t; first = false; }
+      if (t - start > SYS.length * 1.1 + 4) start = t;
+      win(g, 4, 4, 216, 44, 'AFTELLING', 0);
+      const colon = Math.floor(t * 2) % 2 ? ':' : ' ', tl = focusLeft().replace(':', colon);
+      txt(g, `T- 00${colon}${tl}`, 12, 42, 30, hi(0.95));
+      // systemen
+      win(g, 4, 52, 216, 129, 'SYSTEMEN', 0);
+      SYS.forEach(([name, val], i) => {
+        const y = 78 + i * 16, el = t - start - i * 1.1;
+        txt(g, name, 12, y, 12, mid(0.9));
+        txt(g, el > 0 ? val : '', 82, y, 11, mid(0.6));
+        let st = '', col = mid(0.5);
+        if (el < 0) st = '';
+        else if (el < 0.8) { st = '.'.repeat(1 + Math.floor(el * 5) % 4); col = mid(0.8); }
+        else { st = 'GO'; col = hi(1); }
+        txt(g, st, 212, y, 12, col, 'right');
+        g.strokeStyle = mid(0.15); g.beginPath(); g.moveTo(12, y + 4); g.lineTo(212, y + 4); g.stroke();
+      });
+      // stuwkracht
+      win(g, 224, 4, 78, 177, 'STUWKRACHT', 0);
+      const thrust = Math.min(1, Math.max(0, (t - start) / (SYS.length * 1.1))) * (0.9 + 0.1 * Math.sin(t * 7));
+      bar(g, 236, 22, 22, 130, thrust, 14, true);
+      for (let k = 0; k <= 4; k++) { const y = 22 + k * 32.5; g.strokeStyle = mid(0.6); g.beginPath(); g.moveTo(262, y); g.lineTo(268, y); g.stroke(); txt(g, String(100 - k * 25), 296, y + 3, 9, mid(0.6), 'right'); }
+      txt(g, `${Math.round(thrust * 100)}%`, 263, 172, 12, hi(0.95), 'center');
+      const all = t - start > SYS.length * 1.1;
+      if (all) txt(g, 'ALLE SYSTEMEN GO', 112, 178, 11, Math.floor(t * 3) % 2 ? hi(1) : mid(0.5), 'center');
+    },
+  };
+}
+
+/* ---- R2 Commandocentrum ---- */
+function cmd() {
+  const hex = Array.from({ length: 40 }, (_, i) => `${(0x3F00 + i * 16).toString(16).toUpperCase()} ${Array.from({ length: 4 }, (_, j) => Math.floor(hash(i * 5 + j) * 255).toString(16).padStart(2, '0').toUpperCase()).join(' ')}`);
+  let zoom = -1, zoomAt = -9;
+  const cells = [[4, 4], [106, 4], [208, 4], [4, 76], [106, 76], [208, 76]], CW = 98, CHh = 68;
+  const ticker = ' ORBIT · 26 TAKEN · 5 NU · STER 98 · FOCUS 16 MIN · SYNC OK · KERN 72 ·';
+  return {
+    tap(x, y) { cells.forEach(([cx, cy], i) => { if (x > cx && x < cx + CW && y > cy && y < cy + CHh) { zoom = i; zoomAt = performance.now() / 1000; } }); },
+    draw(g, t) {
+      const draws = [
+        (x, y, w, h) => { scopeTrace(g, x + 4, y + 14, w - 8, h - 18, t, 1); return 'KERN'; },
+        (x, y, w, h) => {
+          let k = 0; LEVELS.forEach((lv, i) => { for (let j = 0; j < lv.count; j++, k++) { const ph = (t / lv.period + hash(i * 31 + j)) % 1, on = ph < 0.45; const xx = x + 6 + (k % 9) * 10, yy = y + 16 + Math.floor(k / 9) * 15; g.fillStyle = on ? LV[i] : 'rgba(255,255,255,.07)'; g.globalAlpha = on ? 0.95 : 1; g.fillRect(xx, yy, 7, 9); g.globalAlpha = 1; } });
+          return 'LAMPEN';
+        },
+        (x, y, w, h) => { const off = (t * 4) % 1, i0 = Math.floor(t * 4); g.save(); g.beginPath(); g.rect(x + 2, y + 13, w - 4, h - 15); g.clip(); for (let r = 0; r < 6; r++) txt(g, hex[(i0 + r) % hex.length], x + 5, y + 24 + (r - off) * 9.5, 10, r === 5 ? hi(0.9) : mid(0.65)); g.restore(); return 'GEHEUGEN'; },
+        (x, y, w, h) => { const sw = halfRadar(g, x + w / 2, y + h - 6, 40, t); txt(g, `${String(Math.round((sw - Math.PI) / Math.PI * 180)).padStart(3, '0')}°`, x + w - 4, y + 22, 10, mid(0.8), 'right'); return 'SECTOR'; },
+        (x, y, w, h) => {
+          txt(g, '098', x + 6, y + 36, 24, hi(0.95)); txt(g, 'STERREN', x + 52, y + 26, 10, mid(0.7)); txt(g, '+1', x + 52, y + 36, 10, hi(Math.floor(t * 2) % 2 ? 0.9 : 0.3));
+          txt(g, focusLeft(), x + 6, y + 52, 14, mid(0.95)); txt(g, 'FOCUS', x + 52, y + 52, 10, mid(0.7));
+          txt(g, uptime(), x + 6, y + 64, 11, mid(0.7)); return 'TELLERS';
+        },
+        (x, y, w, h) => { LEVELS.forEach((lv, i) => { const bh = (lv.count / 7) * (h - 26) * (0.9 + 0.1 * Math.sin(t * 2.2 + i)); for (let yy = 0; yy < bh; yy += 3) { g.fillStyle = mid(0.4 + 0.6 * yy / (h - 26)); g.fillRect(x + 8 + i * 18, y + h - 10 - yy, 12, 2); } txt(g, lv.n[0], x + 11 + i * 18, y + h - 1, 9, mid(0.7)); }); return 'MOMENTEN'; },
+      ];
+      cells.forEach(([x, y], i) => {
+        const z = zoom === i ? Math.max(0, 1 - (t - zoomAt) / 1.6) : 0;
+        g.save();
+        if (z > 0) { const s = 1 + 0.12 * ease(z); g.translate(x + CW / 2, y + CHh / 2); g.scale(s, s); g.translate(-x - CW / 2, -y - CHh / 2); }
+        g.strokeStyle = mid(0.6); g.strokeRect(x + 0.5, y + 0.5, CW - 1, CHh - 1);
+        const name = draws[i](x, y, CW, CHh);
+        g.fillStyle = mid(z > 0 ? 0.9 : 0.15); g.fillRect(x + 1, y + 1, Math.min(CW - 2, name.length * 6 + 10), 10);
+        txt(g, name, x + 4, y + 9.5, 10, z > 0 ? c(P.bg, 1) : hi(0.9));
+        g.fillStyle = Math.floor(t * 1.5 + i) % 3 ? mid(0.7) : hi(1); g.fillRect(x + CW - 7, y + 4, 3, 3);
+        g.restore();
+      });
+      // lichtkrant
+      g.strokeStyle = mid(0.5); g.strokeRect(4.5, 150.5, 300, 30);
+      const sh = (t * 30) % (ticker.length * 9.5);
+      g.save(); g.beginPath(); g.rect(6, 152, 296, 26); g.clip();
+      for (let k = -1; k < 2; k++) txt(g, ticker, 8 - sh + k * ticker.length * 9.5, 172, 18, hi(0.9));
+      g.restore();
+    },
+  };
+}
+
+/* ---- R5 Tekstconsole ---- */
+function console_() {
+  let cmdAt = -9;
+  const ty = typer(['orbit> sync', 'ok 26 taken, 0 wachten', 'orbit> ster', '98 sterren, hemel 3', 'orbit> kern', '72/min, 5 dringend', 'orbit> focus', 'nog 16 min', 'orbit> deadline', '"factuur betalen" 1 d te laat'], 22);
+  const CH = '·:+×#';
+  return {
+    tap() { cmdAt = performance.now() / 1000; },
+    draw(g, t) {
+      const L = 11, X = 6, R = S.w - 6; let y = 6;
+      // kader met lijnen (lijntekens hebben in VT323 een andere breedte)
+      g.strokeStyle = mid(0.75); g.strokeRect(X + 0.5, y + 5.5, R - X - 1, L * 8 + 6);
+      g.fillStyle = c(P.bg, 1); g.fillRect(X + 8, y, 74, 11); g.fillRect(R - 66, y, 60, 11);
+      txt(g, 'ORBIT v4', X + 11, y + 9, 12, hi(0.95)); txt(g, uptime(), R - 9, y + 9, 12, mid(0.9), 'right');
+      y += 20;
+      LEVELS.forEach((lv, i) => {
+        const n = 12; let barS = '';
+        for (let k = 0; k < n; k++) { const v = k < lv.count * 2 ? ((t / lv.period + k / n) % 1) : -1; barS += v < 0 ? ' ' : CH[Math.min(4, Math.floor((1 - v) * 5))]; }
+        const col = i === 0 ? hi(0.95) : mid(0.85);
+        txt(g, lv.n, X + 8, y, 12, col);
+        g.font = FONT(12); for (let k = 0; k < n; k++) txt(g, barS[k], X + 70 + k * 8, y, 12, col);
+        txt(g, String(lv.count), X + 184, y, 12, col, 'right');
+        txt(g, lv.period.toFixed(1) + 's', R - 9, y, 12, col, 'right');
+        y += L;
+      });
+      g.strokeStyle = mid(0.45); g.beginPath(); g.moveTo(X, y - 6.5); g.lineTo(R, y - 6.5); g.stroke(); y += 4;
+      const k = Math.exp(-((t * BPM / 60) % 1) * 5);
+      txt(g, 'KERN', X + 8, y, 12, mid(0.85)); txt(g, '#'.repeat(1 + Math.round(k * 6)), X + 46, y, 12, hi(0.9));
+      txt(g, `${BPM}/MIN`, X + 126, y, 12, mid(0.85)); txt(g, `FOCUS ${focusLeft()}`, R - 9, y, 12, mid(0.85), 'right'); y += L;
+      txt(g, 'STER 098', X + 8, y, 12, mid(0.85)); txt(g, `SYNC ${Math.floor(t * 2) % 2 ? '●' : '○'}`, X + 80, y, 12, mid(0.85));
+      txt(g, 'WACHT 0', X + 140, y, 12, mid(0.85)); txt(g, `MEM ${(41 + Math.sin(t) * 2).toFixed(1)}%`, R - 9, y, 12, mid(0.85), 'right');
+      y += L + 10;
+      const boost = t - cmdAt < 3 ? (t - cmdAt) * 40 : 0;
+      ty(g, X + 2, y, 290, 5, t + boost, 12, L);
+    },
+  };
+}
+
+/* ---- CRT: nagloed, scanlijnen, vignet, rollende band, flikkering ---- */
+const MAKERS = { scope3, mainframe, plotter, cmd, console: console_ };
+const panes = [];
+const scan = (() => { const cv = document.createElement('canvas'); cv.width = 4; cv.height = 3; const g = cv.getContext('2d'); g.fillStyle = 'rgba(0,0,0,.32)'; g.fillRect(0, 2, 4, 1); return cv; })();
+for (const row of document.querySelectorAll('#crt .pair')) {
+  for (const th of ['light', 'dark']) {
+    const cell = document.createElement('div'); cell.className = 'cell';
+    cell.innerHTML = `<div class="cap">${th === 'light' ? 'Licht' : 'Donker'}</div><div class="box ${th}"><canvas aria-label="Voorbeeld ${row.dataset.v}, ${th === 'light' ? 'licht' : 'donker'}"></canvas><div class="modes"><span>Water</span><i>/</i><span>Lava</span><i>/</i><span>Gloed</span><i>/</i><span>Topo</span><i>/</i><b>Paneel</b></div></div>`;
+    row.append(cell);
+    const cv = cell.querySelector('canvas'), dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr;
+    const g = cv.getContext('2d'); g.scale(dpr, dpr);
+    const off = document.createElement('canvas'); off.width = S.w * dpr; off.height = S.h * dpr;
+    const og = off.getContext('2d'); og.scale(dpr, dpr);
+    const small = document.createElement('canvas'); small.width = Math.round(S.w / 3); small.height = Math.round(S.h / 3);
+    const sg = small.getContext('2d');
+    const fx = MAKERS[row.dataset.v]();
+    const pane = { cv, g, og, off, small, sg, fx, th, visible: true, pat: g.createPattern(scan, 'repeat') };
+    cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); fx.tap((e.clientX - r.left) / r.width * W - S.x, (e.clientY - r.top) / r.height * H - S.y); });
+    panes.push(pane);
+  }
+}
+function compose(p, t) {
+  const { g, og, off, small, sg } = p;
+  og.clearRect(0, 0, S.w, S.h);
+  p.fx.draw(og, t);
+  g.clearRect(0, 0, W, H);
+  g.save();
+  g.beginPath(); g.roundRect(S.x, S.y, S.w, S.h, 10); g.clip();
+  // achtergrond: warm zwart, iets lichter in het midden
+  const bg = g.createRadialGradient(S.x + S.w / 2, S.y + S.h / 2, 10, S.x + S.w / 2, S.y + S.h / 2, S.w * 0.7);
+  bg.addColorStop(0, c(P.bg.map(v => v + 10), 1)); bg.addColorStop(1, c(P.bg, 1));
+  g.fillStyle = bg; g.fillRect(S.x, S.y, S.w, S.h);
+  const flick = reduced ? 1 : 0.94 + 0.06 * hash(Math.floor(t * 24));
+  // nagloed: verkleinde kopie, opgeschaald
+  sg.clearRect(0, 0, small.width, small.height); sg.drawImage(off, 0, 0, small.width, small.height);
+  g.globalCompositeOperation = 'lighter';
+  g.imageSmoothingEnabled = true;
+  g.globalAlpha = 0.7 * flick; g.drawImage(small, S.x - 2, S.y - 2, S.w + 4, S.h + 4);
+  g.globalAlpha = flick; g.drawImage(off, S.x, S.y, S.w, S.h);
+  // rollende band
+  if (!reduced) { const by = S.y + ((t * 22) % (S.h + 60)) - 30, bgr = g.createLinearGradient(0, by - 24, 0, by + 24); bgr.addColorStop(0, 'rgba(255,255,255,0)'); bgr.addColorStop(0.5, c(P.mid, 0.05)); bgr.addColorStop(1, 'rgba(255,255,255,0)'); g.globalAlpha = 1; g.fillStyle = bgr; g.fillRect(S.x, by - 24, S.w, 48); }
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  // scanlijnen en vignet
+  g.fillStyle = p.pat; g.fillRect(S.x, S.y, S.w, S.h);
+  const v = g.createRadialGradient(S.x + S.w / 2, S.y + S.h / 2, S.h * 0.35, S.x + S.w / 2, S.y + S.h / 2, S.w * 0.62);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+  g.fillStyle = v; g.fillRect(S.x, S.y, S.w, S.h);
+  // glas: heel lichte reflectie linksboven
+  const gl = g.createLinearGradient(S.x, S.y, S.x + S.w * 0.5, S.y + S.h * 0.6);
+  gl.addColorStop(0, 'rgba(255,255,255,.05)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gl; g.fillRect(S.x, S.y, S.w, S.h);
+  g.restore();
+  // rand van het scherm
+  g.strokeStyle = p.th === 'light' ? 'rgba(27,27,34,.35)' : 'rgba(255,255,255,.08)';
+  g.lineWidth = 1; g.beginPath(); g.roundRect(S.x - 0.5, S.y - 0.5, S.w + 1, S.h + 1, 10.5); g.stroke();
+}
+const io = new IntersectionObserver(es => es.forEach(e => { const p = panes.find(p => p.cv === e.target); if (p) p.visible = e.isIntersecting; }));
+panes.forEach(p => io.observe(p.cv));
+function frame(now) {
+  const t = reduced ? 14 : now / 1000;
+  for (const p of panes) if (p.visible) compose(p, t);
+  if (!reduced) requestAnimationFrame(frame);
+}
+document.querySelectorAll('.phos button').forEach(b => b.addEventListener('click', () => {
+  P = PHOS[b.dataset.ph];
+  document.querySelectorAll('.phos button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (reduced) requestAnimationFrame(frame);
+}));
+document.fonts.ready.then(() => requestAnimationFrame(frame));
+requestAnimationFrame(frame);
+
+})();
+</script>
+<script>
+(() => {
+
+const TH = {
+  light: { ink: [27, 27, 34], ink2: [94, 94, 104], ink3: [154, 154, 163], well: '#E4E4E0', screen: 'rgba(27,27,34,.05)', core: '#E70049', lv: ['#E70049', '#E08600', '#0FAE69', '#1F78B4', '#08415C'], glow: 0 },
+  dark:  { ink: [236, 236, 241], ink2: [169, 169, 179], ink3: [110, 110, 120], well: '#0A0A0D', screen: 'rgba(255,255,255,.035)', core: '#F0306A', lv: ['#F0306A', '#F5A623', '#20E08A', '#38A0F0', '#B3B9D6'], glow: 1 },
+};
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const W = 326, H = 227, TOP = 34;
+const MONO = '500 8px "Geist Mono", ui-monospace, monospace';
+const TAU = Math.PI * 2;
+// voorbeeldtoestand van Orbit
+const LEVELS = [{ n: 'NU', count: 5, ring: 38, period: 1.1 }, { n: 'VAN', count: 5, ring: 72, period: 2.8 }, { n: 'WK', count: 6, ring: 106, period: 7 }, { n: 'MND', count: 5, ring: 140, period: 16 }, { n: 'OOIT', count: 5, ring: 174, period: 38 }];
+const BPM = 72, FOCUS_END = performance.now() + 16 * 60000 + 42000;
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const ease = u => u * u * (3 - 2 * u);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// 5 × 7 stippen, zelfde letters als de klok
+const G = {
+  '0': ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'], '1': ['..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  '2': ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'], '3': ['.###.', '#...#', '....#', '..##.', '....#', '#...#', '.###.'],
+  '4': ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'], '5': ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
+  '6': ['..##.', '.#...', '#....', '####.', '#...#', '#...#', '.###.'], '7': ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
+  '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'], '9': ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
+  ':': ['.', '.', '#', '.', '#', '.', '.'], '·': ['.', '.', '.', '#', '.', '.', '.'], ' ': ['..', '..', '..', '..', '..', '..', '..'],
+  '*': ['.....', '..#..', '#.#.#', '.###.', '#.#.#', '..#..', '.....'],
+  A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'], B: ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
+  C: ['.###.', '#...#', '#....', '#....', '#....', '#...#', '.###.'], E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
+  F: ['#####', '#....', '#....', '####.', '#....', '#....', '#....'], I: ['.###.', '..#..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  K: ['#...#', '#..#.', '#.#..', '##...', '#.#..', '#..#.', '#...#'], M: ['#...#', '##.##', '#.#.#', '#.#.#', '#...#', '#...#', '#...#'],
+  N: ['#...#', '##..#', '#.#.#', '#..##', '#...#', '#...#', '#...#'], O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'], S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
+  T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'], U: ['#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  Y: ['#...#', '#...#', '.#.#.', '..#..', '..#..', '..#..', '..#..'],
+};
+function columns(text) {   // tekst naar kolommen van 7 bits
+  const cols = [];
+  for (const ch of text) { const g = G[ch] || G[' ']; for (let x = 0; x < g[0].length; x++) cols.push(g.map(r => r[x] === '#')); cols.push(Array(7).fill(false)); }
+  return cols;
+}
+function dotText(g, th, text, x, y, h, a = 1) {   // stippencijfers zoals de klok
+  const p = h / 7; let cx = x;
+  for (const ch of text) {
+    const gl = G[ch] || G[' '];
+    gl.forEach((row, r) => [...row].forEach((v, c) => {
+      g.fillStyle = rgba(th.ink, v === '#' ? a : a * 0.1);
+      g.beginPath(); g.arc(cx + c * p + p / 2, y + r * p + p / 2, p * (v === '#' ? 0.4 : 0.33), 0, TAU); g.fill();
+    }));
+    cx += (gl[0].length + 1) * p;
+  }
+  return cx;
+}
+function label(g, th, text, x, y, align = 'left', col) { g.font = MONO; g.textAlign = align; g.textBaseline = 'alphabetic'; g.fillStyle = col || rgba(th.ink3, 1); g.fillText(text, x, y); g.textAlign = 'left'; }
+function focusLeft() { const s = Math.max(0, Math.round((FOCUS_END - performance.now()) / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
+function lamp(g, th, x, y, w, h, col, on) {   // vierkant lampje: uit = schim, aan = kleur (in het donker met een heel zachte gloed)
+  g.fillStyle = on > 0.02 ? col : rgba(th.ink, 0.08);
+  g.globalAlpha = on > 0.02 ? 0.25 + 0.75 * on : 1;
+  if (th.glow && on > 0.4) { g.shadowColor = col; g.shadowBlur = 6 * on; }
+  g.beginPath(); g.roundRect(x, y, w, h, Math.min(w, h) * 0.3); g.fill();
+  g.shadowBlur = 0; g.globalAlpha = 1;
+}
+
+/* ---- P1 Rek ---- */
+function rack() {
+  const cols = columns('ORBIT · 26 TAKEN · 5 NU · * 98 STERREN · FOCUS 16 MIN · SYNC OK · KERN 72 · ');
+  let flash = -9;
+  return {
+    tap() { flash = performance.now() / 1000; },
+    draw(g, th, t) {
+      // lichtkrant
+      const p = 3.3, x0 = 14, y0 = TOP + 10, n = Math.floor((W - 28) / p);
+      const shift = Math.floor(t * 9);
+      g.fillStyle = th.screen; g.beginPath(); g.roundRect(x0 - 5, y0 - 5, n * p + 10, 7 * p + 10, 4); g.fill();
+      for (let c = 0; c < n; c++) {
+        const col = cols[(c + shift) % cols.length];
+        for (let r = 0; r < 7; r++) {
+          const on = col[r];
+          g.fillStyle = rgba(th.ink, on ? 0.9 : 0.07);
+          g.beginPath(); g.arc(x0 + c * p + p / 2, y0 + r * p + p / 2, p * (on ? 0.38 : 0.3), 0, TAU); g.fill();
+        }
+      }
+      // lampjes per moment
+      const fl = Math.max(0, 1 - (t - flash) / 0.45);
+      LEVELS.forEach((lv, i) => {
+        const y = y0 + 7 * p + 20 + i * 18;
+        label(g, th, lv.n, 14, y + 7);
+        for (let k = 0; k < 14; k++) {
+          const x = 52 + k * 15, has = k < lv.count;
+          let on = 0;
+          if (has) { const ph = (t / lv.period + hash(i * 31 + k)) % 1; on = ph < 0.42 ? ease(Math.min(1, ph / 0.06)) : Math.max(0, 1 - (ph - 0.42) / 0.12); on = 0.25 + 0.75 * on; }
+          on = Math.max(on, has ? fl : fl * 0.25);
+          lamp(g, th, x, y, 9, 7, has ? th.lv[i] : rgba(th.ink, 1), has ? on : fl * 0.3);
+        }
+        label(g, th, String(lv.count).padStart(2, '0'), W - 14, y + 7, 'right');
+      });
+      // looplicht
+      const yL = H - 16, m = 30, pos = (Math.sin(t * 1.4) * 0.5 + 0.5) * (m - 1);
+      for (let k = 0; k < m; k++) {
+        const d = Math.abs(k - pos), a = Math.max(0.08, 1 - d / 3.5);
+        g.fillStyle = k === Math.round(pos) ? th.core : rgba(th.ink, a * 0.8);
+        g.beginPath(); g.arc(14 + k * ((W - 28) / (m - 1)), yL, 1.7, 0, TAU); g.fill();
+      }
+    },
+  };
+}
+
+/* ---- P2 Radar ---- */
+function radar() {
+  const cx = W / 2, cy = TOP + (H - TOP) / 2 + 2, R = 84, SWEEP = 4.2;
+  const orbs = [];
+  LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) orbs.push({ i, r: R * lv.ring / 174, off: k / lv.count * TAU + hash(i * 7 + k) * 0.5, w: TAU / (lv.period * 6), last: -99 }); });
+  let ping = null;
+  return {
+    tap(x, y) { ping = { x, y, t: performance.now() / 1000 }; },
+    draw(g, th, t) {
+      // ringen en kruis
+      for (const lv of LEVELS) {
+        const r = R * lv.ring / 174, n = Math.round(r * 0.55);
+        g.fillStyle = rgba(th.ink, 0.22);
+        for (let k = 0; k < n; k++) { const a = k / n * TAU; g.fillRect(cx + Math.cos(a) * r - 0.5, cy + Math.sin(a) * r - 0.5, 1, 1); }
+      }
+      g.strokeStyle = rgba(th.ink, 0.08); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(cx - R - 6, cy); g.lineTo(cx + R + 6, cy); g.moveTo(cx, cy - R - 6); g.lineTo(cx, cy + R + 6); g.stroke();
+      for (let d = 0; d < 36; d++) {   // graden langs de rand
+        const a = d / 36 * TAU, l = d % 9 === 0 ? 5 : 2.5;
+        g.beginPath(); g.moveTo(cx + Math.cos(a) * (R + 4), cy + Math.sin(a) * (R + 4)); g.lineTo(cx + Math.cos(a) * (R + 4 + l), cy + Math.sin(a) * (R + 4 + l)); g.strokeStyle = rgba(th.ink, d % 9 === 0 ? 0.3 : 0.14); g.stroke();
+      }
+      // zwaai: taps uitdovend
+      const sw = (t / SWEEP * TAU) % TAU;
+      const cg = g.createConicGradient(sw - 1.2, cx, cy);
+      cg.addColorStop(0, rgba(th.ink, 0)); cg.addColorStop(1.2 / TAU, rgba(th.ink, th.glow ? 0.13 : 0.1)); cg.addColorStop(1.2 / TAU + 0.001, rgba(th.ink, 0)); cg.addColorStop(1, rgba(th.ink, 0));
+      g.fillStyle = cg; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, sw - 1.2, sw); g.closePath(); g.fill();
+      g.strokeStyle = rgba(th.ink, 0.5); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(sw) * R, cy + Math.sin(sw) * R); g.stroke();
+      // ping
+      let pr = -1;
+      if (ping) { pr = (t - ping.t) * 140; if (pr > 260) ping = null; else { g.strokeStyle = rgba(th.ink, 0.35 * (1 - pr / 260)); g.beginPath(); g.arc(ping.x, ping.y, pr, 0, TAU); g.stroke(); } }
+      // doelen
+      for (const o of orbs) {
+        const a = ((o.off + t * o.w) % TAU + TAU) % TAU;
+        const x = cx + Math.cos(a) * o.r, y = cy + Math.sin(a) * o.r;
+        const behind = ((sw - a) % TAU + TAU) % TAU;
+        if (behind < 0.12) o.last = t - behind / TAU * SWEEP;
+        if (ping && Math.abs(Math.hypot(x - ping.x, y - ping.y) - pr) < 5) o.last = t;
+        const life = Math.exp(-(t - o.last) / 1.7);
+        g.globalAlpha = 0.12 + 0.88 * life;
+        g.fillStyle = th.lv[o.i];
+        if (th.glow && life > 0.3) { g.shadowColor = th.lv[o.i]; g.shadowBlur = 8 * life; }
+        g.beginPath(); g.arc(x, y, 2 + 1.2 * life, 0, TAU); g.fill();
+        g.shadowBlur = 0; g.globalAlpha = 1;
+      }
+      // kern
+      const beat = (t * BPM / 60) % 1, k = Math.exp(-beat * 6);
+      g.fillStyle = th.core; g.beginPath(); g.arc(cx, cy, 3.2 + 1.6 * k, 0, TAU); g.fill();
+      // aflezing
+      label(g, th, `BRG ${String(Math.round(sw / TAU * 360)).padStart(3, '0')}°`, 14, TOP + 12);
+      label(g, th, '26 DOELEN', W - 14, TOP + 12, 'right');
+      label(g, th, 'BEREIK 5', 14, H - 12);
+      label(g, th, `${BPM} BPM`, W - 14, H - 12, 'right', th.core);
+    },
+  };
+}
+
+/* ---- P3 Doelzoeker ---- */
+function target() {
+  const vx = W / 2, vy = TOP + 82;
+  let lockAt = -99, forced = -99;
+  return {
+    tap() { forced = performance.now() / 1000; },
+    draw(g, th, t) {
+      const x0 = 14, x1 = W - 14, y0 = TOP + 22, y1 = H - 44;
+      g.save(); g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
+      // tunnel: rechthoeken die naar je toe komen
+      const n = 9, sp = 0.35;
+      for (let k = 0; k < n; k++) {
+        const s = ((k + t * sp) % n) / n, z = s * s * s;
+        const hw = 6 + z * (x1 - x0) * 0.75, hh = 4 + z * (y1 - y0) * 0.75;
+        g.strokeStyle = rgba(th.ink, 0.06 + 0.4 * z); g.lineWidth = 1;
+        g.strokeRect(vx - hw, vy - hh, hw * 2, hh * 2);
+      }
+      g.strokeStyle = rgba(th.ink, 0.22);
+      g.beginPath();
+      for (const [a, b] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { g.moveTo(vx, vy); g.lineTo(a + (a < vx ? -40 : 40), b + (b < vy ? -40 : 40)); }
+      g.stroke();
+      g.restore();
+      // doel: dwaalt, grendelt om de 7 s vast
+      const cyc = (t % 7) / 7, forcedK = Math.max(0, 1 - (t - forced) / 3);
+      let pull = Math.max(cyc < 0.55 ? 0 : ease(Math.min(1, (cyc - 0.55) / 0.25)), forcedK > 0 ? 1 : 0);
+      const wx = Math.sin(t * 0.9) * 70 + Math.sin(t * 2.3) * 14, wy = Math.cos(t * 0.7) * 26 + Math.sin(t * 1.9) * 8;
+      const tx = vx + wx * (1 - pull), ty = vy + wy * (1 - pull);
+      const locked = Math.hypot(tx - vx, ty - vy) < 3;
+      if (locked && lockAt < t - 2) lockAt = t;
+      const col = locked ? th.core : rgba(th.ink, 0.75);
+      const sz = locked ? 11 : 15 + Math.sin(t * 4) * 1.5;
+      g.strokeStyle = col; g.lineWidth = 1.3;
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        g.beginPath(); g.moveTo(tx + sx * sz, ty + sy * (sz - 5)); g.lineTo(tx + sx * sz, ty + sy * sz); g.lineTo(tx + sx * (sz - 5), ty + sy * sz); g.stroke();
+      }
+      g.fillStyle = col; g.beginPath(); g.arc(tx, ty, 1.6, 0, TAU); g.fill();
+      // vizier in het midden
+      g.strokeStyle = rgba(th.ink, 0.5); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(vx - 26, vy); g.lineTo(vx - 8, vy); g.moveTo(vx + 8, vy); g.lineTo(vx + 26, vy); g.moveTo(vx, vy - 14); g.lineTo(vx, vy - 6); g.moveTo(vx, vy + 6); g.lineTo(vx, vy + 14); g.stroke();
+      // aflezing
+      const blink = locked && Math.floor(t * 3) % 2 === 0;
+      label(g, th, locked ? 'VERGRENDELD' : 'ZOEKT', 14, TOP + 14, 'left', locked ? (blink ? th.core : rgba(th.ink3, 1)) : undefined);
+      label(g, th, 'DOEL · OFFERTE TERUGSTUREN', W - 14, TOP + 14, 'right');
+      dotText(g, th, focusLeft(), 14, H - 32, 18, 0.9);
+      label(g, th, 'FOCUS', W - 14, H - 24, 'right');
+      label(g, th, `AFST ${String(Math.round(Math.hypot(tx - vx, ty - vy) * 10)).padStart(4, '0')}`, W - 14, H - 13, 'right');
+    },
+  };
+}
+
+/* ---- P4 Oscilloscoop ---- */
+function scope() {
+  let xy = false, switched = -9;
+  const per = LEVELS.map(l => l.period);
+  return {
+    tap() { xy = !xy; switched = performance.now() / 1000; },
+    draw(g, th, t) {
+      const x0 = 18, x1 = W - 18, y0 = TOP + 8, y1 = H - 30, w = x1 - x0, h = y1 - y0, mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+      // raster: 8 × 6 vakken in stipjes
+      g.fillStyle = rgba(th.ink, 0.2);
+      for (let i = 0; i <= 8; i++) for (let y = 0; y <= h; y += 4) g.fillRect(x0 + i * w / 8 - 0.5, y0 + y - 0.5, 1, 1);
+      for (let j = 0; j <= 6; j++) for (let x = 0; x <= w; x += 4) g.fillRect(x0 + x - 0.5, y0 + j * h / 6 - 0.5, 1, 1);
+      g.fillStyle = rgba(th.ink, 0.35);
+      for (let x = 0; x <= w; x += w / 40) g.fillRect(x0 + x - 0.5, my - 2, 1, 4);
+      const fade = Math.min(1, (t - switched) / 0.5);
+      if (!xy) {
+        // straal loopt van links naar rechts in 2,4 s; achter de straal het nieuwe spoor, ervoor het vorige, vaag
+        const T = 2.4, head = (t % T) / T;
+        const ch1 = u => {   // hartslag: piek per slag
+          const time = (t - (head - u) * T) * BPM / 60, ph = time % 1;
+          return -Math.exp(-((((ph - 0.12) / 0.025)) ** 2)) * 0.9 + Math.exp(-((((ph - 0.2) / 0.04)) ** 2)) * 0.25 - Math.exp(-((((ph - 0.45) / 0.08)) ** 2)) * 0.12;
+        };
+        const ch2 = u => { const time = t - (head - u) * T; let s = 0; per.forEach((p, i) => { s += Math.sin(time * TAU / p + i) / (i + 1.5); }); return s * 0.5; };
+        const trace = (fn, base, amp, col) => {
+          g.lineWidth = 1.4; g.lineJoin = 'round';
+          const N = 160;
+          for (let k = 0; k < N; k++) {
+            const u0 = k / N, u1 = (k + 1) / N;
+            const age = u1 <= head ? head - u1 : head + 1 - u1;
+            const a = (u1 <= head ? 0.15 + 0.85 * Math.exp(-age * 2.2) : 0.12 * (1 - age)) * fade;
+            g.strokeStyle = col(a);
+            g.beginPath(); g.moveTo(x0 + u0 * w, base + fn(u0) * amp); g.lineTo(x0 + u1 * w, base + fn(u1) * amp); g.stroke();
+          }
+          g.fillStyle = col(fade); g.beginPath(); g.arc(x0 + head * w, base + fn(head) * amp, 2, 0, TAU); g.fill();
+        };
+        trace(ch1, y0 + h * 0.36, h * 0.32, a => rgba(th.ink, a));
+        trace(ch2, y0 + h * 0.78, h * 0.14, a => rgba(th.ink2, a * 0.8));
+        label(g, th, 'CH1 KERN', 18, H - 12);
+        label(g, th, 'CH2 BANEN', 92, H - 12);
+        label(g, th, `${BPM}/MIN · 300 MS/DIV`, W - 18, H - 12, 'right');
+      } else {
+        // XY: Nu tegen Vandaag, met nagloeiend spoor
+        const N = 220, span = 3.2;
+        for (let k = 0; k < N; k++) {
+          const ta = t - span * (k / N), tb = t - span * ((k + 1) / N);
+          const p = tt => [mx + Math.sin(tt * TAU / per[0] * 0.6) * w * 0.3, my + Math.sin(tt * TAU / per[1] * 0.6 + 0.6) * h * 0.4];
+          const [ax, ay] = p(ta), [bx, by] = p(tb);
+          g.strokeStyle = rgba(th.ink, (1 - k / N) * 0.9 * fade); g.lineWidth = 1.4;
+          g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+        }
+        label(g, th, 'X NU · Y VANDAAG', 18, H - 12);
+        label(g, th, 'XY', W - 18, H - 12, 'right', th.core);
+      }
+    },
+  };
+}
+
+/* ---- P5 Schakelbord ---- */
+function panel() {
+  const lamps = Array.from({ length: 16 }, (_, k) => ({ lv: k % 5, seed: hash(k * 13), user: 0 }));
+  const btn = [0, 0, 1];
+  const log = ['SYNC OK  0x3F2A', '26 TAKEN GELADEN', 'KERN 72/MIN', 'FOCUS 16:42', 'STER 98 GEZET', 'BAAN NU 1.1 S', 'ARCHIEF 0x0C7', 'DEADLINE +2D', 'HEMEL 3 / NOV', 'BACKUP IDB OK', 'WEEK 45 · 6', 'PING 38 MS'];
+  const L = { x: 14, y: TOP + 8, w: 104, h: 104 };
+  return {
+    tap(x, y) {
+      for (let k = 0; k < 16; k++) { const lx = L.x + (k % 4) * 26, ly = L.y + Math.floor(k / 4) * 26; if (x > lx - 3 && x < lx + 23 && y > ly - 3 && y < ly + 23) lamps[k].user = lamps[k].user ? 0 : 1; }
+      for (let b = 0; b < 3; b++) { const bx = 226 + b * 34, by = H - 22; if (Math.hypot(x - bx, y - by) < 12) btn[b] = 1 - btn[b]; }
+    },
+    draw(g, th, t) {
+      const line = rgba(th.ink, 0.12);
+      // drukknoppen
+      lamps.forEach((l, k) => {
+        const x = L.x + (k % 4) * 26, y = L.y + Math.floor(k / 4) * 26;
+        const step = Math.floor(t / (1.6 + l.seed * 2.4) + l.seed * 9);
+        const on = l.user ? 1 : hash(step * 3.7 + k) > 0.45 ? 1 : 0;
+        g.fillStyle = rgba(th.ink, 0.05); g.beginPath(); g.roundRect(x - 2, y - 2, 24, 24, 4); g.fill();
+        lamp(g, th, x + 2, y + 2, 16, 16, l.user ? th.core : th.lv[l.lv], on);
+      });
+      // schermpje met staafjes
+      const S = { x: 134, y: TOP + 8, w: 178, h: 62 };
+      g.fillStyle = th.screen; g.beginPath(); g.roundRect(S.x, S.y, S.w, S.h, 5); g.fill();
+      LEVELS.forEach((lv, i) => {
+        const bw = 22, gx = S.x + 12 + i * 33, hgt = (lv.count / 7) * (S.h - 22) * (0.92 + 0.08 * Math.sin(t * 2 + i));
+        for (let y = 0; y < hgt; y += 4) { g.fillStyle = th.lv[i]; g.globalAlpha = 0.9; g.fillRect(gx, S.y + S.h - 12 - y - 3, bw, 3); }
+        g.globalAlpha = 1;
+        label(g, th, lv.n, gx, S.y + S.h - 3);
+      });
+      // logboek
+      const B = { x: 134, y: TOP + 78, w: 178, h: 34 };
+      g.strokeStyle = line; g.beginPath(); g.moveTo(B.x, B.y - 4); g.lineTo(B.x + B.w, B.y - 4); g.stroke();
+      const rate = 0.9, idx = Math.floor(t / rate), frac = ease(Math.min(1, (t / rate - idx) / 0.25));
+      g.save(); g.beginPath(); g.rect(B.x, B.y, B.w, B.h); g.clip();
+      for (let r = -1; r < 3; r++) {
+        const s = log[((idx + r) % log.length + log.length) % log.length];
+        const y = B.y + 10 + (r + 1 - frac) * 11;
+        label(g, th, '›', B.x, y, 'left', rgba(th.ink3, 1));
+        label(g, th, s, B.x + 10, y, 'left', rgba(r === 1 ? th.ink2 : th.ink3, r === 1 ? 1 : 0.7));
+      }
+      g.restore();
+      const cur = Math.floor(t * 2) % 2 === 0;
+      if (cur) { g.fillStyle = rgba(th.ink2, 1); g.fillRect(B.x + B.w - 6, B.y + 23, 5, 8); }
+      // ledjes en knoppen
+      g.strokeStyle = line; g.beginPath(); g.moveTo(14, H - 40); g.lineTo(W - 14, H - 40); g.stroke();
+      for (let k = 0; k < 18; k++) {
+        const on = (Math.floor(t * 6) - k) % 18 === 0 ? 1 : hash(k + Math.floor(t * 1.3) * 0.13) > 0.7 ? 0.6 : 0.1;
+        g.fillStyle = rgba(th.ink, on * 0.85 + 0.05); g.beginPath(); g.arc(18 + k * 10.5, H - 22, 2, 0, TAU); g.fill();
+      }
+      label(g, th, 'SYS', 18, H - 9);
+      for (let b = 0; b < 3; b++) {
+        const bx = 226 + b * 34, by = H - 22;
+        g.strokeStyle = rgba(th.ink, 0.3); g.beginPath(); g.arc(bx, by, 9, 0, TAU); g.stroke();
+        g.fillStyle = btn[b] ? (b === 2 ? th.core : rgba(th.ink, 0.85)) : rgba(th.ink, 0.08);
+        if (th.glow && btn[b] && b === 2) { g.shadowColor = th.core; g.shadowBlur = 6; }
+        g.beginPath(); g.arc(bx, by, 5, 0, TAU); g.fill(); g.shadowBlur = 0;
+      }
+    },
+  };
+}
+
+
+/* ---- P6 Navkaart ---- */
+function nav() {
+  const cx = 214, cy = TOP + (H - TOP) / 2 + 2, R = 80;
+  const marks = [];
+  const names = ['Offerte terugsturen', 'Factuur betalen', 'Klant terugbellen', 'Sporten', 'Pakje ophalen', 'Kapper boeken', 'Fiets herstellen'];
+  LEVELS.forEach((lv, i) => { for (let k = 0; k < Math.min(lv.count, i < 2 ? 3 : 2); k++) marks.push({ i, r: R * (lv.ring + 6) / 180, off: hash(i * 11 + k) * TAU, w: TAU / (lv.period * 14), name: names[(i * 2 + k) % names.length] }); });
+  let pick = null, pickAt = -9;
+  return {
+    tap(x, y) {
+      const t = performance.now() / 1000; let best = null, bd = 30;
+      for (const m of marks) { const a = m.off + t * m.w, mx = cx + Math.cos(a) * m.r, my = cy + Math.sin(a) * m.r, d = Math.hypot(mx - x, my - y); if (d < bd) { bd = d; best = m; } }
+      pick = best; pickAt = t;
+    },
+    draw(g, th, t) {
+      // getikte rand die traag draait
+      const rot = t * 0.05;
+      for (let d = 0; d < 120; d++) {
+        const a = rot + d / 120 * TAU, l = d % 10 === 0 ? 5 : 2;
+        g.strokeStyle = rgba(th.ink, d % 10 === 0 ? 0.35 : 0.16); g.lineWidth = 1;
+        g.beginPath(); g.moveTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); g.lineTo(cx + Math.cos(a) * (R + 6 + l), cy + Math.sin(a) * (R + 6 + l)); g.stroke();
+      }
+      g.strokeStyle = rgba(th.ink, 0.2); g.beginPath(); g.arc(cx, cy, R + 4, 0, TAU); g.stroke();
+      // banen
+      LEVELS.forEach(lv => { g.strokeStyle = rgba(th.ink, 0.16); g.beginPath(); g.arc(cx, cy, R * (lv.ring + 6) / 180, 0, TAU); g.stroke(); });
+      // lijnen van wat dringt naar de kern, pijltje loopt naar binnen
+      for (const m of marks) {
+        const a = m.off + t * m.w, mx = cx + Math.cos(a) * m.r, my = cy + Math.sin(a) * m.r;
+        if (m.i < 2) {
+          g.strokeStyle = rgba(th.ink, 0.28); g.beginPath(); g.moveTo(mx, my); g.lineTo(cx, cy); g.stroke();
+          const u = (t * 0.35 + hash(m.off * 9)) % 1, px = mx + (cx - mx) * u, py = my + (cy - my) * u, ang = Math.atan2(cy - my, cx - mx);
+          g.fillStyle = rgba(th.ink, 0.7 * Math.sin(u * Math.PI));
+          g.beginPath(); g.moveTo(px + Math.cos(ang) * 3.5, py + Math.sin(ang) * 3.5); g.lineTo(px + Math.cos(ang + 2.5) * 3, py + Math.sin(ang + 2.5) * 3); g.lineTo(px + Math.cos(ang - 2.5) * 3, py + Math.sin(ang - 2.5) * 3); g.fill();
+        }
+      }
+      for (const m of marks) {
+        const a = m.off + t * m.w, mx = cx + Math.cos(a) * m.r, my = cy + Math.sin(a) * m.r;
+        g.strokeStyle = th.lv[m.i]; g.lineWidth = 1.4; g.beginPath(); g.arc(mx, my, 3.6, 0, TAU); g.stroke(); g.lineWidth = 1;
+        g.fillStyle = th.lv[m.i]; g.beginPath(); g.arc(mx, my, 1, 0, TAU); g.fill();
+        if (m === pick && t - pickAt < 4) {
+          g.strokeStyle = rgba(th.ink, 0.6); g.strokeRect(mx - 7, my - 7, 14, 14);
+          label(g, th, m.name.toUpperCase(), Math.min(W - 14, mx + 10), my - 9, mx + 10 > W - 90 ? 'right' : 'left', rgba(th.ink2, 1));
+        }
+      }
+      // kern
+      const beat = (t * BPM / 60) % 1, k = Math.exp(-beat * 6);
+      g.strokeStyle = th.core; g.lineWidth = 1.2; g.beginPath(); g.arc(cx, cy, 6 + 2 * k, 0, TAU); g.stroke(); g.lineWidth = 1;
+      g.fillStyle = th.core; g.beginPath(); g.arc(cx, cy, 2.6, 0, TAU); g.fill();
+      // links: vizierraster en balk van vandaag
+      const gx = 14, gy = TOP + 10, gs = 62;
+      g.strokeStyle = rgba(th.ink, 0.14);
+      for (let i = 0; i <= 6; i++) { g.beginPath(); g.moveTo(gx + i * gs / 6, gy); g.lineTo(gx + i * gs / 6, gy + gs); g.moveTo(gx, gy + i * gs / 6); g.lineTo(gx + gs, gy + i * gs / 6); g.stroke(); }
+      const tx = gx + gs / 2 + Math.sin(t * 0.8) * gs * 0.32, ty = gy + gs / 2 + Math.sin(t * 1.3 + 1) * gs * 0.32;
+      g.strokeStyle = th.core; g.beginPath(); g.moveTo(tx - 5, ty); g.lineTo(tx + 5, ty); g.moveTo(tx, ty - 5); g.lineTo(tx, ty + 5); g.stroke();
+      g.strokeStyle = rgba(th.ink, 0.35); g.beginPath(); g.moveTo(gx, gy + gs); g.lineTo(tx, ty); g.stroke();
+      const by = gy + gs + 16, segs = 8, done = 5;
+      for (let s = 0; s < segs; s++) { g.fillStyle = s < done ? rgba(th.ink, 0.8 - s * 0.06) : rgba(th.ink, 0.08); g.fillRect(gx, by + (segs - 1 - s) * 7, 26, 5); }
+      label(g, th, '62%', gx + 32, by + 52, 'left', rgba(th.ink2, 1));
+      label(g, th, 'VANDAAG', gx, H - 12);
+      label(g, th, `${String(Math.round(((rot % TAU) / TAU) * 360)).padStart(3, '0')}°`, W - 14, TOP + 12, 'right');
+    },
+  };
+}
+
+/* ---- P7 Draadmodel ---- */
+function wire() {
+  const PROF = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
+  const depth = r => { for (let i = 1; i < PROF.length; i++) if (r <= PROF[i][0]) { const [r0, z0] = PROF[i - 1], [r1, z1] = PROF[i]; return z0 + (r - r0) / (r1 - r0) * (z1 - z0); } return 0; };
+  let tilt = 0.95, want = 0.95;
+  return {
+    tap() { want = want > 0.5 ? 0.25 : 0.95; },
+    draw(g, th, t) {
+      tilt += (want - tilt) * 0.06;
+      const cx = 96, cy = TOP + 58, s = 0.42, spin = t * 0.25;
+      const P = (r, a, z) => { const x = Math.cos(a + spin) * r, y = Math.sin(a + spin) * r; const y2 = y * Math.cos(tilt) - z * Math.sin(tilt); return [cx + x * s, cy + y2 * s * -1 * -1]; };
+      // ringen
+      for (const r of [24, 38, 72, 106, 140, 174]) {
+        g.strokeStyle = rgba(th.ink, r === 174 ? 0.4 : 0.22); g.beginPath();
+        for (let k = 0; k <= 48; k++) { const [x, y] = P(r, k / 48 * TAU, depth(r)); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+        g.stroke();
+      }
+      // meridianen
+      for (let m = 0; m < 16; m++) {
+        const a = m / 16 * TAU; g.strokeStyle = rgba(th.ink, 0.13); g.beginPath();
+        for (let k = 0; k <= 20; k++) { const r = 10 + k / 20 * 164, [x, y] = P(r, a, depth(r)); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+        g.stroke();
+      }
+      // bollen
+      LEVELS.forEach((lv, i) => { for (let k = 0; k < lv.count; k++) { const a = k / lv.count * TAU + t * TAU / (lv.period * 4), [x, y] = P(lv.ring, a, depth(lv.ring)); g.fillStyle = th.lv[i]; g.beginPath(); g.arc(x, y, 1.9, 0, TAU); g.fill(); } });
+      const [kx, ky] = P(0, 0, -300); g.fillStyle = th.core; g.beginPath(); g.arc(kx, ky, 3, 0, TAU); g.fill();
+      label(g, th, 'TRECHTER · 26', 14, H - 12);
+      // halve radar
+      const rx = 252, ry = TOP + 84, rr = 56;
+      g.strokeStyle = rgba(th.ink, 0.22);
+      for (let k = 1; k <= 4; k++) { g.beginPath(); g.arc(rx, ry, rr * k / 4, Math.PI, TAU); g.stroke(); }
+      for (let k = 0; k <= 6; k++) { const a = Math.PI + k / 6 * Math.PI; g.beginPath(); g.moveTo(rx, ry); g.lineTo(rx + Math.cos(a) * rr, ry + Math.sin(a) * rr); g.stroke(); }
+      g.beginPath(); g.moveTo(rx - rr - 4, ry); g.lineTo(rx + rr + 4, ry); g.stroke();
+      const sw = Math.PI + (Math.sin(t * 0.6) * 0.5 + 0.5) * Math.PI;
+      g.fillStyle = rgba(th.ink, th.glow ? 0.16 : 0.12); g.beginPath(); g.moveTo(rx, ry); g.arc(rx, ry, rr, sw - 0.45, sw); g.closePath(); g.fill();
+      g.fillStyle = th.core; g.beginPath(); g.arc(rx + Math.cos(sw) * rr * 0.7, ry + Math.sin(sw) * rr * 0.7, 2, 0, TAU); g.fill();
+      label(g, th, 'SECTOR', rx - rr, ry + 14);
+      label(g, th, `${String(Math.round((sw - Math.PI) / Math.PI * 180)).padStart(3, '0')}°`, rx + rr, ry + 14, 'right');
+      // niveaubalk
+      const bx = rx - rr, byy = H - 44, segs = 10, done = 6;
+      for (let k = 0; k < segs; k++) { g.fillStyle = k < done ? rgba(th.ink, 0.35 + k * 0.06) : rgba(th.ink, 0.08); g.fillRect(bx + k * 9, byy, 6, 12); }
+      label(g, th, '62% VANDAAG', bx, H - 12, 'left', rgba(th.ink2, 1));
+    },
+  };
+}
+
+const MAKERS = { rack, radar, target, scope, panel, nav, wire };
+const panes = [];
+for (const row of document.querySelectorAll('#flat .pair')) {
+  for (const th of ['light', 'dark']) {
+    const cell = document.createElement('div'); cell.className = 'cell';
+    cell.innerHTML = `<div class="cap">${th === 'light' ? 'Licht' : 'Donker'}</div><div class="box ${th}"><canvas aria-label="Voorbeeld ${row.dataset.v}, ${th === 'light' ? 'licht' : 'donker'}"></canvas><div class="modes"><span>Water</span><i>/</i><span>Gelei</span><i>/</i><span>Lava</span><i>/</i><span>Gloed</span><i>/</i><b>Paneel</b></div></div>`;
+    row.append(cell);
+    const cv = cell.querySelector('canvas'), dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr;
+    const g = cv.getContext('2d'); g.scale(dpr, dpr);
+    const fx = MAKERS[row.dataset.v]();
+    const pane = { cv, g, fx, th: TH[th], visible: true };
+    cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); fx.tap((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H); });
+    panes.push(pane);
+  }
+}
+const io = new IntersectionObserver(es => es.forEach(e => { const p = panes.find(p => p.cv === e.target); if (p) p.visible = e.isIntersecting; }));
+panes.forEach(p => io.observe(p.cv));
+function frame(now) {
+  const t = reduced ? 12 : now / 1000;
+  for (const p of panes) {
+    if (!p.visible) continue;
+    p.g.clearRect(0, 0, W, H);
+    p.fx.draw(p.g, p.th, t);
+  }
+  if (!reduced) requestAnimationFrame(frame);
+}
+document.fonts.ready.then(() => requestAnimationFrame(frame));
+requestAnimationFrame(frame);
+
+})();
+</script>
+
+</body>
+</html>
