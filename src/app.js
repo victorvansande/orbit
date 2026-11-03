@@ -1797,7 +1797,21 @@ if (DEMO_MODE) {
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));
-const fidget = createFidget($('fidget'), { reducedMotion, label: m => tx(`fidget.${m}`) });   // bakje water, alleen op desktop zichtbaar
+// de sync bestaat pas verderop; het paneel kan al bij het laden vragen
+const syncStatus = () => { try { return sync.status; } catch { return 'off'; } };
+const fidget = createFidget($('fidget'), {
+  reducedMotion, label: m => tx(`fidget.${m}`),
+  // toestand voor het paneel (src/focus/panel.js): taken, sterren, archief, voortgang van vandaag, sync
+  getData: () => {
+    const from = new Date(); from.setHours(0, 0, 0, 0);
+    const doneToday = Object.values(done).filter(t => t >= from.getTime()).length, open = tasks.filter(t => t.level <= 2).length;
+    return {
+      tasks: tasks.map(t => ({ title: t.title, level: t.level })), total: totalDone(done), archive: archive.length,
+      today: doneToday / Math.max(1, doneToday + open), sync: syncStatus(),
+      stars: sky.stars.filter(st => starVisible(st.id)).map(st => ({ x: st.x, y: st.y, t: done[st.id] })),
+    };
+  },
+});   // bakje water, alleen op desktop zichtbaar
 // zandloper boven het bakje (desktop): een focusblok van 15, 25 of 50 minuten; klaar = de afvinktik
 // Een blok telt onder zijn eindtijd (`end`, zie timer.js): twee gekoppelde toestellen met dezelfde zandloper tellen het samen
 // één keer. Stil klaar (lang na het einde geopend): wel tellen, geen tik of melding.

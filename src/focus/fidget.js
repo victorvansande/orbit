@@ -23,7 +23,9 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'panel'];
+
+import { createPanel } from './panel.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -568,7 +570,7 @@ const hasGL2 = () => {
 
 const FACTORIES = { water, jelly, lava, grain, topo };
 
-export function createFidget(box, { reducedMotion, label = m => m }) {
+export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const cv = box.querySelector('canvas');
   const dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = Math.round(W * dpr); cv.height = Math.round(HH * dpr);
@@ -601,9 +603,29 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) modeName = m; } catch { /* geen opslag */ }
   const modes = {};
   const mode = () => {
-    if (!modes[modeName]) { modes[modeName] = FACTORIES[modeName](); modes[modeName].init(); }
+    if (!modes[modeName]) {
+      // paneel: dertien schermen, krijgt de toestand van Orbit en de kleur van de kleurkiezer (fosfor)
+      modes[modeName] = modeName === 'panel' ? createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen }) : FACTORIES[modeName]();
+      modes[modeName].init();
+    }
     return modes[modeName];
   };
+
+  // pijltje onder het bakje: volgend scherm van het paneel (Victor, 03/11/2026: "een heeel subtiel pijltje onder het window, gecentreerd")
+  const nextBtn = document.createElement('button');
+  nextBtn.type = 'button'; nextBtn.className = 'fidget-next'; nextBtn.hidden = true;
+  nextBtn.innerHTML = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg>';
+  box.after(nextBtn);
+  function showScreen(i, n) {
+    const text = `${label('next')} (${i + 1} / ${n})`;
+    nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
+  }
+  nextBtn.addEventListener('click', () => { if (modeName === 'panel') mode().next(1); });
+  nextBtn.addEventListener('keydown', e => {
+    if (modeName !== 'panel' || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault(); e.stopPropagation();
+    mode().next(e.key === 'ArrowLeft' ? -1 : 1);
+  });
 
   // keuze bovenin het bakje
   const bar = box.querySelector('.fidget-modes');
@@ -621,6 +643,7 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
       frag.append(b);
       return frag;
     }), reset, pick);
+    nextBtn.hidden = modeName !== 'panel';
   }
   bar.addEventListener('pointerdown', e => e.stopPropagation());   // de knopjes tellen niet als tik in het bakje
   // kleurkiezer rechts in de rij: een rondje in de gekozen kleur (native kiezer), en terug naar de standaardkleuren
@@ -679,9 +702,11 @@ export function createFidget(box, { reducedMotion, label = m => m }) {
     const m = mode();
     cv.hidden = Boolean(m.gl || m.own); cvGL.hidden = !m.gl; own.hidden = !m.own;
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
-    box.classList.toggle('on-dark', modeName === 'grain');   // gloed vult het vak met een donker verloop: lichte keuzerij
+    box.classList.toggle('on-dark', modeName === 'grain');
+    box.classList.toggle('is-panel', modeName === 'panel');   // gloed vult het vak met een donker verloop: lichte keuzerij
     if (m.own) {
       m.mount(own);
+      m.frame?.(now);   // paneel: tekent mee in de lus van het bakje
       return;
     }
     if (m.gl) {
