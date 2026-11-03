@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Orbit geluid ronde 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: één kolom op papier zoals Orbit; per richting een kaart met knoppen per moment, bovenaan de geluidsbrief en de bediening. */
+:root {
+  --bg: #F1F1EF; --surface: #FFFFFF; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12); --fill: rgba(27,27,34,.05);
+  --core: #E70049; --lv1: #E70049; --lv2: #E08600; --lv3: #0FAE69; --lv4: #1F78B4; --lv5: #08415C;
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif; --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --lv1: #F0306A; --lv2: #F5A623; --lv3: #20E08A; --lv4: #38A0F0; --lv5: #B3B9D6; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --lv1: #F0306A; --lv2: #F5A623; --lv3: #20E08A; --lv4: #38A0F0; --lv5: #B3B9D6; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+main { max-width: 860px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font: 500 13px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; margin: 0; }
+.lead { max-width: 64ch; color: var(--ink-2); margin: 10px 0 0; text-wrap: pretty; }
+.kicker { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+h2 { font: 500 20px/1.25 var(--sans); margin: 0; text-wrap: balance; }
+h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 10px; }
+section { margin-top: 40px; }
+.brief { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 18px; margin-top: 14px; }
+.brief dt { font: 500 10.5px/1.9 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.brief dd { margin: 0; color: var(--ink-2); max-width: 62ch; }
+@media (max-width: 560px) { .brief { grid-template-columns: minmax(0, 1fr); gap: 2px 0; } .brief dd { margin-bottom: 10px; } }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin-top: 28px; background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.bar label { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 10px; }
+.bar input[type=range] { width: 120px; accent-color: var(--core); }
+.scope { flex: 1 1 200px; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.scope canvas { width: 100%; height: 34px; display: block; }
+.now { font: 500 10.5px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; min-width: 9ch; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.pill { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 9px 12px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); display: inline-flex; align-items: center; gap: 7px; min-height: 36px; transition: background .15s; }
+.pill:hover { background: var(--fill); }
+.pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pill[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.card { margin-top: 18px; background: var(--surface); border-radius: 14px; padding: 22px 22px 18px; box-shadow: inset 0 0 0 1px var(--line); }
+.card.ref { background: transparent; }
+.card p.desc { color: var(--ink-2); margin: 8px 0 0; max-width: 66ch; }
+.card .risk { font-size: 14px; color: var(--ink-2); margin: 6px 0 0; }
+.card .risk b { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin-right: 8px; }
+.advice { display: inline-block; margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--core); color: #fff; vertical-align: 3px; }
+.rows { margin-top: 16px; display: grid; gap: 12px; }
+.row { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 6px 14px; align-items: start; }
+.row > span { font: 500 10.5px/36px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.row .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.row .note { grid-column: 2; font-size: 13px; color: var(--ink-3); margin-top: -2px; }
+@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); } .row > span { line-height: 1; } .row .note { grid-column: 1; } }
+.track { position: relative; height: 4px; border-radius: 2px; background: var(--fill); margin-top: 16px; overflow: visible; }
+.track .fillbar { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--ink-3); border-radius: 2px; }
+.track .mark { position: absolute; top: -4px; width: 2px; height: 12px; background: var(--core); border-radius: 1px; }
+.track .lbl { position: absolute; top: 12px; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); transform: translateX(-50%); white-space: nowrap; }
+.tracklegend { font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-top: 26px; }
+table { width: 100%; border-collapse: collapse; font: 400 12.5px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 500; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); }
+td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
+.tablewrap { overflow-x: auto; margin-top: 14px; }
+details { margin-top: 14px; }
+summary { cursor: pointer; font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); padding: 8px 0; }
+ul.quiet { margin: 10px 0 0; padding-left: 18px; color: var(--ink-2); }
+ul.quiet li { margin: 3px 0; }
+footer { margin-top: 48px; color: var(--ink-2); max-width: 66ch; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .pill { transition: none; } }
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<main>
+  <header>
+    <h1>Orbit · geluid · ronde 2</h1>
+    <p class="lead">Zes nieuwe richtingen, bewust verder uit elkaar dan vilt, snaar en papier uit ronde 1: ook klanken zonder echte toon (klik, fonkel), helder (glas), muzikaal (tine), speels (druppel) en ruimtelijk (sonar). Alles is live opgewekt met Web Audio, zoals in de app. Begin met het volume laag en luister ook eens met "gsm-speaker" aan. Geluid start pas na een tik.</p>
+  </header>
+
+  <section>
+    <p class="kicker">Geluidsbrief</p>
+    <h2>Een klein instrument in een object, niet een meldingssysteem</h2>
+    <dl class="brief">
+      <dt>In drie woorden</dt><dd>Droog, zacht, met betekenis.</dd>
+      <dt>Materiaal</dt><dd>Per richting één bron die je je kunt voorstellen: een glaasje, een schakelaar, lichtkorrels, een elektrische piano, een druppel, een sonarping.</dd>
+      <dt>Toonhoogte</dt><dd>Dezelfde pentatonische reeks als ronde 1 (Nu E5 tot Ooit E4). Glas klinkt een octaaf hoger, klik gebruikt ze enkel voor het lijfje, sonar zegt het moment ook met de echo.</dd>
+      <dt>Afronden</dt><dd>Geen opstijgende "succes"-intervallen. Waar er twee tonen zijn, gaat de tweede omlaag en zachter, als iets dat tot rust komt.</dd>
+      <dt>Herhaling</dt><dd>Tien keer na elkaar afvinken mag nooit escaleren: kleine vaste verschillen in stemming en sterkte, geen toeval, geen combo.</dd>
+      <dt>Luidheid</dt><dd>Elke richting is genormaliseerd zodat het afvinken piekt op ongeveer -20 dBFS. Enkel de zandloper en de nieuwe rang mogen iets voller zijn, gemeten.</dd>
+      <dt>Wel geluid</dt><dd>Afvinken (de kern van alles), prestatie, nieuwe rang, zandloper klaar, maandwissel.</dd>
+      <dt>Stil</dt><dd>Typen, toevoegen, verwijderen, ongedaan maken, slepen, wisselen van aanzicht, menu's, vensters, sync, toasts, vallende ster, sterrenbeeld, fidgets en het paneel. Nooit bij het laden, nooit door een ander toestel.</dd>
+    </dl>
+  </section>
+
+  <div class="bar" role="group" aria-label="Bediening">
+    <label for="vol">Volume <input type="range" id="vol" min="0" max="100" value="40"></label>
+    <button type="button" class="pill" id="phone" aria-pressed="false">Gsm-speaker</button>
+    <button type="button" class="pill" id="stop">Stop</button>
+    <div class="scope"><span class="now" id="now">Stil</span><canvas id="scope" aria-hidden="true"></canvas></div>
+  </div>
+
+  <div id="cards"></div>
+
+  <section>
+    <p class="kicker">Metingen</p>
+    <h2>Piek, gemiddelde en lengte per geluid</h2>
+    <p class="lead">Offline gerenderd in deze pagina (zonder volumeregelaar of begrenzer). Lengte = tot het geluid 50 dB onder zijn piek zakt.</p>
+    <div class="tablewrap"><table id="meter"><thead><tr><th>Richting</th><th>Geluid</th><th>Piek dBFS</th><th>RMS dBFS</th><th>Lengte</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Bewust stil</p>
+    <h2>Wat geen geluid krijgt, en waarom</h2>
+    <ul class="quiet">
+      <li><b>Toevoegen, verwijderen, ongedaan maken</b>: geen prestatie, enkel handelingen. De lijst en de toast tonen het al.</li>
+      <li><b>Slepen, wiel, aanzicht, focus aan of uit</b>: invoer, geen betekenis. Geluid zou elke beweging luid maken.</li>
+      <li><b>Sync en andere toestellen</b>: nooit iets horen wat je zelf niet deed.</li>
+      <li><b>Vallende ster, sterrenbeeld</b>: het beeld is al het geschenk; een geluid erbij maakt er een gebeurtenis van.</li>
+      <li><b>Fidgets en het paneel</b>: om naar te kijken terwijl je werkt, niet om naar te luisteren.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Eerlijk: ik kan zelf niet luisteren. Mijn keuzes steunen op hoe deze klanken zijn opgebouwd en op de metingen hierboven. Jouw oor beslist. Kies een richting (of combineer, bv. klik voor het afvinken en glas voor prestaties), dan bouw ik enkel dat in. Zegt geen enkele je iets, vertel dan wat je stoorde aan ronde 1 en 2 (te zacht, te muzikaal, te braaf, te speels), dan stuur ik daarop bij.</p>
+  </footer>
+</main>
+
+<script>
+const AC = window.AudioContext || window.webkitAudioContext;
+const P = { E3: 164.81, G3: 196, B3: 246.94, C4: 261.63, E4: 329.63, G4: 392, A4: 440, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, E6: 1318.5 };
+const LV = [P.E5, P.C5, P.A4, P.G4, P.E4];            // Nu .. Ooit, een octaaf lager dan nu
+const LV_NOW = [1318.5, 1046.5, 880, 784, 659.3];     // de huidige toonhoogtes van baken
+const DET = [0, 5, -4, 3, -6, 2, -2];                  // kleine vaste stemverschillen bij herhaling
+const NAMES = ['Nu', 'Vandaag', 'Week', 'Maand', 'Ooit'];
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---- bouwstenen ---- */
+const noiseCache = new WeakMap();
+function noiseSrc(c, seconds = 1) {
+  let buf = noiseCache.get(c);
+  if (!buf) {
+    buf = c.createBuffer(1, Math.ceil(c.sampleRate * 1.2), c.sampleRate);
+    const d = buf.getChannelData(0); let s = 12345;
+    for (let i = 0; i < d.length; i++) { s = (s * 16807) % 2147483647; d[i] = s / 2147483647 * 2 - 1; }
+    noiseCache.set(c, buf);
+  }
+  const src = c.createBufferSource(); src.buffer = buf; src.loop = true; return src;
+}
+// omhullende: zacht aan (lineair), exponentieel uit, nooit een sprong
+function env(g, t, peak, attack, decay) {
+  g.gain.setValueAtTime(0.00001, t);
+  g.gain.linearRampToValueAtTime(peak, t + attack);
+  g.gain.setTargetAtTime(0.00001, t + attack, decay / 5);
+}
+
+/* ---- D: glas (een klein glaasje dat je met een nagel aantikt: niet-harmonische boventonen, kort) ---- */
+function glass(c, out, t, f, { g = 1, dur = 0.5, det = 0 } = {}) {
+  const fq = f * 2, lp = c.createBiquadFilter(), bus = c.createGain();
+  lp.type = 'lowpass'; lp.frequency.value = 6500; bus.connect(lp).connect(out);
+  [[1, 1, 1], [2.32, 0.32, 0.55], [4.25, 0.12, 0.32], [6.63, 0.05, 0.2]].forEach(([r, a, dk]) => {
+    const o = c.createOscillator(), e = c.createGain();
+    o.frequency.value = fq * r; o.detune.value = det;
+    env(e, t, 0.13 * g * a, 0.0015, dur * dk);
+    o.connect(e).connect(bus); o.start(t); o.stop(t + dur * dk * 1.5 + 0.1);
+  });
+  const n = noiseSrc(c), hp2 = c.createBiquadFilter(), ne = c.createGain();   // de nagel
+  hp2.type = 'highpass'; hp2.frequency.value = 4000;
+  env(ne, t, 0.02 * g, 0.001, 0.008);
+  n.connect(hp2).connect(ne).connect(out); n.start(t); n.stop(t + 0.03);
+}
+
+/* ---- E: klik (een goede schakelaar: indrukken en loslaten, een houten tok, bijna geen toon) ---- */
+function click(c, out, t, f, { g = 1, dur = 0.08, det = 0 } = {}) {
+  const tick = (tt, amp, fr) => {
+    const n = noiseSrc(c), bp = c.createBiquadFilter(), e = c.createGain();
+    bp.type = 'bandpass'; bp.frequency.value = fr; bp.Q.value = 2.2;
+    env(e, tt, amp, 0.0008, 0.006);
+    n.connect(bp).connect(e).connect(out); n.start(tt); n.stop(tt + 0.03);
+  };
+  tick(t, 0.5 * g, 3400);
+  const o = c.createOscillator(), e = c.createGain(), fb = (f / 2) * Math.pow(2, det / 1200);   // het lijfje: tok die iets zakt
+  o.frequency.setValueAtTime(fb * 1.18, t); o.frequency.exponentialRampToValueAtTime(fb, t + 0.03);
+  env(e, t, 0.22 * g, 0.002, Math.max(dur, 0.05));
+  o.connect(e).connect(out); o.start(t); o.stop(t + dur + 0.1);
+  tick(t + 0.055, 0.2 * g, 2600);   // loslaten
+}
+
+/* ---- F: fonkel (een handvol piepkleine lichtkorrels die opbranden, zoals de bol bij het afvinken) ---- */
+function sparkle(c, out, t, f, { g = 1, dur = 0.22, det = 0 } = {}) {
+  const N = 6;
+  for (let i = 0; i < N; i++) {
+    const u = i / (N - 1), at = t + u * dur * 0.8, r = [4, 5.04, 6, 4.49, 5.66, 3.78][i];
+    const o = c.createOscillator(), e = c.createGain();
+    o.frequency.value = f * r * (1 - 0.12 * u); o.detune.value = det;
+    env(e, at, 0.06 * g * (1 - 0.6 * u), 0.002, 0.035);
+    o.connect(e).connect(out); o.start(at); o.stop(at + 0.08);
+  }
+  const o = c.createOscillator(), e = c.createGain();   // een zacht bedje eronder, zodat het niet enkel sist
+  o.frequency.value = f; o.detune.value = det;
+  env(e, t, 0.05 * g, 0.01, dur * 1.4);
+  o.connect(e).connect(out); o.start(t); o.stop(t + dur * 2);
+}
+
+/* ---- G: tine (een zachte elektrische piano: FM, een ronde toon met een klein metalen randje bij de aanslag) ---- */
+function tine(c, out, t, f, { g = 1, dur = 0.7, det = 0 } = {}) {
+  const car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain(), e = c.createGain();
+  car.frequency.value = f; car.detune.value = det; mod.frequency.value = f; mod.detune.value = det;
+  mg.gain.setValueAtTime(f * 2.4, t); mg.gain.setTargetAtTime(f * 0.25, t, 0.08);
+  mod.connect(mg).connect(car.frequency);
+  env(e, t, 0.17 * g, 0.004, dur);
+  car.connect(e).connect(out); car.start(t); mod.start(t); car.stop(t + dur * 1.4 + 0.1); mod.stop(t + dur * 1.4 + 0.1);
+  const m2 = c.createOscillator(), e2 = c.createGain();   // het tine-randje
+  m2.frequency.value = f * 7.1; env(e2, t, 0.025 * g, 0.001, 0.05);
+  m2.connect(e2).connect(out); m2.start(t); m2.stop(t + 0.1);
+}
+
+/* ---- H: druppel (een waterdruppel in een kom: een toon die snel omhoog buigt) ---- */
+function drop(c, out, t, f, { g = 1, dur = 0.12, det = 0 } = {}) {
+  const o = c.createOscillator(), e = c.createGain(), fq = f * Math.pow(2, det / 1200);
+  o.frequency.setValueAtTime(fq * 0.62, t); o.frequency.exponentialRampToValueAtTime(fq * 1.25, t + 0.045);
+  env(e, t, 0.2 * g, 0.003, dur);
+  o.connect(e).connect(out); o.start(t); o.stop(t + dur * 1.5 + 0.1);
+}
+
+/* ---- I: sonar (een korte ping met echo's; hoe verder het moment van de kern, hoe later de echo) ---- */
+const ECHO = [0.075, 0.115, 0.16, 0.22, 0.3];   // Nu .. Ooit: afstand tot de kern
+function sonar(c, out, t, f, { g = 1, dur = 0.16, det = 0, lv = 3 } = {}) {
+  const o = c.createOscillator(), e = c.createGain();
+  o.frequency.value = f; o.detune.value = det;
+  env(e, t, 0.2 * g, 0.004, dur);
+  const dl = c.createDelay(1), fbk = c.createGain(), lp = c.createBiquadFilter(), wet = c.createGain();
+  dl.delayTime.value = ECHO[lv - 1]; fbk.gain.value = 0.36; lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); wet.gain.value = 0.55;
+  o.connect(e); e.connect(out); e.connect(dl); dl.connect(lp).connect(fbk).connect(dl); lp.connect(wet).connect(out);
+  o.start(t); o.stop(t + dur * 1.5 + 0.1);
+}
+
+/* ---- huidig: baken (twee sinusblipjes, een kwint omhoog) ---- */
+function bakenDone(c, out, t, level) {
+  const f = LV_NOW[level - 1] / 2;
+  const tone = (fr, tt, peak, decay) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = fr; g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(peak, tt + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.003 + decay); o.connect(g).connect(out); o.start(tt); o.stop(tt + decay + 0.06); };
+  tone(f, t, 0.1 * 0.9, 0.045); tone(f * 1.5, t + 0.06, 0.11 * 0.9, 0.09);
+}
+
+/* ---- de momenten, voor elke richting met haar eigen stem ---- */
+const CUES = {
+  done(c, out, t, V, { level = 1, n = 0 } = {}) { V(c, out, t, LV[level - 1], { det: DET[n % DET.length], g: 1 - 0.05 * (n % 3), lv: level }); return 0.8; },
+  feat(c, out, t, V, { tier = 2 } = {}) {
+    if (tier === 1) V(c, out, t, P.C5, { g: 0.9 });
+    if (tier >= 2 && tier < 3) { V(c, out, t, P.C5, { g: 0.9 }); V(c, out, t + 0.11, P.G4, { g: 0.62 }); }
+    if (tier >= 3) { V(c, out, t, P.E5, { g: 0.88 }); V(c, out, t + 0.11, P.C5, { g: 0.62 }); V(c, out, t + 0.11, P.G4, { g: 0.4 }); }
+    if (tier === 4) V(c, out, t + 0.28, P.E6, { g: 0.22, dur: 0.5 });
+    return 1.0;
+  },
+  rank(c, out, t, V) {
+    V(c, out, t, P.G3, { g: 0.5, dur: 0.6 });                  // het oude teken
+    V(c, out, t + 2.2, P.C5, { g: 0.85, dur: 0.45 });          // de stip landt
+    V(c, out, t + 2.2, P.G5, { g: 0.42, dur: 0.5 });
+    V(c, out, t + 2.36, P.E6, { g: 0.18, dur: 0.6 });
+    return 3.2;
+  },
+  timer(c, out, t, V) { [0, 0.62, 1.24].forEach((dt, i) => V(c, out, t + dt, P.A4, { g: 1.12 - 0.22 * i })); return 2.1; },
+  month(c, out, t, V) {
+    const N = 26, notes = [P.E6, P.C6, P.A5, P.G5, P.E5];
+    for (let i = 0; i < N; i++) {                                 // de sterren vallen in de kern, steeds sneller
+      const u = i / (N - 1), at = 1.3 + 3.1 * Math.sqrt(u), k = Math.floor(((i * 7919) % 97) / 97 * 5);
+      V(c, out, t + at, notes[Math.min(4, k + Math.floor(u * 2))], { g: 0.16 + 0.12 * u, dur: 0.12, det: DET[i % DET.length] });
+    }
+    V(c, out, t + 3.9, P.E3, { g: 0.85, dur: 1.4 });           // het witte licht
+    V(c, out, t + 3.9, P.B3, { g: 0.42, dur: 1.2 });
+    V(c, out, t + 3.98, P.E4, { g: 0.26, dur: 1.0 });
+    return 5.6;
+  },
+};
+
+const DIRS = [
+  { id: 'D', name: 'Glas', voice: glass,
+    desc: 'Een klein glaasje dat je met je nagel aantikt. Niet-harmonische boventonen geven een heldere, kristallen klank die even nazindert, zoals de sterren in de hemel. Het meest "luxe" van de zes.',
+    risk: 'Helder en dus het meest opvallend; tien keer na elkaar kan het tinkelig worden.' },
+  { id: 'E', name: 'Klik', voice: click,
+    desc: 'Geen melodie maar een gevoel: een goede schakelaar die je indrukt en loslaat, met een klein houten tokje. Het lijfje volgt nog licht de hoogte van het moment. Het minst afleidend, als een haptische tik voor je oren.',
+    risk: 'Zo bescheiden dat een prestatie of de zandloper weinig feestelijk wordt; daar klinkt het als een reeks klikjes.' },
+  { id: 'F', name: 'Fonkel', voice: sparkle,
+    desc: 'Een handvol piepkleine lichtkorrels die in een fractie van een seconde opbranden en een tikje zakken, met een zacht bedje eronder. De klank van wat je ziet: de bol die opbrandt en de ster die verschijnt.',
+    risk: 'Kan richting "magie" of sprookjesglitter schuiven als het te lang of te hoog wordt; daarom kort en gedempt.' },
+  { id: 'G', name: 'Tine', voice: tine,
+    desc: 'Een zachte elektrische piano: een ronde toon met een klein metalen randje bij de aanslag. Het meest muzikaal en warm, met de samenklanken bij prestaties en rang die echt als akkoorden klinken.',
+    risk: 'Het herkenbaarst als instrument; kan aan lounge of een meditatie-app doen denken.' },
+  { id: 'H', name: 'Druppel', voice: drop,
+    desc: 'Een waterdruppel in een kom: een korte toon die snel omhoog buigt. Speels in het klein, zoals de paaseitjes van Orbit, en heel kort.',
+    risk: 'Het speelst van de zes; een omhoog buigende toon leest snel als een standaard "bloop".' },
+  { id: 'I', name: 'Sonar', voice: sonar, advice: true,
+    desc: 'Een korte ping met echo\'s die donkerder wegsterven. De echo vertelt waar de taak stond: bij Nu komt ze meteen terug, bij Ooit pas na een tel, zoals de glyph sonar die van de kern naar buiten loopt. Zo heeft het geluid een betekenis die enkel bij Orbit past.',
+    risk: 'Met echo is het langer dan de rest (ongeveer een halve seconde uitklinken); op een gsm-speaker hoor je het verschil tussen de momenten vooral aan de echo.' },
+];
+
+/* ---- audio ---- */
+let ctx = null, master = null, hp = null, comp = null, analyser = null, nodesOut = null;
+function audio() {
+  if (!ctx) {
+    ctx = new AC();
+    master = ctx.createGain(); hp = ctx.createBiquadFilter(); comp = ctx.createDynamicsCompressor(); analyser = ctx.createAnalyser();
+    hp.type = 'highpass'; hp.frequency.value = 20; hp.Q.value = 0.7;
+    comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.2;
+    analyser.fftSize = 1024;
+    master.connect(hp).connect(comp).connect(analyser).connect(ctx.destination);
+    applyVol(); applyPhone();
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+const volEl = document.getElementById('vol'), phoneEl = document.getElementById('phone');
+function applyVol() { if (master) master.gain.setTargetAtTime(Math.pow(Number(volEl.value) / 100, 1.6) * 1.4, ctx.currentTime, 0.02); }
+function applyPhone() { if (hp) hp.frequency.setTargetAtTime(phoneEl.getAttribute('aria-pressed') === 'true' ? 300 : 20, ctx.currentTime, 0.02); }
+volEl.addEventListener('input', applyVol);
+phoneEl.addEventListener('click', () => { phoneEl.setAttribute('aria-pressed', String(phoneEl.getAttribute('aria-pressed') !== 'true')); applyPhone(); });
+document.getElementById('stop').addEventListener('click', () => { if (nodesOut) { nodesOut.gain.setTargetAtTime(0, ctx.currentTime, 0.02); nodesOut = null; } nowEl.textContent = 'Stil'; });
+
+const norm = { ref: 1 };   // per richting zo dat het afvinken op ongeveer -20 dBFS piekt
+const nowEl = document.getElementById('now');
+let trackRun = null;
+function play(dir, cue, opts = {}, label = '') {
+  const c = audio();
+  const out = c.createGain(); out.gain.value = norm[dir.id]; out.connect(master);
+  nodesOut = out;
+  const t = c.currentTime + 0.03;
+  const len = dir.id === 'ref' ? (bakenDone(c, out, t, opts.level || 1), 0.4) : CUES[cue](c, out, t, dir.voice, opts);
+  nowEl.textContent = label;
+  clearTimeout(play.tm); play.tm = setTimeout(() => { if (nowEl.textContent === label) nowEl.textContent = 'Stil'; }, len * 1000 + 300);
+  return { t, len };
+}
+function playTen(dir) {
+  const c = audio(), out = c.createGain(); out.gain.value = norm[dir.id]; out.connect(master); nodesOut = out;
+  const seq = [1, 2, 2, 3, 1, 3, 4, 2, 5, 1];   // zoals een echte reeks: niet telkens hetzelfde moment
+  seq.forEach((lv, i) => { const t = c.currentTime + 0.05 + i * 0.46; dir.id === 'ref' ? bakenDone(c, out, t, lv) : CUES.done(c, out, t, dir.voice, { level: lv, n: i }); });
+  nowEl.textContent = `${dir.name} · 10 ×`;
+}
+
+/* ---- tijdlijn bij rang en maandwissel ---- */
+function runTrack(el, len) {
+  const bar = el.querySelector('.fillbar'), start = performance.now();
+  cancelAnimationFrame(trackRun);
+  const step = now => { const u = Math.min(1, (now - start) / (len * 1000)); bar.style.width = `${u * 100}%`; if (u < 1) trackRun = requestAnimationFrame(step); };
+  if (reduced) bar.style.width = '100%'; else trackRun = requestAnimationFrame(step);
+}
+
+/* ---- kaarten ---- */
+function btn(text, onClick, dot) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'pill';
+  if (dot) { const i = document.createElement('i'); i.style.background = `var(${dot})`; b.append(i); }
+  b.append(text); b.addEventListener('click', onClick); return b;
+}
+function row(label, children, note) {
+  const r = document.createElement('div'); r.className = 'row';
+  const s = document.createElement('span'); s.textContent = label;
+  const box = document.createElement('div'); box.className = 'btns'; box.append(...children);
+  r.append(s, box);
+  if (note) { const n = document.createElement('p'); n.className = 'note'; n.textContent = note; r.append(n); }
+  return r;
+}
+const cards = document.getElementById('cards');
+// referentie: het huidige geluid
+{
+  const ref = { id: 'ref', name: 'Baken' };
+  const card = document.createElement('section'); card.className = 'card ref';
+  card.innerHTML = `<h2><span class="code">NU</span>Baken, het huidige geluid</h2><p class="desc">Twee korte sinusblipjes, een kwint omhoog. Kort en zacht, en dat is goed. Wat zou slijten: een stijgende kwint klinkt als "gelukt" (precies het succesgebaar dat we willen vermijden), een kale sinus is de standaardpiep van Web Audio, en de aanzet van 3 ms tikt licht op elk toestel.</p>`;
+  const rows = document.createElement('div'); rows.className = 'rows';
+  rows.append(row('Afvinken', [...NAMES.map((n, i) => btn(n, () => play(ref, 'done', { level: i + 1 }, `Baken · ${n}`), `--lv${i + 1}`)), btn('10 × na elkaar', () => playTen(ref))]));
+  card.append(rows); cards.append(card);
+}
+DIRS.forEach(dir => {
+  const card = document.createElement('section'); card.className = 'card';
+  card.innerHTML = `<h2><span class="code">${dir.id}</span>${dir.name}${dir.advice ? '<span class="advice">advies</span>' : ''}</h2><p class="desc">${dir.desc}</p><p class="risk"><b>Risico</b>${dir.risk}</p>`;
+  const rows = document.createElement('div'); rows.className = 'rows';
+  const L = s => `${dir.name} · ${s}`;
+  rows.append(row('Afvinken', [...NAMES.map((n, i) => btn(n, () => play(dir, 'done', { level: i + 1, n: 0 }, L(n)), `--lv${i + 1}`)), btn('10 × na elkaar', () => playTen(dir))], 'Eén korte toon op de hoogte van het moment. Bij herhaling telkens een paar cent anders gestemd.'));
+  rows.append(row('Prestatie', ['Brons', 'Zilver', 'Goud', 'Platina'].map((n, i) => btn(n, () => play(dir, 'feat', { tier: i + 1 }, L(n))) ), 'Brons één toon, zilver een tweede die zakt, goud een kleine samenklank, platina met een heel zacht licht erboven.'));
+  const trackRank = document.createElement('div'); trackRank.className = 'track';
+  trackRank.innerHTML = '<div class="fillbar"></div><div class="mark" style="left:0%"></div><div class="lbl" style="left:4%">oud teken</div><div class="mark" style="left:68.75%"></div><div class="lbl" style="left:68.75%">stip landt</div>';
+  rows.append(row('Nieuwe rang', [btn('Speel', () => { const r = play(dir, 'rank', {}, L('nieuwe rang')); runTrack(trackRank, r.len); })], 'Een lage toon bij het oude teken, en op 2,2 s, als de nieuwe stip landt, een zachte kwint met een glinstering.'));
+  rows.lastChild.append(trackRank);
+  rows.append(row('Zandloper klaar', [btn('Speel', () => play(dir, 'timer', {}, L('zandloper')))], 'Drie keer dezelfde toon, telkens zachter, zoals een rustige keukenwekker: hoorbaar van wat verder, niet schrikken.'));
+  const trackMonth = document.createElement('div'); trackMonth.className = 'track';
+  trackMonth.innerHTML = '<div class="fillbar"></div><div class="mark" style="left:23.2%"></div><div class="lbl" style="left:23.2%">sterren vallen</div><div class="mark" style="left:69.6%"></div><div class="lbl" style="left:69.6%">wit licht</div>';
+  rows.append(row('Maandwissel', [btn('Speel', () => { const r = play(dir, 'month', {}, L('maandwissel')); runTrack(trackMonth, r.len); })], 'Elke ster die in de kern valt, geeft een piepklein tikje, steeds sneller; bij het witte licht één lage, warme samenklank.'));
+  rows.lastChild.append(trackMonth);
+  card.append(rows); cards.append(card);
+});
+
+/* ---- scoop ---- */
+const sc = document.getElementById('scope'), sg = sc.getContext('2d');
+function drawScope() {
+  const dpr = Math.min(2, devicePixelRatio || 1), w = sc.clientWidth, h = sc.clientHeight;
+  if (sc.width !== Math.round(w * dpr)) { sc.width = Math.round(w * dpr); sc.height = Math.round(h * dpr); }
+  sg.setTransform(dpr, 0, 0, dpr, 0, 0); sg.clearRect(0, 0, w, h);
+  const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink-2').trim();
+  sg.strokeStyle = ink; sg.lineWidth = 1.2; sg.beginPath();
+  if (analyser) {
+    const d = new Float32Array(analyser.fftSize); analyser.getFloatTimeDomainData(d);
+    for (let i = 0; i < d.length; i++) { const x = i / (d.length - 1) * w, y = h / 2 - d[i] * h * 1.6; i ? sg.lineTo(x, y) : sg.moveTo(x, y); }
+  } else { sg.moveTo(0, h / 2); sg.lineTo(w, h / 2); }
+  sg.stroke();
+  if (!reduced) requestAnimationFrame(drawScope);
+}
+requestAnimationFrame(drawScope);
+
+/* ---- metingen (offline) ---- */
+async function measure(fn, seconds) {
+  const sr = 44100, oc = new OfflineAudioContext(1, Math.ceil(sr * seconds), sr);
+  const out = oc.createGain(); out.connect(oc.destination); fn(oc, out, 0.01);
+  const buf = await oc.startRendering(), d = buf.getChannelData(0);
+  let peak = 0; for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  const thr = peak * Math.pow(10, -50 / 20); let a = -1, b = -1;
+  for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > thr) { if (a < 0) a = i; b = i; }
+  let sum = 0; for (let i = a; i <= b; i++) sum += d[i] * d[i];
+  const rms = Math.sqrt(sum / Math.max(1, b - a + 1));
+  return { peak, rms, len: (b - a) / sr };
+}
+const dB = v => (20 * Math.log10(Math.max(v, 1e-9))).toFixed(1);
+(async () => {
+  const target = Math.pow(10, -20 / 20), rows = [];
+  // normaliseren op het afvinken (Nu)
+  for (const dir of DIRS) { const m = await measure((c, o, t) => CUES.done(c, o, t, dir.voice, { level: 1 }), 1); norm[dir.id] = target / m.peak; }
+  const r0 = await measure((c, o, t) => bakenDone(c, o, t, 1), 1); norm.ref = 1;   // baken zoals het nu klinkt in de app
+  rows.push(['Huidig', 'Baken · afvinken Nu', r0]);
+  const list = [['Afvinken Nu', 'done', { level: 1 }, 1], ['Afvinken Ooit', 'done', { level: 5 }, 1], ['Prestatie goud', 'feat', { tier: 3 }, 1.5], ['Nieuwe rang', 'rank', {}, 4], ['Zandloper klaar', 'timer', {}, 2.5], ['Maandwissel', 'month', {}, 6.5]];
+  for (const dir of DIRS) {
+    for (const [name, cue, opts, sec] of list) {
+      const m = await measure((c, o, t) => { const g = c.createGain(); g.gain.value = norm[dir.id]; g.connect(o); CUES[cue](c, g, t, dir.voice, opts); }, sec);
+      rows.push([`${dir.id} ${dir.name}`, name, m]);
+    }
+  }
+  const tb = document.querySelector('#meter tbody');
+  tb.replaceChildren(...rows.map(([d, n, m]) => { const tr = document.createElement('tr'); [d, n, dB(m.peak), dB(m.rms), `${m.len.toFixed(2)} s`].forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.append(td); }); return tr; }));
+  window.__meter = rows.map(([d, n, m]) => [d, n, +dB(m.peak), +dB(m.rms), +m.len.toFixed(2)]);
+})();
+</script>
+
+</body>
+</html>
