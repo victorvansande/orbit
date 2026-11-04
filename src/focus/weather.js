@@ -107,6 +107,17 @@ export function createWeather(link) {
     link.setAttribute('aria-label', tx('wx.aria', { label, where, temp: w.temp, rain: rain ? `. ${rain}` : '' }));
     link.title = tx('wx.title', { label, where });
     link.hidden = false;
+    requestAnimationFrame(trim);
+  }
+  // Elk icoon heeft rechts een andere witruimte (de maan meer dan de zon): meet de getekende rand en zet de graden er
+  // altijd 6 px naast (Victor, 04/11/2026). Lukt meten niet (verborgen), dan blijft de marge uit de CSS staan.
+  function trim() {
+    try {
+      const svg = link.querySelector('.fw-icon'), bb = svg.querySelector('use').getBBox(), w = svg.getBoundingClientRect().width;
+      if (!w || !bb.width) return;
+      const k = w / 24, empty = (24 - bb.x - bb.width - 0.75) * k;   // halve lijndikte telt mee als getekend
+      link.querySelector('.fw-temp').style.marginLeft = `${Math.max(0, 6 - empty).toFixed(1)}px`;
+    } catch { /* niet in beeld */ }
   }
 
   async function update() {
