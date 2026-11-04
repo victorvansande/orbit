@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orbit maandvenster</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: kop met keuzes; daaronder per voorstel een gsm-scherm (het venster boven de nog bedekte app) met uitleg ernaast */
+:root {
+  --bg: #F1F1EF; --surface: #FAFAF8; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12); --fill: rgba(27,27,34,.05);
+  --core: #E70049; --ghost: .1; --veil: #F1F1EF; --phone: #E4E4E0;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.12); --fill: rgba(236,236,241,.05); --core: #F0306A; --ghost: .12; --veil: #0F0F12; --phone: #26262C; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.12); --fill: rgba(236,236,241,.05); --core: #F0306A; --ghost: .12; --veil: #0F0F12; --phone: #26262C; color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px 24px; }
+.kick { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+h1 { font-weight: 500; font-size: 26px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -.01em; text-wrap: balance; }
+.lead { margin: 0; color: var(--ink-2); max-width: 64ch; }
+.ctrls { display: flex; gap: 6px; }
+.ctrls button, .replay { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); background: none; border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
+.ctrls button:hover, .replay:hover { color: var(--ink); }
+button:focus-visible { outline: 2px solid var(--core); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: center; margin-top: 44px; }
+@media (max-width: 700px) { .row { grid-template-columns: minmax(0, 1fr); justify-items: center; } .row .text { justify-self: stretch; } }
+.text h2 { margin: 0 0 6px; font-size: 19px; font-weight: 500; }
+.text h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 10px; }
+.advice { margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--core); color: var(--surface); vertical-align: 3px; }
+.text p { margin: 0 0 10px; color: var(--ink-2); max-width: 58ch; }
+.text p b { color: var(--ink); font-weight: 500; }
+/* het gsm-scherm: de app ligt nog onder het papier van de intro, het venster ligt daarop */
+.phone { position: relative; width: 300px; max-width: 100%; aspect-ratio: 9 / 18.5; border-radius: 34px; background: var(--phone); padding: 10px; }
+.screen { position: relative; width: 100%; height: 100%; border-radius: 26px; overflow: hidden; background: var(--veil); }
+.screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.13 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+:root[data-theme="dark"] .screen::after { mix-blend-mode: screen; opacity: .35; filter: invert(1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .screen::after { mix-blend-mode: screen; opacity: .35; filter: invert(1); } }
+.gate { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
+.mono { font: 500 9.5px/1.3 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+.corner { position: absolute; top: 22px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+.lockup { height: 15px; width: auto; display: block; }
+.lockup .tail, .lockup .word { fill: var(--ink); } .lockup .head { fill: var(--core); }
+.dm { display: flex; gap: 6px; } .dm svg { height: 100%; width: auto; display: block; overflow: visible; }
+.dm .o { fill: var(--core); } .dm .g { fill: var(--ink); opacity: var(--ghost); } .dm.ink .o { fill: var(--ink); }
+.pill { font: 500 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; padding: 11px 16px; border-radius: 99px; background: var(--ink); color: var(--veil); border: 0; }
+.hint { position: absolute; bottom: 26px; left: 0; right: 0; }
+.in { animation: in .9s cubic-bezier(.4,0,.2,1) both; }
+@keyframes in { from { opacity: 0; transform: translateY(6px); } }
+.d1 { animation-delay: .25s; } .d2 { animation-delay: .55s; } .d3 { animation-delay: .9s; }
+.blink { animation: blink 1.6s steps(1) infinite; } @keyframes blink { 50% { opacity: 0; } }
+.term { text-align: left; font: 500 11px/1.9 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+.term .t { display: block; white-space: nowrap; overflow: hidden; width: 0; animation: type .7s steps(22) forwards; }
+@keyframes type { to { width: 22ch; } }
+.seal { width: 176px; height: 176px; position: relative; }
+.seal svg.rim { position: absolute; inset: 0; animation: spin 40s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.seal .mid { position: absolute; inset: 0; display: grid; place-items: center; }
+.ribbon { display: grid; grid-template-columns: repeat(31, 5px); gap: 2.4px; align-items: end; height: 84px; }
+.ribbon i { display: flex; flex-direction: column-reverse; gap: 2.4px; opacity: 0; animation: up .6s cubic-bezier(.4,0,.2,1) forwards; }
+.ribbon i b { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); }
+.ribbon i b.g { opacity: var(--ghost); }
+.ribbon i.top b:not(.g) { background: var(--core); }
+@keyframes up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+.big { font: 300 30px/1.15 var(--sans); letter-spacing: -.01em; color: var(--ink); margin: 0; }
+.then { font-size: 13px; color: var(--ink-3); margin-top: 26px; }
+@media (prefers-reduced-motion: reduce) { .in, .term .t, .ribbon i, .seal svg.rim, .blink { animation: none; opacity: 1; width: auto; } .ribbon i { opacity: 1; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="kick">Orbit · maandwissel</p>
+      <h1>Het venster vóór de maandwissel</h1>
+      <p class="lead">De eerste keer dat je Orbit opent in een nieuwe maand, verschijnt eerst dit venster, nog op het papier van de intro. Een tik erop is de klik die de browser vraagt: daarna speelt de zwaartekracht mét geluid, en opent de recap uit het witte licht. Alle vijf in de taal van de recapkaart: papier met korrel, inkt, rode stippencijfers met schimmen, Geist Mono in kapitaaltjes. Een tik op het scherm laat zien wat er dan gebeurt.</p>
+    </div>
+    <div class="ctrls"><button type="button" id="b-light">Licht</button><button type="button" id="b-dark">Donker</button></div>
+  </header>
+  <div id="rows"></div>
+  <p class="then">Voorbeeld: oktober 2026 met 87 sterren, je opent Orbit op 1 november. In de app ook op desktop, gecentreerd boven de kern.</p>
+</div>
+
+<script>
+const LOCK = {"w":345.78,"h":76.13,"tail":"M86.3 35.2C87.2 31.3 87.2 27.4 86.2 24C85.2 20.7 83.3 17.7 80.6 15.1C77.8 12.5 74.2 10.4 69.9 9.1C65.7 7.7 60.9 7.1 56 7.3C50.8 7.5 45.4 8.5 40.3 10.2C35.3 11.9 30.6 14.4 26.5 17.3C22.2 20.3 18.6 23.8 15.9 27.5C13.2 31.2 11.5 35.1 10.8 38.8C10.1 42.3 10.3 45.5 11.3 48.4C12.3 51.4 14.1 54 16.7 56.2C19.2 58.4 22.4 60.1 26.3 61.2C30.2 62.4 34.9 62.9 39.7 62.6C44.4 62.3 49.2 61.3 53.9 59.6C58.7 57.9 63.3 55.4 67.2 52.5L76 65.3C70.6 68.8 64.6 71.6 58.4 73.4C52.3 75.2 46.1 76.1 40.1 76.1C33.8 76.1 27.7 75.2 22.3 73.2C17 71.3 12.3 68.4 8.7 64.8C4.9 61 2.1 56.4 0.9 51.4C-0.4 46.5 -0.3 41.4 1 36.5C2.4 31.3 5 26.4 8.5 21.9C12.1 17.5 16.6 13.5 21.7 10.2C26.7 7 32.2 4.4 37.9 2.7C43.8 0.9 49.9 -0 55.9 4.3e-05C61.6 0 67.1 0.9 72 2.6C77.1 4.4 81.6 7.1 85.1 10.6C88.4 13.9 90.8 18 92 22.4C93.2 26.9 93.1 31.8 91.9 36.6C91.6 37.9 90.5 38.8 89.1 38.8C87.5 38.8 86.2 37.5 86.2 35.9C86.2 35.7 86.2 35.4 86.3 35.2Z","head":[71.6,58.92,13.29],"word":"M161.6 75.6Q153.8 75.6 147.9 72.2Q142 68.7 138.7 62.7Q135.4 56.6 135.4 48.9Q135.4 41.1 138.7 35.2Q142.1 29.3 147.9 26Q153.8 22.6 161.6 22.6Q169.5 22.6 175.4 26Q181.3 29.3 184.5 35.2Q187.8 41.1 187.8 48.9Q187.8 56.6 184.5 62.7Q181.3 68.7 175.4 72.2Q169.5 75.6 161.6 75.6ZM161.6 67.1Q166.3 67.1 169.7 64.8Q173.2 62.5 175.2 58.4Q177.2 54.3 177.2 48.8Q177.2 40.6 172.8 35.9Q168.5 31.1 161.6 31.1Q154.8 31.1 150.4 35.9Q146.1 40.7 146.1 48.8Q146.1 54.3 148 58.4Q150 62.5 153.5 64.8Q157.1 67.1 161.6 67.1ZM197.5 74.6V23.6H207.4V36.3H207.9V74.6H197.5ZM207.9 48 206.6 35.9Q208.4 29.4 212.8 26Q217.2 22.6 223.3 22.6Q225.6 22.6 226.5 23V32.8Q226 32.6 225.1 32.6Q224.2 32.5 222.9 32.5Q215.4 32.5 211.6 36.4Q207.9 40.3 207.9 48ZM260.4 75.5Q253.2 75.5 248.4 72.1Q243.6 68.6 242.1 62.4L243.1 62.2V74.6H233.2V2.6H243.6V35.3L242.5 35Q244.2 29.2 249.1 25.9Q254.1 22.6 261.1 22.6Q268 22.6 273 25.9Q278.1 29.2 280.8 35.1Q283.6 41 283.6 48.9Q283.6 56.9 280.7 62.9Q277.8 68.9 272.6 72.2Q267.4 75.5 260.4 75.5ZM258.2 66.9Q265 66.9 269 62.1Q273 57.3 273 48.9Q273 40.6 269 36Q265 31.3 258.1 31.3Q251.3 31.3 247.2 36.1Q243.2 40.8 243.2 49.2Q243.2 57.4 247.2 62.2Q251.3 66.9 258.2 66.9ZM293.5 74.6V23.6H303.9V74.6H293.5ZM338.2 75.6Q329.3 75.6 325.1 71.5Q321 67.3 321 59.2V11.9L331.3 8V59.3Q331.3 63.3 333.4 65.2Q335.5 67.1 340.2 67.1Q342 67.1 343.4 66.8Q344.8 66.5 345.8 66.1V74.5Q344.7 75 342.7 75.3Q340.7 75.6 338.2 75.6ZM310.8 31.9V23.6H345.8V31.9H310.8ZM304.7 7.8C304.7 11.1 302 13.8 298.7 13.8C295.4 13.8 292.7 11.1 292.7 7.8C292.7 4.5 295.4 1.8 298.7 1.8C302 1.8 304.7 4.5 304.7 7.8Z","base":74.63};
+const G = { 0: ['01110','10001','10011','10101','11001','10001','01110'], 1: ['00100','01100','00100','00100','00100','00100','01110'], 2: ['01110','10001','00001','00010','00100','01000','11111'], 3: ['11110','00001','00001','01110','00001','00001','11110'], 4: ['00010','00110','01010','10010','11111','00010','00010'], 5: ['11111','10000','11110','00001','00001','10001','01110'], 6: ['00110','01000','10000','11110','10001','10001','01110'], 7: ['11111','00001','00010','00100','01000','01000','01000'], 8: ['01110','10001','10001','01110','10001','10001','01110'], 9: ['01110','10001','10001','01111','00001','00010','01100'] };
+const lockup = () => `<svg class="lockup" viewBox="0 0 ${LOCK.w} ${LOCK.h}" aria-label="Orbit"><path class="tail" d="${LOCK.tail}"/><circle class="head" cx="${LOCK.head[0]}" cy="${LOCK.head[1]}" r="${LOCK.head[2]}"/><path class="word" d="${LOCK.word}"/></svg>`;
+const digits = (txt, h, cls = '') => `<div class="dm ${cls}" style="height:${h}px">${[...txt].map(ch => `<svg viewBox="-.5 -.5 5 7">${G[ch].map((r, y) => [...r].map((v, x) => `<circle cx="${x}" cy="${y}" r="${v === '1' ? .4 : .33}" class="${v === '1' ? 'o' : 'g'}"/>`).join('')).join('')}</svg>`).join('')}</div>`;
+// oktober: 87 sterren per dag, vast patroon, drukste dag de 14e
+const PER = Array.from({ length: 31 }, (_, i) => Math.max(0, Math.round(2.4 + 2 * Math.sin(i * 1.7) + 1.4 * Math.cos(i * 0.6)) + (i === 13 ? 5 : 0)));
+const ROWS = [
+  { id: 'M1', name: 'Het nummer', advice: true,
+    text: '<p><b>Enkel het nieuwe maandnummer, groot in rode stippen, zoals het aantal sterren op de recapkaart.</b> Linksboven het merk, rechtsboven de datum, onderaan een fluistering. Cryptisch: je ziet "11" en weet het pas als je Orbit kent. Het hele scherm is de knop.</p><p>Het rustigst van de vijf en het dichtst bij de kaart, die even later uit het licht komt.</p>',
+    html: () => `<div class="corner in">${lockup()}<span class="mono">01 · 11 · 2026</span></div>${digits('11', 96)}<div class="hint mono in d2">Tik om de maand te openen</div>` },
+  { id: 'M2', name: 'Van tien naar elf', text: '<p><b>De wissel zelf: "10" als schim, "11" in rood.</b> Daaronder in kapitaaltjes oktober en november, en één pil Open, zoals Klaar in de recap. Iets meer uitleg, nog altijd zonder zin.</p>',
+    html: () => `<div class="corner in">${lockup()}<span class="mono">Maandwissel</span></div><div style="display:flex;gap:18px;align-items:center" class="in">${digits('10', 52, 'ink')}<span class="mono" style="font-size:12px">→</span>${digits('11', 52)}</div><div class="mono in d1" style="margin-top:16px">Oktober · November</div><button type="button" class="pill in d2" style="margin-top:30px">Open</button>` },
+  { id: 'M3', name: 'Logregel', text: '<p><b>Een paar regels die zich uittypen, alsof Orbit de maand afsluit:</b> de oude baan sluit, het aantal sterren, een nieuwe baan. Onderaan een rood stipje dat knippert tot je tikt. Het meest cryptisch, verwant aan het paneel in de focusmodus.</p>',
+    html: () => `<div class="corner in">${lockup()}<span class="mono">01 · 11</span></div><div class="term"><span class="t">Baan 10 gesloten</span><span class="t" style="animation-delay:.7s">87 sterren · in de kern</span><span class="t" style="animation-delay:1.4s">Baan 11 · klaar</span></div><div class="hint mono in d3"><span class="blink" style="color:var(--core)">●</span>&nbsp; Tik</div>` },
+  { id: 'M4', name: 'Het zegel', text: '<p><b>Een rond zegel zoals een rubberstempel in risodruk:</b> rondom in kapitaaltjes "Oktober · November", in het midden de komeet van het merk. Het zegel draait heel traag. Tik erop en het "breekt" open in de zwaartekracht.</p>',
+    html: () => `<div class="seal in"><svg class="rim" viewBox="0 0 176 176"><defs><path id="c" d="M88 88 m-72 0 a72 72 0 1 1 144 0 a72 72 0 1 1 -144 0"/></defs><circle cx="88" cy="88" r="84" fill="none" stroke="var(--ink)" stroke-opacity=".5" stroke-width="1"/><circle cx="88" cy="88" r="58" fill="none" stroke="var(--ink)" stroke-opacity=".25" stroke-width="1" stroke-dasharray="1 3"/><text font-family="Geist Mono" font-size="9.5" letter-spacing="3.2" fill="var(--ink)" fill-opacity=".7"><textPath href="#c">OKTOBER · 87 STERREN · NOVEMBER · ORBIT · </textPath></text></svg><div class="mid"><svg viewBox="0 0 94 77" width="54"><path d="${LOCK.tail}" fill="var(--ink)"/><circle cx="${LOCK.head[0]}" cy="${LOCK.head[1]}" r="${LOCK.head[2]}" fill="var(--core)"/></svg></div></div><div class="hint mono in d2">Tik op het zegel</div>` },
+  { id: 'M5', name: 'De maand in stippen', text: '<p><b>Het lint van de recapkaart, een kolom stippen per dag, de drukste dag in rood, zonder getal.</b> Eén zin in Geist Light: "Oktober zit erop." Tik en precies die sterren vliegen in de zwaartekracht naar de kern.</p><p>Minder cryptisch, wel het sterkste verband tussen venster, animatie en kaart.</p>',
+    html: () => `<div class="corner in">${lockup()}<span class="mono">Oktober 2026</span></div><div class="ribbon in">${PER.map((n, i) => `<i class="${i === 13 ? 'top' : ''}" style="animation-delay:${.2 + i * .025}s">${'<b></b>'.repeat(n) || '<b class="g"></b>'}</i>`).join('')}</div><p class="big in d2" style="margin-top:22px">Oktober zit erop.</p><div class="hint mono in d3">Tik om verder te gaan</div>` },
+];
+const rows = document.getElementById('rows');
+for (const r of ROWS) {
+  const el = document.createElement('section'); el.className = 'row';
+  el.innerHTML = `<div class="phone"><div class="screen"><div class="gate" role="button" tabindex="0" aria-label="${r.name}: tik om te openen"></div></div></div><div class="text"><h2><span class="code">${r.id}</span>${r.name}${r.advice ? '<span class="advice">advies</span>' : ''}</h2>${r.text}<button type="button" class="replay">Opnieuw ↻</button></div>`;
+  rows.append(el);
+  const gate = el.querySelector('.gate');
+  const show = () => { gate.style.transition = 'none'; gate.style.opacity = 1; gate.style.transform = ''; gate.innerHTML = r.html(); };
+  // tik: het venster lost op in het papier, daarna zou de zwaartekracht beginnen
+  const tap = () => { gate.style.transition = 'opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1)'; gate.style.opacity = 0; gate.style.transform = 'scale(.97)'; setTimeout(show, 2200); };
+  gate.addEventListener('click', tap);
+  gate.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });
+  el.querySelector('.replay').addEventListener('click', show);
+  show();
+}
+const setTheme = t => { document.documentElement.dataset.theme = t; };
+document.getElementById('b-light').addEventListener('click', () => setTheme('light'));
+document.getElementById('b-dark').addEventListener('click', () => setTheme('dark'));
+</script>
+
+</body>
+</html>
