@@ -173,6 +173,25 @@ export function playRank(land = 2.2) {
     ping(a, o, t + land + 0.16, P.E6, { g: 0.18, dur: 0.6 });
   });
 }
+// wiel van de momenten: een heel zacht tikje per moment dat je voorbijdraait (Victor, 04/11/2026), in de toon van dat
+// moment een octaaf hoger, met een vage echo op de afstand van dat moment. Ongeveer 18 dB zachter dan afvinken, en nooit
+// sneller dan om de 45 ms, zodat snel draaien geen ratel wordt.
+let lastTick = 0;
+export function playTick(level = 3) {
+  const now = performance.now();
+  if (now - lastTick < 45) return;
+  lastTick = now;
+  cue((a, out, t) => {
+    const f = (SONAR_NOTES[level] || P.A4) * 2, o = a.createOscillator(), e = a.createGain();
+    o.frequency.value = f;
+    soft(e, t, 0.026, 0.002, 0.045);
+    const dl = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), wet = a.createGain();
+    dl.delayTime.value = ECHO[level] || ECHO[3]; fb.gain.value = 0.2;
+    lp.type = 'lowpass'; lp.frequency.value = 1800; wet.gain.value = 0.3;
+    o.connect(e); e.connect(out); e.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wet).connect(out);
+    o.start(t); o.stop(t + 0.12);
+  });
+}
 // zandloper klaar: drie keer dezelfde toon, telkens zachter, zoals een rustige keukenwekker
 export function playTimer() {
   cue((a, o, t) => [0, 0.62, 1.24].forEach((dt, i) => ping(a, o, t + dt, P.A4, { g: 1.12 - 0.22 * i })));

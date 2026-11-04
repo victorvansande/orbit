@@ -18,7 +18,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
 import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
-import { playDone, playFeat, playRank, playTimer, playMonth, soundOn, setSound } from './scene/sound.js';
+import { playDone, playFeat, playRank, playTimer, playMonth, playTick, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
@@ -302,6 +302,7 @@ let flashTimer = 0;
 const wheel = createWheel($('wheel'), {
   reducedMotion,
   onChange(level) {
+    playTick(level);   // heel zacht tikje per moment (Victor, 04/11/2026)
     scene.highlight({ level });
     clearTimeout(flashTimer);
     flashTimer = setTimeout(() => scene.highlight({}), 4500);   // lang genoeg om de legende te lezen (was 1,1 s, toen nog met pillen)
