@@ -18,12 +18,12 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
 import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
-import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, soundOn, setSound } from './scene/sound.js';
+import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, unlockAudio, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
-import { softReveal, whiteBurst, smallNight, coreWave, createWall } from './scene/fx.js';
+import { softReveal, whiteBurst, smallNight, coreWave, monthGate, createWall } from './scene/fx.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
 applyStatic();
@@ -3195,18 +3195,35 @@ let turnAfterReveal = false;
 if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
   revealDelay = 800;
   turnAfterReveal = turnShow;   // maandwissel: eerst opent de pagina zacht met de oude hemel, dan begint de zwaartekracht
-  if (turnAfterReveal && turnPlan.old.length) { scene.holdTurn(turnPlan.old); setHush(true); }
-  const give = takeStage(3000);   // meldingen bij het laden wachten tot de intro voorbij is
-  softReveal({
-    center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
-    onReveal() { scene.replayIntro(tasks); },
-    done() {
-      if (!turnAfterReveal) { give(); return; }
-      const hold = takeStage(2000);   // podium blijft bezet tot runTurn het overneemt: geen pil of toast ertussen
-      give();
-      setTimeout(() => { runTurn(turnPlan); hold(); }, 350);
-    },
-  });
+  const intro = () => {
+    if (turnAfterReveal && turnPlan.old.length) { scene.holdTurn(turnPlan.old); setHush(true); }
+    const give = takeStage(3000);   // meldingen bij het laden wachten tot de intro voorbij is
+    softReveal({
+      center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
+      onReveal() { scene.replayIntro(tasks); },
+      done() {
+        if (!turnAfterReveal) { give(); return; }
+        const hold = takeStage(2000);   // podium blijft bezet tot runTurn het overneemt: geen pil of toast ertussen
+        give();
+        setTimeout(() => { runTurn(turnPlan); hold(); }, 350);
+      },
+    });
+  };
+  // Maandwissel met animatie: eerst het venster M1 (Victor, 04/11/2026). De tik erop is de klik die de browser vraagt,
+  // dus daarna mag de zwaartekracht met geluid spelen (anders bleef ze stil of kwam het geluid te laat). Pas na de tik
+  // begint de zachte intro met de oude hemel; het venster lost op in haar papier.
+  if (turnAfterReveal && turnPlan.old.length) {
+    scene.holdTurn(turnPlan.old);
+    const wait = takeStage(600000);   // geen begroeting, pil of toast zolang het venster er staat
+    const now = new Date(), two = v => String(v).padStart(2, '0');
+    monthGate({
+      digits: two(now.getMonth() + 1),
+      date: `${two(now.getDate())} · ${two(now.getMonth() + 1)} · ${now.getFullYear()}`,
+      label: tx('turn.gate'), aria: tx('turn.gateAria'),
+      mark: document.querySelector('.brand .brand-mark')?.cloneNode(true),
+      onOpen() { unlockAudio(); intro(); wait(); },
+    });
+  } else intro();
 }
 document.documentElement.classList.remove('is-veiled');   // geen intro: het papier uit index.html meteen weg
 renderStats();

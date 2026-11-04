@@ -18,6 +18,9 @@ function audio() {
   return ctx;
 }
 
+// in een tik oproepen: start de audioklok, zodat geluid later (zonder nieuwe tik) mag spelen
+export function unlockAudio() { if (soundOn()) audio(); }
+
 export function soundOn() {
   try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; }   // standaard aan (Victor miste het geluid)
 }

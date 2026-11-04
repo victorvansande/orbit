@@ -3,6 +3,8 @@
 // Zelfde taal als de scène: Geist Mono, inkt met lage dekking, rood alleen als accent.
 // Glyph sonar, vortex en mosaic wave zitten in scene.js.
 
+import { setMatrix } from './matrix.js';
+
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
@@ -169,6 +171,42 @@ export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
 // daarbinnen lichten op in papierkleur, de nieuwe ster bloeit open, en de dag komt terug met een zachte cirkel vanuit de ster.
 // Laat alle klikken door (pointer-events: none) en stopt niet als je intussen iets anders doet.
 const NIGHT = { fall: 0.45, born: 0.3, open: 1.1, end: 2.3 };
+/* ---- Venster vóór de maandwissel: M1 Het nummer (Victor, 04/11/2026) ----
+   Op het papier van de intro: linksboven het merk, rechtsboven de datum, in het midden het nummer van de nieuwe maand in
+   rode stippen met schimmen (zoals het aantal sterren op de recapkaart), onderaan een fluistering. Het hele venster is de
+   knop: de tik is de klik die de browser vraagt voor geluid, daarna lost het venster op in het papier van de intro.
+   Zolang het er staat, doen sneltoetsen niets; Enter of spatie opent. */
+export function monthGate({ digits, date, label, aria, mark, onOpen }) {
+  const el = document.createElement('div');
+  el.className = 'month-gate';
+  el.setAttribute('role', 'button');
+  el.setAttribute('aria-label', aria);
+  el.tabIndex = 0;
+  el.innerHTML = '<div class="mg-corner"><span class="mg-mark"></span><span class="mg-date"></span></div><span class="mg-dm" aria-hidden="true"></span><span class="mg-hint"></span>';
+  if (mark) el.querySelector('.mg-mark').append(mark);
+  el.querySelector('.mg-date').textContent = date;
+  el.querySelector('.mg-hint').textContent = label;
+  document.body.append(el);
+  setMatrix(el.querySelector('.mg-dm'), digits);
+  el.querySelector('.mg-dm').removeAttribute('aria-label');
+  requestAnimationFrame(() => el.focus({ preventScroll: true }));
+  let opened = false;
+  const keys = e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    e.stopImmediatePropagation();
+  };
+  function open() {
+    if (opened) return;
+    opened = true;
+    removeEventListener('keydown', keys, true);
+    onOpen();
+    el.classList.add('is-out');
+    setTimeout(() => el.remove(), 700);
+  }
+  addEventListener('keydown', keys, true);
+  el.addEventListener('click', open);
+}
+
 /* ---- Golf vanuit de kern (tik op de kern, Victor 04/11/2026) ----
    Vervangt de ring van tekens (glyph sonar): een zachte, brede rimpeling in inktkleur die traag van de kern naar de randen
    van het scherm loopt en onderweg uitdooft (één golf; een tweede erachter was te veel, Victor, 04/11/2026). Geen sluier zoals de intro, enkel een band
