@@ -350,7 +350,13 @@ function renderClock() {
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   $('week').textContent = tx('week', { n: isoWeek(now) });
   $('date').textContent = `${dd} · ${mm} · ${now.getFullYear()}`;
-  setMatrix($('clock'), TIME_FMT.format(now));
+  // klok: een nieuwe minuut valt in ruis en bezinkt (zelfde wissel als de stippenteller, Victor 04/11/2026)
+  const clock = $('clock'), time = TIME_FMT.format(now);
+  if (clock._chars && clock._chars.length && clock._chars.join('') !== [...time].join('') && !clock._morphT) {
+    let still = true;
+    try { still = minimalFx || reducedMotion.matches; } catch { /* minimalFx bestaat pas later bij het opstarten */ }
+    morphMatrix(clock, time, { still, only: true });
+  } else setMatrix(clock, time);
   $('clock-date').textContent = DAY_FMT.format(now);
 }
 

@@ -54,29 +54,38 @@ export function setMatrix(root, text) {
 }
 
 // Wissel met ruis (V5, Victor 03/11/2026): het raster vervalt in flikkerende ruis die van links naar rechts
-// bezinkt in de nieuwe tekst; elke stip valt op zijn eigen moment vast, met een klein opspringen. Enkel voor
-// cijfers (5 stippen breed). Zonder animatie gewoon setMatrix. onSwap loopt halverwege (label wisselen).
+// bezinkt in de nieuwe tekst; elke stip valt op zijn eigen moment vast, met een klein opspringen. Sinds 04/11/2026
+// voor elke stippenmatrix (Victor: "overal waar er een dot matrix is ... dezelfde animatie"): ook met een dubbelpunt
+// (klok, zandloper) en vanuit het niets (een lege matrix, zoals het venster van de maandwissel). only: enkel de tekens
+// die veranderen vallen in ruis, de rest blijft staan (klok, zandloper). Zonder animatie gewoon setMatrix. onSwap loopt
+// halverwege (label wisselen); zonder onSwap zet morphMatrix zelf het aria-label.
 const NOISE_MS = 1250, NOISE_TICKS = 26;
 const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
-const litAt = (chars, x, y) => { const g = GLYPHS[chars[Math.floor(x / 6)]], cx = x % 6; return !!g && cx < 5 && g[y][cx] === '#'; };
-export function morphMatrix(root, text, { still = false, onSwap } = {}) {
+const lit = (ch, x, y) => { const g = GLYPHS[ch]; return !!g && x < g[0].length && g[y][x] === '#'; };
+export function morphMatrix(root, text, { still = false, only = false, onSwap } = {}) {
   cancelAnimationFrame(root._morphT); root._morphT = 0;
   const from = root._chars || [], to = [...text].filter(ch => GLYPHS[ch]);
-  if (still || !root.children.length || [...from, ...to].some(ch => ch === ':')) { setMatrix(root, text); onSwap?.(); return; }
+  if (!onSwap) root.setAttribute('aria-label', text);
+  if (still) { setMatrix(root, text); onSwap?.(); return; }
   // rechts uitgelijnd: een getal met een cijfer meer krijgt vooraan een vakje dat openschuift (of dichtschuift)
-  const n = Math.max(from.length, to.length), w = n * 6 - 1, cells = [];
+  const n = Math.max(from.length, to.length), cells = [];
   const F = [...Array(n - from.length).fill(' '), ...from], T = [...Array(n - to.length).fill(' '), ...to];
-  const grow = n - from.length, shrink = n - to.length;
+  const grow = from.length ? n - from.length : 0, shrink = n - to.length;
+  const width = i => (GLYPHS[T[i]] || GLYPHS[F[i]])[0].length;
+  const w = Array.from({ length: n }, (_, i) => width(i) + 1).reduce((a, b) => a + b, 0) - 1;
+  let gx0 = 0;
   const svgs = Array.from({ length: n }, (_, i) => {
+    const cw = width(i), keep = only && F[i] === T[i];
     const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('class', i < grow ? 'dm is-gone' : 'dm'); svg.setAttribute('viewBox', '-0.5 -0.5 5 7'); svg.setAttribute('aria-hidden', 'true');
-    for (let y = 0; y < 7; y++) for (let x = 0; x < 5; x++) {
+    svg.setAttribute('class', (cw === 1 ? 'dm dm-colon' : 'dm') + (i < grow ? ' is-gone' : '')); svg.setAttribute('viewBox', `-0.5 -0.5 ${cw} 7`); svg.setAttribute('aria-hidden', 'true');
+    for (let y = 0; y < 7; y++) for (let x = 0; x < cw; x++) {
       const c = document.createElementNS(NS, 'circle');
       c.setAttribute('cx', x); c.setAttribute('cy', y);
-      const gx = i * 6 + x;
-      cells.push({ c, x: gx, y, go: hash(gx, y + 9) * 0.18, lock: 0.32 + gx / w * 0.4 + hash(gx, y) * 0.2, k: '' });
+      const gx = gx0 + x;
+      cells.push({ c, x, y, gx, i, keep, go: hash(gx, y + 9) * 0.18, lock: 0.32 + gx / w * 0.4 + hash(gx, y) * 0.2, k: '' });
       svg.append(c);
     }
+    gx0 += cw + 1;
     return svg;
   });
   const set = (cell, on, pop) => {
@@ -86,7 +95,7 @@ export function morphMatrix(root, text, { still = false, onSwap } = {}) {
     cell.c.setAttribute('class', on ? 'o n' : 'g');   // n: zonder de oplicht-animatie van een gewoon cijfer
     cell.c.setAttribute('r', on ? (pop ? 0.5 : 0.4) : 0.33);
   };
-  cells.forEach(cell => set(cell, litAt(F, cell.x, cell.y), false));
+  cells.forEach(cell => set(cell, lit(F[cell.i], cell.x, cell.y), false));
   root.replaceChildren(...svgs);
   if (grow) { root.getBoundingClientRect(); svgs.slice(0, grow).forEach(svg => svg.classList.remove('is-gone')); }
   let shrunk = false;
@@ -96,7 +105,8 @@ export function morphMatrix(root, text, { still = false, onSwap } = {}) {
   const step = now => {
     const p = Math.min(1, (now - t0) / NOISE_MS), tick = Math.floor(p * NOISE_TICKS);
     for (const cell of cells) {
-      const on = p < cell.go ? litAt(F, cell.x, cell.y) : p >= cell.lock ? litAt(T, cell.x, cell.y) : hash(cell.x * 7 + tick, cell.y * 3 + tick) < 0.42;
+      if (cell.keep) continue;
+      const on = p < cell.go ? lit(F[cell.i], cell.x, cell.y) : p >= cell.lock ? lit(T[cell.i], cell.x, cell.y) : hash(cell.gx * 7 + tick, cell.y * 3 + tick) < 0.42;
       set(cell, on, p >= cell.lock && p < cell.lock + 0.08);
     }
     if (!swapped && p >= 0.5) { swapped = true; onSwap?.(); }
@@ -104,8 +114,8 @@ export function morphMatrix(root, text, { still = false, onSwap } = {}) {
     if (p < 1) { root._morphT = requestAnimationFrame(step); return; }
     root._morphT = 0;
     svgs.slice(0, shrink).forEach(svg => svg.remove());
-    root._chars = to;   // aria-label zet de aanroeper (onSwap)
-    if (root._pending !== text) setMatrix(root, root._pending);   // intussen een nieuwe ster
+    root._chars = to;
+    if (root._pending !== text) setMatrix(root, root._pending);   // intussen een nieuwe tekst
   };
   root._morphT = requestAnimationFrame(step);
 }

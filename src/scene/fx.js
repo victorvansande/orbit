@@ -3,7 +3,7 @@
 // Zelfde taal als de scène: Geist Mono, inkt met lage dekking, rood alleen als accent.
 // Glyph sonar, vortex en mosaic wave zitten in scene.js.
 
-import { setMatrix } from './matrix.js';
+import { morphMatrix } from './matrix.js';
 
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -191,7 +191,7 @@ export function monthGate({ digits, month = '', date, label, aria, mark, onOpen 
   el.querySelector('.mg-month').textContent = month;   // naam van de maand onder het nummer (Victor, 04/11/2026)
   el.querySelector('.mg-hint').textContent = label;
   document.body.append(el);
-  setMatrix(el.querySelector('.mg-dm'), digits);
+  morphMatrix(el.querySelector('.mg-dm'), digits);   // het nummer ontstaat uit ruis, zoals de stippenteller wisselt
   el.querySelector('.mg-dm').removeAttribute('aria-label');
   requestAnimationFrame(() => el.focus({ preventScroll: true }));
   let opened = false;

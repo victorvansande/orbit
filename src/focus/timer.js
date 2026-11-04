@@ -9,7 +9,7 @@
 // (T3) rechts in de knoppenrij; duur, Start / Pauze en ↺ verschijnen pas bij een tik, in een pilletje erboven.
 // De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de pagina herlaadt.
 // Klaar: een golf door het zand, een paar stippen fonkelen uit als de vierpuntige ster en de afvinktik klinkt.
-import { setMatrix, twinkleDot } from '../scene/matrix.js';
+import { setMatrix, morphMatrix, twinkleDot } from '../scene/matrix.js';
 
 export const TIMER_KEY = 'priority-orbit.timer.v1';
 const KEY = TIMER_KEY;
@@ -130,7 +130,11 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
     // tijd en knoppen
     const s = Math.ceil(left / 1000), text = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
     if (text + st.done !== shownText) {
-      setMatrix(digits, text); shownText = text + st.done;
+      // een nieuwe minuut (of een andere duur) valt in ruis en bezinkt, zoals de stippenteller; de seconden wisselen
+      // gewoon, elke seconde ruis was te onrustig
+      if (shownText && shownText.slice(0, 2) !== text.slice(0, 2) && !digits._morphT) morphMatrix(digits, text, { still: reducedMotion.matches, only: true });
+      else setMatrix(digits, text);
+      shownText = text + st.done;
       const num = st.done ? '' : String(left >= 60000 ? Math.ceil(left / 60000) : s), unit = st.done ? tx('timer.done') : left >= 60000 ? 'min' : 's';
       minNum.textContent = num; minUnit.textContent = unit;
       minBtn.setAttribute('aria-label', tx('timer.tools', { time: num ? `${num} ${unit}` : unit }));
