@@ -1099,7 +1099,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .focus-weather { margin-bottom: 10px; }
   .fw-icon { width: 26px; height: 26px; }
   body.is-focus .clock-date { margin-top: 12px; }
-  body.is-focus .focus-now { margin-top: 26px; max-width: none; }
+  body.is-focus .focus-now { margin-top: 38px; max-width: none; }
   body.is-focus .focus-kicker { margin-bottom: 8px; }
   body.is-focus .focus-now li { font-size: 18px; line-height: 1.35; }
   body.is-focus .fn-title, body.is-focus .focus-now .focus-more { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1112,7 +1112,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   body.is-focus .controls { order: 3; position: absolute; left: 0; right: 0; bottom: 0; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); justify-content: flex-start; }   /* links op de rand: rechts staat de zandloper (P3) */
   body.is-focus .focus-info { padding: 12px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 58px); }
   body.is-focus .focus-weather { margin-bottom: 14px; }
-  body.is-focus .focus-due { margin-top: 24px; }
+  body.is-focus .focus-due { margin-top: 16px; }   /* dichter bij de datum, de quote iets lager (Victor, 04/11/2026) */
   /* zandloper op gsm in de focus (P3, Victor, 02/11/2026; eerst stond hij naast de klok en dat was een drukke rij):
      rechts in de rij Boven / Zijkant / Focus, op dezelfde plek als het kleine glas buiten de focus, met de resterende
      minuten als groot, dun cijfer (T3). Blijft staan als de knoppen vervagen. Een tik toont duur, Start / Pauze en ↺ in
