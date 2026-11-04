@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Orbit prestatiegeluid 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: één kolom op papier zoals Orbit; per voorstel een kaart met de vier niveaus en "in context" (afvinken, dan de melding) */
+:root {
+  --bg: #F1F1EF; --surface: #FFFFFF; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12); --fill: rgba(27,27,34,.05);
+  --core: #E70049; --bronze: #A95C3E; --silver: #798994; --gold: #BF934A; --platinum: #2C8494;
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif; --mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --bronze: #D8916C; --silver: #B0C0CD; --gold: #EBC57D; --platinum: #5ABFCA; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --bronze: #D8916C; --silver: #B0C0CD; --gold: #EBC57D; --platinum: #5ABFCA; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+main { max-width: 780px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font: 500 13px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; margin: 0; }
+.lead { max-width: 62ch; color: var(--ink-2); margin: 10px 0 0; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin-top: 24px; background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.bar label { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 10px; }
+.bar input { width: 120px; accent-color: var(--core); }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.pill { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 9px 12px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); display: inline-flex; align-items: center; gap: 7px; min-height: 36px; }
+.pill:hover { background: var(--fill); }
+.pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; }
+.card { margin-top: 18px; background: var(--surface); border-radius: 14px; padding: 20px 20px 16px; box-shadow: inset 0 0 0 1px var(--line); }
+.card.ref { background: transparent; }
+h2 { font: 500 19px/1.25 var(--sans); margin: 0; }
+h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 10px; }
+.advice { margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--core); color: var(--surface); vertical-align: 3px; }
+.desc { color: var(--ink-2); margin: 8px 0 0; max-width: 64ch; }
+.row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 6px 14px; margin-top: 14px; }
+.row > span { font: 500 10.5px/36px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 520px) { .row { grid-template-columns: minmax(0, 1fr); } .row > span { line-height: 1; } }
+footer { margin-top: 40px; color: var(--ink-2); font-size: 14px; max-width: 64ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Orbit · prestatiegeluid · ronde 2</h1>
+  <p class="lead">Metaal, Ver weg en Contact bleven te dicht bij de sonarping. Hier zeven richtingen die echt anders zijn: van een muziekdoosje tot een warme gloed en een medaille die uitdraait. Eén ervan breekt bewust de regel "geen stijgende succestoon", om te horen of dat net het gevoel geeft dat ontbrak. Speel telkens ook "in context": eerst een afvinkping, dan de melding, zoals in de app.</p>
+  <div class="bar">
+    <label for="vol">Volume <input type="range" id="vol" min="0" max="100" value="40"></label>
+  </div>
+  <div id="cards"></div>
+  <footer>Alles even luid gemaakt (piek ongeveer -21 dBFS, zoals de prestatie nu). Ik kan zelf niet luisteren: jouw oor beslist. Spreekt geen enkele aan, zeg dan wat je mist (feestelijker, korter, warmer, meer bij afvinken passend), dan stuur ik daarop bij.</footer>
+</main>
+<script>
+const P = { G3: 196, C4: 261.63, E4: 329.63, G4: 392, A4: 440, C5: 523.25, E5: 659.26, G5: 783.99, B5: 987.77, E6: 1318.5 };
+const TIERS = [['Brons', '--bronze'], ['Zilver', '--silver'], ['Goud', '--gold'], ['Platina', '--platinum']];
+function soft(g, t, peak, attack, decay) { g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(peak, t + attack); g.gain.setTargetAtTime(0.00001, t + attack, decay / 5); }
+function echo(a, src, out, time, fbk = 0.36, f = 1000, wet = 0.55) {
+  const dl = a.createDelay(1.5), fb = a.createGain(), lp = a.createBiquadFilter(), w = a.createGain();
+  dl.delayTime.value = time; fb.gain.value = fbk; lp.type = 'lowpass'; lp.frequency.value = f; w.gain.value = wet;
+  src.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(w).connect(out);
+}
+// de gewone ping (zoals in de app)
+function ping(a, out, t, f, { g = 1, dur = 0.16, lv = 3 } = {}) {
+  const o = a.createOscillator(), e = a.createGain();
+  o.frequency.value = f; soft(e, t, 0.2 * g, 0.004, dur);
+  o.connect(e); e.connect(out); echo(a, e, out, [0.075, 0.115, 0.16, 0.22, 0.3][lv - 1], 0.36, Math.min(2200, f * 2.2));
+  o.start(t); o.stop(t + dur * 1.5 + 0.1);
+}
+const C6 = 1046.5, D6 = 1174.66, E6 = 1318.5, G6 = 1567.98, A5 = 880, C7 = 2093;
+// marimba: een zacht houten staafje (grondtoon met de typische boventoon op 4x)
+function mallet(a, out, t, f, { g = 1, dur = 0.5 } = {}) {
+  [[1, 1, 1], [4, 0.22, 0.25], [9.9, 0.04, 0.1]].forEach(([r, amp, dk]) => {
+    const o = a.createOscillator(), e = a.createGain(); o.frequency.value = f * r;
+    soft(e, t, 0.2 * g * amp, 0.003, dur * dk); o.connect(e).connect(out); o.start(t); o.stop(t + dur * dk * 1.6 + 0.1);
+  });
+}
+// muziekdoosje: een kort staafje metaal, hoog en fijn (FM)
+function tine(a, out, t, f, { g = 1, dur = 0.9 } = {}) {
+  const c = a.createOscillator(), m = a.createOscillator(), mg = a.createGain(), e = a.createGain();
+  c.frequency.value = f; m.frequency.value = f * 3.01; mg.gain.setValueAtTime(f * 1.6, t); mg.gain.setTargetAtTime(f * 0.05, t, 0.06);
+  m.connect(mg).connect(c.frequency); soft(e, t, 0.14 * g, 0.002, dur);
+  c.connect(e).connect(out); c.start(t); m.start(t); c.stop(t + dur * 1.5 + 0.1); m.stop(t + dur * 1.5 + 0.1);
+}
+// gloed: een zachte samenklank die opbloeit en lang uitdooft, zonder aanslag
+function glow(a, out, t, freqs, { g = 1, dur = 1.6 } = {}) {
+  const lp = a.createBiquadFilter(), e = a.createGain(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(600, t); lp.frequency.linearRampToValueAtTime(2400, t + 0.25); lp.frequency.setTargetAtTime(700, t + 0.3, 0.4);
+  e.gain.setValueAtTime(0.00001, t); e.gain.linearRampToValueAtTime(0.16 * g, t + 0.12); e.gain.setTargetAtTime(0.00001, t + 0.2, dur / 4);
+  lp.connect(e).connect(out);
+  freqs.forEach(f => [-6, 6].forEach(det => { const o = a.createOscillator(); o.type = 'triangle'; o.frequency.value = f; o.detune.value = det; const k = a.createGain(); k.gain.value = 0.5 / freqs.length; o.connect(k).connect(lp); o.start(t); o.stop(t + dur + 0.4); }));
+}
+// sterlicht: een zacht oplichten (ruis die omhoog glijdt) dat eindigt in een helder klokje, zoals een ster die verschijnt
+function star(a, out, t, f, { g = 1 } = {}) {
+  const n = noise(a), bp = a.createBiquadFilter(), e = a.createGain();
+  bp.type = 'bandpass'; bp.Q.value = 6; bp.frequency.setValueAtTime(700, t); bp.frequency.exponentialRampToValueAtTime(6500, t + 0.32);
+  e.gain.setValueAtTime(0.00001, t); e.gain.linearRampToValueAtTime(0.09 * g, t + 0.26); e.gain.linearRampToValueAtTime(0.00001, t + 0.36);
+  n.connect(bp).connect(e).connect(out); n.start(t); n.stop(t + 0.4);
+  [[1, 1, 0.9], [2.32, 0.35, 0.5], [4.25, 0.14, 0.3]].forEach(([r, amp, dk]) => {
+    const o = a.createOscillator(), k = a.createGain(); o.frequency.value = f * r; soft(k, t + 0.3, 0.13 * g * amp, 0.002, 1.1 * dk);
+    o.connect(k).connect(out); o.start(t + 0.3); o.stop(t + 0.3 + 1.1 * dk * 1.6 + 0.1);
+  });
+}
+// de kern antwoordt: twee zachte, stemachtige tonen (een warme "hm-hm"), als de goedaardige HAL die knikt
+function voice(a, out, t, f, { g = 1, dur = 0.22 } = {}) {
+  const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+  const e = a.createGain(); soft(e, t, 0.5 * g, 0.03, dur);
+  [[350, 6, 1], [900, 8, 0.35], [2300, 10, 0.12]].forEach(([fr, q, amp]) => { const b = a.createBiquadFilter(); b.type = 'bandpass'; b.frequency.value = fr; b.Q.value = q; const k = a.createGain(); k.gain.value = amp; o.connect(b).connect(k).connect(e); });
+  e.connect(out); o.start(t); o.stop(t + dur * 1.6 + 0.1);
+}
+// medaille: een metalen schijfje dat neerkomt en uitdraait (steeds snellere, zachtere tikken)
+function medal(a, out, t, f, { g = 1, spins = 5 } = {}) {
+  let at = t, gap = 0.11;
+  for (let i = 0; i < spins; i++) {
+    const amp = g * Math.pow(0.72, i);
+    [[1, 1, 0.5], [2.76, 0.5, 0.3], [5.4, 0.25, 0.18]].forEach(([r, k, dk]) => { const o = a.createOscillator(), e = a.createGain(); o.frequency.value = f * r; soft(e, at, 0.12 * amp * k, 0.0015, dk * (i ? 0.5 : 1)); o.connect(e).connect(out); o.start(at); o.stop(at + dk * 1.6 + 0.1); });
+    at += gap; gap *= 0.7;
+  }
+}
+function noise(a) { const buf = a.createBuffer(1, a.sampleRate, a.sampleRate), d = buf.getChannelData(0); let s = 12345; for (let i = 0; i < d.length; i++) { s = (s * 16807) % 2147483647; d[i] = s / 2147483647 * 2 - 1; } const src = a.createBufferSource(); src.buffer = buf; return src; }
+const DIRS = [
+  { id: 'nu', name: 'Nu in de app', ref: true, desc: 'Dezelfde ping als afvinken, met een tweede toon (zilver) of een samenklank (goud).',
+    feat(a, o, t, k) {
+      if (k === 1) ping(a, o, t, P.C5, { g: 0.9 });
+      if (k === 2) { ping(a, o, t, P.C5, { g: 0.9 }); ping(a, o, t + 0.11, P.G4, { g: 0.62 }); }
+      if (k >= 3) { ping(a, o, t, P.E5, { g: 0.88 }); ping(a, o, t + 0.11, P.C5, { g: 0.62 }); ping(a, o, t + 0.11, P.G4, { g: 0.4 }); }
+      if (k === 4) ping(a, o, t + 0.28, P.E6, { g: 0.22, dur: 0.5 });
+    } },
+  { id: 'Q1', name: 'Muziekdoosje', advice: true, desc: 'Een paar fijne, hoge tonen zoals een muziekdoosje: een klein motiefje dat je na een paar keer herkent. Brons twee tonen, zilver drie, goud vier, platina met een glinstering. Duidelijk een beloning, maar fijn en klein.',
+    feat(a, o, t, k) { const m = [[G6, E6], [E6, G6, C6], [C6, E6, G6, E6], [C6, E6, G6, C7]][k - 1]; m.forEach((f, i) => tine(a, o, t + i * 0.11, f, { g: 0.9 - i * 0.08 })); if (k === 4) tine(a, o, t + 0.5, C7 * 1.5, { g: 0.25, dur: 1.2 }); } },
+  { id: 'Q2', name: 'Gloed', desc: 'Geen tik maar een zachte samenklank die opbloeit en lang uitdooft, alsof er even licht door de kamer gaat. Het tegendeel van de korte afvinkping, dus nooit te verwarren. Hoe hoger het niveau, hoe voller het akkoord.',
+    feat(a, o, t, k) { glow(a, o, t, [[P.C5, P.G5], [P.C5, P.E5, P.G5], [P.C4 * 2, P.E5, P.G5, P.B5], [P.C5, P.E5, P.G5, P.B5, E6]][k - 1], { dur: 1.2 + k * 0.25 }); } },
+  { id: 'Q3', name: 'Sterlicht', desc: 'Een zacht oplichten dat omhoog glijdt en eindigt in een helder klokje, zoals een ster die verschijnt. Past bij wat je ziet: een prestatie is een ster die erbij komt.',
+    feat(a, o, t, k) { star(a, o, t, [P.C5, P.E5, P.G5, P.B5][k - 1] * 2, { g: 0.9 }); if (k >= 3) star(a, o, t + 0.12, P.C5 * 2, { g: 0.4 }); } },
+  { id: 'Q4', name: 'De kern knikt', desc: 'Twee zachte, stemachtige tonen, een warme "hm-hm", alsof de kern goedkeurend knikt. Het personage van Orbit krijgt zo een stem, heel klein en zonder woorden.',
+    feat(a, o, t, k) { const n = [[P.G3 * 2, P.E4], [P.G4, P.E4], [P.A4, P.E4], [P.C5, P.G4]][k - 1]; voice(a, o, t, n[0]); voice(a, o, t + 0.2, n[1], { dur: 0.32 }); if (k === 4) tine(a, o, t + 0.45, G6, { g: 0.2 }); } },
+  { id: 'Q5', name: 'Medaille', desc: 'Een metalen schijfje dat neerkomt en uitdraait: een heldere tik, dan steeds snellere, zachtere tikjes tot het stilligt. Brons dof en kort, platina hoog en lang.',
+    feat(a, o, t, k) { medal(a, o, t, [P.G4, P.C5, P.E5, P.G5][k - 1] * 2, { spins: 3 + k }); } },
+  { id: 'Q6', name: 'Omhoog', desc: 'Breekt bewust de regel: een zachte marimba die omhoog gaat (do, mi, sol), de klassieke "gelukt"-beweging. Om te horen of net dat ontbrak. Goud en platina gaan een noot verder.',
+    feat(a, o, t, k) { const m = [[P.C5, P.G5], [P.C5, P.E5, P.G5], [P.C5, P.E5, P.G5, C6], [P.C5, P.E5, P.G5, C6, E6]][k - 1]; m.forEach((f, i) => mallet(a, o, t + i * 0.085, f, { g: 0.85, dur: i === m.length - 1 ? 0.9 : 0.4 })); } },
+  { id: 'Q7', name: 'Muziekdoosje met gloed', desc: 'Q1 en Q2 samen: het motiefje van het muziekdoosje op een zachte gloed eronder. Voller en feestelijker, nog altijd rustig.',
+    feat(a, o, t, k) { DIRS[1].feat(a, o, t, k); glow(a, o, t, [[P.C5], [P.C5, P.G5], [P.C5, P.E5, P.G5], [P.C5, P.E5, P.G5, P.B5]][k - 1], { g: 0.5, dur: 1.6 }); } },
+];
+let ctx = null, master = null;
+const norm = {};
+function audio() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); master = ctx.createGain(); master.connect(ctx.destination); vol(); } if (ctx.state === 'suspended') ctx.resume(); return ctx; }
+const volEl = document.getElementById('vol');
+function vol() { if (master) master.gain.value = Math.pow(volEl.value / 100, 1.6) * 1.4; }
+volEl.addEventListener('input', vol);
+function play(dir, k, context = false) {
+  const a = audio(), o = a.createGain(); o.gain.value = norm[dir.id] || 0.5; o.connect(master);
+  const t = a.currentTime + 0.03;
+  if (context) { const d = a.createGain(); d.gain.value = 0.504; d.connect(master); ping(a, d, t, P.A4, { lv: 3 }); dir.feat(a, o, t + 1.6, k); }
+  else dir.feat(a, o, t, k);
+}
+const cards = document.getElementById('cards');
+const btn = (text, fn, dot) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pill'; if (dot) { const i = document.createElement('i'); i.style.background = `var(${dot})`; b.append(i); } b.append(text); b.addEventListener('click', fn); return b; };
+const row = (label, kids) => { const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const b = document.createElement('div'); b.className = 'btns'; b.append(...kids); r.append(s, b); return r; };
+for (const dir of DIRS) {
+  const c = document.createElement('section'); c.className = dir.ref ? 'card ref' : 'card';
+  c.innerHTML = `<h2><span class="code">${dir.id === 'nu' ? 'NU' : dir.id}</span>${dir.name}${dir.advice ? '<span class="advice">advies</span>' : ''}</h2><p class="desc">${dir.desc}</p>`;
+  c.append(row('Prestatie', TIERS.map(([n, v], i) => btn(n, () => play(dir, i + 1), v))));
+  c.append(row('In context', TIERS.map(([n, v], i) => btn(`Afvinken + ${n.toLowerCase()}`, () => play(dir, i + 1, true), v))));
+  if (dir.ref) c.append(row('Afvinken', [btn('Enkel afvinken', () => { const a = audio(), d = a.createGain(); d.gain.value = 0.504; d.connect(master); ping(a, d, a.currentTime + 0.03, P.A4, { lv: 3 }); })]));
+  cards.append(c);
+}
+// gelijk luid: zilver van elk voorstel op dezelfde piek als de prestatie nu (-21 dBFS)
+(async () => {
+  for (const dir of DIRS) {
+    const oc = new OfflineAudioContext(1, 44100 * 3, 44100), g = oc.createGain(); g.connect(oc.destination); dir.feat(oc, g, 0.01, 2);
+    const d = (await oc.startRendering()).getChannelData(0); let pk = 0; for (const v of d) pk = Math.max(pk, Math.abs(v));
+    norm[dir.id] = Math.pow(10, -21 / 20) / pk;
+  }
+  window.__norm = norm;
+})();
+</script>
+</body>
+</html>
