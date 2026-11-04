@@ -171,10 +171,10 @@ export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
 const NIGHT = { fall: 0.45, born: 0.3, open: 1.1, end: 2.3 };
 /* ---- Golf vanuit de kern (tik op de kern, Victor 04/11/2026) ----
    Vervangt de ring van tekens (glyph sonar): een zachte, brede rimpeling in inktkleur die traag van de kern naar de randen
-   van het scherm loopt en onderweg uitdooft, met een tweede, zwakkere erachter. Geen sluier zoals de intro, enkel een band
+   van het scherm loopt en onderweg uitdooft (één golf; een tweede erachter was te veel, Victor, 04/11/2026). Geen sluier zoals de intro, enkel een band
    licht/schaduw met een klokvormig profiel, dekking hooguit 0,07. timeTo(px) zegt wanneer het front op die afstand van de
    kern is, zodat de scène de echo rond een bol er precies op laat vallen. */
-const WAVE = { dur: 3.2, lag: 0.45, peak: 0.07 };
+const WAVE = { dur: 3.2, peak: 0.07 };
 export function coreWave({ center }) {
   const ov = overlay('fx-wave');
   let W = ov.W, H = ov.H, g = ov.g, [cx, cy] = center();
@@ -197,10 +197,10 @@ export function coreWave({ center }) {
     const ch = ov.fresh();
     if (ch) { W = ov.W; H = ov.H; g = ov.g; ink = rgb(); [cx, cy] = center(); far = farOf(); }
     const t = (now - t0) / 1000;
-    if (t > WAVE.dur + WAVE.lag) { cancelAnimationFrame(raf); ov.cv.remove(); return; }
+    if (t > WAVE.dur) { cancelAnimationFrame(raf); ov.cv.remove(); return; }
     g.clearRect(0, 0, W, H);
     const stops = [];
-    for (const [lag, k] of [[0, 1], [WAVE.lag, 0.5]]) {
+    for (const [lag, k] of [[0, 1]]) {
       const u = (t - lag) / WAVE.dur;
       if (u <= 0 || u >= 1) continue;
       const R = front(u), wid = 40 + 150 * u;

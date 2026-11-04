@@ -668,7 +668,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // kern (1,3 tot ongeveer 4,4 s), de kern zwelt, en op 3,9 s laat de scène de witte gloed beginnen (`onBurst`, app.js).
   // Daarna krimpt de kern terug. Niet over te slaan: dit is het moment van de maand.
   const TURN_BURST = 3.9, TURN_END = 7;
-  const TURN_TAIL_N = 12, TURN_TAIL_DT = 0.03;   // staart: 12 stukjes over 0,36 s van de eigen baan, dus mee gebogen
+  const TURN_TAIL_N = 12, TURN_TAIL_DT = 0.025;   // staart: 12 stukjes over 0,3 s van de eigen baan, dus mee gebogen (was 0,36 s; Victor, 04/11/2026: iets korter en dunner)
   const seg01 = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
   const pullEase = u => u * u * (1.6 - 0.6 * u);   // zacht vertrek, versnelt, maar zonder ruk op het einde
   function turnCore(now) {   // groeifactor van de kern tijdens de maandwissel
@@ -702,7 +702,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const sink = smoothstep(0.82, 1, p);
       const R = starR(st, dense, small) * (1 + b * 0.7) * (1 - p * 0.5) * (1 - 0.7 * sink);
       const alpha = a * (0.45 + 0.55 * b) * (1 - sink);
-      if (p > 0.004) {   // taps lichtstaartje langs de werkelijke spiraal (waar de ster de laatste 0,36 s was), dooft uit naar achteren
+      if (p > 0.004) {   // taps lichtstaartje langs de werkelijke spiraal (waar de ster de laatste 0,3 s was), dooft uit naar achteren
         trailPts.length = 0;
         for (let k = 0; k <= TURN_TAIL_N; k++) { const [px, py] = pos(pullAt(t - k * TURN_TAIL_DT)); trailPts.push(px, py); }
         const n = trailPts.length / 2, ex = trailPts[2 * n - 2], ey = trailPts[2 * n - 1];
@@ -710,7 +710,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
           const gr = ctx.createLinearGradient(x, y, ex, ey);
           gr.addColorStop(0, rgba(INK, 0.7 * alpha)); gr.addColorStop(1, rgba(INK, 0));
           ctx.fillStyle = gr;
-          taper(Math.max(1.2, R * 0.6), 0.2);
+          taper(Math.max(1, R * 0.5), 0.15);   // iets dunner (was max(1,2, R × 0,6) en 0,2)
         }
       }
       if (dark && b > 0) {   // heel zachte gloed, alleen in het donker (op papier zou het een vlek zijn)
