@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Orbit prestatiegeluid 3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: één kolom op papier zoals Orbit; per voorstel een kaart met de vier niveaus en "in context" (afvinken, dan de melding) */
+:root {
+  --bg: #F1F1EF; --surface: #FFFFFF; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12); --fill: rgba(27,27,34,.05);
+  --core: #E70049; --bronze: #A95C3E; --silver: #798994; --gold: #BF934A; --platinum: #2C8494;
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif; --mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --bronze: #D8916C; --silver: #B0C0CD; --gold: #EBC57D; --platinum: #5ABFCA; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --bronze: #D8916C; --silver: #B0C0CD; --gold: #EBC57D; --platinum: #5ABFCA; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+main { max-width: 780px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font: 500 13px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; margin: 0; }
+.lead { max-width: 62ch; color: var(--ink-2); margin: 10px 0 0; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin-top: 24px; background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.bar label { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 10px; }
+.bar input { width: 120px; accent-color: var(--core); }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.pill { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 9px 12px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); display: inline-flex; align-items: center; gap: 7px; min-height: 36px; }
+.pill:hover { background: var(--fill); }
+.pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; }
+.card { margin-top: 18px; background: var(--surface); border-radius: 14px; padding: 20px 20px 16px; box-shadow: inset 0 0 0 1px var(--line); }
+.card.ref { background: transparent; }
+h2 { font: 500 19px/1.25 var(--sans); margin: 0; }
+h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 10px; }
+.advice { margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--core); color: var(--surface); vertical-align: 3px; }
+.desc { color: var(--ink-2); margin: 8px 0 0; max-width: 64ch; }
+.row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 6px 14px; margin-top: 14px; }
+.row > span { font: 500 10.5px/36px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 520px) { .row { grid-template-columns: minmax(0, 1fr); } .row > span { line-height: 1; } }
+footer { margin-top: 40px; color: var(--ink-2); font-size: 14px; max-width: 64ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Orbit · prestatiegeluid · ronde 3</h1>
+  <p class="lead">De vorige rondes waren kale tonen zonder ruimte: daarom klonken ze als een demo, niet als een product. Deze ronde gaat door een productieketen zoals professionele interfacegeluiden: gelaagde klanken (aanslag, lijf, lucht), lichte stereobreedte, een kleine kamer als galm, en EQ (geen dreun onderaan, geen scherpte bovenaan). Alle vier volgen dezelfde opbouw: brons één toon, zilver een kwint, goud een akkoord, platina met een glinstering erboven. Speel ook "in context". Met een koptelefoon hoor je de ruimte het best.</p>
+  <div class="bar">
+    <label for="vol">Volume <input type="range" id="vol" min="0" max="100" value="40"></label>
+  </div>
+  <div id="cards"></div>
+  <footer>Alles even luid gemaakt (piek ongeveer -21 dBFS, zoals de prestatie nu). Ik kan zelf niet luisteren: jouw oor beslist. Helpt het, noem een app of toestel waarvan je de geluiden wel professioneel vindt; dan mik ik daarop.</footer>
+</main>
+<script>
+const P = { G3: 196, C4: 261.63, E4: 329.63, G4: 392, A4: 440, C5: 523.25, E5: 659.26, G5: 783.99, B5: 987.77, E6: 1318.5 };
+const TIERS = [['Brons', '--bronze'], ['Zilver', '--silver'], ['Goud', '--gold'], ['Platina', '--platinum']];
+function soft(g, t, peak, attack, decay) { g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(peak, t + attack); g.gain.setTargetAtTime(0.00001, t + attack, decay / 5); }
+function echo(a, src, out, time, fbk = 0.36, f = 1000, wet = 0.55) {
+  const dl = a.createDelay(1.5), fb = a.createGain(), lp = a.createBiquadFilter(), w = a.createGain();
+  dl.delayTime.value = time; fb.gain.value = fbk; lp.type = 'lowpass'; lp.frequency.value = f; w.gain.value = wet;
+  src.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(w).connect(out);
+}
+// de gewone ping (zoals in de app)
+function ping(a, out, t, f, { g = 1, dur = 0.16, lv = 3 } = {}) {
+  const o = a.createOscillator(), e = a.createGain();
+  o.frequency.value = f; soft(e, t, 0.2 * g, 0.004, dur);
+  o.connect(e); e.connect(out); echo(a, e, out, [0.075, 0.115, 0.16, 0.22, 0.3][lv - 1], 0.36, Math.min(2200, f * 2.2));
+  o.start(t); o.stop(t + dur * 1.5 + 0.1);
+}
+/* ---- productieketen: hoogdoorlaat, zachte hoge plank, kleine kamer (synthetische impulsrespons, stereo) ---- */
+const irCache = new WeakMap();
+function room(a, secs = 1.1) {
+  if (irCache.has(a)) return irCache.get(a);
+  const sr = a.sampleRate, len = Math.ceil(sr * secs), ir = a.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch); let s = 1234 + ch * 777, lp = 0;
+    for (let i = 0; i < len; i++) {
+      s = (s * 16807) % 2147483647; const x = s / 2147483647 * 2 - 1, u = i / len;
+      const k = 0.55 - 0.45 * u; lp += (x - lp) * k;                       // de kamer wordt donkerder naarmate ze uitsterft
+      d[i] = (i < sr * 0.012 ? 0 : lp) * Math.pow(1 - u, 3.2);           // 12 ms voordat de eerste weerkaatsing komt
+    }
+  }
+  irCache.set(a, ir); return ir;
+}
+function chain(a, out, wetK = 0.24) {
+  const inp = a.createGain(), hp = a.createBiquadFilter(), hs = a.createBiquadFilter(), conv = a.createConvolver(), wet = a.createGain();
+  hp.type = 'highpass'; hp.frequency.value = 150; hp.Q.value = 0.6;
+  hs.type = 'highshelf'; hs.frequency.value = 6500; hs.gain.value = -4;
+  conv.buffer = room(a); wet.gain.value = wetK;
+  inp.connect(hp).connect(hs); hs.connect(out); hs.connect(conv).connect(wet).connect(out);
+  return inp;
+}
+const pan = (a, out, x) => { if (!a.createStereoPanner) return out; const p = a.createStereoPanner(); p.pan.value = x; p.connect(out); return p; };
+function env2(g, t, peak, attack, decay) { g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(peak, t + attack); g.gain.setTargetAtTime(0.00001, t + attack, decay / 5); }
+function tick(a, out, t, f, amp) {   // aanslag: een fractie ruis, hoog en zacht
+  const buf = a.createBuffer(1, Math.ceil(a.sampleRate * 0.02), a.sampleRate), d = buf.getChannelData(0); let s = 4242;
+  for (let i = 0; i < d.length; i++) { s = (s * 16807) % 2147483647; d[i] = s / 2147483647 * 2 - 1; }
+  const n = a.createBufferSource(), bp = a.createBiquadFilter(), e = a.createGain(); n.buffer = buf;
+  bp.type = 'bandpass'; bp.frequency.value = Math.min(7000, f * 4); bp.Q.value = 0.9;
+  env2(e, t, amp, 0.0005, 0.01); n.connect(bp).connect(e).connect(out); n.start(t); n.stop(t + 0.02);
+}
+
+/* ---- stemmen ---- */
+// celesta: bijna harmonisch staafje met een vleugje niet-harmonische glans, twee stemmen een paar cent uit elkaar
+function celesta(a, out, t, f, { g = 1, dur = 1.4, x = 0 } = {}) {
+  const o2 = pan(a, out, x);
+  tick(a, o2, t, f, 0.025 * g);
+  [-3, 3].forEach(det => [[1, 1, 1], [2, 0.32, 0.5], [3, 0.08, 0.3], [4.17, 0.05, 0.18]].forEach(([r, amp, dk]) => {
+    const o = a.createOscillator(), e = a.createGain(); o.frequency.value = f * r; o.detune.value = det;
+    env2(e, t, 0.07 * g * amp, 0.0015, dur * dk); o.connect(e).connect(o2); o.start(t); o.stop(t + dur * dk * 1.5 + 0.1);
+  }));
+}
+// rhodes: FM 1:1 met een korte metalen tine erbovenop, twee stemmen licht uit elkaar
+function rhodes(a, out, t, f, { g = 1, dur = 1.6, x = 0 } = {}) {
+  const o2 = pan(a, out, x);
+  [-4, 4].forEach(det => {
+    const c = a.createOscillator(), m = a.createOscillator(), mg = a.createGain(), e = a.createGain();
+    c.frequency.value = f; m.frequency.value = f; c.detune.value = det; m.detune.value = det;
+    mg.gain.setValueAtTime(f * 1.4, t); mg.gain.setTargetAtTime(f * 0.18, t, 0.12);
+    m.connect(mg).connect(c.frequency); env2(e, t, 0.075 * g, 0.003, dur);
+    c.connect(e).connect(o2); c.start(t); m.start(t); c.stop(t + dur * 1.5 + 0.1); m.stop(t + dur * 1.5 + 0.1);
+  });
+  const ti = a.createOscillator(), te = a.createGain(); ti.frequency.value = f * 14.02; env2(te, t, 0.012 * g, 0.0008, 0.06);
+  ti.connect(te).connect(o2); ti.start(t); ti.stop(t + 0.12);
+}
+// glans: een zacht vlak dat opbloeit (gefilterde zaagtand, twee stemmen) onder een heldere klokjestoon
+function sheen(a, out, t, f, { g = 1, dur = 1.6, x = 0 } = {}) {
+  const o2 = pan(a, out, x), lp = a.createBiquadFilter(), e = a.createGain();
+  lp.type = 'lowpass'; lp.Q.value = 0.5; lp.frequency.setValueAtTime(500, t); lp.frequency.linearRampToValueAtTime(2600, t + 0.18); lp.frequency.setTargetAtTime(900, t + 0.2, 0.35);
+  e.gain.setValueAtTime(0.00001, t); e.gain.linearRampToValueAtTime(0.05 * g, t + 0.09); e.gain.setTargetAtTime(0.00001, t + 0.15, dur / 4);
+  lp.connect(e).connect(o2);
+  [-7, 7].forEach(det => { const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(lp); o.start(t); o.stop(t + dur + 0.3); });
+  celesta(a, out, t, f * 2, { g: 0.45 * g, dur: dur * 0.8, x: -x });
+}
+// sonar plus: de ping van afvinken, maar met een echo die links en rechts terugkaatst, en een akkoord dat opbloeit
+function sonarPlus(a, out, t, f, { g = 1, dur = 0.5, x = 0 } = {}) {
+  const o2 = pan(a, out, x), o = a.createOscillator(), h = a.createOscillator(), e = a.createGain(), he = a.createGain();
+  o.frequency.value = f; h.frequency.value = f * 2; env2(e, t, 0.12 * g, 0.003, dur); env2(he, t, 0.025 * g, 0.002, dur * 0.4);
+  o.connect(e); h.connect(he).connect(e); e.connect(o2);
+  if (a.createStereoPanner) {   // echo die links en rechts terugkaatst
+    const dL = a.createDelay(1), dR = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), pL = a.createStereoPanner(), pR = a.createStereoPanner();
+    dL.delayTime.value = 0.16; dR.delayTime.value = 0.16; fb.gain.value = 0.38; lp.type = 'lowpass'; lp.frequency.value = Math.min(2400, f * 2.4);
+    pL.pan.value = -0.7; pR.pan.value = 0.7; e.connect(dL); dL.connect(lp).connect(pL).connect(out); lp.connect(dR); dR.connect(pR).connect(out); dR.connect(fb).connect(dL);
+  }
+  o.start(t); h.start(t); o.stop(t + dur * 1.5 + 0.1); h.stop(t + dur * 1.5 + 0.1);
+}
+
+// akkoorden uit dezelfde pentatonische reeks als de app (C, D, E, G, A)
+const CH = { 1: [P.C5], 2: [P.C5, P.G5], 3: [P.C5, P.E5, P.G5], 4: [P.C5, P.E5, P.G5] };
+function play4(voice, opts = {}) {
+  return (a, o, t, k) => {
+    const out = chain(a, o, opts.wet ?? 0.24), notes = CH[k];
+    notes.forEach((f, i) => voice(a, out, t + i * (opts.strum ?? 0.028), f * (opts.oct ?? 1), { g: (opts.g ?? 1) * (i ? 0.62 : 1), x: (i - (notes.length - 1) / 2) * 0.35 }));
+    if (k === 4) voice(a, out, t + 0.22, 2349.3 * (opts.sparkOct ?? 1), { g: 0.28 * (opts.g ?? 1), x: 0.3 });   // D7: een zachte glinstering, de negen
+  };
+}
+const DIRS = [
+  { id: 'nu', name: 'Nu in de app', ref: true, desc: 'Dezelfde ping als afvinken, zonder ruimte of productie.',
+    feat(a, o, t, k) {
+      if (k === 1) ping(a, o, t, P.C5, { g: 0.9 });
+      if (k === 2) { ping(a, o, t, P.C5, { g: 0.9 }); ping(a, o, t + 0.11, P.G4, { g: 0.62 }); }
+      if (k >= 3) { ping(a, o, t, P.E5, { g: 0.88 }); ping(a, o, t + 0.11, P.C5, { g: 0.62 }); ping(a, o, t + 0.11, P.G4, { g: 0.4 }); }
+      if (k === 4) ping(a, o, t + 0.28, P.E6, { g: 0.22, dur: 0.5 });
+    } },
+  { id: 'R1', name: 'Celesta', advice: true, desc: 'Een celesta (een piano met metalen staafjes in plaats van snaren) in een kleine kamer: helder, warm en precies. Het akkoord wordt heel licht uitgewaaierd van laag naar hoog en over links en rechts verdeeld. Het klassieke geluid van "iets moois is gebeurd", zonder kinderachtig te worden.',
+    feat: play4(celesta, { oct: 2, wet: 0.26 }) },
+  { id: 'R2', name: 'Rhodes', desc: 'Een elektrische piano met een klein metalen randje bij de aanslag. Ronder en warmer dan de celesta, meer "studio" dan "speeldoos". Laat het akkoord langer nazingen.',
+    feat: play4(rhodes, { wet: 0.22 }) },
+  { id: 'R3', name: 'Glans', desc: 'Een zacht vlak dat opbloeit, met een heldere toon erbovenop. Het meest filmisch: een moment dat even oplicht en wegsterft in de kamer.',
+    feat: play4(sheen, { strum: 0.04, wet: 0.3, g: 0.9 }) },
+  { id: 'R4', name: 'Sonar plus', desc: 'De ping van afvinken, maar dan uitgewerkt: een boventoon erbij, een echo die van links naar rechts terugkaatst, en voor de hogere niveaus een akkoord. Blijft het duidelijkst familie van het afvinkgeluid.',
+    feat: play4(sonarPlus, { strum: 0.05, wet: 0.2 }) },
+];
+let ctx = null, master = null;
+const norm = {};
+function audio() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); master = ctx.createGain(); master.connect(ctx.destination); vol(); } if (ctx.state === 'suspended') ctx.resume(); return ctx; }
+const volEl = document.getElementById('vol');
+function vol() { if (master) master.gain.value = Math.pow(volEl.value / 100, 1.6) * 1.4; }
+volEl.addEventListener('input', vol);
+function play(dir, k, context = false) {
+  const a = audio(), o = a.createGain(); o.gain.value = norm[dir.id] || 0.5; o.connect(master);
+  const t = a.currentTime + 0.03;
+  if (context) { const d = a.createGain(); d.gain.value = 0.504; d.connect(master); ping(a, d, t, P.A4, { lv: 3 }); dir.feat(a, o, t + 1.6, k); }
+  else dir.feat(a, o, t, k);
+}
+const cards = document.getElementById('cards');
+const btn = (text, fn, dot) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pill'; if (dot) { const i = document.createElement('i'); i.style.background = `var(${dot})`; b.append(i); } b.append(text); b.addEventListener('click', fn); return b; };
+const row = (label, kids) => { const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const b = document.createElement('div'); b.className = 'btns'; b.append(...kids); r.append(s, b); return r; };
+for (const dir of DIRS) {
+  const c = document.createElement('section'); c.className = dir.ref ? 'card ref' : 'card';
+  c.innerHTML = `<h2><span class="code">${dir.id === 'nu' ? 'NU' : dir.id}</span>${dir.name}${dir.advice ? '<span class="advice">advies</span>' : ''}</h2><p class="desc">${dir.desc}</p>`;
+  c.append(row('Prestatie', TIERS.map(([n, v], i) => btn(n, () => play(dir, i + 1), v))));
+  c.append(row('In context', TIERS.map(([n, v], i) => btn(`Afvinken + ${n.toLowerCase()}`, () => play(dir, i + 1, true), v))));
+  if (dir.ref) c.append(row('Afvinken', [btn('Enkel afvinken', () => { const a = audio(), d = a.createGain(); d.gain.value = 0.504; d.connect(master); ping(a, d, a.currentTime + 0.03, P.A4, { lv: 3 }); })]));
+  cards.append(c);
+}
+// gelijk luid: zilver van elk voorstel op dezelfde piek als de prestatie nu (-21 dBFS)
+(async () => {
+  for (const dir of DIRS) {
+    const oc = new OfflineAudioContext(2, 44100 * 3, 44100), g = oc.createGain(); g.connect(oc.destination); dir.feat(oc, g, 0.01, 2);
+    const rb = await oc.startRendering(); let pk = 0; for (let ch = 0; ch < rb.numberOfChannels; ch++) for (const v of rb.getChannelData(ch)) pk = Math.max(pk, Math.abs(v));
+    norm[dir.id] = Math.pow(10, -21 / 20) / pk;
+  }
+  window.__norm = norm;
+})();
+</script>
+</body>
+</html>
