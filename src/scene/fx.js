@@ -169,6 +169,61 @@ export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
 // daarbinnen lichten op in papierkleur, de nieuwe ster bloeit open, en de dag komt terug met een zachte cirkel vanuit de ster.
 // Laat alle klikken door (pointer-events: none) en stopt niet als je intussen iets anders doet.
 const NIGHT = { fall: 0.45, born: 0.3, open: 1.1, end: 2.3 };
+/* ---- Golf vanuit de kern (tik op de kern, Victor 04/11/2026) ----
+   Vervangt de ring van tekens (glyph sonar): een zachte, brede rimpeling in inktkleur die traag van de kern naar de randen
+   van het scherm loopt en onderweg uitdooft, met een tweede, zwakkere erachter. Geen sluier zoals de intro, enkel een band
+   licht/schaduw met een klokvormig profiel, dekking hooguit 0,07. timeTo(px) zegt wanneer het front op die afstand van de
+   kern is, zodat de scène de echo rond een bol er precies op laat vallen. */
+const WAVE = { dur: 3.2, lag: 0.45, peak: 0.07 };
+export function coreWave({ center }) {
+  const ov = overlay('fx-wave');
+  let W = ov.W, H = ov.H, g = ov.g, [cx, cy] = center();
+  const rgb = () => { g.fillStyle = css('--ink'); const h = g.fillStyle.slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(','); };
+  let ink = rgb();
+  const farOf = () => Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy)) + 160;
+  let far = farOf();
+  const front = u => far * (1 - Math.pow(1 - Math.min(1, Math.max(0, u)), 2.4));   // traag uitlopend
+  const t0 = performance.now();
+  let raf = 0;
+  function band(grad, R, wid, a, rMax) {
+    if (a <= 0.002 || R <= 0) return;
+    for (let i = 0; i <= 24; i++) {
+      const x = (i / 24) * 2 - 1, r = R + x * wid * 1.6;
+      if (r < 0 || r > rMax) continue;
+      grad.push([r / rMax, a * Math.exp(-x * x * 3.2)]);
+    }
+  }
+  function frame(now) {
+    const ch = ov.fresh();
+    if (ch) { W = ov.W; H = ov.H; g = ov.g; ink = rgb(); [cx, cy] = center(); far = farOf(); }
+    const t = (now - t0) / 1000;
+    if (t > WAVE.dur + WAVE.lag) { cancelAnimationFrame(raf); ov.cv.remove(); return; }
+    g.clearRect(0, 0, W, H);
+    const stops = [];
+    for (const [lag, k] of [[0, 1], [WAVE.lag, 0.5]]) {
+      const u = (t - lag) / WAVE.dur;
+      if (u <= 0 || u >= 1) continue;
+      const R = front(u), wid = 40 + 150 * u;
+      const a = WAVE.peak * k * Math.min(1, u / 0.08) * Math.pow(1 - u, 1.4);   // zacht aan, traag uitdovend
+      band(stops, R, wid, a, far);
+    }
+    if (stops.length) {
+      stops.sort((p, q) => p[0] - q[0]);
+      const grad = g.createRadialGradient(cx, cy, 0, cx, cy, far);
+      let last = -1;
+      grad.addColorStop(0, `rgba(${ink},0)`);
+      for (const [o, a] of stops) { if (o <= last) continue; last = o; grad.addColorStop(Math.min(1, o), `rgba(${ink},${a.toFixed(4)})`); }
+      g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  raf = requestAnimationFrame(frame);
+  return {
+    // seconden tot het front op afstand px van de kern is
+    timeTo(px) { const q = Math.min(1, Math.max(0, px / far)); return (1 - Math.pow(1 - q, 1 / 2.4)) * WAVE.dur; },
+  };
+}
+
 export function smallNight({ star, stars = [], onOpen = () => {}, done = () => {} }) {
   const ov = overlay('fx-night'), cv = ov.cv;
   let W = ov.W, H = ov.H, g = ov.g;

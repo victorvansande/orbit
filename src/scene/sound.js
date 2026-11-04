@@ -198,6 +198,26 @@ export function playTick() {
     o.connect(e).connect(out); o.start(t); o.stop(t + 0.06);
   });
 }
+// tik op de kern: een heel zacht, traag aanzwellend akkoord dat lang uitademt (Victor, 04/11/2026: "heel zacht,
+// geleidelijk, super soothing"). Laag (G3, D4) met een fluistering E5 erboven, elke toon als twee stemmen een paar cent uit
+// elkaar, door een laagdoorlaat die mee opent en weer sluit; een vage echo voor ruimte. Ongeveer 9 dB zachter dan afvinken
+// (piek rond -29 dBFS), uitgeademd na ongeveer 5 s.
+export function playCore() {
+  cue((a, out, t) => {
+    const lp = a.createBiquadFilter(), bus = a.createGain();
+    lp.type = 'lowpass'; lp.Q.value = 0.3;
+    lp.frequency.setValueAtTime(380, t); lp.frequency.linearRampToValueAtTime(1500, t + 0.7); lp.frequency.setTargetAtTime(420, t + 0.9, 0.7);
+    bus.gain.setValueAtTime(0.00001, t); bus.gain.linearRampToValueAtTime(1, t + 0.6); bus.gain.setTargetAtTime(0.00001, t + 0.8, 0.75);
+    const dl = a.createDelay(1), fb = a.createGain(), wet = a.createGain();
+    dl.delayTime.value = 0.28; fb.gain.value = 0.3; wet.gain.value = 0.35;
+    lp.connect(bus); bus.connect(out); bus.connect(dl); dl.connect(fb).connect(dl); dl.connect(wet).connect(out);
+    [[P.G3, 0.021], [293.66, 0.015], [P.E5, 0.003]].forEach(([f, amp]) => [-5, 5].forEach(det => {
+      const o = a.createOscillator(), k = a.createGain();
+      o.frequency.value = f; o.detune.value = det; k.gain.value = amp;
+      o.connect(k).connect(lp); o.start(t); o.stop(t + 7);
+    }));
+  });
+}
 // zandloper klaar: drie keer dezelfde toon, telkens zachter, zoals een rustige keukenwekker
 export function playTimer() {
   cue((a, o, t) => [0, 0.62, 1.24].forEach((dt, i) => ping(a, o, t + dt, P.A4, { g: 1.12 - 0.22 * i })));

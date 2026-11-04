@@ -18,12 +18,12 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
 import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
-import { playDone, playFeat, playRank, playTimer, playMonth, playTick, soundOn, setSound } from './scene/sound.js';
+import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
-import { softReveal, whiteBurst, smallNight, createWall } from './scene/fx.js';
+import { softReveal, whiteBurst, smallNight, coreWave, createWall } from './scene/fx.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
 applyStatic();
@@ -3143,7 +3143,14 @@ function tapCore() {
   const stuck = longest(list.filter(t => t.level <= 2 && !t.due && daysOn(t) >= 2));
   const next = list.filter(t => t.level === URGENT_LEVEL).sort(byAge)[0] || list.filter(t => t.level === 2).sort(byAge)[0];
   scene.cheer(900);
-  scene.sonar((late || dueToday || stuck || next)?.id ?? null);   // glyph sonar, met een echo rond de taak waarover de kern praat
+  // zachte golf vanuit de kern over het scherm (Victor, 04/11/2026: geen ring van tekens meer), met een echo rond de taak
+  // waarover de kern praat op het moment dat de golf haar bereikt; en een heel zacht, traag aanzwellend geluid
+  const target = (late || dueToday || stuck || next)?.id ?? null;
+  if (!minimalFx && !reducedMotion.matches) {
+    const wave = coreWave({ center: () => scene.coreScreen() });
+    scene.sonar(target, { quiet: true, timeTo: wave.timeTo });
+  }
+  playCore();
   sayLine(coreLine({
     total: list.length,
     late: late && { title: late.title, days: daysLate(late.due) },

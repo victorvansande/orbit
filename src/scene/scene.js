@@ -461,7 +461,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         if (d.r < coreR) { d.r = 175 + Math.random() * 35; d.a = Math.random() * TAU; }
       }
     }
-    if (sonar && (now - sonar.t0) / 1000 > (sonar.far ? 6 : SONAR_LIFE + 2.4)) sonar = null;
+    if (sonar && (now - sonar.t0) / 1000 > (sonar.far || sonar.quiet ? 6 : SONAR_LIFE + 2.4)) sonar = null;
     const wallWant = (wallOn || wallSweep) && wallWords.length && !minimal ? 1 : 0;
     wallK = motion ? smooth(wallK, wallWant, 3, dt) : wallWant;
     if (wallK > 0.001) {
@@ -913,7 +913,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // gewone tik: tot net buiten de ringen; nieuwe hemel (far): sneller en tot buiten beeld, en neemt de sterren mee
     const R = 26 + e * (sonar.far ? SKY_WAVE_SPEED : SONAR_SPEED);
     const reach = sonar.far ? Math.hypot(W, H) / (cam.s * cam.zoom) : EDGE + 40;
-    if (sonar.far ? R < reach : e < SONAR_LIFE && R < reach) {
+    if (!sonar.quiet && (sonar.far ? R < reach : e < SONAR_LIFE && R < reach)) {
       const n = sonar.far ? Math.max(84, Math.round(R * 0.5)) : 84;
       const fade = sonar.far ? 0.85 * (1 - smoothstep(reach * 0.55, reach, R)) : (1 - e / SONAR_LIFE) * (1 - smoothstep(EDGE - 10, EDGE + 40, R));
       const z = (R < RIM ? depthAt(R) : 0) * cam.depth;
@@ -932,7 +932,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // echo rond de gezochte bol, zodra het front zijn baan bereikt
     const o = sonar.target && orbs.get(sonar.target);
     if (o && o.sx != null) {
-      const hit = sonar.t0 + Math.max(0, (o.r - 26) / SONAR_SPEED) * 1000;
+      const hit = sonar.t0 + (sonar.timeTo ? sonar.timeTo(coreHit ? Math.hypot(o.sx - coreHit.x, o.sy - coreHit.y) : 0) : Math.max(0, (o.r - 26) / SONAR_SPEED)) * 1000;
       const q = (now - hit) / 1000;
       if (q > 0 && q < 2.4) {
         ctx.strokeStyle = rgba(INK, 1);
@@ -1651,7 +1651,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     },
     clearSelection,
     // glyph sonar vanuit de kern; target: id van de taak waar de kern over praat (die bol krijgt een echo)
-    sonar(target = null) { if (!reducedMotion.matches && !minimal) sonar = { t0: performance.now(), target }; },
+    // quiet + timeTo: enkel de echo rond de bol, getimed op de zachte golf van fx.js (coreWave) in plaats van de tekens
+    sonar(target = null, { quiet = false, timeTo = null } = {}) { if (!reducedMotion.matches && !minimal) sonar = { t0: performance.now(), target, quiet, timeTo }; },
     // nieuwe hemel: een mozaïekgolf neemt de huidige sterren mee (roep vóór setSky)
     newSky() {
       if (reducedMotion.matches || minimal) return;
@@ -1670,6 +1671,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     wake() { wakeUntil = performance.now() + 20000; },
     // demo: meteen een vallende ster (knop in de details van de teller), ook met Minimaal; niet bij minder beweging
     meteorNow() { meteor = null; nextMeteor = 0; forceMeteor = true; },
+    // middelpunt van de kern in schermcoördinaten (voor de golf vanuit de kern)
+    coreScreen() { const r = canvas.getBoundingClientRect(); return coreHit ? [r.left + coreHit.x, r.top + coreHit.y] : [r.left + cam.cx, r.top + r.height / 2]; },
     coreAt(clientX, clientY) { const r = canvas.getBoundingClientRect(); return Boolean(onCoreSpot({ x: clientX - r.left, y: clientY - r.top })); },
     // kijkdoel van de kern: [x, y] tussen -1 en 1 (bv. naar de begroeting), of null om vrij te kijken
     lookAt(goal) { face.lookGoal = goal; },
