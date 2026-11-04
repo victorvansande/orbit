@@ -58,15 +58,18 @@ export function setMatrix(root, text) {
 // cijfers (5 stippen breed). Zonder animatie gewoon setMatrix. onSwap loopt halverwege (label wisselen).
 const NOISE_MS = 1250, NOISE_TICKS = 26;
 const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
-const litAt = (chars, x, y) => { const i = Math.floor(x / 6), cx = x % 6; return i < chars.length && cx < 5 && GLYPHS[chars[i]][y][cx] === '#'; };
+const litAt = (chars, x, y) => { const g = GLYPHS[chars[Math.floor(x / 6)]], cx = x % 6; return !!g && cx < 5 && g[y][cx] === '#'; };
 export function morphMatrix(root, text, { still = false, onSwap } = {}) {
   cancelAnimationFrame(root._morphT); root._morphT = 0;
   const from = root._chars || [], to = [...text].filter(ch => GLYPHS[ch]);
   if (still || !root.children.length || [...from, ...to].some(ch => ch === ':')) { setMatrix(root, text); onSwap?.(); return; }
+  // rechts uitgelijnd: een getal met een cijfer meer krijgt vooraan een vakje dat openschuift (of dichtschuift)
   const n = Math.max(from.length, to.length), w = n * 6 - 1, cells = [];
+  const F = [...Array(n - from.length).fill(' '), ...from], T = [...Array(n - to.length).fill(' '), ...to];
+  const grow = n - from.length, shrink = n - to.length;
   const svgs = Array.from({ length: n }, (_, i) => {
     const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('class', 'dm'); svg.setAttribute('viewBox', '-0.5 -0.5 5 7'); svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('class', i < grow ? 'dm is-gone' : 'dm'); svg.setAttribute('viewBox', '-0.5 -0.5 5 7'); svg.setAttribute('aria-hidden', 'true');
     for (let y = 0; y < 7; y++) for (let x = 0; x < 5; x++) {
       const c = document.createElementNS(NS, 'circle');
       c.setAttribute('cx', x); c.setAttribute('cy', y);
@@ -83,21 +86,24 @@ export function morphMatrix(root, text, { still = false, onSwap } = {}) {
     cell.c.setAttribute('class', on ? 'o n' : 'g');   // n: zonder de oplicht-animatie van een gewoon cijfer
     cell.c.setAttribute('r', on ? (pop ? 0.5 : 0.4) : 0.33);
   };
-  cells.forEach(cell => set(cell, litAt(from, cell.x, cell.y), false));
+  cells.forEach(cell => set(cell, litAt(F, cell.x, cell.y), false));
   root.replaceChildren(...svgs);
+  if (grow) { root.getBoundingClientRect(); svgs.slice(0, grow).forEach(svg => svg.classList.remove('is-gone')); }
+  let shrunk = false;
   root._pending = text;
   let swapped = false;
   const t0 = performance.now();
   const step = now => {
     const p = Math.min(1, (now - t0) / NOISE_MS), tick = Math.floor(p * NOISE_TICKS);
     for (const cell of cells) {
-      const on = p < cell.go ? litAt(from, cell.x, cell.y) : p >= cell.lock ? litAt(to, cell.x, cell.y) : hash(cell.x * 7 + tick, cell.y * 3 + tick) < 0.42;
+      const on = p < cell.go ? litAt(F, cell.x, cell.y) : p >= cell.lock ? litAt(T, cell.x, cell.y) : hash(cell.x * 7 + tick, cell.y * 3 + tick) < 0.42;
       set(cell, on, p >= cell.lock && p < cell.lock + 0.08);
     }
     if (!swapped && p >= 0.5) { swapped = true; onSwap?.(); }
+    if (shrink && !shrunk && p >= 0.6) { shrunk = true; svgs.slice(0, shrink).forEach(svg => svg.classList.add('is-gone')); }
     if (p < 1) { root._morphT = requestAnimationFrame(step); return; }
     root._morphT = 0;
-    for (let i = to.length; i < n; i++) svgs[i].remove();
+    svgs.slice(0, shrink).forEach(svg => svg.remove());
     root._chars = to;   // aria-label zet de aanroeper (onSwap)
     if (root._pending !== text) setMatrix(root, root._pending);   // intussen een nieuwe ster
   };

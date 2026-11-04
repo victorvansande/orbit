@@ -316,7 +316,10 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 }
 .stats-total:hover, .stats-total[aria-expanded="true"] { color: var(--ink-2); }
 .stat-dm { --dm-h: 22px; display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
-.stat-dm .dm { display: block; height: 100%; width: auto; overflow: visible; }
+.stat-dm .dm { display: block; flex: none; height: 100%; width: calc(var(--dm-h) * 5 / 7); overflow: visible;
+  transition: width .45s var(--ease), margin .45s var(--ease), opacity .35s var(--ease); }
+/* een vakje dat erbij komt of wegvalt (100 sterren of meer), schuift open of dicht */
+.stat-dm .dm.is-gone { width: 0; margin-right: calc(var(--dm-h) / -7); opacity: 0; }
 .stats-total > span:last-child { padding-bottom: 2px; transition: opacity .3s var(--ease); }
 /* wissel maand / alles (V5 Ruis): stippen springen aan en uit zonder de oplicht-animatie van een gewoon cijfer */
 .dm .o.n { animation: none; }
@@ -1165,6 +1168,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .track.is-done .t-check::before { animation: none; }
   .t-check svg path, .fn-check svg path { transition: none !important; }
   .dm .o { animation: none; }
+  .stat-dm .dm { transition: none; }
 }
 
 /* ---- Effecten (src/scene/fx.js) ---- */

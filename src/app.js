@@ -503,8 +503,13 @@ function statLabel() {
 function statAria() {
   $('stat-total').setAttribute('aria-label', tx(statMode === 'month' ? 'stats.monthAria' : 'stats.total', { n: statN[statMode] }));
 }
+// altijd minstens twee vakjes (een nul ervoor); vanaf 100 schuift er een derde vakje bij (Victor, 04/11/2026)
+const statText = () => String(statN[statMode]).padStart(2, '0');
+const statStill = () => { try { return minimalFx || reducedMotion.matches; } catch { return true; } };   // minimalFx bestaat pas later bij het opstarten
 function showStatDm() {
-  setMatrix($('stat-total'), String(statN[statMode]));
+  const dm = $('stat-total'), text = statText();
+  if (!dm._morphT && dm._chars && dm._chars.length && dm._chars.length !== text.length) morphMatrix(dm, text, { still: statStill() });
+  else setMatrix(dm, text);
   if (!$('stat-total')._morphT) { $('stat-stars-label').textContent = statLabel(); statAria(); }
   clearTimeout(statSwapT);
   statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS);
@@ -517,7 +522,7 @@ function swapStatDm() {
   statMode = statMode === 'all' ? 'month' : 'all';
   const still = minimalFx || reducedMotion.matches;
   if (!still) label.classList.add('is-swap');
-  morphMatrix(dm, String(statN[statMode]), {
+  morphMatrix(dm, statText(), {
     still,
     onSwap: () => { label.textContent = statLabel(); label.classList.remove('is-swap'); statAria(); },
   });
