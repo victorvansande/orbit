@@ -22,6 +22,9 @@ const KIND = {
   95: 'thunder', 96: 'thunder', 99: 'thunder',
 };
 
+// rechterrand van elk weericoon in eenheden van 24 (zie trim in createWeather)
+const RIGHT = { 'w-cloud': 21.29, 'w-drizzle': 21.29, 'w-fog': 20.75, 'w-moon': 20.25, 'w-pcd': 21.61, 'w-pcn': 21.61, 'w-rain': 21.29, 'w-sleet': 21.29, 'w-snow': 21.29, 'w-sun': 22.25, 'w-thunder': 21.29 };
+
 function iconId(kind, day) {
   return { clear: day ? 'w-sun' : 'w-moon', partly: day ? 'w-pcd' : 'w-pcn', cloudy: 'w-cloud', fog: 'w-fog',
     drizzle: 'w-drizzle', rain: 'w-rain', snow: 'w-snow', sleet: 'w-sleet', thunder: 'w-thunder' }[kind] || 'w-cloud';
@@ -109,13 +112,15 @@ export function createWeather(link) {
     link.hidden = false;
     requestAnimationFrame(trim);
   }
-  // Elk icoon heeft rechts een andere witruimte (de maan meer dan de zon): meet de getekende rand en zet de graden er
-  // altijd 6 px naast (Victor, 04/11/2026). Lukt meten niet (verborgen), dan blijft de marge uit de CSS staan.
+  // Elk icoon heeft rechts een andere witruimte (de maan meer dan de zon): de graden staan altijd 6 px naast de getekende
+  // rand (Victor, 04/11/2026). Die rand staat vast in RIGHT (in eenheden van 24, met de halve lijndikte erbij, gemeten in
+  // Chromium); meten met getBBox gaf in Safari bij een <use> het hele vak van 24 terug.
   function trim() {
     try {
-      const svg = link.querySelector('.fw-icon'), bb = svg.querySelector('use').getBBox(), w = svg.getBoundingClientRect().width;
-      if (!w || !bb.width) return;
-      const k = w / 24, empty = (24 - bb.x - bb.width - 0.75) * k;   // halve lijndikte telt mee als getekend
+      const svg = link.querySelector('.fw-icon'), id = svg.querySelector('use').getAttribute('href').slice(1);
+      const w = svg.getBoundingClientRect().width;
+      if (!w) return;
+      const empty = (24 - (RIGHT[id] ?? 21.3)) * w / 24;
       link.querySelector('.fw-temp').style.marginLeft = `${Math.max(0, 6 - empty).toFixed(1)}px`;
     } catch { /* niet in beeld */ }
   }
