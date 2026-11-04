@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Orbit weerregel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: kop met keuzes; per voorstel een strook zoals de focusmodus op gsm (weer, klok, datum) met uitleg ernaast */
+:root {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.12);
+  --core: #F0306A; --ghost: .1;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] { --bg: #F1F1EF; --surface: #FAFAF8; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12); --core: #E70049; --ghost: .08; color-scheme: light; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #F1F1EF; --surface: #FAFAF8; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12); --core: #E70049; --ghost: .08; color-scheme: light; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px 24px; }
+.kick { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+h1 { font-weight: 500; font-size: 26px; line-height: 1.15; margin: 0 0 8px; }
+.lead { margin: 0; color: var(--ink-2); max-width: 64ch; }
+.ctrls { display: flex; gap: 6px; }
+.btn { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); background: none; border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
+.btn:hover { color: var(--ink); }
+.btn[aria-pressed="true"] { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-3); }
+button:focus-visible { outline: 2px solid var(--core); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 28px; align-items: center; margin-top: 40px; }
+@media (max-width: 720px) { .row { grid-template-columns: minmax(0, 1fr); gap: 14px; } }
+.phone { width: 360px; max-width: 100%; border-radius: 22px; box-shadow: inset 0 0 0 1px var(--line); padding: 28px 22px 26px; background: var(--bg); position: relative; overflow: hidden; }
+.text h2 { margin: 0 0 6px; font-size: 18px; font-weight: 500; }
+.text h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 10px; }
+.advice { margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--core); color: var(--surface); vertical-align: 3px; }
+.text p { margin: 0 0 10px; color: var(--ink-2); max-width: 56ch; }
+.text p b { color: var(--ink); font-weight: 500; }
+/* de klok en datum zoals in de app op gsm: 52 px hoog, puntafstand = 52 / 7 ≈ 7,4 px */
+.clock { --h: 52px; display: flex; gap: calc(var(--h) / 7); height: var(--h); color: var(--ink); }
+.clock svg { height: 100%; width: auto; overflow: visible; display: block; }
+.clock .o { fill: currentColor; } .clock .g { fill: currentColor; opacity: var(--ghost); }
+.date { margin-top: 12px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.ico { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; overflow: visible; display: block; flex: none; }
+.rain { font: 500 11px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--core); opacity: .45; pointer-events: none; display: none; }
+.show-guides .guide { display: block; }
+/* nu */
+.w0 { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--ink-2); }
+.w0 .ico { width: 26px; height: 26px; margin-left: -1px; }
+.w0 .t { font: 500 15px/1 var(--mono); letter-spacing: .04em; }
+.w0 .p { font-size: 13px; color: var(--ink-3); }
+/* W1 kapitaaltjes zoals de datum */
+.w1 { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.w1 .ico { width: 13px; height: 13px; color: var(--ink-2); margin-left: -1px; }
+.w1 .t { color: var(--ink-2); }
+.w1 .sep { opacity: .7; }
+/* W2 op de kolommen van de klok */
+.w2 { position: relative; height: 26px; margin-bottom: 12px; color: var(--ink-2); }
+.w2 > * { position: absolute; top: 50%; transform: translateY(-50%); }
+.w2 .ico { width: 22px; height: 22px; }
+.w2 .t { font: 300 22px/1 var(--sans); color: var(--ink); letter-spacing: -.01em; }
+.w2 .p { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+/* W3 in de datumregel */
+.phone[data-v="w3"] .date { display: flex; align-items: center; gap: 0; flex-wrap: wrap; row-gap: 6px; }
+.phone[data-v="w3"] .date .sep { margin: 0 .7em; opacity: .7; }
+.phone[data-v="w3"] .date .ico { width: 12px; height: 12px; margin-right: 6px; color: var(--ink-2); }
+.phone[data-v="w3"] .date .t { color: var(--ink-2); }
+/* W4 groot graden, klein de rest */
+.w4 { display: grid; grid-template-columns: auto auto; column-gap: 12px; row-gap: 4px; align-items: end; justify-content: start; margin-bottom: 14px; }
+.w4 .t { grid-row: span 2; font: 300 34px/.8 var(--sans); color: var(--ink); letter-spacing: -.02em; }
+.w4 .l1 { display: flex; align-items: center; gap: 6px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+.w4 .l1 .ico { width: 11px; height: 11px; }
+.w4 .l2 { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+/* W5 icoon op de klokhoogte, tekst als kolom */
+.w5 { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.w5 .ico { width: 22px; height: 22px; color: var(--ink-2); }
+.w5 .col { display: flex; flex-direction: column; gap: 4px; }
+.w5 .t { font: 500 15px/1 var(--mono); color: var(--ink); letter-spacing: .02em; }
+.w5 .p { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.note { margin-top: 44px; color: var(--ink-2); max-width: 70ch; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="kick">Orbit · focusmodus</p>
+      <h1>De weerregel boven de klok</h1>
+      <p class="lead">Nu staan icoon, graden en plaats in drie verschillende letters en maten naast elkaar, met afstanden die nergens aan vastzitten. Elk voorstel hangt de regel aan iets wat er al staat: de datumregel, de kolommen van de klok of de stippenmaat. Zo zie je ze op gsm in de focus, met de klok en de datum eronder.</p>
+    </div>
+    <div class="ctrls">
+      <button type="button" class="btn" id="b-guides" aria-pressed="false">Hulplijnen</button>
+      <button type="button" class="btn" id="b-rain" aria-pressed="false">Met regen</button>
+      <button type="button" class="btn" id="b-light">Licht</button>
+      <button type="button" class="btn" id="b-dark">Donker</button>
+    </div>
+  </header>
+  <div id="rows"></div>
+  <p class="note">De klok, de datum en de plaats zijn telkens dezelfde; enkel de weerregel verschilt. "Met regen" toont de regel die er bij neerslag in het komende uur bijkomt. "Hulplijnen" toont waar de regel zich aan uitlijnt.</p>
+</div>
+<script>
+const G = { 0: ['01110','10001','10011','10101','11001','10001','01110'], 1: ['00100','01100','00100','00100','00100','00100','01110'], 2: ['01110','10001','00001','00010','00100','01000','11111'], 3: ['11110','00001','00001','01110','00001','00001','11110'], 4: ['00010','00110','01010','10010','11111','00010','00010'], 5: ['11111','10000','11110','00001','00001','10001','01110'], 6: ['00110','01000','10000','11110','10001','10001','01110'], 7: ['11111','00001','00010','00100','01000','01000','01000'], 8: ['01110','10001','10001','01110','10001','10001','01110'], 9: ['01110','10001','10001','01111','00001','00010','01100'], ':': ['0','0','1','0','1','0','0'] };
+const glyph = ch => { const rows = G[ch], w = rows[0].length; return `<svg viewBox="-.5 -.5 ${w} 7">${rows.map((r, y) => [...r].map((v, x) => `<circle cx="${x}" cy="${y}" r="${v === '1' ? .4 : .33}" class="${v === '1' ? 'o' : 'g'}"/>`).join('')).join('')}</svg>`; };
+const clock = () => `<div class="clock">${[...'02:31'].map(glyph).join('')}</div>`;
+const moon = s => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 14.6A7.6 7.6 0 0 1 9.4 4.5a7.6 7.6 0 1 0 10.1 10.1z"/></svg>`;
+const RAIN = '<div class="rain" style="margin:-6px 0 12px">Regen vanaf 03:15</div>';
+const ROWS = [
+  { id: 'w0', code: 'NU', name: 'Zoals nu', ref: true, text: '<p>Icoon van 26 px, graden in Geist Mono 15 px, plaats in Geist 13 px. Drie letters, drie grijzen, en afstanden die per icoon verschillen. Daarom oogt het willekeurig.</p>',
+    html: r => `<div class="w0">${moon()}<span class="t">4°</span><span class="p">Herentals</span></div>${r ? RAIN : ''}${clock()}<div class="date">Woensdag 4 november</div>` },
+  { id: 'w1', code: 'W1', name: 'Kapitaaltjes zoals de datum', advice: true, text: '<p><b>Dezelfde letter, maat en letterafstand als de datum eronder (Geist Mono 11 px, kapitaaltjes), met een middenpunt tussen de delen</b>, zoals "NIETS DRINGEND · 6 TAKEN" bovenaan. Het icoon wordt zo groot als de letters. Weer en datum lezen als twee regels van hetzelfde blok, met de klok ertussen.</p><p>Het rustigst, en de afstanden volgen vanzelf het ritme van de tekst.</p>',
+    html: r => `<div class="w1">${moon()}<span class="t">4°</span><span class="sep">·</span><span>Herentals</span></div>${r ? RAIN : ''}${clock()}<div class="date">Woensdag 4 november</div>` },
+  { id: 'w2', code: 'W2', name: 'Op de kolommen van de klok', text: '<p><b>Elk deel staat precies boven een cijfer van de klok:</b> de maan boven het eerste, de graden (dun, zoals het minutencijfer van de zandloper) boven het tweede, de plaats boven het derde, na de dubbele punt. De klok is het raster, het weer volgt het.</p><p>Het meest "ontworpen", maar een lange plaatsnaam loopt verder dan de klok.</p>',
+    html: r => `<div class="w2"></div>${r ? RAIN : ''}${clock()}<div class="date">Woensdag 4 november</div>`, after: el => { const cols = [...el.querySelectorAll('.clock svg')].map(s => s.getBoundingClientRect()), base = el.querySelector('.phone').getBoundingClientRect().left + 22, w2 = el.querySelector('.w2'); const pos = [cols[0].left - base, cols[1].left - base, cols[3].left - base]; w2.innerHTML = `<span style="left:${pos[0] - 1}px">${moon()}</span><span class="t" style="left:${pos[1]}px">4°</span><span class="p" style="left:${pos[2]}px">Herentals</span>`; el.querySelectorAll('.guide').forEach((g, i) => { g.style.left = `${22 + pos[i]}px`; }); }, guides: 3 },
+  { id: 'w3', code: 'W3', name: 'In de datumregel', text: '<p><b>Geen aparte regel meer: het weer sluit de datumregel af</b>, "Woensdag 4 november · maan 4° · Herentals". Eén element minder boven de scène, de klok krijgt meer ruimte. Op een smal scherm breekt de regel na de datum.</p>',
+    html: r => `${clock()}<div class="date"><span>Woensdag 4 november</span><span class="sep">·</span>${moon()}<span class="t">4°</span><span class="sep">·</span><span>Herentals</span></div>${r ? '<div class="rain" style="margin-top:8px">Regen vanaf 03:15</div>' : ''}` },
+  { id: 'w4', code: 'W4', name: 'Groot de graden', text: '<p><b>De graden als dun, groot getal (zoals het minutencijfer van de zandloper)</b>, ernaast in twee regels kapitaaltjes het weer in woorden met een klein icoon en de plaats. Eén blikvanger, de rest klein en ondergeschikt.</p>',
+    html: r => `<div class="w4"><span class="t">4°</span><span class="l1">${moon()}Helder</span><span class="l2">Herentals</span></div>${r ? RAIN : ''}${clock()}<div class="date">Woensdag 4 november</div>` },
+  { id: 'w5', code: 'W5', name: 'Icoon met een kolom', text: '<p><b>Het icoon links, rechts ervan de graden en de plaats onder elkaar</b>, links uitgelijnd op dezelfde lijn. Tussen icoon en tekst vast 12 px, tussen graden en plaats 4 px: één groep, één vaste maat.</p>',
+    html: r => `<div class="w5">${moon()}<span class="col"><span class="t">4°</span><span class="p">Herentals</span></span></div>${r ? RAIN : ''}${clock()}<div class="date">Woensdag 4 november</div>` },
+];
+let rain = false;
+const rows = document.getElementById('rows');
+function render() {
+  rows.replaceChildren();
+  for (const r of ROWS) {
+    const el = document.createElement('section'); el.className = 'row';
+    el.innerHTML = `<div class="phone" data-v="${r.id}"><div class="guide"></div><div class="guide"></div><div class="guide"></div>${r.html(rain)}</div><div class="text"><h2><span class="code">${r.code}</span>${r.name}${r.advice ? '<span class="advice">advies</span>' : ''}</h2>${r.text}</div>`;
+    rows.append(el);
+    if (!r.guides) el.querySelectorAll('.guide').forEach((g, i) => { if (i) g.remove(); else g.style.left = '22px'; });
+    if (r.after) requestAnimationFrame(() => r.after(el));
+  }
+}
+document.fonts.ready.then(render); render();
+const toggle = (id, fn) => { const b = document.getElementById(id); b.addEventListener('click', () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); fn(on); }); };
+toggle('b-guides', on => document.body.classList.toggle('show-guides', on));
+toggle('b-rain', on => { rain = on; render(); });
+document.getElementById('b-light').addEventListener('click', () => { document.documentElement.dataset.theme = 'light'; });
+document.getElementById('b-dark').addEventListener('click', () => { document.documentElement.dataset.theme = 'dark'; });
+</script>
+</body>
+</html>
