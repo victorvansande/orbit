@@ -173,18 +173,20 @@ export function whiteBurst({ center, onPeak = () => {}, done = () => {} }) {
 const NIGHT = { fall: 0.45, born: 0.3, open: 1.1, end: 2.3 };
 /* ---- Venster vóór de maandwissel: M1 Het nummer (Victor, 04/11/2026) ----
    Op het papier van de intro: linksboven het merk, rechtsboven de datum, in het midden het nummer van de nieuwe maand in
-   rode stippen met schimmen (zoals het aantal sterren op de recapkaart), onderaan een fluistering. Het hele venster is de
+   rode stippen met schimmen (zoals het aantal sterren op de recapkaart), klein eronder de naam van de maand, onderaan een
+   fluistering. Het hele venster is de
    knop: de tik is de klik die de browser vraagt voor geluid, daarna lost het venster op in het papier van de intro.
    Zolang het er staat, doen sneltoetsen niets; Enter of spatie opent. */
-export function monthGate({ digits, date, label, aria, mark, onOpen }) {
+export function monthGate({ digits, month = '', date, label, aria, mark, onOpen }) {
   const el = document.createElement('div');
   el.className = 'month-gate';
   el.setAttribute('role', 'button');
   el.setAttribute('aria-label', aria);
   el.tabIndex = 0;
-  el.innerHTML = '<div class="mg-corner"><span class="mg-mark"></span><span class="mg-date"></span></div><span class="mg-dm" aria-hidden="true"></span><span class="mg-hint"></span>';
+  el.innerHTML = '<div class="mg-corner"><span class="mg-mark"></span><span class="mg-date"></span></div><span class="mg-dm" aria-hidden="true"></span><span class="mg-month"></span><span class="mg-hint"></span>';
   if (mark) el.querySelector('.mg-mark').append(mark);
   el.querySelector('.mg-date').textContent = date;
+  el.querySelector('.mg-month').textContent = month;   // naam van de maand onder het nummer (Victor, 04/11/2026)
   el.querySelector('.mg-hint').textContent = label;
   document.body.append(el);
   setMatrix(el.querySelector('.mg-dm'), digits);

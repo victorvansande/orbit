@@ -3218,6 +3218,7 @@ if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
     const now = new Date(), two = v => String(v).padStart(2, '0');
     monthGate({
       digits: two(now.getMonth() + 1),
+      month: new Intl.DateTimeFormat(LOCALE, { month: 'long' }).format(now),
       date: `${two(now.getDate())} · ${two(now.getMonth() + 1)} · ${now.getFullYear()}`,
       label: tx('turn.gate'), aria: tx('turn.gateAria'),
       mark: document.querySelector('.brand .brand-mark')?.cloneNode(true),
