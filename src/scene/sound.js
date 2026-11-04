@@ -137,15 +137,22 @@ function ping(a, out, t, f, { g = 1, dur = 0.16, det = 0, lv = 3 } = {}) {
 }
 SOUNDS.sonar = (a, out, t, f, n, level = 3) => ping(a, out, t, SONAR_NOTES[level] || P.A4, { det: DET[n % DET.length], g: 1 - 0.05 * (n % 3), lv: level });
 
-// speelt een reeks pings; enkel als het geluid aan staat
+// Speelt een reeks pings; enkel als het geluid aan staat. Een browser laat geluid pas toe na een tik: zolang de audioklok
+// stilstaat, wachtte alles en kwam het er pas bij de volgende tik uit (de maandwissel klonk na haar animatie, Victor,
+// 04/11/2026). Wat niet meteen kan, valt nu weg in plaats van te laat te komen.
 function cue(fn, force = false) {
   if (!force && !soundOn()) return;
   const a = audio();
   if (!a) return;
-  const out = a.createGain();
-  out.gain.value = SONAR_GAIN;
-  out.connect(a.destination);
-  fn(a, out, a.currentTime + 0.02);
+  const go = () => {
+    const out = a.createGain();
+    out.gain.value = SONAR_GAIN;
+    out.connect(a.destination);
+    fn(a, out, a.currentTime + 0.02);
+  };
+  if (a.state === 'running') { go(); return; }
+  const asked = performance.now();   // in een klik start de klok binnen enkele ms; later is te laat
+  a.resume().then(() => { if (a.state === 'running' && performance.now() - asked < 250) go(); }).catch(() => {});
 }
 // prestatie: brons één toon, zilver een tweede die zakt, goud een kleine samenklank, platina met een zacht licht erboven
 export function playFeat(tier = 'silver') {
