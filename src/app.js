@@ -1235,12 +1235,12 @@ function complete(id, row) {
     back();
     if (!task.demo) { checkFeats(false); notifySync(); }
   };
-  // toast en geluid wachten tot de nacht voorbij is, zodat er niets over het moment loopt; de toast wacht via de regisseur
+  // de toast wacht tot de nacht voorbij is, zodat er niets over het moment loopt (via de regisseur); het geluid klinkt meteen
   // voorbeeldtaak: geen ster en geen nacht (ze wordt nooit bewaard); zeg dat, anders lijkt het een fout (Victor, 02/11/2026)
   toastDone(task.demo ? tx('toast.demoDone') : next ? tx('toast.repeat', { title: task.title, label: dueLabel(next.due) }) : tx('toast.completed', { title: task.title }), undoTask);
   if (!task.demo) noteStar(id, wait);
-  if (night) fallNight(id, wait, sound, giveNight);
-  else sound();
+  sound();   // meteen bij de tik, niet pas als de nacht opent (Victor, 04/11/2026: "andere geluiden komen veel trager")
+  if (night) fallNight(id, wait, giveNight);
   // prestaties: de laatste Nu-taak, of de hele lijst leeg
   if (!task.demo) {
     const had = new Set(Object.keys(feats.unlocked)), hadEv = new Set(Object.keys(feats.ev));
@@ -1293,7 +1293,7 @@ function noteStar(id, wait) {
 }
 
 let nightBusy = false;
-function fallNight(id, wait, sound, give) {
+function fallNight(id, wait, give) {
   nightBusy = true;
   const go = () => {
     // loopt er nog een verduistering (bv. de intro), dan eerst die laten eindigen: nooit twee tegelijk
@@ -1301,11 +1301,11 @@ function fallNight(id, wait, sound, give) {
     const pts = scene.skyPoints(), star = pts.find(p => p.id === id);
     const seen = star && star.x > 0 && star.x < innerWidth && star.y > 0 && star.y < innerHeight;
     if (!seen || document.hidden) {   // ster niet in beeld (gsm, gescrold naar de lijst): gewoon verschijnen
-      scene.releaseStars(true); nightBusy = false; sound(); setTimeout(give, 900); return;
+      scene.releaseStars(true); nightBusy = false; setTimeout(give, 900); return;
     }
     smallNight({
       star, stars: pts.filter(p => p !== star),
-      onOpen() { scene.releaseStars(); sound(); },
+      onOpen() { scene.releaseStars(); },
       done() { nightBusy = false; give(); },
     });
   };
