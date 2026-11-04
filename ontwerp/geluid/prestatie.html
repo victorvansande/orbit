@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Orbit prestatiegeluid</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: één kolom op papier zoals Orbit; per voorstel een kaart met de vier niveaus en "in context" (afvinken, dan de melding) */
+:root {
+  --bg: #F1F1EF; --surface: #FFFFFF; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12); --fill: rgba(27,27,34,.05);
+  --core: #E70049; --bronze: #A95C3E; --silver: #798994; --gold: #BF934A; --platinum: #2C8494;
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif; --mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --bronze: #D8916C; --silver: #B0C0CD; --gold: #EBC57D; --platinum: #5ABFCA; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78; --line: rgba(255,255,255,.12); --fill: rgba(255,255,255,.05); --core: #F0306A; --bronze: #D8916C; --silver: #B0C0CD; --gold: #EBC57D; --platinum: #5ABFCA; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+main { max-width: 780px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font: 500 13px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; margin: 0; }
+.lead { max-width: 62ch; color: var(--ink-2); margin: 10px 0 0; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin-top: 24px; background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.bar label { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 10px; }
+.bar input { width: 120px; accent-color: var(--core); }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.pill { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 9px 12px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); display: inline-flex; align-items: center; gap: 7px; min-height: 36px; }
+.pill:hover { background: var(--fill); }
+.pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; }
+.card { margin-top: 18px; background: var(--surface); border-radius: 14px; padding: 20px 20px 16px; box-shadow: inset 0 0 0 1px var(--line); }
+.card.ref { background: transparent; }
+h2 { font: 500 19px/1.25 var(--sans); margin: 0; }
+h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 10px; }
+.advice { margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; background: var(--core); color: var(--surface); vertical-align: 3px; }
+.desc { color: var(--ink-2); margin: 8px 0 0; max-width: 64ch; }
+.row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 6px 14px; margin-top: 14px; }
+.row > span { font: 500 10.5px/36px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 520px) { .row { grid-template-columns: minmax(0, 1fr); } .row > span { line-height: 1; } }
+footer { margin-top: 40px; color: var(--ink-2); font-size: 14px; max-width: 64ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Orbit · prestatiegeluid</h1>
+  <p class="lead">De prestatie klinkt nu met dezelfde ping als afvinken, enkel met een toon meer. Hieronder drie manieren om een prestatie meteen te herkennen, binnen de klank van Sonar. Speel telkens ook "in context": eerst een afvinkping, dan de melding, zoals in de app.</p>
+  <div class="bar">
+    <label for="vol">Volume <input type="range" id="vol" min="0" max="100" value="40"></label>
+  </div>
+  <div id="cards"></div>
+  <footer>Alles even luid gemaakt (piek ongeveer -21 dBFS, zoals de prestatie nu). Ik kan zelf niet luisteren: jouw oor beslist.</footer>
+</main>
+<script>
+const P = { G3: 196, C4: 261.63, E4: 329.63, G4: 392, A4: 440, C5: 523.25, E5: 659.26, G5: 783.99, B5: 987.77, E6: 1318.5 };
+const TIERS = [['Brons', '--bronze'], ['Zilver', '--silver'], ['Goud', '--gold'], ['Platina', '--platinum']];
+function soft(g, t, peak, attack, decay) { g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(peak, t + attack); g.gain.setTargetAtTime(0.00001, t + attack, decay / 5); }
+function echo(a, src, out, time, fbk = 0.36, f = 1000, wet = 0.55) {
+  const dl = a.createDelay(1.5), fb = a.createGain(), lp = a.createBiquadFilter(), w = a.createGain();
+  dl.delayTime.value = time; fb.gain.value = fbk; lp.type = 'lowpass'; lp.frequency.value = f; w.gain.value = wet;
+  src.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(w).connect(out);
+}
+// de gewone ping (zoals in de app)
+function ping(a, out, t, f, { g = 1, dur = 0.16, lv = 3 } = {}) {
+  const o = a.createOscillator(), e = a.createGain();
+  o.frequency.value = f; soft(e, t, 0.2 * g, 0.004, dur);
+  o.connect(e); e.connect(out); echo(a, e, out, [0.075, 0.115, 0.16, 0.22, 0.3][lv - 1], 0.36, Math.min(2200, f * 2.2));
+  o.start(t); o.stop(t + dur * 1.5 + 0.1);
+}
+// metaal: dezelfde ping, maar met de boventonen van een klein klokje (niet-harmonisch), langer nazinderend
+function metal(a, out, t, f, { g = 1, dur = 0.7, bright = 1, lv = 3 } = {}) {
+  const bus = a.createGain(); bus.connect(out); echo(a, bus, out, [0.075, 0.115, 0.16, 0.22, 0.3][lv - 1], 0.3, Math.min(3000, f * 3));
+  [[1, 1, 1], [2.76, 0.42 * bright, 0.55], [5.4, 0.18 * bright, 0.32], [8.93, 0.07 * bright, 0.2]].forEach(([r, amp, dk]) => {
+    const o = a.createOscillator(), e = a.createGain();
+    o.frequency.value = f * r; soft(e, t, 0.15 * g * amp, 0.002, dur * dk);
+    o.connect(e).connect(bus); o.start(t); o.stop(t + dur * dk * 1.6 + 0.1);
+  });
+}
+// ver: een diepe ping met een lange, ruime echo, alsof het signaal van ver terugkomt
+function far(a, out, t, f, { g = 1, dur = 0.3 } = {}) {
+  const o = a.createOscillator(), e = a.createGain();
+  o.frequency.value = f; soft(e, t, 0.2 * g, 0.012, dur);
+  o.connect(e); e.connect(out); echo(a, e, out, 0.34, 0.58, Math.min(1400, f * 1.6), 0.7);
+  o.start(t); o.stop(t + dur * 1.5 + 0.1);
+}
+const DIRS = [
+  { id: 'nu', name: 'Nu in de app', ref: true, desc: 'Dezelfde ping als afvinken, met een tweede toon die zakt (zilver) of een samenklank (goud).',
+    feat(a, o, t, k) {
+      if (k === 1) ping(a, o, t, P.C5, { g: 0.9 });
+      if (k === 2) { ping(a, o, t, P.C5, { g: 0.9 }); ping(a, o, t + 0.11, P.G4, { g: 0.62 }); }
+      if (k >= 3) { ping(a, o, t, P.E5, { g: 0.88 }); ping(a, o, t + 0.11, P.C5, { g: 0.62 }); ping(a, o, t + 0.11, P.G4, { g: 0.4 }); }
+      if (k === 4) ping(a, o, t + 0.28, P.E6, { g: 0.22, dur: 0.5 });
+    } },
+  { id: 'P1', name: 'Metaal', advice: true, desc: 'De ping raakt metaal: dezelfde echo, maar met de boventonen van een klein klokje dat even nazindert. Past bij brons, zilver, goud en platina. Brons is dof en kort, elk niveau helderder en voller; platina krijgt een zachte glans erboven. Afvinken blijft een zuivere toon, dus je hoort het verschil meteen.',
+    feat(a, o, t, k) {
+      if (k === 1) metal(a, o, t, P.C5, { g: 0.85, bright: 0.45, dur: 0.45 });
+      if (k === 2) metal(a, o, t, P.C5, { g: 0.9, bright: 0.8, dur: 0.7 });
+      if (k >= 3) { metal(a, o, t, P.E5, { g: 0.85, bright: 1, dur: 0.9 }); metal(a, o, t + 0.09, P.C5, { g: 0.5, bright: 0.8, dur: 0.9 }); }
+      if (k === 4) metal(a, o, t + 0.26, P.B5, { g: 0.3, bright: 1.2, dur: 1.1 });
+    } },
+  { id: 'P2', name: 'Ver weg', desc: 'Een lagere ping met een lange, ruime echo die vijf, zes keer terugkaatst: het signaal komt van ver. Dezelfde klank als afvinken, maar in een veel grotere ruimte. Hoe hoger het niveau, hoe meer tonen.',
+    feat(a, o, t, k) {
+      far(a, o, t, P.G4, { g: 0.9 });
+      if (k >= 2) far(a, o, t + 0.06, P.C4, { g: 0.5 });
+      if (k >= 3) far(a, o, t + 0.12, P.E5, { g: 0.4 });
+      if (k === 4) far(a, o, t + 0.5, P.B5, { g: 0.22, dur: 0.6 });
+    } },
+  { id: 'P3', name: 'Contact', desc: 'Twee zachte zoekpings vlak na elkaar, daarna antwoordt iets: een warme toon die even blijft hangen. Als een sonar die iets vindt. Het ritme (tik tik, toon) maakt het herkenbaar, ook op een gsm-speaker.',
+    feat(a, o, t, k) {
+      ping(a, o, t, P.G5, { g: 0.32, dur: 0.06, lv: 1 }); ping(a, o, t + 0.12, P.G5, { g: 0.32, dur: 0.06, lv: 1 });
+      const n = [P.C5, P.C5, P.E5, P.E5][k - 1];
+      far(a, o, t + 0.3, n, { g: 0.85, dur: 0.5 });
+      if (k >= 2) far(a, o, t + 0.3, P.G4, { g: 0.4, dur: 0.5 });
+      if (k >= 3) far(a, o, t + 0.3, P.C4, { g: 0.3, dur: 0.6 });
+      if (k === 4) far(a, o, t + 0.62, P.B5, { g: 0.2, dur: 0.6 });
+    } },
+];
+let ctx = null, master = null;
+const norm = {};
+function audio() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); master = ctx.createGain(); master.connect(ctx.destination); vol(); } if (ctx.state === 'suspended') ctx.resume(); return ctx; }
+const volEl = document.getElementById('vol');
+function vol() { if (master) master.gain.value = Math.pow(volEl.value / 100, 1.6) * 1.4; }
+volEl.addEventListener('input', vol);
+function play(dir, k, context = false) {
+  const a = audio(), o = a.createGain(); o.gain.value = norm[dir.id] || 0.5; o.connect(master);
+  const t = a.currentTime + 0.03;
+  if (context) { const d = a.createGain(); d.gain.value = 0.504; d.connect(master); ping(a, d, t, P.A4, { lv: 3 }); dir.feat(a, o, t + 1.6, k); }
+  else dir.feat(a, o, t, k);
+}
+const cards = document.getElementById('cards');
+const btn = (text, fn, dot) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pill'; if (dot) { const i = document.createElement('i'); i.style.background = `var(${dot})`; b.append(i); } b.append(text); b.addEventListener('click', fn); return b; };
+const row = (label, kids) => { const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const b = document.createElement('div'); b.className = 'btns'; b.append(...kids); r.append(s, b); return r; };
+for (const dir of DIRS) {
+  const c = document.createElement('section'); c.className = dir.ref ? 'card ref' : 'card';
+  c.innerHTML = `<h2><span class="code">${dir.id === 'nu' ? 'NU' : dir.id}</span>${dir.name}${dir.advice ? '<span class="advice">advies</span>' : ''}</h2><p class="desc">${dir.desc}</p>`;
+  c.append(row('Prestatie', TIERS.map(([n, v], i) => btn(n, () => play(dir, i + 1), v))));
+  c.append(row('In context', TIERS.map(([n, v], i) => btn(`Afvinken + ${n.toLowerCase()}`, () => play(dir, i + 1, true), v))));
+  if (dir.ref) c.append(row('Afvinken', [btn('Enkel afvinken', () => { const a = audio(), d = a.createGain(); d.gain.value = 0.504; d.connect(master); ping(a, d, a.currentTime + 0.03, P.A4, { lv: 3 }); })]));
+  cards.append(c);
+}
+// gelijk luid: zilver van elk voorstel op dezelfde piek als de prestatie nu (-21 dBFS)
+(async () => {
+  for (const dir of DIRS) {
+    const oc = new OfflineAudioContext(1, 44100 * 3, 44100), g = oc.createGain(); g.connect(oc.destination); dir.feat(oc, g, 0.01, 2);
+    const d = (await oc.startRendering()).getChannelData(0); let pk = 0; for (const v of d) pk = Math.max(pk, Math.abs(v));
+    norm[dir.id] = Math.pow(10, -21 / 20) / pk;
+  }
+  window.__norm = norm;
+})();
+</script>
+</body>
+</html>
