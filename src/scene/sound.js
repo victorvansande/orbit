@@ -140,13 +140,13 @@ SOUNDS.sonar = (a, out, t, f, n, level = 3) => ping(a, out, t, SONAR_NOTES[level
 // Speelt een reeks pings; enkel als het geluid aan staat. Een browser laat geluid pas toe na een tik: zolang de audioklok
 // stilstaat, wachtte alles en kwam het er pas bij de volgende tik uit (de maandwissel klonk na haar animatie, Victor,
 // 04/11/2026). Wat niet meteen kan, valt nu weg in plaats van te laat te komen.
-function cue(fn, force = false) {
+function cue(fn, force = false, gain = SONAR_GAIN) {
   if (!force && !soundOn()) return;
   const a = audio();
   if (!a) return;
   const go = () => {
     const out = a.createGain();
-    out.gain.value = SONAR_GAIN;
+    out.gain.value = gain;
     out.connect(a.destination);
     fn(a, out, a.currentTime + 0.02);
   };
@@ -154,15 +154,57 @@ function cue(fn, force = false) {
   const asked = performance.now();   // in een klik start de klok binnen enkele ms; later is te laat
   a.resume().then(() => { if (a.state === 'running' && performance.now() - asked < 250) go(); }).catch(() => {});
 }
-// prestatie: brons één toon, zilver een tweede die zakt, goud een kleine samenklank, platina met een zacht licht erboven
+// prestatie: Sonar plus (Victor, 04/11/2026, uit ronde 3: ontwerp/geluid/prestatie3.html). De ping van afvinken, uitgewerkt:
+// een zachte boventoon, een echo die links en rechts terugkaatst, en per niveau meer tonen (brons één, zilver een kwint, goud
+// een akkoord C-E-G licht uitgewaaierd, platina met een glinstering D7 erboven). Door een productieketen: hoogdoorlaat,
+// zachte hoge plank, een kleine kamer als galm en lichte stereobreedte. Zilver piekt op ongeveer -21 dBFS.
+const FEAT_GAIN = 0.59;
+const FEAT_CHORDS = { 1: [P.C5], 2: [P.C5, P.G5], 3: [P.C5, P.E5, P.G5], 4: [P.C5, P.E5, P.G5] };
+const roomCache = new WeakMap();
+function room(a, secs = 1.1) {   // synthetische impulsrespons van een kleine kamer, stereo, donkerder naarmate ze uitsterft
+  if (roomCache.has(a)) return roomCache.get(a);
+  const sr = a.sampleRate, len = Math.ceil(sr * secs), ir = a.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch); let x = 1234 + ch * 777, lp = 0;
+    for (let i = 0; i < len; i++) {
+      x = (x * 16807) % 2147483647; const u = i / len;
+      lp += (x / 2147483647 * 2 - 1 - lp) * (0.55 - 0.45 * u);
+      d[i] = (i < sr * 0.012 ? 0 : lp) * Math.pow(1 - u, 3.2);   // 12 ms voor de eerste weerkaatsing
+    }
+  }
+  roomCache.set(a, ir);
+  return ir;
+}
+function chain(a, out, wetK) {
+  const inp = a.createGain(), hp = a.createBiquadFilter(), hs = a.createBiquadFilter(), conv = a.createConvolver(), wet = a.createGain();
+  hp.type = 'highpass'; hp.frequency.value = 150; hp.Q.value = 0.6;
+  hs.type = 'highshelf'; hs.frequency.value = 6500; hs.gain.value = -4;
+  conv.buffer = room(a); wet.gain.value = wetK;
+  inp.connect(hp).connect(hs); hs.connect(out); hs.connect(conv).connect(wet).connect(out);
+  return inp;
+}
+function panned(a, out, x) { if (!a.createStereoPanner) return out; const p = a.createStereoPanner(); p.pan.value = x; p.connect(out); return p; }
+function sonarPlus(a, out, t, f, { g = 1, dur = 0.5, x = 0 } = {}) {
+  const o2 = panned(a, out, x), o = a.createOscillator(), h = a.createOscillator(), e = a.createGain(), he = a.createGain();
+  o.frequency.value = f; h.frequency.value = f * 2;
+  soft(e, t, 0.12 * g, 0.003, dur); soft(he, t, 0.025 * g, 0.002, dur * 0.4);
+  o.connect(e); h.connect(he).connect(e); e.connect(o2);
+  if (a.createStereoPanner) {   // echo die links en rechts terugkaatst
+    const dL = a.createDelay(1), dR = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), pL = a.createStereoPanner(), pR = a.createStereoPanner();
+    dL.delayTime.value = 0.16; dR.delayTime.value = 0.16; fb.gain.value = 0.38;
+    lp.type = 'lowpass'; lp.frequency.value = Math.min(2400, f * 2.4);
+    pL.pan.value = -0.7; pR.pan.value = 0.7;
+    e.connect(dL); dL.connect(lp).connect(pL).connect(out); lp.connect(dR); dR.connect(pR).connect(out); dR.connect(fb).connect(dL);
+  }
+  o.start(t); h.start(t); o.stop(t + dur * 1.5 + 0.1); h.stop(t + dur * 1.5 + 0.1);
+}
 export function playFeat(tier = 'silver') {
   const k = { bronze: 1, silver: 2, gold: 3, platinum: 4 }[tier] || 2;
   cue((a, o, t) => {
-    if (k === 1) ping(a, o, t, P.C5, { g: 0.9 });
-    if (k === 2) { ping(a, o, t, P.C5, { g: 0.9 }); ping(a, o, t + 0.11, P.G4, { g: 0.62 }); }
-    if (k >= 3) { ping(a, o, t, P.E5, { g: 0.88 }); ping(a, o, t + 0.11, P.C5, { g: 0.62 }); ping(a, o, t + 0.11, P.G4, { g: 0.4 }); }
-    if (k === 4) ping(a, o, t + 0.28, P.E6, { g: 0.22, dur: 0.5 });
-  });
+    const out = chain(a, o, 0.2), notes = FEAT_CHORDS[k];
+    notes.forEach((f, i) => sonarPlus(a, out, t + i * 0.05, f, { g: i ? 0.62 : 1, x: (i - (notes.length - 1) / 2) * 0.35 }));
+    if (k === 4) sonarPlus(a, out, t + 0.22, 2349.3, { g: 0.28, x: 0.3 });
+  }, false, FEAT_GAIN);
 }
 // nieuwe rang: een lage toon bij het oude teken, en een zachte kwint met een glinstering als de nieuwe stip landt (land in s)
 export function playRank(land = 2.2) {
