@@ -112,8 +112,8 @@ export function createWeather(link) {
     link.hidden = false;
     requestAnimationFrame(trim);
   }
-  // Elk icoon heeft rechts een andere witruimte (de maan meer dan de zon): de graden staan altijd 6 px naast de getekende
-  // rand (Victor, 04/11/2026). Die rand staat vast in RIGHT (in eenheden van 24, met de halve lijndikte erbij, gemeten in
+  // Elk icoon heeft rechts een andere witruimte (de maan meer dan de zon): de graden staan altijd 8 px naast de getekende
+  // rand, gelijk met de ruimte rond het middenpunt (W1, Victor, 04/11/2026). Die rand staat vast in RIGHT (in eenheden van 24, met de halve lijndikte erbij, gemeten in
   // Chromium); meten met getBBox gaf in Safari bij een <use> het hele vak van 24 terug.
   function trim() {
     try {
@@ -121,7 +121,7 @@ export function createWeather(link) {
       const w = svg.getBoundingClientRect().width;
       if (!w) return;
       const empty = (24 - (RIGHT[id] ?? 21.3)) * w / 24;
-      link.querySelector('.fw-temp').style.marginLeft = `${Math.max(0, 6 - empty).toFixed(1)}px`;
+      link.querySelector('.fw-temp').style.marginLeft = `${Math.max(0, 8 - empty).toFixed(1)}px`;
     } catch { /* niet in beeld */ }
   }
 
