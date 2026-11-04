@@ -143,11 +143,19 @@ SOUNDS.sonar = (a, out, t, f, n, level = 3) => ping(a, out, t, SONAR_NOTES[level
 // Speelt een reeks pings; enkel als het geluid aan staat. Een browser laat geluid pas toe na een tik: zolang de audioklok
 // stilstaat, wachtte alles en kwam het er pas bij de volgende tik uit (de maandwissel klonk na haar animatie, Victor,
 // 04/11/2026). Wat niet meteen kan, valt nu weg in plaats van te laat te komen.
+// Wanneer er echt geluid speelde (cue), voor het stilknopje: soundBurst(ms) = hoeveel geluiden in de laatste ms.
+const played = [];
+export function soundBurst(ms = 20000) {
+  const from = performance.now() - ms;
+  while (played.length && played[0] < from) played.shift();
+  return played.length;
+}
 function cue(fn, force = false, gain = SONAR_GAIN) {
   if (!force && !soundOn()) return;
   const a = audio();
   if (!a) return;
   const go = () => {
+    played.push(performance.now());
     const out = a.createGain();
     out.gain.value = gain;
     out.connect(a.destination);

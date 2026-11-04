@@ -18,7 +18,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
 import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
-import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, unlockAudio, soundOn, setSound } from './scene/sound.js';
+import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, unlockAudio, soundBurst, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
@@ -2240,6 +2240,7 @@ function showFeatPop() {
   placeFeatPop();
   requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(); });
   playFeat(x.tier);
+  offerMute(pop);
   popTimer = setTimeout(hideFeatPop, FEAT_POP_MS);
 }
 // De melding staat midden boven de kern, niet midden op het scherm (Victor, 02/11/2026: "cleaner"). Op desktop ligt de
@@ -2261,10 +2262,12 @@ function placeFeatPop(pop = $('feat-pop')) {
 function followFeatPop(pop = $('feat-pop')) {
   if (pop.hidden) return;
   placeFeatPop(pop);
+  placeMute(pop);
   requestAnimationFrame(() => followFeatPop(pop));
 }
 function hideFeatPop() {
   const pop = $('feat-pop');
+  dropMute(pop);
   clearTimeout(popTimer);
   pop.classList.remove('is-on');
   popTimer = setTimeout(() => { pop.hidden = true; popBusy = false; popId = null; showFeatPop(); }, 450);
@@ -2272,6 +2275,49 @@ function hideFeatPop() {
 $('feat-pop').addEventListener('pointerenter', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) clearTimeout(popTimer); });
 $('feat-pop').addEventListener('pointerleave', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) { clearTimeout(popTimer); popTimer = setTimeout(hideFeatPop, 2400); } });
 $('feat-pop').addEventListener('click', () => { hideFeatPop(); openFeats(); });
+
+// Stilknopje (S1 Luidsprekertje, Victor 04/11/2026: "bij veel geluiden na elkaar ... een heel subtiel mute-knopje naast de
+// plek van waar het geluid komt"). Vanaf het derde geluid binnen 20 s staat naast de melding die net klonk een fijn
+// luidsprekertje. Een tik zet het geluid uit (zoals Instellingen, Geluid uit), nog een tik weer aan. De meldingen zijn
+// zelf knoppen, dus dit is een apart knopje dat de melding volgt (placeMute in followFeatPop) en met haar verdwijnt.
+const popMute = $('pop-mute');
+let muteFor = null;
+function placeMute(pop) {
+  if (muteFor !== pop || popMute.hidden) return;
+  const r = pop.getBoundingClientRect(), last = pop.querySelector('.feat-pop-pts, .rank-pop-name')?.getBoundingClientRect();
+  const right = last ? last.right : r.right - 17, mid = last ? last.top + last.height / 2 : r.top + r.height / 2;
+  const x = Math.min(innerWidth - 36 - 4, right - 1);   // icoon 10 px na de tekst (de knop is 36 breed, het icoon 14 in het midden)
+  popMute.style.left = `${Math.round(x)}px`;
+  popMute.style.top = `${Math.round(mid)}px`;   // op de middellijn van de punten (of de naam bij een rang)
+}
+function renderMute() {
+  const off = !soundOn();
+  popMute.setAttribute('aria-pressed', String(off));
+  popMute.setAttribute('aria-label', off ? tx('sound.unmute') : tx('sound.mute'));
+}
+function offerMute(pop) {
+  if (!soundOn() || soundBurst(20000) < 3) return;
+  muteFor = pop;
+  renderMute();
+  popMute.hidden = false;
+  placeMute(pop);
+  requestAnimationFrame(() => popMute.classList.add('is-on'));
+}
+function dropMute(pop) {
+  if (muteFor !== pop) return;
+  muteFor = null;
+  popMute.classList.remove('is-on');
+  setTimeout(() => { if (!muteFor) popMute.hidden = true; }, 450);
+}
+popMute.addEventListener('click', e => {
+  e.stopPropagation();
+  setSound(!soundOn());
+  renderSound();
+  renderMute();
+});
+// aanwijzen van het knopje houdt de melding vast, zoals aanwijzen van de melding zelf
+popMute.addEventListener('pointerenter', () => { if (muteFor) muteFor.dispatchEvent(new PointerEvent('pointerenter')); });
+popMute.addEventListener('pointerleave', () => { if (muteFor) muteFor.dispatchEvent(new PointerEvent('pointerleave')); });
 
 // Nieuwe rang: P1 Het teken groeit (Victor, 03/11/2026). Alleen na een eigen actie (afvinken, focusblok, ...), zoals een
 // prestatie; wat via de sync binnenkomt, stijgt stil. `rankSeen` (per toestel) is de hoogste rang die hier al getoond werd,
@@ -2314,11 +2360,13 @@ function showRankPop() {
   for (const m of ['bronze', 'silver', 'gold', 'platinum']) cols[m] = cs.getPropertyValue(`--tier-${m}`);
   promo.play(q.from, q.to, cols, { still });
   playRank(still ? 0 : landAt(q.from, q.to) / 1000);   // de kwint op het moment dat de nieuwe stip landt
+  offerMute(pop);
   requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(pop); });
   rankTimer = setTimeout(hideRankPop, PROMO_MS);
 }
 function hideRankPop() {
   const pop = $('rank-pop');
+  dropMute(pop);
   clearTimeout(rankTimer);
   pop.classList.remove('is-on');
   rankTimer = setTimeout(() => {
