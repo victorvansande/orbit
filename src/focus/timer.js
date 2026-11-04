@@ -1,10 +1,13 @@
 /* ---- Zandloper: focustimer in de focusmodus ---- */
-// Een vak boven het bakje, in dezelfde ingelaten stijl. De zandloper is één silhouet van rasterpunten, zoals een
-// risoposter en zoals de kern (Halftoon, gekozen door Victor): zand zijn volle punten, leeg glas zijn speldenprikjes, en
-// het oppervlak is een zacht verloop van puntgroottes, met volume zoals de kern. Boven zakt het zand met een kuiltje,
-// door de hals vallen kalme korrels in inkt, onder groeit een kegel. Geen omtrek of platen (glas oogde te antiek).
-// Ernaast of eronder de resterende tijd in de stippencijfers van de klok, 15 / 25 / 50 minuten en Start / Pauze.
-// Uitklapbaar: dan vult het vak de hele ruimte boven het bakje.
+// Vrije hint boven het bakje, zonder kaart of ingelaten kader (Victor, 04/11/2026, Voorstel 1: "geen kaart maar eerder
+// ook een kleine 'hint', exact zoals het wordt weergegeven op het dashboard ... ook het vergroten van de zandloper
+// vergroot gewoon de zandloper zoals nu maar dan vrij, zonder kaart erachter"). De zandloper is één silhouet van
+// rasterpunten, zoals een risoposter en zoals de kern (Halftoon, gekozen door Victor): zand zijn volle punten, leeg glas
+// zijn speldenprikjes, en het oppervlak is een zacht verloop van puntgroottes, met volume zoals de kern. Boven zakt het
+// zand met een kuiltje, door de hals vallen kalme korrels in inkt, onder groeit een kegel. Geen omtrek of platen.
+// Ingeklapt: klein glas (36 × 60 px) met het dunne minutencijfer (T3); aanwijzen toont 15 / 25 / 50, Start / Pauze, ↺
+// en ⤢ links ernaast, exact zoals het kleine glas buiten de focus. Uitgeklapt: de zandloper groeit vrij in de ruimte
+// boven het bakje met de stippencijfers eronder, zonder kaart erachter.
 // Compact (gsm, klasse is-compact, P3 van Victor, 02/11/2026): klein glas met de resterende minuten als groot, dun cijfer
 // (T3) rechts in de knoppenrij; duur, Start / Pauze en ↺ verschijnen pas bij een tik, in een pilletje erboven.
 // De tijd loopt op de klok (eindtijd in de opslag), dus ook verder als de focus dicht is of de pagina herlaadt.
@@ -59,16 +62,16 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
   durWrap.setAttribute('role', 'group');
   durs.forEach(b => durWrap.append(b));
   durWrap.append(unit);
-  row.append(durWrap, go, reset);
-  // compact: groot, dun minutencijfer met klein MIN erachter; een tik toont de bediening
+  const expand = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-expand' });
+  row.append(durWrap, go, reset, expand);
+  // groot, dun minutencijfer met klein MIN erachter (op gsm toont een tik de bediening, op pc start/pauzeert het)
   const minBtn = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-min' });
   const minNum = Object.assign(document.createElement('span'), { className: 'timer-num' });
   const minUnit = document.createElement('small');
   minBtn.append(minNum, minUnit);
   minBtn.setAttribute('aria-expanded', 'false');
   side.append(minBtn, digits, row);
-  const expand = Object.assign(document.createElement('button'), { type: 'button', className: 'timer-expand' });
-  box.append(wrap, side, expand);
+  box.append(wrap, side);
   const g = cv.getContext('2d');
 
   let st = timerState();
@@ -264,7 +267,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
     clearTimeout(toolsTimer);
     if (on) toolsTimer = setTimeout(() => tools(row.contains(document.activeElement) && document.documentElement.dataset.input === 'keyboard'), 2500);
   }
-  minBtn.addEventListener('click', () => tools(!box.classList.contains('is-tools')));
+  minBtn.addEventListener('click', () => { if (compact()) tools(!box.classList.contains('is-tools')); else toggle(); });
   row.addEventListener('pointerdown', () => { if (compact()) tools(true); });
   row.addEventListener('focusin', () => { if (compact()) tools(true); });
   document.addEventListener('pointerdown', e => { if (box.classList.contains('is-tools') && !box.contains(e.target)) tools(false); }, true);

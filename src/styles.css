@@ -604,23 +604,24 @@ body.is-focus .fidget-next:hover, body.is-focus .fidget-next:focus-visible { opa
 .fidget-color-reset { margin-left: auto; min-height: 22px; font: inherit; letter-spacing: 0; color: inherit; cursor: pointer; }
 .fidget-color-reset:hover { color: var(--ink-2); }
 .fidget-color-reset[hidden] + .fidget-color { margin-left: auto; }
-/* Zandloper: focustimer boven het bakje, zelfde ingelaten vak. Ingeklapt: glas links, tijd en knoppen rechts.
-   Uitgeklapt: het vak vult de ruimte boven het bakje, met een groot glas en de tijd eronder. */
+/* Zandloper: focustimer boven het bakje als vrije hint zonder kaart (Victor, 04/11/2026, Voorstel 1).
+   Ingeklapt: klein glas (36 × 60 px) en het dunne minutencijfer (T3), exact zoals het glas buiten de focus; aanwijzen toont de bediening.
+   Uitgeklapt: de zandloper groeit vrij in de ruimte boven het bakje met de stippencijfers eronder, zonder kaart erachter. */
 .timer {
   --timer-bottom: calc(92px + 227px + 14px);
-  position: fixed; z-index: 2; right: var(--pad); bottom: var(--timer-bottom); width: 326px; height: 132px;
-  display: grid; grid-template-columns: 66px 1fr; grid-template-rows: 100%; align-items: center; gap: 22px; padding: 16px 44px 16px 22px;
-  border-radius: 16px; background: var(--well);
-  box-shadow: inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2), 0 1px 0 var(--well-lip);
+  position: fixed; z-index: 2; right: var(--pad); bottom: var(--timer-bottom);
+  display: flex; flex-direction: row-reverse; align-items: flex-end; gap: 10px;
   opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none;
-  transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s, height .55s var(--ease);
+  transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
 }
 body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
-.timer.is-open {
-  height: max(260px, calc(100dvh - var(--timer-bottom) - 40px));   /* tot op de hoogte van ORBIT TASKS */
-  grid-template-columns: 100%; grid-template-rows: minmax(0, 1fr) auto; gap: 22px; padding: 30px 26px 24px;
+.timer.is-open:not(.is-compact) {
+  width: 326px; height: max(260px, calc(100dvh - var(--timer-bottom) - 40px));   /* tot op de hoogte van ORBIT TASKS */
+  display: grid; grid-template-columns: 100%; grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 18px;
 }
-.timer-glass { position: relative; height: 100%; min-height: 0; cursor: pointer; }
+.timer-glass { position: relative; width: 36px; height: 60px; flex: none; min-height: 0; cursor: pointer; }
+.timer.is-open:not(.is-compact) .timer-glass { width: 100%; height: 100%; }
+.timer:not(.is-open).is-paused .timer-glass { opacity: .55; }
 .glass { position: fixed; z-index: 4; right: 28px; bottom: 30px; display: flex; align-items: flex-end; gap: 14px; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity .6s var(--ease); }   /* klein glas buiten de focus (glass.js) */
 .glass.is-on { opacity: 1; pointer-events: auto; }
 .glass-open { display: flex; align-items: flex-end; gap: 10px; padding: 0; background: none; border: 0; color: inherit; cursor: pointer; }
@@ -646,31 +647,43 @@ body.is-focus .glass { display: none; }
   .glass-time { display: inline; }
 }
 @media (max-width: 360px) { .glass-time { display: none; } }   /* op 320 px raakte de tijd de knop Focus */
-@media (prefers-reduced-motion: reduce) { .glass, .glass-tools { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .glass, .glass-tools, .timer-row { transition: none; } }
 .timer-glass canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.timer-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.timer.is-open .timer-side { align-items: center; gap: 16px; }
-.timer-digits { display: flex; gap: 5px; height: 30px; color: var(--ink); }
-.timer.is-open .timer-digits { height: 50px; gap: 8px; }
+.timer-side { display: flex; flex-direction: row-reverse; align-items: baseline; gap: 14px; position: relative; top: .5px; min-width: 0; }
+.timer.is-open:not(.is-compact) .timer-side { position: static; flex-direction: column; align-items: center; gap: 14px; }
+.timer-digits { display: none; gap: 5px; height: 30px; color: var(--ink); }
+.timer.is-open:not(.is-compact) .timer-digits { display: flex; height: 50px; gap: 8px; }
 .timer-digits .dm { display: block; height: 100%; width: auto; overflow: visible; }
 .timer-digits .dm .o { animation: none; }   /* elke seconde opnieuw oplichten was te onrustig */
-.timer-row { display: flex; align-items: center; gap: 14px; font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-.timer-row button { min-height: 22px; color: inherit; letter-spacing: inherit; text-transform: inherit; font: inherit; cursor: pointer; transition: color .2s var(--ease), opacity .2s var(--ease); }
-.timer-row button:hover:not(:disabled) { color: var(--ink-2); }
-.timer-durs { display: flex; align-items: baseline; gap: 8px; }
+.timer-row {
+  display: flex; align-items: baseline; gap: 10px;
+  font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
+  opacity: 0; transform: translateX(6px); pointer-events: none;
+  transition: opacity .25s var(--ease), transform .25s var(--ease);
+}
+body.is-focus .timer:not(.is-open):not(.is-compact):hover .timer-row,
+body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
+.timer.is-open:not(.is-compact) .timer-row { opacity: 1; transform: none; pointer-events: auto; }
+.timer.is-open:not(.is-compact) .timer-row { align-items: center; gap: 14px; }
+.timer-row button { min-height: 22px; padding: 0; color: inherit; letter-spacing: inherit; text-transform: inherit; font: inherit; cursor: pointer; transition: color .2s var(--ease), opacity .2s var(--ease); }
+.timer-row button:hover:not(:disabled) { color: var(--ink); }
+.timer-durs { display: flex; align-items: baseline; gap: 6px; }
+.timer.is-open:not(.is-compact) .timer-durs { gap: 8px; }
 .timer-dur:disabled { cursor: default; opacity: .4; }
 .timer-dur[aria-pressed="true"] { color: var(--ink); }
 .timer-dur[aria-pressed="true"]:disabled { opacity: 1; }
-.timer-unit { opacity: .6; letter-spacing: .1em; text-transform: lowercase; }
-/* start/pauze als klein pilletje, het enige dat echt een knop is */
-.timer-go { padding: 0 11px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
-.timer-go:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ink-3); }
-.timer.is-running .timer-go { box-shadow: none; padding: 0; }
-.timer-go:disabled { cursor: default; box-shadow: none; padding: 0; }
-.timer-reset { margin-left: -6px; letter-spacing: 0 !important; font-size: 12px !important; }
-.timer-expand { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease), background .2s var(--ease); }
-.timer-expand:hover { color: var(--ink); background: var(--fill); }
-.timer-min { display: none; }   /* enkel compact op gsm (P3) */
+.timer-unit { display: none; opacity: .6; letter-spacing: .1em; text-transform: lowercase; }
+.timer.is-open:not(.is-compact) .timer-unit { display: inline; }
+.timer.is-open:not(.is-compact) .timer-go { color: var(--ink); }
+.timer-go:disabled { cursor: default; }
+.timer-reset { letter-spacing: 0 !important; font-size: 12px !important; }
+.timer-expand { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 5px; color: var(--ink-3); cursor: pointer; position: relative; top: 1.5px; transition: color .2s var(--ease); }
+.timer-expand:hover { color: var(--ink); }
+.timer.is-open:not(.is-compact) .timer-expand { position: absolute; top: 4px; right: 0; width: 24px; height: 24px; }
+.timer-min { display: inline-flex; align-items: baseline; gap: 5px; padding: 0; color: var(--ink); cursor: pointer; }
+.timer.is-open:not(.is-compact) .timer-min { display: none; }
+.timer-num { font: 300 30px/.8 var(--font); letter-spacing: -.02em; text-transform: none; font-variant-numeric: tabular-nums; }
+.timer-min small { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 @media (max-width: 999px) { .fidget, .timer, .fidget-next { display: none; } }
 .focus-info {
   position: fixed; z-index: 2;
@@ -1128,11 +1141,11 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   }
   .timer.is-compact .timer-glass { flex: none; width: 20px; height: 33px; min-height: 0; top: -10px; }   /* onderste rij punten (3,5 px boven de onderrand van het canvas) op de basislijn van het cijfer en de knoppen (gemeten) */
   .timer.is-compact.is-paused .timer-glass { opacity: .55; }
-  .timer.is-compact .timer-side { flex-direction: row; align-items: center; gap: 0; }
+  .timer.is-compact .timer-side { flex-direction: row; align-items: center; gap: 0; top: 0; }
   .timer.is-compact .timer-digits, .timer.is-compact .timer-expand, .timer.is-compact .timer-unit { display: none; }
   .timer.is-compact .timer-min { display: inline-flex; align-items: baseline; gap: 4px; min-height: 36px; padding: 0; position: relative; top: 2px;   /* basislijn gelijk met Boven / Zijkant / Focus */ color: var(--ink); cursor: pointer; }
-  .timer-num { font: 300 22px/1 var(--font); letter-spacing: -.02em; text-transform: none; font-variant-numeric: tabular-nums; }
-  .timer-min small { font: 500 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .timer.is-compact .timer-num { font: 300 22px/1 var(--font); }
+  .timer.is-compact .timer-min small { font: 500 9.5px/1 var(--mono); }
   .timer.is-compact .timer-row {
     position: absolute; right: 0; bottom: calc(100% + 14px); flex-wrap: nowrap; gap: 14px; white-space: nowrap;
     padding: 0 16px; border-radius: 999px; background: var(--bg); box-shadow: 0 0 0 1px var(--line);

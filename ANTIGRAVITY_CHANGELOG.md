@@ -219,3 +219,14 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/scene.js`: Tekensvolgorde in `draw(now)` aangepast; duur en bundelparameters geüpdatet.
 - **Getest:** Gecontroleerd op desktop en mobiel. Banen, kern en orbs tekenen prominent over de muur heen; de achtergrondsterren liggen erachter; de tekst glijdt traag en vloeiend voorbij.
 - **Impact op opslag / state:** Geen.
+
+### 22. Zandloper in focusmodus als vrije hint zonder kaart (Voorstel 1)
+- **Vraag van Victor:** "maak van de zandloper op de focus pagina geen kaart maar eerder ook een kleine 'hint', exact zoals het wordt weergegeven op het dashboard als er een zandloper loopt maar de focus mode is afgesloten. kleiner en niet meer omringt door een kaart, ook het vergroten van de zandloper vergroot gewoon de zandloper zoals nu maar dan vrij, zonder kaart erachter". Uit de drie voorstellen koos Victor **Voorstel 1 (De Stille Hint)**.
+- **Oplossing & Implementatie:**
+  - **Ingeklapt (Stille Hint):** De ingelaten kaart (`background: var(--well)`, `box-shadow`, `border-radius: 16px`, `326 × 132 px`) rond `#timer` is verwijderd. Rechtsboven het bakje zweeft nu een compact 36 × 60 px zandloperglas met links ervan het dunne minutencijfer (`30px` Geist Light met klein `MIN`, `.timer-min`), exact zoals `.glass` op het dashboard.
+  - **Bediening bij aanwijzen:** Net als bij `.glass-tools` op het dashboard schuift de knoppenrij (`15 / 25 / 50`, `Start / Pauze`, `↺` en het vergroot-icoontje `⤢`) pas bij aanwijzen (`:hover`) of toetsenbordfocus (`:focus-within`) zacht tevoorschijn links van het minutencijfer. Een klik op het glas of het minutencijfer start of pauzeert direct.
+  - **Vrij vergroten zonder kaart (`.timer.is-open`):** Bij het vergroten groeit het zandloperglas vrij in de ruimte boven het bakje, met eronder de stippencijfers (`50px`) en de bedieningsrij en rechtsboven het verkleinknopje, zonder omsluitende kaart.
+- **Gewijzigde bestanden:**
+  - `src/focus/timer.js`: `.timer-expand` ondergebracht in `.timer-row`, klik op `.timer-min` op desktop gekoppeld aan `toggle()`.
+  - `src/styles.css`: Kaartstijl verwijderd van `.timer`, layout en typografie voor ingeklapte hint en vrij uitgeklapte toestand (`.timer.is-open:not(.is-compact)`) ingesteld met behoud van de mobiele weergave (`.timer.is-compact`).
+- **Impact op opslag / state:** Geen (`priority-orbit.timer.v1` en `priority-orbit.timer.ui.v1` blijven ongewijzigd).
