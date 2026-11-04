@@ -117,7 +117,7 @@ export const SOUNDS = {
    Elke toon wordt zacht aangezet en loopt exponentieel uit, nooit een sprong. Genormaliseerd zodat het afvinken net als
    baken piekt op ongeveer -20 dBFS (gemeten met OfflineAudioContext). Geluid krijgen enkel: afvinken, prestatie, nieuwe
    rang, zandloper klaar en de maandwissel. */
-const P = { E3: 164.81, G3: 196, B3: 246.94, E4: 329.63, G4: 392, A4: 440, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, E6: 1318.5 };
+const P = { E2: 82.41, E3: 164.81, G3: 196, B3: 246.94, E4: 329.63, G4: 392, A4: 440, B4: 493.88, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.5 };
 const SONAR_NOTES = [0, P.E5, P.C5, P.A4, P.G4, P.E4];   // Nu .. Ooit
 const ECHO = [0, 0.075, 0.115, 0.16, 0.22, 0.3];         // Nu .. Ooit: afstand tot de kern, in s
 const DET = [0, 5, -4, 3, -6, 2, -2];                     // kleine vaste stemverschillen bij herhaling (cent)
@@ -128,15 +128,19 @@ function soft(g, t, peak, attack, decay) {
   g.gain.linearRampToValueAtTime(peak, t + attack);
   g.gain.setTargetAtTime(0.00001, t + attack, decay / 5);
 }
-function ping(a, out, t, f, { g = 1, dur = 0.16, det = 0, lv = 3 } = {}) {
+// echo, fb, wet en att overschrijven de gewone sonar (de maandwissel gebruikt kortere en langere echo's)
+function ping(a, out, t, f, { g = 1, dur = 0.16, det = 0, lv = 3, echo, fb: fbk = 0.36, wet: wg = 0.55, att = 0.004 } = {}) {
   const o = a.createOscillator(), e = a.createGain();
   o.frequency.value = f; o.detune.value = det;
-  soft(e, t, 0.2 * g, 0.004, dur);
-  const dl = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), wet = a.createGain();
-  dl.delayTime.value = ECHO[lv] || ECHO[3]; fb.gain.value = 0.36;
-  lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); wet.gain.value = 0.55;
-  o.connect(e); e.connect(out); e.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wet).connect(out);
-  o.start(t); o.stop(t + dur * 1.5 + 0.1);
+  soft(e, t, 0.2 * g, att, dur);
+  o.connect(e); e.connect(out);
+  if (echo !== 0) {
+    const dl = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), wet = a.createGain();
+    dl.delayTime.value = echo || ECHO[lv] || ECHO[3]; fb.gain.value = fbk;
+    lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); wet.gain.value = wg;
+    e.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wet).connect(out);
+  }
+  o.start(t); o.stop(t + att + dur * 1.5 + 0.1);
 }
 SOUNDS.sonar = (a, out, t, f, n, level = 3) => ping(a, out, t, SONAR_NOTES[level] || P.A4, { det: DET[n % DET.length], g: 1 - 0.05 * (n % 3), lv: level });
 
@@ -277,16 +281,101 @@ export function playTimer() {
 }
 // maandwissel: een piepklein tikje per ster die in de kern valt, steeds sneller (1,3 tot 4,4 s), en op 3,9 s bij het witte
 // licht één lage, warme samenklank. Zelfde tijdlijn als scene.monthTurn en whiteBurst.
-export function playMonth() {
-  cue((a, o, t) => {
-    const N = 26, notes = [P.E6, P.C6, P.A5, P.G5, P.E5];
-    for (let i = 0; i < N; i++) {
-      const u = i / (N - 1), at = 1.3 + 3.1 * Math.sqrt(u), k = Math.floor(((i * 7919) % 97) / 97 * 5);
-      ping(a, o, t + at, notes[Math.min(4, k + Math.floor(u * 2))], { g: 0.16 + 0.12 * u, dur: 0.12, det: DET[i % DET.length] });
+/* ---- Maandwissel: vier uitwerkingen (Victor, 04/11/2026, src/scene/turn.js) ----
+   Het geluid leest dezelfde tijdlijn als het beeld: elk tikje valt op het moment dat een ster de kern bereikt, het akkoord
+   op het moment dat het licht begint. Verfijnd tegenover de voorstellen: tikjes die minder dan 45 ms na elkaar zouden
+   vallen, worden er één (een iets voller tikje), zodat een volle hemel niet zoemt; elk tikje komt links of rechts uit,
+   waar de ster aankomt; en de vertraging van het toestel (Bluetooth) wordt opgevangen door het beeld iets later te laten
+   beginnen (`audioLead`), niet door het geluid te laat te laten komen. */
+// hoeveel ms het beeld moet wachten zodat geluid en beeld samen uit het toestel komen (luidspreker of Bluetooth)
+export function audioLead() {
+  if (!soundOn() || !ctx) return 60;
+  const lat = (ctx.outputLatency || ctx.baseLatency || 0) * 1000;
+  return Math.round(Math.min(320, 60 + lat));
+}
+function panTo(a, out, p) {
+  if (!a.createStereoPanner) return out;
+  const n = a.createStereoPanner(); n.pan.value = Math.max(-1, Math.min(1, p)); n.connect(out);
+  return n;
+}
+// zacht slotakkoord: twee stemmen per toon, een lage doorlaat die opengaat en weer sluit, lange uitadem
+function monthChord(a, out, t, notes, { g = 1, att = 0.08, dur = 2.6, open = 2400 } = {}) {
+  const lp = a.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(open, t + att + 0.25); lp.frequency.setTargetAtTime(700, t + att + 0.4, dur / 3);
+  lp.connect(out);
+  notes.forEach(([f, gg], i) => [-4, 4].forEach(det => {
+    const o = a.createOscillator(), e = a.createGain();
+    o.frequency.value = f; o.detune.value = det + i;
+    soft(e, t + i * 0.012, 0.11 * g * gg, att, dur);
+    o.connect(e).connect(lp); o.start(t); o.stop(t + att + dur * 1.8);
+  }));
+}
+// een tikje per ster die aankomt, steeds lager naarmate de kern voller wordt; te dicht op elkaar wordt één tikje
+function monthTicks(a, out, t0, arrivals) {
+  const notes = [P.E6, P.D6, P.C6, P.A5, P.G5, P.E5];
+  let last = -1, extra = 0, n = 0;   // eerste tikje altijd
+  for (let i = 0; i < arrivals.length; i++) {
+    const x = arrivals[i], u = x.u;
+    if (x.t - last < 0.045) { extra++; continue; }
+    ping(a, panTo(a, out, 0.5 * Math.cos(x.a || 0)), t0 + x.t, notes[Math.min(5, Math.floor(u * 6))],
+      { g: Math.min(0.5, (0.2 + 0.16 * u) * (1 + 0.15 * extra)), dur: 0.07, echo: 0.07, fb: 0.18, wet: 0.35, det: DET[n++ % DET.length] });
+    last = x.t; extra = 0;
+  }
+}
+const ENDING = [[P.E3, 1], [P.B3, 0.6], [P.E4, 0.42], [P.G4, 0.16]];
+const MONTH = {
+  // Z1 Opgeslokt: tikjes op de slokken, een stilte terwijl de kern inademt, dan zwelt het akkoord met het licht
+  slok(a, o, t0, pl) {
+    monthTicks(a, o, t0, pl.arrivals);
+    monthChord(a, o, t0 + pl.light, ENDING, { g: 1.1, att: 0.14, dur: 3.2 });
+    ping(a, o, t0 + pl.light + 0.18, P.E6, { g: 0.12, dur: 0.6, echo: 0.3, fb: 0.4, att: 0.06 });
+  },
+  // Z2 Draaikolk: een adem van ruis die met de schijf mee omhoog draait, een lage toon eronder, weg bij het dichtknijpen
+  kolk(a, o, t0, pl) {
+    const C = pl.collapse, T = x => t0 + x;
+    const len = Math.ceil(a.sampleRate * 2), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = a.createBufferSource(), bp = a.createBiquadFilter(), g = a.createGain();
+    src.buffer = buf; src.loop = true; bp.type = 'bandpass'; bp.Q.value = 5;
+    bp.frequency.setValueAtTime(260, T(0.9)); bp.frequency.exponentialRampToValueAtTime(620, T(3.0)); bp.frequency.exponentialRampToValueAtTime(2600, T(C - 0.05));
+    g.gain.setValueAtTime(0.0001, T(0.9)); g.gain.linearRampToValueAtTime(0.05, T(3.0)); g.gain.linearRampToValueAtTime(0.16, T(C - 0.08)); g.gain.linearRampToValueAtTime(0.0001, T(C));
+    src.connect(bp).connect(g).connect(o); src.start(T(0.9)); src.stop(T(C + 0.1));
+    const lo = a.createOscillator(), lg = a.createGain();
+    lo.frequency.setValueAtTime(P.E2, T(1.2)); lo.frequency.exponentialRampToValueAtTime(P.E3, T(C));
+    lg.gain.setValueAtTime(0.0001, T(1.2)); lg.gain.linearRampToValueAtTime(0.05, T(C - 0.1)); lg.gain.linearRampToValueAtTime(0.0001, T(C));
+    lo.connect(lg).connect(o); lo.start(T(1.2)); lo.stop(T(C + 0.1));
+    monthChord(a, o, T(C + 0.04), [[P.E3, 1], [P.B3, 0.6], [P.E4, 0.4], [P.B4, 0.14]], { g: 1.1, att: 0.05, dur: 3 });
+  },
+  // Z3 Sterrenbeeld: een zachte ping per laag die zich tekent, een tikje per kraal die de kern bereikt, het akkoord
+  beeld(a, o, t0, pl) {
+    pl.layers.forEach((tl, d) => ping(a, o, t0 + tl, d % 2 ? P.A4 : P.E5, { g: Math.max(0.12, 0.32 - 0.012 * d), dur: 0.14, echo: 0.22, fb: 0.4, wet: 0.6 }));
+    monthTicks(a, o, t0, pl.arrivals);
+    monthChord(a, o, t0 + pl.light, ENDING, { g: 1.1, att: 0.14, dur: 3.2 });
+  },
+  // Z4 Inademen: één lang akkoord dat zwelt en zich opent terwijl de hemel inzakt, vasthoudt, en bij het uitademen opengaat
+  adem(a, o, t0, pl) {
+    const T = x => t0 + x, lp = a.createBiquadFilter(), g = a.createGain();
+    lp.type = 'lowpass'; lp.Q.value = 0.7;
+    lp.frequency.setValueAtTime(240, T(1.1)); lp.frequency.exponentialRampToValueAtTime(1100, T(pl.inEnd)); lp.frequency.setValueAtTime(1100, T(pl.light));
+    lp.frequency.exponentialRampToValueAtTime(3200, T(pl.light + 0.3)); lp.frequency.setTargetAtTime(600, T(pl.light + 0.5), 1.2);
+    g.gain.setValueAtTime(0.0001, T(1.1)); g.gain.linearRampToValueAtTime(0.7, T(pl.inEnd)); g.gain.linearRampToValueAtTime(0.62, T(pl.light));
+    g.gain.linearRampToValueAtTime(1, T(pl.light + 0.2)); g.gain.setTargetAtTime(0.0001, T(pl.light + 0.3), 0.9);
+    lp.connect(g).connect(o);
+    for (const [f, gg] of [[P.E3, 0.14], [P.B3, 0.09], [P.E4, 0.06], [P.G4, 0.025]]) for (const det of [-5, 5]) {
+      const os = a.createOscillator(), e = a.createGain();
+      os.frequency.value = f; os.detune.value = det; e.gain.value = gg;
+      os.connect(e).connect(lp); os.start(T(1.1)); os.stop(T(pl.light + 6));
     }
-    ping(a, o, t + 3.9, P.E3, { g: 0.85, dur: 1.4 });
-    ping(a, o, t + 3.9, P.B3, { g: 0.42, dur: 1.2 });
-    ping(a, o, t + 3.98, P.E4, { g: 0.26, dur: 1.0 });
+    ping(a, o, T(pl.light + 0.12), P.E6, { g: 0.1, dur: 0.8, echo: 0.3, fb: 0.42, att: 0.08 });
+  },
+};
+// pl: de tijdlijn uit turnPlan; at: performance.now()-tijd waarop het beeld begint (scene.monthTurn met t0)
+export function playMonth(pl, at = performance.now()) {
+  if (!pl || !MONTH[pl.style]) return;
+  cue((a, o) => {
+    const lat = a.outputLatency || a.baseLatency || 0;
+    const t0 = a.currentTime + (at - performance.now()) / 1000 - lat;
+    MONTH[pl.style](a, o, Math.max(a.currentTime - 0.3, t0), pl);   // net voorbij: de eerste tellen zijn stil, de rest valt juist
   });
 }
 

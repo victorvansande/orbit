@@ -18,12 +18,13 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
 import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
-import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, unlockAudio, soundBurst, soundOn, setSound } from './scene/sound.js';
+import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, unlockAudio, soundBurst, soundOn, setSound, audioLead } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
 import { softReveal, whiteBurst, smallNight, coreWave, monthGate, createWall } from './scene/fx.js';
+import { turnStyle, TURN_STYLES } from './scene/turn.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
 applyStatic();
@@ -2063,7 +2064,8 @@ function oldSky(ms) {
 function planTurn(now = new Date()) {
   if (!turnDue(now)) return null;
   const ms = +thisMonth(now), prev = lastMonth(now);
-  return { ms, prev, old: oldSky(ms), recap: recapStats(prev).total > 0 };
+  // welke van de vier uitwerkingen (turn.js): elke maand een andere, op elk toestel dezelfde
+  return { ms, prev, old: oldSky(ms), recap: recapStats(prev).total > 0, style: turnStyle(thisMonth(now)) };
 }
 function cutMonth(plan) {
   const hadOld = Object.values(done).some(t => Number.isFinite(t) && t < plan.ms);
@@ -2102,15 +2104,19 @@ function runTurn(plan, { replay = false } = {}) {
   let opened = false;
   const open = () => { if (opened) return; opened = true; setHush(false); openRecap(plan.prev, { born: true }); };
   setHush(true);
-  playMonth();   // zelfde tijdlijn als de zwaartekracht en het witte licht
-  scene.monthTurn(plan.old, {
-    onBurst() {
+  // beeld en geluid lezen dezelfde tijdlijn (turn.js); het beeld begint net later, zodat het geluid op tijd uit het
+  // toestel komt (ook via Bluetooth, audioLead)
+  const at = performance.now() + audioLead();
+  const timeline = scene.monthTurn(plan.old, {
+    style: plan.style, t0: at,
+    onBurst(kind) {
       whiteBurst({
         center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
-        onPeak: open,
+        onPeak: open, soft: kind === 'soft',
       });
     },
   });
+  playMonth(timeline, at);
   return true;
 }
 // demo: een vallende ster laten vallen (Victor, 02/11/2026); op gsm eerst naar boven, de scène staat boven de lijst
@@ -2120,10 +2126,12 @@ $('meteor-btn').addEventListener('click', () => {
   else scene.meteorNow();
 });
 // demo: de maandwissel opnieuw afspelen vanuit de details van de teller
+let demoTurn = Math.max(0, TURN_STYLES.indexOf(turnStyle(thisMonth())));
 $('turn-replay').hidden = !DEMO_MODE;
 $('turn-replay').addEventListener('click', () => {
   if (turning) return;
-  const go = () => runTurn(planTurn(), { replay: true });
+  // demo: elke keer de volgende van de vier uitwerkingen, zodat je ze allemaal kan zien
+  const go = () => { const plan = planTurn(); if (plan) { demoTurn = (demoTurn + 1) % TURN_STYLES.length; plan.style = TURN_STYLES[demoTurn]; } runTurn(plan, { replay: true }); };
   if (!desktop.matches && scrollY > 40) { scrollTo({ top: 0, behavior: reducedMotion.matches ? 'auto' : 'smooth' }); setTimeout(go, 600); }
   else go();
 });
@@ -3244,7 +3252,7 @@ if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
   revealDelay = 800;
   turnAfterReveal = turnShow;   // maandwissel: eerst opent de pagina zacht met de oude hemel, dan begint de zwaartekracht
   const intro = () => {
-    if (turnAfterReveal && turnPlan.old.length) { scene.holdTurn(turnPlan.old); setHush(true); }
+    if (turnAfterReveal && turnPlan.old.length) { scene.holdTurn(turnPlan.old, turnPlan.style); setHush(true); }
     const give = takeStage(3000);   // meldingen bij het laden wachten tot de intro voorbij is
     softReveal({
       center() { const r = $('scene').getBoundingClientRect(); return [r.left + scene.centerX, r.top + r.height / 2]; },
@@ -3261,7 +3269,7 @@ if (!reducedMotion.matches && !minimalFx && !/^#sync=/.test(location.hash)) {
   // dus daarna mag de zwaartekracht met geluid spelen (anders bleef ze stil of kwam het geluid te laat). Pas na de tik
   // begint de zachte intro met de oude hemel; het venster lost op in haar papier.
   if (turnAfterReveal && turnPlan.old.length) {
-    scene.holdTurn(turnPlan.old);
+    scene.holdTurn(turnPlan.old, turnPlan.style);
     const wait = takeStage(600000);   // geen begroeting, pil of toast zolang het venster er staat
     const now = new Date(), two = v => String(v).padStart(2, '0');
     monthGate({

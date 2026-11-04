@@ -2,6 +2,7 @@ import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, RIM, TIP_Z, depthAt, rgbOf, rgba } f
 import { dueLabel, isOverdue } from '../core/deadline.js';
 import { tx } from '../core/i18n.js';
 import { wallRows } from './fx.js';
+import { turnPlan, arrived, seg, pullEase } from './turn.js';
 
 /* ---- Camera en geometrie (eenheden van de 390-stage) ---- */
 const TAU = Math.PI * 2;
@@ -143,7 +144,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return NU_Z + (TIP_Z - NU_Z) * Math.min(1, (NU_RING - r) / (NU_RING - coreR));
   }
   let sonar = null;                          // {t0, target}: ring van tekens vanuit de kern, de gezochte bol licht op
-  let turn = null;                           // maandwissel: {t0, old, onBurst, fired}, de oude hemel spiraalt naar de kern
+  let turn = null;                           // maandwissel: {t0, plan, onBurst, fired}, de oude hemel gaat naar de kern (turn.js)
   let skyWave = null;                        // {t0, old}: nieuwe hemel, de ring van tekens neemt de oude sterren mee
   let minimal = false;                       // Minimaal (Instellingen → Effecten): alle extra effecten uit
   // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
@@ -663,64 +664,160 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawStars(now, sky, front === null ? null : d => d < front - 30);   // nieuwe hemel achter de ring
   }
 
-  // Maandwissel ("Zwaartekracht", gekozen door Victor, 01/11/2026; trager en vloeiender op zijn vraag): de sterren van
-  // de vorige hemel lichten op (0 tot 1,4 s), draaien in steeds snellere spiralen met een taps lichtstaartje naar de
-  // kern (1,3 tot ongeveer 4,4 s), de kern zwelt, en op 3,9 s laat de scène de witte gloed beginnen (`onBurst`, app.js).
-  // Daarna krimpt de kern terug. Niet over te slaan: dit is het moment van de maand.
-  const TURN_BURST = 3.9, TURN_END = 7;
-  const TURN_TAIL_N = 12, TURN_TAIL_DT = 0.025;   // staart: 12 stukjes over 0,3 s van de eigen baan, dus mee gebogen (was 0,36 s; Victor, 04/11/2026: iets korter en dunner)
-  const seg01 = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
-  const pullEase = u => u * u * (1.6 - 0.6 * u);   // zacht vertrek, versnelt, maar zonder ruk op het einde
-  function turnCore(now) {   // groeifactor van de kern tijdens de maandwissel
-    if (!turn) return 1;
-    const t = (now - turn.t0) / 1000;
-    const pull = seg01(t, 1.3, 4.1), boom = ease(seg01(t, 3.8, 5.3)), back = ease(seg01(t, 5.2, TURN_END));
-    return (1 + pullEase(pull) * 0.8 + boom * 1.5) * (1 - back) + back;
+  // Maandwissel (Zwaartekracht, gekozen door Victor, 01/11/2026). Sinds 04/11/2026 vier uitwerkingen, elke maand een andere
+  // (Victor: "Kan je z1 tot en met z4 allemaal uitwerken en elke maand random kiezen"): Z1 Opgeslokt, Z2 Draaikolk,
+  // Z3 Sterrenbeeld, Z4 Inademen. De tijdlijn staat in turn.js en is dezelfde als die van het geluid. Op `plan.light`
+  // laat de scène het licht beginnen (`onBurst(kind)`, app.js): zacht vanuit de kern of een flits. Niet over te slaan.
+  const TURN_TAIL_N = 12, TURN_TAIL_DT = 0.025;   // staart: 12 stukjes over 0,3 s van de eigen baan, dus mee gebogen
+  const easeOut = u => 1 - Math.pow(1 - u, 3);
+  const turnT = now => (now - turn.t0) / 1000;
+  // grootte van de kern (factor) op tijd t
+  function turnCoreAt(t) {
+    const pl = turn?.plan;
+    if (!pl || !(t > -1e9)) return 1;   // holdTurn: t = -Infinity, nog niets begonnen
+    const back = ease(seg(t, pl.light + 1.6, pl.end));
+    let k;
+    if (pl.style === 'slok' || pl.style === 'beeld') {   // elke ster die aankomt is een slok: een stapje groter en een klein veertje
+      const n = arrived(pl, t);
+      let bump = 0;
+      for (let i = n - 1; i >= 0 && i >= n - 14; i--) { const age = t - pl.T[i]; if (age > 0.7) break; bump += 0.06 * Math.exp(-age / 0.12); }
+      const inh = ease(seg(t, pl.inhale[0], pl.inhale[1])), out = easeOut(seg(t, pl.light, pl.light + 1.2));
+      k = (1 + 1.2 * n / Math.max(1, pl.T.length) + Math.min(0.3, bump)) * (1 - 0.12 * inh) * (1 + 0.6 * out);
+    } else if (pl.style === 'kolk') {
+      k = 1 + 1.1 * pullEase(seg(t, 2.6, pl.collapse)) + 0.8 * ease(seg(t, pl.collapse, pl.collapse + 0.5));
+    } else {
+      const hold = Math.sin(seg(t, pl.inEnd, pl.light) * Math.PI) * 0.04;
+      k = (1 + 1.4 * pullEase(seg(t, 1.3, pl.inEnd)) + hold) * (1 + 0.4 * easeOut(seg(t, pl.light, pl.light + 1.3)));
+    }
+    return k * (1 - back) + back;
+  }
+  function turnCore(now) { return turn ? turnCoreAt(turnT(now)) : 1; }
+  // rimpels door de rasterpunten van de kern (leeftijden in s): bij elke slok (Z1, Z3), bij het dichtknijpen (Z2) of uitademen (Z4)
+  function turnWaves(now) {
+    const pl = turn?.plan;
+    if (!pl) return null;
+    const t = turnT(now), out = [];
+    if (!(t > -1e9)) return null;
+    for (let i = arrived(pl, t) - 1; i >= 0 && out.length < 6; i--) { const age = t - pl.T[i]; if (age > 0.4) break; out.push(age); }
+    const at = pl.style === 'kolk' ? pl.collapse : pl.style === 'adem' ? pl.light : null;
+    if (at != null && t > at && t < at + 0.5) out.push((t - at) * 0.8);
+    return out.length ? out : null;
+  }
+  // plek van de oude sterren op het scherm in dit beeld, en de kern
+  function turnFrame() {
+    const ks = skyScale(), S = turn.plan.stars, n = S.length;
+    const cx = coreHit ? coreHit.x : cam.cx, cy = coreHit ? coreHit.y : cam.cy;
+    if (!turn.xy || turn.xy.length !== 2 * n) turn.xy = new Float32Array(2 * n);
+    let R = 0;
+    for (let i = 0; i < n; i++) {
+      const [x, y] = skyXY(S[i].st.x, S[i].st.y, ks, S[i].st);
+      turn.xy[2 * i] = x; turn.xy[2 * i + 1] = y; R = Math.max(R, Math.hypot(x - cx, y - cy));
+    }
+    return { cx, cy, base: coreHit ? coreHit.r : 22, R: Math.max(R, 60), xy: turn.xy };
+  }
+  const turnEdge = (F, t) => F.base * 0.72 * turnCoreAt(t);   // rand van de (gezwollen) kern, daar komt een ster aan
+  // Z3: punt op afstand d langs het pad van een ster naar de kern (in hemeleenheden), op het scherm
+  function turnAlong(F, s, t) {
+    const pl = turn.plan;
+    let d = pl.maxL * pullEase(seg(t, pl.tC, pl.tC + pl.dur));
+    for (let k = 0; k < s.lens.length; k++) {
+      const a = s.path[k], ax = F.xy[2 * a], ay = F.xy[2 * a + 1];
+      let bx, by;
+      if (k + 1 < s.path.length) { const b = s.path[k + 1]; bx = F.xy[2 * b]; by = F.xy[2 * b + 1]; }
+      else { const dd = Math.hypot(ax - F.cx, ay - F.cy) || 1, e = turnEdge(F, t); bx = F.cx + (ax - F.cx) / dd * e; by = F.cy + (ay - F.cy) / dd * e; }
+      if (d <= s.lens[k]) { const u = d / s.lens[k]; return { x: ax + (bx - ax) * u, y: ay + (by - ay) * u, node: k + 1, bx, by }; }
+      d -= s.lens[k];
+    }
+    return null;
+  }
+  // één ster op tijd t: plek, grootte (k), dekking (a), en of ze een staart krijgt; null = in de kern
+  function turnStar(F, s, t) {
+    const pl = turn.plan, x0 = F.xy[2 * s.i], y0 = F.xy[2 * s.i + 1];
+    const b = ease(seg(t, 0.1 + s.r1 * 0.5, 1.1 + s.r1 * 0.5));   // de sterren lichten eerst op, elk iets later
+    const r0 = Math.hypot(x0 - F.cx, y0 - F.cy), a0 = Math.atan2(y0 - F.cy, x0 - F.cx);
+    if (pl.style === 'slok') {   // spiraal naar de kern, de dichtste eerst
+      if (t >= s.T) return null;
+      const q = pullEase(seg(t, s.T - s.F, s.T)), e = turnEdge(F, t);
+      const r = e + Math.max(0, r0 - e) * (1 - q), an = a0 + s.w * Math.pow(q, 1.6), sink = smoothstep(0.86, 1, q);
+      return { x: F.cx + Math.cos(an) * r, y: F.cy + Math.sin(an) * r, k: (1 + b * 0.6) * (1 - 0.35 * q) * (1 - 0.6 * sink), a: (0.45 + 0.55 * b) * (1 - sink), tail: q > 0.004 };
+    }
+    if (pl.style === 'kolk') {   // eerst een platte schijf rond de kern, die sneller draait en dichtknijpt
+      const g = ease(seg(t, 0.9 + 0.5 * s.r1, 2.9)), c = pullEase(seg(t, 3.0 + 0.25 * s.r1, pl.collapse - 0.05));
+      if (c >= 1) return null;
+      const e = turnEdge(F, t) * 1.4, rd = F.R * (0.42 + 0.26 * s.r2), rr = e + (rd - e) * (1 - c);
+      const phi = a0 + 1.6 * Math.pow(seg(t, 0.9, 3.1), 2) + 9.5 * Math.pow(seg(t, 3.0, pl.collapse), 2.2);
+      const dx = F.cx + Math.cos(phi) * rr, dy = F.cy + Math.sin(phi) * rr * 0.42, sink = smoothstep(0.86, 1, c);
+      return { x: x0 + (dx - x0) * g, y: y0 + (dy - y0) * g, k: (1 + b * 0.6) * (1 - 0.3 * c) * (1 - 0.6 * sink), a: (0.45 + 0.55 * b) * (1 - sink), tail: g > 0.01 };
+    }
+    if (pl.style === 'beeld') {   // kralen langs de draden van het sterrenbeeld
+      if (t >= s.T) return null;
+      const lit = ease(seg(t, s.lit - 0.1, s.lit + 0.4)), p = turnAlong(F, s, t);
+      if (!p) return null;
+      const sink = smoothstep(0, 1, 1 - clamp((s.T - t) / 0.18, 0, 1));
+      return { x: p.x, y: p.y, k: (1 + lit * 0.55) * (1 - 0.5 * sink), a: (0.42 + 0.58 * lit) * (1 - sink), tail: false };
+    }
+    // adem: de hele hemel zakt als één geheel naar de kern en draait een kwartslag mee
+    const p = pullEase(seg(t, 1.3 + 0.35 * s.ur, pl.inEnd - 0.25 + 0.25 * s.ur));
+    if (p >= 1) return null;
+    const e = turnEdge(F, t), r = e + Math.max(0, r0 - e) * (1 - p), an = a0 + 1.1 * ease(seg(t, 1.2, pl.inEnd)), sink = smoothstep(0.8, 1, p);
+    return { x: F.cx + Math.cos(an) * r, y: F.cy + Math.sin(an) * r, k: (1 + b * 0.6) * (1 - 0.35 * p) * (1 - 0.6 * sink), a: (0.45 + 0.55 * b) * (1 - sink), tail: false };
+  }
+  // Z3: de lijntjes van het sterrenbeeld groeien vanaf de kern, en worden daarna als draden binnengehaald
+  function drawTurnLines(F, t, alpha) {
+    const pl = turn.plan, fade = 1 - seg(t, pl.tC + pl.dur * 0.6, pl.tC + pl.dur);
+    if (fade <= 0) return;
+    ctx.strokeStyle = rgba(INK, 0.3 * fade * alpha); ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const s of pl.stars) {
+      const t0 = 0.35 + s.depth * pl.step, u = ease(seg(t, t0, t0 + pl.draw));
+      if (u <= 0) continue;
+      const x = F.xy[2 * s.i], y = F.xy[2 * s.i + 1];
+      let px, py;
+      if (s.parent >= 0) { px = F.xy[2 * s.parent]; py = F.xy[2 * s.parent + 1]; }
+      else { const dd = Math.hypot(x - F.cx, y - F.cy) || 1, e = turnEdge(F, t); px = F.cx + (x - F.cx) / dd * e; py = F.cy + (y - F.cy) / dd * e; }
+      let hx = px + (x - px) * u, hy = py + (y - py) * u;
+      if (t > pl.tC) {   // binnenhalen: enkel het stuk tussen de ster en haar volgende knoop
+        const p = turnAlong(F, s, t);
+        if (!p || p.node > 1 || t >= s.T) continue;
+        hx = p.x; hy = p.y;
+      }
+      ctx.moveTo(px, py); ctx.lineTo(hx, hy);
+    }
+    ctx.stroke();
   }
   function drawTurn(now) {
-    const t = (now - turn.t0) / 1000;
-    if (t >= TURN_BURST && !turn.fired) { turn.fired = true; turn.onBurst?.(); }
-    if (t >= TURN_END) { turn = null; return; }
+    const pl = turn.plan, t = turnT(now);
+    if (t >= pl.light && !turn.fired) { turn.fired = true; turn.onBurst?.(pl.kind); }
+    if (t >= pl.end) { turn = null; return; }
     const a = introAlpha(now, 0.3, 1.2);
     if (a <= 0) return;
-    const ks = skyScale(), small = Math.min(W, H) < 500;
-    const dense = clamp(1 - (turn.old.length - 150) / 1500, 0.65, 1);
-    const cx = coreHit ? coreHit.x : cam.cx, cy = coreHit ? coreHit.y : cam.cy;
-    const dark = theme === THEMES.dark;
+    const F = turnFrame(), small = Math.min(W, H) < 500, dark = theme === THEMES.dark;
+    const dense = clamp(1 - (pl.stars.length - 150) / 1500, 0.65, 1);
     ctx.lineCap = 'round';
-    for (const st of turn.old) {
-      const d = ((st.ph / (Math.PI * 2)) % 1 + 1) % 1 * 0.5;      // elke ster iets later, vast per ster
-      const b = ease(seg01(t, d * 0.8, 1.2 + d * 0.8));
-      const pullAt = tt => pullEase(seg01(tt, 1.3 + d * 0.9, 3.9 + d * 0.9));
-      const p = pullAt(t);
-      if (p >= 1) continue;
-      const [x0, y0] = skyXY(st.x, st.y, ks, st);
-      const r0 = Math.hypot(x0 - cx, y0 - cy), a0 = Math.atan2(y0 - cy, x0 - cx);
-      const pos = q => { const r = r0 * (1 - q), an = a0 + Math.pow(q, 1.7) * 4.4; return [cx + Math.cos(an) * r, cy + Math.sin(an) * r]; };
-      const [x, y] = pos(p);
-      // vlak bij de kern krimpt de ster verder en lost ze op in de kern, in plaats van op halve grootte te verdwijnen
-      const sink = smoothstep(0.82, 1, p);
-      const R = starR(st, dense, small) * (1 + b * 0.7) * (1 - p * 0.5) * (1 - 0.7 * sink);
-      const alpha = a * (0.45 + 0.55 * b) * (1 - sink);
-      if (p > 0.004) {   // taps lichtstaartje langs de werkelijke spiraal (waar de ster de laatste 0,3 s was), dooft uit naar achteren
-        trailPts.length = 0;
-        for (let k = 0; k <= TURN_TAIL_N; k++) { const [px, py] = pos(pullAt(t - k * TURN_TAIL_DT)); trailPts.push(px, py); }
+    if (pl.style === 'beeld') drawTurnLines(F, t, a);
+    for (const s of pl.stars) {
+      const p = turnStar(F, s, t);
+      if (!p) continue;
+      const R = starR(s.st, dense, small) * p.k, alpha = a * p.a;
+      if (p.tail) {   // taps lichtstaartje langs de werkelijke baan (waar de ster de laatste 0,3 s was), dooft uit naar achteren
+        trailPts.length = 0; trailPts.push(p.x, p.y);
+        for (let k = 1; k <= TURN_TAIL_N; k++) { const q = turnStar(F, s, t - k * TURN_TAIL_DT); if (!q || q.a <= 0) break; trailPts.push(q.x, q.y); }
         const n = trailPts.length / 2, ex = trailPts[2 * n - 2], ey = trailPts[2 * n - 1];
-        if (Math.hypot(ex - x, ey - y) > 1.5) {
-          const gr = ctx.createLinearGradient(x, y, ex, ey);
+        if (n > 2 && Math.hypot(ex - p.x, ey - p.y) > 1.5) {
+          const gr = ctx.createLinearGradient(p.x, p.y, ex, ey);
           gr.addColorStop(0, rgba(INK, 0.7 * alpha)); gr.addColorStop(1, rgba(INK, 0));
           ctx.fillStyle = gr;
-          taper(Math.max(1, R * 0.5), 0.15);   // iets dunner (was max(1,2, R × 0,6) en 0,2)
+          taper(Math.max(1, R * 0.5), 0.15);
         }
       }
-      if (dark && b > 0) {   // heel zachte gloed, alleen in het donker (op papier zou het een vlek zijn)
-        const g = ctx.createRadialGradient(x, y, 0, x, y, R * 2.2);
-        g.addColorStop(0, rgba(INK, 0.2 * b * alpha)); g.addColorStop(1, rgba(INK, 0));
-        ctx.fillStyle = g; ctx.fillRect(x - R * 2.2, y - R * 2.2, R * 4.4, R * 4.4);
+      if (dark && alpha > 0.02) {   // heel zachte gloed, alleen in het donker (op papier zou het een vlek zijn)
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 2.2);
+        g.addColorStop(0, rgba(INK, 0.2 * alpha)); g.addColorStop(1, rgba(INK, 0));
+        ctx.fillStyle = g; ctx.fillRect(p.x - R * 2.2, p.y - R * 2.2, R * 4.4, R * 4.4);
       }
       ctx.fillStyle = rgba(INK, 1);
       ctx.globalAlpha = alpha;
-      star4(x, y, R, 0);
+      star4(p.x, p.y, R, 0);
       ctx.globalAlpha = 1;
     }
   }
@@ -1043,6 +1140,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const spacing = Math.max(CORE_SPACING, Math.round(CORE_MIN_PX / cam.s / 0.25) * 0.25);
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
     const eyes = faceState(now, rMax, spacing, z);
+    const tw = turnWaves(now);   // maandwissel: een rimpel door de puntjes bij elke ster die aankomt
     coreHit = project(0, 0, z, false) ? { x: pt.x, y: pt.y, r: Math.max(22, (rMax + 4) * cam.s * pt.f) } : null;
     // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In vier stappen
     // gebundeld, zodat het één pad per tint blijft.
@@ -1052,7 +1150,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const base = 0.25 + 1.05 * Math.pow(1 - d.r / rMax, 0.7);
       const bump = rippleAmp ? Math.exp(-(((d.r - front) / (3.2 * grow)) ** 2)) * rippleAmp : 0;
       const breathe = breatheAmp ? breatheAmp * Math.sin(t * (1.3 - 0.85 * sleepK) - d.r * 0.25) : 0;
-      const size = base + bump + breathe;
+      let gulp = 0;
+      if (tw) for (const age of tw) gulp += 0.9 * (1 - age / 0.4) * Math.exp(-(((d.r - age / 0.32 * (rMax + 8)) / (3.2 * grow)) ** 2));
+      const size = base + bump + breathe + gulp;
       if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
       paths[Math.round(eyes.ink(d.x, d.y) * 3)].push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
     }
@@ -1662,9 +1762,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     },
     // Minimaal: alle extra effecten uit; wat overblijft is de scène zelf (ringen, kometen, kern, sterren)
     // maandwissel: `old` = de sterren van de vorige hemel (zelfde vorm als setSky); onBurst start de witte gloed
-    monthTurn(old, { onBurst } = {}) { turn = { t0: performance.now(), old: old.slice(), onBurst, fired: false }; skyWave = null; },
+    // style: een van TURN_STYLES (turn.js); t0: wanneer de tijdlijn begint (iets later dan nu, zodat het geluid op tijd is).
+    // Geeft de tijdlijn terug, voor het geluid.
+    monthTurn(old, { style, t0 = performance.now(), onBurst } = {}) { const plan = turnPlan(style, old.slice()); turn = { t0, plan, onBurst, fired: false }; skyWave = null; return plan; },
     // oude hemel al tonen (stil, nog niet aangetrokken) tot monthTurn begint, bv. tijdens de zachte intro
-    holdTurn(old) { turn = { t0: Infinity, old: old.slice(), onBurst: null, fired: true }; skyWave = null; },
+    holdTurn(old, style) { turn = { t0: Infinity, plan: turnPlan(style, old.slice()), onBurst: null, fired: true }; skyWave = null; },
     endTurn() { turn = null; },
     get turning() { return Boolean(turn); },
     setMinimal(on) { minimal = on; if (on) { sonar = null; skyWave = null; meteor = null; constellation = null; sparks.length = 0; } },
