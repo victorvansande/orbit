@@ -302,7 +302,7 @@ let flashTimer = 0;
 const wheel = createWheel($('wheel'), {
   reducedMotion,
   onChange(level) {
-    playTick(level);   // heel zacht tikje per moment (Victor, 04/11/2026)
+    playTick();   // heel zacht, droog klikje per moment (Victor, 04/11/2026)
     scene.highlight({ level });
     clearTimeout(flashTimer);
     flashTimer = setTimeout(() => scene.highlight({}), 4500);   // lang genoeg om de legende te lezen (was 1,1 s, toen nog met pillen)
