@@ -4,7 +4,7 @@
 // localStorage, en sync stuurt wat offline veranderde door zodra er weer verbinding is.
 // Alleen de eigen bestanden en de lettertypes; nooit de sync-server of de weerdienst.
 
-const CACHE = 'orbit-v4';
+const CACHE = 'orbit-v5';
 const TIMEOUT = 3500;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.svg?v=2', 'favicon.ico?v=2',
@@ -26,10 +26,16 @@ self.addEventListener('activate', e => {
   })());
 });
 
-function fromNetwork(request) {
+// Na de time-out loopt het verzoek door: komt het antwoord later toch, dan vervangt het de bewaarde kopie. Zo heeft de
+// volgende keer (of het herladen door de opstartwacht in index.html) de nieuwe versie, en blijft er geen mengeling hangen.
+function fromNetwork(request, cache, key) {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('time-out')), TIMEOUT);
-    fetch(request).then(res => { clearTimeout(timer); resolve(res); }, err => { clearTimeout(timer); reject(err); });
+    let late = false;
+    const timer = setTimeout(() => { late = true; reject(new Error('time-out')); }, TIMEOUT);
+    fetch(request).then(res => {
+      clearTimeout(timer);
+      if (late) { if (res.ok) cache.put(key, res); } else resolve(res);
+    }, err => { clearTimeout(timer); reject(err); });
   });
 }
 
@@ -47,7 +53,7 @@ self.addEventListener('fetch', e => {
     try {
       // own: de http-cache van de browser overslaan (GitHub Pages laat bestanden 10 min bewaren), anders kan een
       // toestel na een update een mengeling van oude en nieuwe bestanden laden
-      const res = await fromNetwork(own ? new Request(req, { cache: 'no-cache' }) : req);
+      const res = await fromNetwork(own ? new Request(req, { cache: 'no-cache' }) : req, cache, req);
       if (res.ok || res.type === 'opaque') cache.put(req, res.clone());
       return res;
     } catch {

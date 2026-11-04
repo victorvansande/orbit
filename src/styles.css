@@ -1214,6 +1214,11 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 /* Papier vanaf de eerste weergave tot de intro het overneemt; loopt het script vast, dan verdwijnt het na 6 s vanzelf */
 html.is-veiled::after { content: ''; position: fixed; inset: 0; z-index: 61; background: var(--bg); animation: veil-safety 0.4s ease 6s forwards; }
 @keyframes veil-safety { to { opacity: 0; visibility: hidden; } }
+/* Opstartwacht (index.html): enkel als de app ook na een vers herladen niet start */
+.boot-fail { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; width: min(320px, calc(100vw - 32px)); display: grid; justify-items: center; gap: 12px; padding: 22px 20px; text-align: center; background: var(--bg); color: var(--ink); border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); font: 15px/1.4 'Geist', system-ui, sans-serif; }
+.boot-fail p { margin: 0; }
+.boot-fail button { font: inherit; font-size: 14px; color: var(--bg); background: var(--ink); border: 0; border-radius: 999px; padding: 8px 18px; min-height: 36px; cursor: pointer; }
+.boot-fail small { font: 10px/1.4 'Geist Mono', ui-monospace, monospace; color: var(--ink-3); word-break: break-word; }
 /* Minimaal (Instellingen → Effecten): wat in de DOM zit gaat ook weg */
 body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, body.is-minimal .wall-toggle { display: none !important; }
 /* Typographic wall: lege lijst na het afvinken */

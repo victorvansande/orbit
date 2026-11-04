@@ -3309,6 +3309,7 @@ try {
 } catch { /* geen opslag */ }
 checkFeats(turnFeatLater);   // bij het laden stil: wat al gehaald was, staat meteen goed (behalve de nieuwe hemel van de maandwissel)
 booted = true;
+window.ORBIT_BOOTED = true;   // voor de opstartwacht in index.html
 renderSync();
 if (savedCode()) sync.start(savedCode());
 // Webapp op het beginscherm zonder koppeling: meteen zeggen, de uitleg in de lijst staat op gsm ver onderaan

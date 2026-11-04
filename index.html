@@ -69,6 +69,66 @@
     if (fx === 'min' || matchMedia('(prefers-reduced-motion: reduce)').matches || /^#sync=/.test(location.hash)) return;
     document.documentElement.classList.add('is-veiled');
   })();
+  // Opstartwacht (Victor, 04/11/2026: "Soms laadt de site niet"): na een update kon een toestel een mengeling van oude en
+  // nieuwe modules laden (browsercache, trage wifi waarbij de service worker een oude kopie geeft). Ontbreekt er dan een
+  // export, dan start app.js niet en blijft enkel de lege pagina over. Start de app niet (fout bij het laden, of na 15 s
+  // nog niet klaar), dan haalt deze wacht één keer alle bestanden vers op, wist de bewaarde kopieën en herlaadt. Lukt het
+  // daarna nog niet, dan een korte melding met de fout en een knop om te herladen. Gegevens worden niet aangeraakt.
+  (() => {
+    const KEY = 'orbit.boot.retry';
+    let retried = false;
+    try { retried = sessionStorage.getItem(KEY) === '1'; } catch { /* geen opslag */ }
+    let busy = false, why = '';
+    const booted = () => window.ORBIT_BOOTED === true;
+    const repair = async () => {
+      try { sessionStorage.setItem(KEY, '1'); } catch { /* geen opslag */ }
+      try { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); } catch { /* geen sw */ }
+      try { for (const k of await caches.keys()) if (k.startsWith('orbit')) await caches.delete(k); } catch { /* geen cache */ }
+      // de browsercache van elk eigen bestand vernieuwen, anders laadt herladen dezelfde oude module opnieuw
+      const own = new Set([location.pathname]);
+      for (const e of performance.getEntriesByType('resource')) {
+        const u = new URL(e.name, location.href);
+        if (u.origin === location.origin && /\.(m?js|css)$/.test(u.pathname)) own.add(u.pathname);
+      }
+      await Promise.allSettled([...own].map(p => fetch(p, { cache: 'reload' })));
+      location.reload();
+    };
+    const notice = () => {
+      let en = false;
+      try { en = (localStorage.getItem('priority-orbit.lang.v1') || navigator.language || '').slice(0, 2) !== 'nl'; } catch { /* geen opslag */ }
+      const box = document.createElement('div');
+      box.className = 'boot-fail';
+      box.setAttribute('role', 'alert');
+      const p = document.createElement('p');
+      p.textContent = en ? 'Orbit did not start. Your tasks are safe.' : 'Orbit startte niet. Je taken zijn veilig.';
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = en ? 'Reload' : 'Herlaad';
+      b.addEventListener('click', () => { try { sessionStorage.removeItem(KEY); } catch { /* geen opslag */ } repair(); });
+      box.append(p, b);
+      if (why) { const s = document.createElement('small'); s.textContent = why; box.append(s); }
+      document.body.append(box);
+      document.documentElement.classList.remove('is-veiled');
+      const gone = setInterval(() => { if (booted()) { box.remove(); clearInterval(gone); } }, 500);   // toch nog gestart
+    };
+    const fail = () => {
+      if (busy || booted()) return;
+      busy = true;
+      if (retried) notice(); else repair();
+    };
+    // een fout in een module (ontbrekende export, bestand niet geladen): even wachten, misschien start de app toch
+    addEventListener('error', e => {
+      const script = e.target && e.target.tagName === 'SCRIPT';
+      if (booted() || !(script || e instanceof ErrorEvent)) return;
+      if (!why) why = script ? 'load: ' + (e.target.src || '').split('/').slice(-2).join('/') : String(e.message || '').slice(0, 160);
+      setTimeout(fail, 1500);
+    }, true);
+    setTimeout(() => {
+      if (booted()) { try { sessionStorage.removeItem(KEY); } catch { /* geen opslag */ } return; }
+      if (!why) why = 'timeout';
+      fail();
+    }, 15000);
+  })();
 </script>
 </head>
 <body>
