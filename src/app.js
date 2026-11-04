@@ -3245,6 +3245,16 @@ applyFx();
 let revealDelay = 0;
 // maandwissel bij het openen: vervangt de gewone intro (nooit via een koppellink)
 const turnPlan = /^#sync=/.test(location.hash) ? null : planTurn();
+// demo: bij elk openen een willekeurige van de vier, nooit twee keer na elkaar dezelfde (Victor, 04/11/2026: de demo
+// speelde altijd de variant van de maand, in november dus altijd Sterrenbeeld). De echte app blijft één variant per maand.
+if (DEMO_MODE && turnPlan) {
+  let last = -1;
+  try { last = Number(sessionStorage.getItem('priority-orbit.demoturn')); } catch { /* geen opslag */ }
+  let pick = Math.floor(Math.random() * TURN_STYLES.length);
+  if (pick === last) pick = (pick + 1 + Math.floor(Math.random() * (TURN_STYLES.length - 1))) % TURN_STYLES.length;
+  try { sessionStorage.setItem('priority-orbit.demoturn', String(pick)); } catch { /* geen opslag */ }
+  turnPlan.style = TURN_STYLES[pick]; demoTurn = pick;
+}
 const turnShow = Boolean(turnPlan?.recap);
 if (turnPlan && !turnShow) runTurn(turnPlan);   // vorige maand zonder sterren: enkel de nieuwe hemel, zonder animatie
 let turnAfterReveal = false;
