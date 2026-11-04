@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orbit zwaartekracht</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: kop met diagnose en bediening; daaronder per variant een gsm-scène (canvas) met uitleg ernaast */
+:root {
+  --bg: #F1F1EF; --surface: #FAFAF8; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3; --line: rgba(27,27,34,.12);
+  --core: #E70049; --veil: #F1F1EF; --phone: #E4E4E0; --ghost: .1;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.12); --core: #F0306A; --veil: #0F0F12; --phone: #26262C; --ghost: .12; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.12); --core: #F0306A; --veil: #0F0F12; --phone: #26262C; --ghost: .12; color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.kick { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+h1 { font-weight: 500; font-size: 26px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -.01em; text-wrap: balance; }
+.lead { margin: 0; color: var(--ink-2); max-width: 66ch; }
+.diag { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; max-width: 72ch; }
+.diag li { color: var(--ink-2); padding-left: 22px; position: relative; }
+.diag li::before { content: ""; position: absolute; left: 4px; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--core); }
+.diag b { color: var(--ink); font-weight: 500; }
+.ctrls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 26px; }
+.ctrls button, .play { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); background: none; border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
+.ctrls button[aria-pressed="true"] { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-3); }
+.ctrls button:hover, .play:hover { color: var(--ink); }
+.play { color: var(--surface); background: var(--ink); box-shadow: none; }
+.play:hover { color: var(--surface); opacity: .88; }
+button:focus-visible { outline: 2px solid var(--core); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: center; margin-top: 48px; }
+@media (max-width: 700px) { .row { grid-template-columns: minmax(0, 1fr); justify-items: center; } .row .text { justify-self: stretch; } }
+.text h2 { margin: 0 0 6px; font-size: 19px; font-weight: 500; }
+.text h2 .code { font: 500 12px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 10px; }
+.advice, .ref { margin-left: 8px; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; vertical-align: 3px; }
+.advice { background: var(--core); color: var(--surface); }
+.ref { box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-3); }
+.text p { margin: 0 0 10px; color: var(--ink-2); max-width: 58ch; }
+.text p b { color: var(--ink); font-weight: 500; }
+.text .snd { font-size: 13.5px; }
+.text .snd::before { content: "Geluid  "; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); white-space: pre; }
+.foot { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+.time { font: 500 11px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.phone { position: relative; width: 300px; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 34px; background: var(--phone); padding: 10px; }
+.screen { position: relative; width: 100%; height: 100%; border-radius: 26px; overflow: hidden; background: var(--veil); cursor: pointer; }
+.screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.13 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+:root[data-theme="dark"] .screen::after { mix-blend-mode: screen; opacity: .35; filter: invert(1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .screen::after { mix-blend-mode: screen; opacity: .35; filter: invert(1); } }
+.then { font-size: 13px; color: var(--ink-3); margin-top: 48px; max-width: 72ch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kick">Orbit · maandwissel</p>
+    <h1>Zwaartekracht, verfijnd</h1>
+    <p class="lead">Vier uitwerkingen van dezelfde maandwissel: de sterren van de vorige maand gaan naar de kern, daarna komt de recap uit het licht. Beeld en geluid horen nu bij elkaar en worden samen voorgesteld. Bovenaan staat de huidige versie om mee te vergelijken. Tik op een scherm of op Speel; het geluid start met je tik.</p>
+    <ul class="diag">
+      <li><b>Geluid en beeld lopen los van elkaar.</b> Er klinken 26 tikjes op willekeurige momenten, terwijl er 48 sterren in de kern vallen. Je hoort geen ster aankomen.</li>
+      <li><b>De kern reageert niet.</b> Hij zwelt in één gladde curve, dus een ster verdwijnt in het niets in plaats van opgenomen te worden.</li>
+      <li><b>Geen opbouw.</b> Alle sterren vertrekken bijna tegelijk in een willekeurige volgorde, dus het midden is druk en het einde komt niet.</li>
+      <li><b>Geen adem voor het hoogtepunt.</b> De witte gloed begint terwijl er nog sterren vliegen en loopt als een egale was over alles.</li>
+    </ul>
+    <div class="ctrls">
+      <button type="button" id="b-sound" aria-pressed="true">Geluid aan</button>
+      <button type="button" id="b-slow" aria-pressed="false">Half tempo</button>
+      <button type="button" id="b-light">Licht</button>
+      <button type="button" id="b-dark">Donker</button>
+    </div>
+  </header>
+  <div id="rows"></div>
+  <p class="then">Voorbeeld: oktober met 48 sterren, getekend zoals op een gsm (de ringen en bollen zijn tijdens de wissel verborgen, enkel raster, kern en sterren). In de app speelt dit na het venster "Tik om een nieuwe maand te starten", dus het geluid mag altijd. Alle geluiden zijn even luid gemaakt als het afvinken; het slotakkoord is het luidste moment.</p>
+</div>
+
+<script>
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const ease = u => u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+const easeOut = u => 1 - Math.pow(1 - u, 3);
+const smooth = u => u * u * (3 - 2 * u);
+const pullEase = u => u * u * (1.6 - 0.6 * u);
+const lerp = (a, b, u) => a + (b - a) * u;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function rgba(hex, a) { const h = hex.replace('#', ''); const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+function rng(seed) { return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
+
+// ---- de sterren van oktober, in eenheden: straal 1 = de rand van de hemel ----
+const N = 48, CORE_U = 0.13;
+const STARS = (() => {
+  const r = rng(7), out = [];
+  while (out.length < N) {
+    let best = null, bd = -1;
+    for (let k = 0; k < 18; k++) {
+      const rr = Math.sqrt(lerp(0.36 * 0.36, 1, r())), a = r() * TAU, x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+      let d = Infinity; for (const s of out) d = Math.min(d, Math.hypot(s.x - x, s.y - y));
+      if (d > bd) { bd = d; best = { x, y }; }
+    }
+    best.r0 = Math.hypot(best.x, best.y); best.a0 = Math.atan2(best.y, best.x);
+    best.s = r(); best.ph = r() * TAU; best.rnd = r(); best.rnd2 = r();
+    out.push(best);
+  }
+  return out;
+})();
+// volgorde van binnen naar buiten (Z1)
+[...STARS].sort((a, b) => a.r0 - b.r0).forEach((s, i) => { s.rank = i; });
+// sterrenbeeld: kortste verbindingen (Prim) vanaf de kern (Z3)
+(() => {
+  const inTree = new Set(), dist = STARS.map(s => s.r0 - CORE_U), par = STARS.map(() => -1);
+  for (let n = 0; n < N; n++) {
+    let bi = -1; for (let i = 0; i < N; i++) if (!inTree.has(i) && (bi < 0 || dist[i] < dist[bi])) bi = i;
+    inTree.add(bi); STARS[bi].parent = par[bi]; STARS[bi].order = n;
+    for (let j = 0; j < N; j++) if (!inTree.has(j)) { const d = Math.hypot(STARS[j].x - STARS[bi].x, STARS[j].y - STARS[bi].y); if (d < dist[j]) { dist[j] = d; par[j] = bi; } }
+  }
+  for (const s of STARS) {   // diepte en pad naar de kern
+    let d = 0, p = s, L = 0; const path = [s];
+    while (p.parent >= 0) { const q = STARS[p.parent]; L += Math.hypot(q.x - p.x, q.y - p.y); path.push(q); p = q; d++; }
+    L += p.r0 - CORE_U; s.depth = d; s.path = path; s.L = L;
+  }
+})();
+const MAXDEPTH = Math.max(...STARS.map(s => s.depth)), MAXL = Math.max(...STARS.map(s => s.L));
+
+// ---- geluid: dezelfde bouwstenen als sound.js (sinus met zachte aanzet, echo die donkerder wordt) ----
+const P = { E2: 82.41, E3: 164.81, B3: 246.94, E4: 329.63, G4: 392, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.5 };
+let AC = null, MASTER = null, soundOn = true, slow = 1;
+function audio() {
+  if (!AC) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; AC = new C(); MASTER = AC.createGain(); MASTER.gain.value = 0.5; MASTER.connect(AC.destination); }
+  if (AC.state !== 'running') AC.resume();
+  return AC;
+}
+function envl(g, t, peak, att, dec) { g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(peak, t + att); g.gain.setTargetAtTime(0.00001, t + att, dec / 5); }
+function ping(a, out, t, f, { g = 1, dur = 0.16, det = 0, echo = 0.16, fb = 0.36, wet = 0.55, att = 0.004 } = {}) {
+  const o = a.createOscillator(), e = a.createGain();
+  o.frequency.value = f; o.detune.value = det;
+  envl(e, t, 0.2 * g, att, dur);
+  o.connect(e); e.connect(out);
+  if (echo) {
+    const dl = a.createDelay(1), fbk = a.createGain(), lp = a.createBiquadFilter(), w = a.createGain();
+    dl.delayTime.value = echo; fbk.gain.value = fb; lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); w.gain.value = wet;
+    e.connect(dl); dl.connect(lp).connect(fbk).connect(dl); lp.connect(w).connect(out);
+  }
+  o.start(t); o.stop(t + att + dur * 1.6 + 1.2);
+}
+// zacht slotakkoord: twee stemmen per toon, lage doorlaat die opengaat, lange uitadem
+function chord(a, out, t, notes, { g = 1, att = 0.08, dur = 2.6, open = 2400 } = {}) {
+  const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(open, t + att + 0.25); lp.frequency.setTargetAtTime(700, t + att + 0.4, dur / 3);
+  lp.connect(out);
+  notes.forEach(([f, gg], i) => {
+    for (const det of [-4, 4]) {
+      const o = a.createOscillator(), e = a.createGain(); o.frequency.value = f; o.detune.value = det + i;
+      envl(e, t + i * 0.012, 0.11 * g * gg, att, dur); o.connect(e).connect(lp); o.start(t); o.stop(t + att + dur * 1.8);
+    }
+  });
+}
+let NOISE = null;
+function noise(a) { if (NOISE) return NOISE; const b = a.createBuffer(1, a.sampleRate * 2, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return (NOISE = b); }
+
+// ---- tekenen ----
+function star4(g, x, y, R, rot = 0) {
+  g.beginPath();
+  for (let i = 0; i <= 4; i++) {
+    const a = rot + i * TAU / 4, px = x + Math.cos(a) * R, py = y + Math.sin(a) * R;
+    if (i === 0) { g.moveTo(px, py); continue; }
+    const am = a - TAU / 8; g.quadraticCurveTo(x + Math.cos(am) * R * 0.16, y + Math.sin(am) * R * 0.16, px, py);
+  }
+  g.fill();
+}
+function taper(g, pts, w0, w1) {   // taps vlak langs punten (kop eerst)
+  const n = pts.length / 2; if (n < 2) return;
+  const L = [], Rt = [];
+  for (let i = 0; i < n; i++) {
+    const j = Math.min(n - 1, i + 1), k = Math.max(0, i - 1);
+    let dx = pts[2 * j] - pts[2 * k], dy = pts[2 * j + 1] - pts[2 * k + 1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+    const w = lerp(w0, w1, i / (n - 1));
+    L.push(pts[2 * i] - dy * w, pts[2 * i + 1] + dx * w); Rt.push(pts[2 * i] + dy * w, pts[2 * i + 1] - dx * w);
+  }
+  g.beginPath(); g.moveTo(L[0], L[1]);
+  for (let i = 1; i < n; i++) g.lineTo(L[2 * i], L[2 * i + 1]);
+  for (let i = n - 1; i >= 0; i--) g.lineTo(Rt[2 * i], Rt[2 * i + 1]);
+  g.closePath(); g.fill();
+}
+const G5x7 = { 0: '01110100011001110101110011000101110', 1: '00100011000010000100001000010001110', 2: '01110100010000100010001000100011111', 3: '11111000100010000010000011000101110', 4: '00010001100101010010111110001000010', 5: '11111100001111000001000011000101110', 6: '00110010001000011110100011000101110', 7: '11111000010001000100010000100001000', 8: '01110100011000101110100011000101110', 9: '01110100011000101111000010001001100' };
+function dots(g, txt, x, y, h, on, ghost) {
+  const sp = h / 7, r = sp * 0.4;
+  [...txt].forEach((ch, ci) => { const m = G5x7[ch]; for (let i = 0; i < 35; i++) { const cx = x + ci * sp * 6 + (i % 5) * sp + sp / 2, cy = y + Math.floor(i / 5) * sp + sp / 2; g.fillStyle = m[i] === '1' ? on : ghost; g.beginPath(); g.arc(cx, cy, m[i] === '1' ? r : r * 0.82, 0, TAU); g.fill(); } });
+}
+
+// ---- de varianten ----
+// star(S, s, t) geeft {x, y, R, a} in eenheden (a = dekking 0..1), of null als de ster weg is
+// core(S, t) geeft {k (grootte), waves: [leeftijd in s]}
+const V = [];
+
+// Z0: zoals het nu in de app staat (scene.js drawTurn, sound.js playMonth)
+V.push({
+  id: 'Nu', name: 'Huidige versie', ref: true, end: { kind: 'flood', at: 3.9 },
+  text: '<p>Ter vergelijking, zoals het op 4 november in de app staat: de sterren lichten op, draaien in spiralen naar de kern en op 3,9 s loopt een witte gloed over het scherm.</p>',
+  snd: '26 tikjes op vaste maar willekeurige momenten, een laag akkoord bij het witte licht.',
+  star(S, s, t) {
+    const d = ((s.ph / TAU) % 1) * 0.5, b = ease(seg(t, d * 0.8, 1.2 + d * 0.8));
+    const p = pullEase(seg(t, 1.3 + d * 0.9, 3.9 + d * 0.9)); if (p >= 1) return null;
+    const r = s.r0 * (1 - p), an = s.a0 + Math.pow(p, 1.7) * 4.4, sink = smooth(seg(p, 0.82, 1));
+    return { x: Math.cos(an) * r, y: Math.sin(an) * r, R: (1 + b * 0.7) * (1 - p * 0.5) * (1 - 0.7 * sink), a: (0.45 + 0.55 * b) * (1 - sink), tail: p > 0.004 };
+  },
+  core(S, t) { const pull = seg(t, 1.3, 4.1), boom = ease(seg(t, 3.8, 5.3)), back = ease(seg(t, 5.2, 7)); return { k: (1 + pullEase(pull) * 0.8 + boom * 1.5) * (1 - back) + back, waves: [] }; },
+  sound(a, o, t0, k) {
+    const notes = [P.E6, P.C6, P.A5, P.G5, P.E5];
+    for (let i = 0; i < 26; i++) { const u = i / 25, at = 1.3 + 3.1 * Math.sqrt(u), q = Math.floor(((i * 7919) % 97) / 97 * 5); ping(a, o, t0 + at * k, notes[Math.min(4, q + Math.floor(u * 2))], { g: 0.16 + 0.12 * u, dur: 0.12 }); }
+    ping(a, o, t0 + 3.9 * k, P.E3, { g: 0.85, dur: 1.4 }); ping(a, o, t0 + 3.9 * k, P.B3, { g: 0.42, dur: 1.2 }); ping(a, o, t0 + 3.98 * k, P.E4, { g: 0.26, dur: 1.0 });
+  },
+});
+
+// Z1 Opgeslokt: van binnen naar buiten, elke ster is een slok van de kern en een tikje, dan adem, dan licht
+const Z1T = s => 1.45 + 2.95 * Math.sqrt(s.rank / (N - 1));      // aankomst: eerst traag, dan steeds dichter
+const Z1F = s => 0.75 + 1.45 * (s.r0 - 0.36) / 0.64;             // vluchtduur volgt de afstand
+const Z1_LAST = 1.45 + 2.95, Z1_REL = Z1_LAST + 0.42;
+V.push({
+  id: 'Z1', name: 'Opgeslokt', advice: true, end: { kind: 'soft', at: Z1_REL },
+  text: '<p><b>Dezelfde spiralen, maar de kern neemt elke ster op.</b> De dichtste gaan eerst, de verste laatst, dus het versnelt vanzelf als een cascade. Elke aankomst is een kleine slok: de rasterpunten van de kern rimpelen even en hij groeit een stapje. Na de laatste ster houdt alles 0,4 s de adem in, de kern trekt zich iets samen, en dan opent een zachte cirkel van licht vanuit de kern, zoals de intro.</p><p>Het blijft de zwaartekracht die je koos, maar met een begin, een opbouw en een einde.</p>',
+  snd: 'Eén tikje per ster, precies op de aankomst, steeds dichter op elkaar en telkens een toon lager naarmate de kern voller wordt. Dan een stilte, en het slotakkoord zwelt zacht aan in plaats van te slaan.',
+  star(S, s, t) {
+    const T = Z1T(s), F = Z1F(s), b = ease(seg(t, 0.1 + s.rnd * 0.5, 1.1 + s.rnd * 0.5));
+    const q = pullEase(seg(t, T - F, T)); if (t >= T) return null;
+    const r = CORE_U * S.coreK(t) + (s.r0 - CORE_U * S.coreK(t)) * (1 - q), an = s.a0 + (0.9 + 1.6 * s.r0) * Math.pow(q, 1.6);
+    const sink = smooth(seg(q, 0.86, 1));
+    return { x: Math.cos(an) * r, y: Math.sin(an) * r, R: (1 + b * 0.6) * (1 - 0.35 * q) * (1 - 0.6 * sink), a: (0.45 + 0.55 * b) * (1 - sink), tail: q > 0.004 };
+  },
+  core(S, t) {
+    let n = 0, bump = 0; const waves = [];
+    for (const s of STARS) { const T = Z1T(s); if (t >= T) { n++; const age = t - T; bump += 0.05 * Math.exp(-age / 0.12); if (age < 0.4) waves.push(age); } }
+    const inhale = ease(seg(t, Z1_LAST + 0.05, Z1_REL)), out = easeOut(seg(t, Z1_REL, Z1_REL + 1.2));
+    const k = (1 + 0.95 * n / N + bump) * (1 - 0.12 * inhale) * (1 + 0.5 * out);
+    return { k, waves };
+  },
+  sound(a, o, t0, k) {
+    const notes = [P.E6, P.D6, P.C6, P.A5, P.G5, P.E5];
+    for (const s of STARS) {
+      const u = s.rank / (N - 1);
+      ping(a, o, t0 + Z1T(s) * k, notes[Math.min(5, Math.floor(u * 6))], { g: 0.2 + 0.16 * u, dur: 0.07, echo: 0.07, fb: 0.18, wet: 0.35, det: (s.rank * 37 % 11) - 5 });
+    }
+    chord(a, o, t0 + Z1_REL * k, [[P.E3, 1], [P.B3, 0.6], [P.E4, 0.42], [P.G4, 0.16]], { g: 1.1, att: 0.14, dur: 3.2 });
+    ping(a, o, t0 + (Z1_REL + 0.18) * k, P.E6, { g: 0.12, dur: 0.6, echo: 0.3, fb: 0.4, att: 0.06 });
+  },
+});
+
+// Z2 Draaikolk: eerst een platte schijf rond de kern, die sneller draait en dichtknijpt
+const Z2_COL = 4.55;
+V.push({
+  id: 'Z2', name: 'Draaikolk', end: { kind: 'flood', at: Z2_COL },
+  text: '<p><b>De sterren vallen eerst samen in een platte, draaiende schijf rond de kern</b>, zoals stof rond een zwart gat, in hetzelfde vlak als de ringen in het zijaanzicht. De schijf draait steeds sneller en knijpt dicht tot alles in één keer in de kern verdwijnt. Op dat moment flitst het licht.</p><p>Het meest filmisch en het meest beweging. Minder "jouw sterren een voor een".</p>',
+  snd: 'Een adem van ruis die met de schijf mee omhoog draait en aanzwelt, met een lage toon eronder. Bij het dichtknijpen valt hij weg, één tel stilte, dan het akkoord.',
+  star(S, s, t) {
+    const b = ease(seg(t, 0.1 + s.rnd * 0.4, 1.1 + s.rnd * 0.4));
+    const g = ease(seg(t, 0.9 + 0.5 * s.rnd, 2.9)), c = pullEase(seg(t, 3.0 + 0.25 * s.rnd, Z2_COL - 0.05));
+    if (c >= 1) return null;
+    const rd = 0.42 + 0.26 * s.rnd2, rr = CORE_U * 1.4 + (rd - CORE_U * 1.4) * (1 - c);
+    const phi = s.a0 + 1.6 * Math.pow(seg(t, 0.9, 3.1), 2) + 9.5 * Math.pow(seg(t, 3.0, Z2_COL), 2.2);
+    const dx = Math.cos(phi) * rr, dy = Math.sin(phi) * rr * 0.42;
+    const x = lerp(s.x, dx, g), y = lerp(s.y, dy, g), sink = smooth(seg(c, 0.86, 1));
+    return { x, y, R: (1 + b * 0.6) * (1 - 0.3 * c) * (1 - 0.6 * sink), a: (0.45 + 0.55 * b) * (1 - sink), tail: g > 0.01 };
+  },
+  core(S, t) { const sw = pullEase(seg(t, 2.6, Z2_COL)), back = ease(seg(t, Z2_COL + 0.4, Z2_COL + 2)); return { k: (1 + 0.9 * sw + 0.6 * ease(seg(t, Z2_COL, Z2_COL + 0.5))) * (1 - back) + back, waves: t > Z2_COL && t < Z2_COL + 0.45 ? [t - Z2_COL] : [] }; },
+  sound(a, o, t0, k) {
+    const src = a.createBufferSource(); src.buffer = noise(a); src.loop = true;
+    const bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 5;
+    const g = a.createGain(), T = x => t0 + x * k;
+    bp.frequency.setValueAtTime(260, T(0.9)); bp.frequency.exponentialRampToValueAtTime(620, T(3.0)); bp.frequency.exponentialRampToValueAtTime(2600, T(Z2_COL - 0.05));
+    g.gain.setValueAtTime(0.0001, T(0.9)); g.gain.linearRampToValueAtTime(0.05, T(3.0)); g.gain.linearRampToValueAtTime(0.16, T(Z2_COL - 0.08)); g.gain.linearRampToValueAtTime(0.0001, T(Z2_COL));
+    src.connect(bp).connect(g).connect(o); src.start(T(0.9)); src.stop(T(Z2_COL + 0.1));
+    const lo = a.createOscillator(), lg = a.createGain(); lo.frequency.setValueAtTime(P.E2, T(1.2)); lo.frequency.exponentialRampToValueAtTime(P.E3, T(Z2_COL));
+    lg.gain.setValueAtTime(0.0001, T(1.2)); lg.gain.linearRampToValueAtTime(0.05, T(Z2_COL - 0.1)); lg.gain.linearRampToValueAtTime(0.0001, T(Z2_COL));
+    lo.connect(lg).connect(o); lo.start(T(1.2)); lo.stop(T(Z2_COL + 0.1));
+    chord(a, o, T(Z2_COL + 0.22), [[P.E3, 1], [P.B3, 0.6], [P.E4, 0.4], [P.B4, 0.14]], { g: 1.1, att: 0.05, dur: 3 });
+  },
+});
+
+// Z3 Sterrenbeeld: de maand tekent zich als sterrenbeeld, daarna trekken de draden de sterren naar binnen
+const Z3_STEP = Math.min(0.2, 1.5 / MAXDEPTH), Z3_DRAW = 0.35, Z3_C = 0.35 + MAXDEPTH * Z3_STEP + Z3_DRAW + 0.45, Z3_DUR = 2.5;
+const z3s = t => MAXL * pullEase(seg(t, Z3_C, Z3_C + Z3_DUR));
+const Z3T = s => { let lo = 0, hi = 1; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (MAXL * pullEase(m) < s.L) lo = m; else hi = m; } return Z3_C + hi * Z3_DUR; };
+const Z3_REL = Z3_C + Z3_DUR + 0.42;
+function alongPath(s, d) {   // punt op afstand d langs het pad naar de kern
+  let x = s.x, y = s.y;
+  for (let i = 1; i < s.path.length; i++) { const q = s.path[i], l = Math.hypot(q.x - x, q.y - y); if (d <= l) { const u = d / l; return { x: lerp(x, q.x, u), y: lerp(y, q.y, u), node: i }; } d -= l; x = q.x; y = q.y; }
+  const r = Math.hypot(x, y), l = r - CORE_U; if (d <= l) { const u = d / l; return { x: x * (1 - u * l / r), y: y * (1 - u * l / r), node: s.path.length }; }
+  return null;
+}
+V.push({
+  id: 'Z3', name: 'Sterrenbeeld', end: { kind: 'soft', at: Z3_REL },
+  text: '<p><b>Eerst tekent je maand zich als één sterrenbeeld</b>: vanaf de kern groeien dunne lijntjes naar de sterren, de kortste verbindingen, zoals bij elke 25e ster. Even staat het daar: dit was oktober. Dan worden de lijntjes als draden binnengehaald, en schuiven de sterren als kralen langs hun draad naar de kern, de dichtste eerst.</p><p>Het meest betekenisvol en het rustigst in beweging, iets langer (ongeveer 8 s).</p>',
+  snd: 'Een zachte sonarping per laag van het sterrenbeeld terwijl het zich tekent, daarna een tikje per ster die de kern bereikt, en het zachte slotakkoord.',
+  star(S, s, t) {
+    const lit = 0.35 + s.depth * Z3_STEP + Z3_DRAW, b = ease(seg(t, lit - 0.1, lit + 0.4));
+    const T = Z3T(s); if (t >= T) return null;
+    const p = alongPath(s, z3s(t)); if (!p) return null;
+    const left = (T - t), sink = smooth(1 - clamp(left / 0.18, 0, 1));
+    return { x: p.x, y: p.y, R: (1 + b * 0.55) * (1 - 0.5 * sink), a: (0.42 + 0.58 * b) * (1 - sink), tail: false, node: p.node };
+  },
+  extra(S, g, t, ink) {
+    g.lineCap = 'round';
+    for (const s of STARS) {
+      const t0 = 0.35 + s.depth * Z3_STEP, u = ease(seg(t, t0, t0 + Z3_DRAW)); if (u <= 0) continue;
+      const par = s.parent >= 0 ? STARS[s.parent] : null;
+      const px = par ? par.x : s.x / s.r0 * CORE_U, py = par ? par.y : s.y / s.r0 * CORE_U;
+      let hx = lerp(px, s.x, u), hy = lerp(py, s.y, u);           // groeit van ouder naar ster
+      if (t > Z3_C) {                                              // binnenhalen: het stuk tussen de ster en haar volgende knoop
+        const p = alongPath(s, z3s(t)); if (!p || p.node > 1) continue; hx = p.x; hy = p.y;
+      }
+      const fade = 1 - seg(t, Z3_C + Z3_DUR * 0.6, Z3_C + Z3_DUR);
+      g.strokeStyle = rgba(ink, 0.32 * fade); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(S.X(px), S.Y(py)); g.lineTo(S.X(hx), S.Y(hy)); g.stroke();
+    }
+  },
+  core(S, t) {
+    let n = 0, bump = 0; const waves = [];
+    for (const s of STARS) { const T = Z3T(s); if (t >= T) { n++; const age = t - T; bump += 0.045 * Math.exp(-age / 0.12); if (age < 0.4) waves.push(age); } }
+    const inhale = ease(seg(t, Z3_REL - 0.38, Z3_REL)), out = easeOut(seg(t, Z3_REL, Z3_REL + 1.2));
+    return { k: (1 + 0.9 * n / N + bump) * (1 - 0.1 * inhale) * (1 + 0.5 * out), waves };
+  },
+  sound(a, o, t0, k) {
+    for (let d = 0; d <= MAXDEPTH; d++) ping(a, o, t0 + (0.35 + d * Z3_STEP + 0.1) * k, d % 2 ? P.A4 : P.E5, { g: 0.32 - 0.012 * d, dur: 0.14, echo: 0.22, fb: 0.4, wet: 0.6 });
+    const notes = [P.E6, P.D6, P.C6, P.A5, P.G5, P.E5];
+    for (const s of STARS) { const u = s.L / MAXL; ping(a, o, t0 + Z3T(s) * k, notes[Math.min(5, Math.floor(u * 6))], { g: 0.2 + 0.14 * u, dur: 0.07, echo: 0.07, fb: 0.18, wet: 0.35, det: (s.order * 37 % 11) - 5 }); }
+    chord(a, o, t0 + Z3_REL * k, [[P.E3, 1], [P.B3, 0.6], [P.E4, 0.42], [P.G4, 0.16]], { g: 1.1, att: 0.14, dur: 3.2 });
+  },
+});
+
+// Z4 Inademen: de hele hemel zakt als één lichaam naar de kern, de kern ademt in en weer uit
+const Z4_IN = 4.35, Z4_REL = 4.75;
+V.push({
+  id: 'Z4', name: 'Inademen', end: { kind: 'soft', at: Z4_REL },
+  text: '<p><b>Geen spiralen of staarten: de hele hemel zakt als één geheel naar de kern</b> en draait daarbij een kwartslag mee, de verste sterren iets later, alsof de kern inademt. Hij groeit traag, houdt even vast, en ademt uit in een zachte cirkel van licht.</p><p>Het kalmst en het minst druk, het dichtst bij de rust van de rest van Orbit. Je ziet minder elke ster apart.</p>',
+  snd: 'Eén lang, laag akkoord dat zwelt en zich opent zolang de hemel inzakt, even vasthoudt, en bij het uitademen helemaal open gaat en traag uitdooft. Verwant aan het geluid van een tik op de kern, maar groter.',
+  star(S, s, t) {
+    const b = ease(seg(t, 0.1 + s.rnd * 0.5, 1.1 + s.rnd * 0.5)), kk = (s.r0 - 0.36) / 0.64;
+    const p = pullEase(seg(t, 1.3 + 0.35 * kk, Z4_IN - 0.25 + 0.25 * kk)); if (p >= 1) return null;
+    const ck = CORE_U * S.coreK(t), r = ck + (s.r0 - ck) * (1 - p), an = s.a0 + 1.1 * ease(seg(t, 1.2, Z4_IN));
+    const sink = smooth(seg(p, 0.8, 1));
+    return { x: Math.cos(an) * r, y: Math.sin(an) * r, R: (1 + b * 0.6) * (1 - 0.35 * p) * (1 - 0.6 * sink), a: (0.45 + 0.55 * b) * (1 - sink), tail: false };
+  },
+  core(S, t) {
+    const inh = pullEase(seg(t, 1.3, Z4_IN)), out = easeOut(seg(t, Z4_REL, Z4_REL + 1.3)), hold = Math.sin(seg(t, Z4_IN, Z4_REL) * Math.PI) * 0.03;
+    return { k: (1 + 1.2 * inh + hold) * (1 + 0.35 * out), waves: t > Z4_REL && t < Z4_REL + 0.5 ? [t - Z4_REL] : [] };
+  },
+  sound(a, o, t0, k) {
+    const T = x => t0 + x * k, lp = a.createBiquadFilter(), g = a.createGain();
+    lp.type = 'lowpass'; lp.Q.value = 0.7; lp.frequency.setValueAtTime(240, T(1.1)); lp.frequency.exponentialRampToValueAtTime(1100, T(Z4_IN)); lp.frequency.setValueAtTime(1100, T(Z4_REL)); lp.frequency.exponentialRampToValueAtTime(3200, T(Z4_REL + 0.3)); lp.frequency.setTargetAtTime(600, T(Z4_REL + 0.5), 1.2 * k);
+    g.gain.setValueAtTime(0.0001, T(1.1)); g.gain.linearRampToValueAtTime(0.7, T(Z4_IN)); g.gain.linearRampToValueAtTime(0.62, T(Z4_REL)); g.gain.linearRampToValueAtTime(1, T(Z4_REL + 0.2)); g.gain.setTargetAtTime(0.0001, T(Z4_REL + 0.3), 0.9 * k);
+    lp.connect(g).connect(o);
+    for (const [f, gg] of [[P.E3, 0.14], [P.B3, 0.09], [P.E4, 0.06], [P.G4, 0.025]]) for (const det of [-5, 5]) { const os = a.createOscillator(), e = a.createGain(); os.frequency.value = f; os.detune.value = det; e.gain.value = gg; os.connect(e).connect(lp); os.start(T(1.1)); os.stop(T(Z4_REL + 6)); }
+    ping(a, o, T(Z4_REL + 0.12), P.E6, { g: 0.1, dur: 0.8, echo: 0.3, fb: 0.42, att: 0.08 });
+  },
+});
+
+// ---- scène per variant ----
+class Stage {
+  constructor(v, el) {
+    this.v = v; this.cv = el.querySelector('canvas'); this.g = this.cv.getContext('2d'); this.time = el.querySelector('.time');
+    this.t = 0; this.raf = 0; this.out = null; this.playing = false;
+    new ResizeObserver(() => this.resize()).observe(this.cv);
+  }
+  resize() {
+    const r = this.cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.cv.width = Math.round(r.width * dpr); this.cv.height = Math.round(r.height * dpr); this.dpr = dpr;
+    this.w = r.width; this.h = r.height; this.cx = this.w / 2; this.cy = this.h * 0.43; this.rm = Math.min(this.w, this.h) * 0.45;
+    this.grid = []; const sp = 15;
+    for (let row = 0, y = sp / 2; y < this.h; y += sp * 0.866, row++) for (let x = (row % 2) * sp / 2; x < this.w; x += sp) this.grid.push(x, y);
+    this.draw(this.t);
+  }
+  X(u) { return this.cx + u * this.rm; }
+  Y(u) { return this.cy + u * this.rm; }
+  coreK(t) { return this.v.core(this, t).k; }
+  play() {
+    this.stop(); this.playing = true; this.k = slow;
+    if (soundOn) { const a = audio(); if (a) { this.out = a.createGain(); this.out.gain.value = 1; this.out.connect(MASTER); this.v.sound(a, this.out, a.currentTime + 0.05, this.k); } }
+    const t0 = performance.now() + 50, endT = this.v.end.at + 4.2;
+    const loop = now => { this.t = Math.max(0, (now - t0) / 1000 / this.k); this.draw(this.t); this.time.textContent = this.t.toFixed(1).replace('.', ',') + ' s'; if (this.t < endT) this.raf = requestAnimationFrame(loop); else this.playing = false; };
+    this.raf = requestAnimationFrame(loop);
+  }
+  stop() {
+    cancelAnimationFrame(this.raf); this.playing = false;
+    if (this.out && AC) { const o = this.out; o.gain.setTargetAtTime(0.0001, AC.currentTime, 0.05); setTimeout(() => o.disconnect(), 400); this.out = null; }
+  }
+  draw(t) {
+    const g = this.g, { w, h } = this, ink = css('--ink'), core = css('--core'), veil = css('--veil'), surface = css('--surface'), dark = (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    g.fillStyle = veil; g.fillRect(0, 0, w, h);
+    // raster (zwaartekrachtput), wijkt rond de kern
+    g.fillStyle = rgba(ink, dark ? 0.16 : 0.12);
+    for (let i = 0; i < this.grid.length; i += 2) { const x = this.grid[i], y = this.grid[i + 1], d = Math.hypot(x - this.cx, y - this.cy); if (d < this.rm * 0.2) continue; g.beginPath(); g.arc(x, y, 0.75, 0, TAU); g.fill(); }
+    this.v.extra?.(this, g, t, ink);
+    // sterren met staart
+    for (const s of STARS) {
+      const st = this.v.star(this, s, t); if (!st) continue;
+      const x = this.X(st.x), y = this.Y(st.y), R = (2.4 + s.s * 1.5) * st.R, a = st.a;
+      if (st.tail) {
+        const pts = [x, y];
+        for (let j = 1; j <= 12; j++) { const p = this.v.star(this, s, t - j * 0.025); if (!p || p.a <= 0) break; pts.push(this.X(p.x), this.Y(p.y)); }
+        const n = pts.length / 2;
+        if (n > 2 && Math.hypot(pts[2 * n - 2] - x, pts[2 * n - 1] - y) > 1.5) {
+          const gr = g.createLinearGradient(x, y, pts[2 * n - 2], pts[2 * n - 1]); gr.addColorStop(0, rgba(ink, 0.6 * a)); gr.addColorStop(1, rgba(ink, 0));
+          g.fillStyle = gr; taper(g, pts, Math.max(0.9, R * 0.45), 0.12);
+        }
+      }
+      if (dark) { const gl = g.createRadialGradient(x, y, 0, x, y, R * 2.4); gl.addColorStop(0, rgba(ink, 0.18 * a)); gl.addColorStop(1, rgba(ink, 0)); g.fillStyle = gl; g.fillRect(x - R * 2.4, y - R * 2.4, R * 4.8, R * 4.8); }
+      g.fillStyle = rgba(ink, a); star4(g, x, y, R, 0);
+    }
+    // kern: rasterpunten met oogjes, rimpels bij elke slok
+    const c = this.v.core(this, t), Rc = this.rm * CORE_U * c.k, sp = Math.max(2.6, Rc * 0.15);
+    for (let row = -Math.ceil(Rc / (sp * 0.866)); row <= Math.ceil(Rc / (sp * 0.866)); row++) {
+      const y = row * sp * 0.866;
+      for (let x = (row & 1 ? sp / 2 : 0) - Math.ceil(Rc / sp) * sp; x <= Rc; x += sp) {
+        const d = Math.hypot(x, y) / Rc; if (d > 1) continue;
+        let boost = 1; for (const age of c.waves) { const front = age / 0.32, w = Math.abs(d - front); if (w < 0.25) boost += 0.7 * (1 - w / 0.25) * (1 - age / 0.4); }
+        const eye = [-0.3, 0.3].some(ex => { const dx = (x / Rc - ex) / 0.11, dy = (y / Rc + 0.06) / 0.24; return dx * dx + dy * dy < 1; });
+        g.fillStyle = eye ? ink : core;
+        g.beginPath(); g.arc(this.cx + x, this.cy + y, sp * 0.42 * (1 - 0.4 * d * d) * Math.min(1.5, boost), 0, TAU); g.fill();
+      }
+    }
+    // licht en de recap
+    const e = this.v.end, far = Math.hypot(Math.max(this.cx, w - this.cx), Math.max(this.cy, h - this.cy));
+    let card = -1;
+    if (e.kind === 'flood' && t >= e.at) {   // zoals whiteBurst nu
+      const tt = t - e.at, kk = smooth(seg(tt, 0, 0.7)), R = Math.max(1, far * 1.7 * easeOut(Math.min(1, tt / 1.6)));
+      const gr = g.createRadialGradient(this.cx, this.cy, 0, this.cx, this.cy, R);
+      gr.addColorStop(0, `rgba(255,255,255,${kk})`); gr.addColorStop(0.3, `rgba(255,255,255,${kk})`); gr.addColorStop(0.62, `rgba(255,255,255,${0.96 * kk})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h); card = tt - 1.1;
+    }
+    if (e.kind === 'soft' && t >= e.at) {    // zachte cirkel vanuit de kern, zoals de intro
+      const tt = t - e.at, R = Math.max(1, far * 1.3 * easeOut(seg(tt, 0, 1.5)));
+      const gr = g.createRadialGradient(this.cx, this.cy, 0, this.cx, this.cy, R);
+      gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.62, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h); card = tt - 1.25;
+    }
+    if (card >= 0) {   // de recap ontwikkelt uit het licht
+      const m = smooth(seg(card, 0, 1.4)), cw = w * 0.74, ch = cw * 1.25, x0 = (w - cw) / 2, y0 = (h - ch) / 2 - 6, sc = lerp(1.05, 1, easeOut(seg(card, 0, 1.6)));
+      g.fillStyle = `rgba(255,255,255,1)`; g.fillRect(0, 0, w, h);
+      g.fillStyle = rgba(dark ? '#000000' : '#1B1B22', (dark ? 0.4 : 0.14) * m); g.fillRect(0, 0, w, h);
+      g.save(); g.translate(w / 2, h / 2); g.scale(sc, sc); g.translate(-w / 2, -h / 2);
+      g.shadowColor = `rgba(0,0,0,${0.18 * seg(card, 0.6, 1.4)})`; g.shadowBlur = 24; g.shadowOffsetY = 8;
+      g.fillStyle = surface; g.beginPath(); g.roundRect(x0, y0, cw, ch, 12); g.fill(); g.shadowColor = 'transparent';
+      g.fillStyle = rgba(ink, 0.55); g.font = '500 8px "Geist Mono", monospace'; g.textBaseline = 'top';
+      g.fillText('ORBIT', x0 + 14, y0 + 14); g.textAlign = 'right'; g.fillText('OKTOBER 2026', x0 + cw - 14, y0 + 14); g.textAlign = 'left';
+      dots(g, String(N), x0 + 14, y0 + 48, 54, core, rgba(ink, 0.1));
+      g.fillStyle = rgba(ink, 0.55); g.fillText('STERREN IN OKTOBER', x0 + 14, y0 + 112);
+      for (let d = 0; d < 31; d++) { const n = 1 + ((d * 7) % 5) % 3; for (let j = 0; j < n; j++) { g.fillStyle = d === 13 ? core : rgba(ink, 0.7); g.beginPath(); g.arc(x0 + 16 + d * ((cw - 32) / 30), y0 + ch - 34 - j * 6, 1.8, 0, TAU); g.fill(); } }
+      g.restore();
+      g.fillStyle = `rgba(255,255,255,${1 - smooth(seg(card, 0, 1.2))})`; g.fillRect(0, 0, w, h);   // witte sluier trekt op
+    }
+  }
+}
+
+const rows = document.getElementById('rows'), stages = [];
+for (const v of V) {
+  const el = document.createElement('section'); el.className = 'row';
+  el.innerHTML = `<div class="phone"><div class="screen" role="button" tabindex="0" aria-label="${v.name}: speel"><canvas></canvas></div></div><div class="text"><h2><span class="code">${v.id}</span>${v.name}${v.advice ? '<span class="advice">advies</span>' : ''}${v.ref ? '<span class="ref">nu in de app</span>' : ''}</h2>${v.text}<p class="snd">${v.snd}</p><div class="foot"><button type="button" class="play">Speel</button><span class="time">0,0 s</span></div></div>`;
+  rows.append(el);
+  const st = new Stage(v, el); stages.push(st);
+  const go = () => { stages.forEach(s => s !== st && s.stop()); st.play(); };
+  el.querySelector('.play').addEventListener('click', go);
+  const scr = el.querySelector('.screen'); scr.addEventListener('click', go);
+  scr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+}
+const bS = document.getElementById('b-sound'), bT = document.getElementById('b-slow');
+bS.addEventListener('click', () => { soundOn = !soundOn; bS.setAttribute('aria-pressed', soundOn); bS.textContent = soundOn ? 'Geluid aan' : 'Geluid uit'; if (!soundOn) stages.forEach(s => { if (s.out && AC) { s.out.gain.setTargetAtTime(0.0001, AC.currentTime, 0.05); } }); });
+bT.addEventListener('click', () => { slow = slow === 1 ? 2 : 1; bT.setAttribute('aria-pressed', slow === 2); });
+const setTheme = t => { document.documentElement.dataset.theme = t; stages.forEach(s => s.draw(s.t)); };
+document.getElementById('b-light').addEventListener('click', () => setTheme('light'));
+document.getElementById('b-dark').addEventListener('click', () => setTheme('dark'));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => stages.forEach(s => s.draw(s.t)));
+document.fonts?.ready.then(() => stages.forEach(s => s.draw(s.t)));
+</script>
+</body>
+</html>
