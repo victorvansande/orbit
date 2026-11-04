@@ -18,7 +18,7 @@ import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from 
 import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
 import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
-import { playDone, soundOn, setSound } from './scene/sound.js';
+import { playDone, playFeat, playRank, playTimer, playMonth, soundOn, setSound } from './scene/sound.js';
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
@@ -1857,7 +1857,7 @@ const timer = createTimer($('timer'), {
     saveFeats(feats);
     notifySync();
     if (quiet) return;
-    if (performance.now() - lastTick > 1500) playDone({ level: 1 });   // net afgevinkt: geen tweede tik
+    if (performance.now() - lastTick > 1500) playTimer();   // net afgevinkt: geen tweede geluid
     setTimeout(() => checkFeats(true), 0);   // kan al bij het opstarten gebeuren, vóór de rest van de app klaar is
   },
   onChange: () => notifySync(),
@@ -2101,6 +2101,7 @@ function runTurn(plan, { replay = false } = {}) {
   let opened = false;
   const open = () => { if (opened) return; opened = true; setHush(false); openRecap(plan.prev, { born: true }); };
   setHush(true);
+  playMonth();   // zelfde tijdlijn als de zwaartekracht en het witte licht
   scene.monthTurn(plan.old, {
     onBurst() {
       whiteBurst({
@@ -2237,6 +2238,7 @@ function showFeatPop() {
   pop.hidden = false;
   placeFeatPop();
   requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(); });
+  playFeat(x.tier);
   popTimer = setTimeout(hideFeatPop, FEAT_POP_MS);
 }
 // De melding staat midden boven de kern, niet midden op het scherm (Victor, 02/11/2026: "cleaner"). Op desktop ligt de
@@ -2310,6 +2312,7 @@ function showRankPop() {
   const cols = { bg: cs.getPropertyValue('--bg') };
   for (const m of ['bronze', 'silver', 'gold', 'platinum']) cols[m] = cs.getPropertyValue(`--tier-${m}`);
   promo.play(q.from, q.to, cols, { still });
+  playRank(still ? 0 : landAt(q.from, q.to) / 1000);   // de kwint op het moment dat de nieuwe stip landt
   requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(pop); });
   rankTimer = setTimeout(hideRankPop, PROMO_MS);
 }

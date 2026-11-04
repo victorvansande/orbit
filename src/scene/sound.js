@@ -1,9 +1,9 @@
-/* ---- Geluid bij afvinken ---- */
+/* ---- Geluid ---- */
 // Klein en zacht, met Web Audio opgewekt (geen bestanden). Standaard aan; uit te zetten in Instellingen. De toonhoogte volgt
 // het moment: Nu het hoogst, Ooit het laagst, telkens een noot uit dezelfde pentatonische toonladder.
 
 const SOUND_KEY = 'priority-orbit.sound.v1';   // 'on' of 'off'
-export const SOUND_STYLE = 'baken';            // gekozen door Victor, zie SOUNDS
+export const SOUND_STYLE = 'sonar';            // gekozen door Victor (04/11/2026, ronde 2 van de geluidsidentiteit), zie SOUNDS
 const NOTES = [0, 1318.5, 1046.5, 880, 784, 659.3];   // per moment (1 = Nu): E6, C6, A5, G5, E5
 const MELODY = [0, 2, 4, 7, 9, 7, 4, 2, 4, 9, 12, 9];   // halve tonen boven C6, voor 'melodie'
 
@@ -108,8 +108,86 @@ export const SOUNDS = {
   },
 };
 
-// level: 1..5 (toonhoogte), n: hoeveelste ster (voor 'melodie')
+/* ---- Sonar (Victor, 04/11/2026, uit ronde 2: ontwerp/geluid/ronde2.html) ----
+   Een korte ping met echo's die donkerder wegsterven. De echo staat voor de afstand tot de kern: bij Nu komt ze meteen
+   terug, bij Ooit pas na een derde seconde. Toonhoogte uit dezelfde pentatonische reeks, een octaaf lager dan vroeger.
+   Elke toon wordt zacht aangezet en loopt exponentieel uit, nooit een sprong. Genormaliseerd zodat het afvinken net als
+   baken piekt op ongeveer -20 dBFS (gemeten met OfflineAudioContext). Geluid krijgen enkel: afvinken, prestatie, nieuwe
+   rang, zandloper klaar en de maandwissel. */
+const P = { E3: 164.81, G3: 196, B3: 246.94, E4: 329.63, G4: 392, A4: 440, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, E6: 1318.5 };
+const SONAR_NOTES = [0, P.E5, P.C5, P.A4, P.G4, P.E4];   // Nu .. Ooit
+const ECHO = [0, 0.075, 0.115, 0.16, 0.22, 0.3];         // Nu .. Ooit: afstand tot de kern, in s
+const DET = [0, 5, -4, 3, -6, 2, -2];                     // kleine vaste stemverschillen bij herhaling (cent)
+const SONAR_GAIN = 0.504;
+
+function soft(g, t, peak, attack, decay) {
+  g.gain.setValueAtTime(0.00001, t);
+  g.gain.linearRampToValueAtTime(peak, t + attack);
+  g.gain.setTargetAtTime(0.00001, t + attack, decay / 5);
+}
+function ping(a, out, t, f, { g = 1, dur = 0.16, det = 0, lv = 3 } = {}) {
+  const o = a.createOscillator(), e = a.createGain();
+  o.frequency.value = f; o.detune.value = det;
+  soft(e, t, 0.2 * g, 0.004, dur);
+  const dl = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), wet = a.createGain();
+  dl.delayTime.value = ECHO[lv] || ECHO[3]; fb.gain.value = 0.36;
+  lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); wet.gain.value = 0.55;
+  o.connect(e); e.connect(out); e.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wet).connect(out);
+  o.start(t); o.stop(t + dur * 1.5 + 0.1);
+}
+SOUNDS.sonar = (a, out, t, f, n, level = 3) => ping(a, out, t, SONAR_NOTES[level] || P.A4, { det: DET[n % DET.length], g: 1 - 0.05 * (n % 3), lv: level });
+
+// speelt een reeks pings; enkel als het geluid aan staat
+function cue(fn, force = false) {
+  if (!force && !soundOn()) return;
+  const a = audio();
+  if (!a) return;
+  const out = a.createGain();
+  out.gain.value = SONAR_GAIN;
+  out.connect(a.destination);
+  fn(a, out, a.currentTime + 0.02);
+}
+// prestatie: brons één toon, zilver een tweede die zakt, goud een kleine samenklank, platina met een zacht licht erboven
+export function playFeat(tier = 'silver') {
+  const k = { bronze: 1, silver: 2, gold: 3, platinum: 4 }[tier] || 2;
+  cue((a, o, t) => {
+    if (k === 1) ping(a, o, t, P.C5, { g: 0.9 });
+    if (k === 2) { ping(a, o, t, P.C5, { g: 0.9 }); ping(a, o, t + 0.11, P.G4, { g: 0.62 }); }
+    if (k >= 3) { ping(a, o, t, P.E5, { g: 0.88 }); ping(a, o, t + 0.11, P.C5, { g: 0.62 }); ping(a, o, t + 0.11, P.G4, { g: 0.4 }); }
+    if (k === 4) ping(a, o, t + 0.28, P.E6, { g: 0.22, dur: 0.5 });
+  });
+}
+// nieuwe rang: een lage toon bij het oude teken, en een zachte kwint met een glinstering als de nieuwe stip landt (land in s)
+export function playRank(land = 2.2) {
+  cue((a, o, t) => {
+    if (land > 0.3) ping(a, o, t, P.G3, { g: 0.5, dur: 0.6 });
+    ping(a, o, t + land, P.C5, { g: 0.85, dur: 0.45 });
+    ping(a, o, t + land, P.G5, { g: 0.42, dur: 0.5 });
+    ping(a, o, t + land + 0.16, P.E6, { g: 0.18, dur: 0.6 });
+  });
+}
+// zandloper klaar: drie keer dezelfde toon, telkens zachter, zoals een rustige keukenwekker
+export function playTimer() {
+  cue((a, o, t) => [0, 0.62, 1.24].forEach((dt, i) => ping(a, o, t + dt, P.A4, { g: 1.12 - 0.22 * i })));
+}
+// maandwissel: een piepklein tikje per ster die in de kern valt, steeds sneller (1,3 tot 4,4 s), en op 3,9 s bij het witte
+// licht één lage, warme samenklank. Zelfde tijdlijn als scene.monthTurn en whiteBurst.
+export function playMonth() {
+  cue((a, o, t) => {
+    const N = 26, notes = [P.E6, P.C6, P.A5, P.G5, P.E5];
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1), at = 1.3 + 3.1 * Math.sqrt(u), k = Math.floor(((i * 7919) % 97) / 97 * 5);
+      ping(a, o, t + at, notes[Math.min(4, k + Math.floor(u * 2))], { g: 0.16 + 0.12 * u, dur: 0.12, det: DET[i % DET.length] });
+    }
+    ping(a, o, t + 3.9, P.E3, { g: 0.85, dur: 1.4 });
+    ping(a, o, t + 3.9, P.B3, { g: 0.42, dur: 1.2 });
+    ping(a, o, t + 3.98, P.E4, { g: 0.26, dur: 1.0 });
+  });
+}
+
+// level: 1..5 (toonhoogte en, bij sonar, de echo), n: hoeveelste ster (stemverschil, voor 'melodie')
 export function playDone({ level = 3, n = 0, style = SOUND_STYLE, force = false } = {}) {
+  if (style === 'sonar') { cue((a, o, t) => SOUNDS.sonar(a, o, t, 0, n, level), force); return; }
   if (!force && !soundOn()) return;
   const a = audio();
   if (!a) return;
