@@ -23,10 +23,13 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'panel', 'life'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma', 'panel', 'life', 'breakout', 'bubbles'];
 
 import { createPanel } from './panel.js';
 import { createLife } from './life.js';
+import { createBreakout } from './breakout.js';
+import { createPlasma } from './plasma.js';
+import { createBubbles } from './bubbles.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -610,6 +613,12 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
         modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen });
       } else if (modeName === 'life') {
         modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
+      } else if (modeName === 'breakout') {
+        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
+      } else if (modeName === 'plasma') {
+        modes[modeName] = createPlasma({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
+      } else if (modeName === 'bubbles') {
+        modes[modeName] = createBubbles({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -627,32 +636,98 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
-  nextBtn.addEventListener('click', () => { if (modeName === 'panel' || modeName === 'life') mode().next(1); });
+  const hasPresets = m => ['panel', 'life', 'breakout', 'plasma', 'bubbles'].includes(m);
+  nextBtn.addEventListener('click', () => { if (hasPresets(modeName)) mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
-    if ((modeName !== 'panel' && modeName !== 'life') || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    if (!hasPresets(modeName) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     e.preventDefault(); e.stopPropagation();
     mode().next(e.key === 'ArrowLeft' ? -1 : 1);
   });
 
-  // keuze bovenin het bakje
+  // keuze bovenin het bakje: elegant en compact dropdown-menu (Victor, 05/11/2026)
   const bar = box.querySelector('.fidget-modes');
   // zonder WebGL geen lava of gloed (dan ook niet als keuze)
   const available = () => MODES.filter(m => (!['lava', 'grain'].includes(m) || getGL()) && (m !== 'topo' || hasGL2()));
-  function renderBar() {
-    if (!available().includes(modeName)) modeName = 'water';
-    bar.replaceChildren(...available().map((m, i) => {
-      const frag = document.createDocumentFragment();
-      if (i) frag.append(Object.assign(document.createElement('span'), { className: 'slash', textContent: '/', ariaHidden: 'true' }));
-      const b = document.createElement('button');
-      b.type = 'button'; b.setAttribute('role', 'radio'); b.dataset.mode = m;
-      b.setAttribute('aria-checked', String(m === modeName));
-      b.textContent = label(m);
-      frag.append(b);
-      return frag;
-    }), reset, pick);
-    nextBtn.hidden = modeName !== 'panel' && modeName !== 'life';
+
+  const GROUPS = [
+    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma'] },
+    { key: 'groupPlay', modes: ['panel', 'life', 'breakout', 'bubbles'] }
+  ];
+
+  const menuWrap = document.createElement('div');
+  menuWrap.className = 'fidget-menu-wrap';
+
+  const menuBtn = document.createElement('button');
+  menuBtn.type = 'button';
+  menuBtn.className = 'fidget-menu-btn';
+  menuBtn.setAttribute('aria-haspopup', 'listbox');
+  menuBtn.setAttribute('aria-expanded', 'false');
+  menuBtn.setAttribute('aria-label', label('choose'));
+
+  const menuDot = document.createElement('span');
+  menuDot.className = 'fidget-menu-dot';
+
+  const menuName = document.createElement('span');
+  menuName.className = 'fidget-menu-name';
+
+  const menuChevron = document.createElement('span');
+  menuChevron.className = 'fidget-menu-chevron';
+  menuChevron.innerHTML = '<svg viewBox="0 0 8 5" width="8" height="5" aria-hidden="true"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  menuBtn.append(menuDot, menuName, menuChevron);
+
+  const popover = document.createElement('div');
+  popover.className = 'fidget-popover';
+  popover.setAttribute('role', 'listbox');
+  popover.hidden = true;
+
+  menuWrap.append(menuBtn, popover);
+
+  const rightBar = document.createElement('div');
+  rightBar.className = 'fidget-bar-right';
+
+  function toggleMenu(open) {
+    const show = open ?? popover.hidden;
+    popover.hidden = !show;
+    menuBtn.setAttribute('aria-expanded', String(show));
+    if (show) {
+      const activeOpt = popover.querySelector('[aria-selected="true"]');
+      activeOpt?.focus();
+    }
   }
-  bar.addEventListener('pointerdown', e => e.stopPropagation());   // de knopjes tellen niet als tik in het bakje
+
+  menuBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleMenu();
+  });
+
+  document.addEventListener('pointerdown', e => {
+    if (!popover.hidden && !menuWrap.contains(e.target)) {
+      toggleMenu(false);
+    }
+  });
+
+  menuWrap.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      toggleMenu(false);
+      menuBtn.focus();
+    }
+  });
+
+  popover.addEventListener('click', e => {
+    const b = e.target.closest('button[data-mode]');
+    if (!b) return;
+    toggleMenu(false);
+    if (b.dataset.mode === modeName) return;
+    mode().leave();
+    mode().unmount?.();
+    modeName = b.dataset.mode;
+    try { localStorage.setItem(MODE_KEY, modeName); } catch { /* geen opslag */ }
+    agit.fill(0);
+    renderBar();
+    if (!running) render(performance.now());
+  });
+
   // kleurkiezer rechts in de rij: een rondje in de gekozen kleur (native kiezer), en terug naar de standaardkleuren
   try { const c = localStorage.getItem(COLOR_KEY); if (/^#[0-9a-f]{6}$/i.test(c || '')) ACCENT = c; } catch { /* geen opslag */ }
   const pick = document.createElement('label');
@@ -662,6 +737,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const reset = Object.assign(document.createElement('button'), { type: 'button', className: 'fidget-color-reset', textContent: '↺' });
   reset.setAttribute('aria-label', label('colorReset')); reset.title = label('colorReset');
   pick.append(input);
+  rightBar.append(reset, pick);
+
   function setAccent(c) {
     ACCENT = c;
     try { if (c) localStorage.setItem(COLOR_KEY, c); else localStorage.removeItem(COLOR_KEY); } catch { /* geen opslag */ }
@@ -674,17 +751,38 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   }
   input.addEventListener('input', () => setAccent(input.value));
   reset.addEventListener('click', () => setAccent(null));
-  bar.addEventListener('click', e => {
-    const b = e.target.closest('button[data-mode]');
-    if (!b || b.dataset.mode === modeName) return;
-    mode().leave();
-    mode().unmount?.();
-    modeName = b.dataset.mode;
-    try { localStorage.setItem(MODE_KEY, modeName); } catch { /* geen opslag */ }
-    agit.fill(0);
-    renderBar();
-    if (!running) render(performance.now());
-  });
+
+  function renderBar() {
+    if (!available().includes(modeName)) modeName = 'water';
+    menuName.textContent = label(modeName);
+
+    popover.replaceChildren(...GROUPS.map(grp => {
+      const col = document.createElement('div');
+      col.className = 'fidget-pop-col';
+      const title = document.createElement('div');
+      title.className = 'fidget-pop-title';
+      title.textContent = label(grp.key);
+      col.append(title);
+
+      const availModes = grp.modes.filter(m => available().includes(m));
+      availModes.forEach(m => {
+        const opt = document.createElement('button');
+        opt.type = 'button';
+        opt.setAttribute('role', 'option');
+        opt.dataset.mode = m;
+        opt.className = 'fidget-pop-opt';
+        const isSelected = m === modeName;
+        opt.setAttribute('aria-selected', String(isSelected));
+        opt.innerHTML = `<span class="fpo-dot"></span><span class="fpo-text">${label(m)}</span>`;
+        col.append(opt);
+      });
+      return col;
+    }));
+
+    bar.replaceChildren(menuWrap, rightBar);
+    nextBtn.hidden = !hasPresets(modeName);
+  }
+  bar.addEventListener('pointerdown', e => e.stopPropagation()); // de knopjes tellen niet als tik in het bakje
   renderBar();
   setAccent(ACCENT);
 
@@ -711,9 +809,16 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
     box.classList.toggle('on-dark', modeName === 'grain');
     box.classList.toggle('is-panel', modeName === 'panel');   // gloed vult het vak met een donker verloop: lichte keuzerij
+    if (!m.gl) {
+      const ctx = getGL();
+      if (ctx) {
+        ctx.clearColor(0, 0, 0, 0);
+        ctx.clear(ctx.COLOR_BUFFER_BIT);
+      }
+    }
     if (m.own) {
       m.mount(own);
-      m.frame?.(now);   // paneel: tekent mee in de lus van het bakje
+      m.frame?.(now);   // paneel, life, breakout, plasma, bubbels: tekenen mee in de lus
       return;
     }
     if (m.gl) {
@@ -774,6 +879,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   box.addEventListener('pointerdown', e => {
     if (reducedMotion.matches) return;
     press = { x0: e.clientX, y0: e.clientY };
+    mode().down?.(local(e));
   });
   box.addEventListener('pointermove', e => {
     if (reducedMotion.matches) return;
@@ -786,6 +892,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const release = e => {
     if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) < 6) mode().tap(local(e));
     press = null;
+    mode().up?.(local(e));
   };
   box.addEventListener('pointerup', release);
   box.addEventListener('pointercancel', () => { press = null; });

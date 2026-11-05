@@ -656,6 +656,7 @@ body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointe
 .fidget::after { content: ''; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2); }
 .fidget { touch-action: none; user-select: none; -webkit-user-select: none; }   /* staat vast: niet meer te slepen */
 .fidget canvas { display: block; }
+.fidget [hidden] { display: none !important; }
 .fidget-gl { border-radius: 0; }
 .fidget-own { position: relative; overflow: hidden; }   /* topo: eigen canvas van de React Bits-component */
 .fidget-own .topography-canvas { display: block; width: 100%; height: 100%; }
@@ -671,15 +672,30 @@ body.is-focus .fidget-next { opacity: .5; visibility: visible; transform: transl
 body.is-focus .fidget-next:hover, body.is-focus .fidget-next:focus-visible { opacity: 1; color: var(--ink-2); }
 .fidget-next svg { width: 10px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }   /* lava en gloed: echte WebGL, zoals hun bron bij React Bits */
 /* keuze bovenin: zelfde kapitaaltjes als Boven / Zijkant, klein en rustig */
-.fidget-modes { position: absolute; z-index: 2; top: 12px; left: 11px; right: 11px; display: flex; align-items: center; gap: 2.5px; font: 500 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
-.fidget-modes button { min-height: 22px; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; transition: color .2s var(--ease); }
-.fidget-modes button:hover { color: var(--ink-2); }
-.fidget-modes button[aria-checked="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-.fidget-modes .slash { opacity: .5; }
+.fidget-modes { position: absolute; z-index: 10; top: 10px; left: 11px; right: 11px; display: flex; align-items: center; justify-content: space-between; font: 500 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); pointer-events: none; }
+.fidget-modes > * { pointer-events: auto; }
+.fidget-menu-wrap { position: relative; }
+.fidget-menu-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 7px 0 6px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; transition: all .2s var(--ease); }
+.fidget-menu-btn:hover, .fidget-menu-btn[aria-expanded="true"] { color: var(--ink); background: var(--well-shade); border-color: var(--line); }
+.fidget-menu-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--water-hot, #E08600); }
+.fidget-menu-chevron { display: inline-flex; align-items: center; opacity: .6; transition: transform .2s var(--ease), opacity .2s var(--ease); }
+.fidget-menu-btn:hover .fidget-menu-chevron, .fidget-menu-btn[aria-expanded="true"] .fidget-menu-chevron { opacity: 1; }
+.fidget-menu-btn[aria-expanded="true"] .fidget-menu-chevron { transform: rotate(180deg); }
+
+.fidget-popover { position: absolute; top: calc(100% + 5px); left: 0; z-index: 30; display: grid; grid-template-columns: 126px 126px; gap: 10px; padding: 10px 11px; background: var(--panel-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45); animation: popover-appear .16s var(--ease); }
+@keyframes popover-appear { from { opacity: 0; transform: translateY(-4px) scale(0.97); } to { opacity: 1; transform: none; } }
+.fidget-pop-title { padding: 2px 4px 6px; font: 600 8px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--line); margin-bottom: 5px; }
+.fidget-pop-opt { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 23px; padding: 0 6px; border-radius: 5px; font: 500 9.5px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); cursor: pointer; background: transparent; border: none; text-align: left; transition: all .15s var(--ease); }
+.fidget-pop-opt:hover { color: var(--ink); background: var(--line-soft); }
+.fidget-pop-opt[aria-selected="true"] { color: var(--ink); font-weight: 600; background: var(--line-soft); }
+.fidget-pop-opt[aria-selected="true"] .fpo-dot { opacity: 1; background: var(--ink); }
+.fpo-dot { width: 4px; height: 4px; border-radius: 50%; background: transparent; opacity: 0; flex-shrink: 0; }
+.fpo-text { flex: 1; }
+.fidget-bar-right { display: flex; align-items: center; gap: 6px; }
 /* topo en lava lopen tot bovenaan: een zachte overgang in de kleur van het bakje houdt de keuzerij leesbaar */
 .fidget.is-gl:not(.on-dark):not(.is-panel)::before { content: ''; position: absolute; z-index: 1; inset: 0 0 auto; height: 62px; pointer-events: none; background: linear-gradient(var(--well) 52%, transparent); }
 .fidget.on-dark .fidget-modes { color: var(--fidget-on-dark); }
-.fidget.on-dark .fidget-modes button:hover, .fidget.on-dark .fidget-modes button[aria-checked="true"] { color: var(--fidget-on-dark-strong); }
+.fidget.on-dark .fidget-menu-btn:hover, .fidget.on-dark .fidget-menu-btn[aria-expanded="true"] { color: var(--fidget-on-dark-strong); }
 /* kleurkiezer rechts in de rij: een rondje in de gekozen kleur, een kleurwieltje zolang elke soort zijn eigen kleuren heeft */
 .fidget-color { position: relative; width: 14px; height: 14px; border-radius: 50%; background: var(--pick); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; flex-shrink: 0; }
 .fidget-color.is-default { background: conic-gradient(var(--water-mid), var(--water-hot), var(--ink-3), var(--water-mid)); }

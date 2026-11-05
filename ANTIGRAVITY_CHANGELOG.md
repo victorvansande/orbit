@@ -614,3 +614,45 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `ANTIGRAVITY_CHANGELOG.md`
 - **Getest:**
   - CDP verificatie in headless Edge van de focusmodus en drag & drop interacties.
+
+### 05/11/2026 - Drie nieuwe fidgets (Breakout, Plasmabol, Bubbels) & Compact keuzemenu
+- **Wat is er veranderd:**
+  1. **Mini Breakout (`src/focus/breakout.js`):**
+     - Rustgevende, niet-straffende breakout-fidget in Orbit-stijl.
+     - Balletje met micro-komeetstaart, zachte paddle die de cursor volgt met snelheidsspin en hoekafbuiging.
+     - Bricks in zachte Orbit-kleuren (Nu-oranje, Vandaag-goud, Morgen-blauw, Later-paars) met 4 wisselbare layouts (Klassiek, Orbits, Piramide, Kosmos).
+     - Rustgevende partikels bij inslag en subtiele zwevende score-indicaties.
+  2. **Plasmabol (`src/focus/plasma.js`):**
+     - Klassieke plasmabol met dielektrische ontlading.
+     - Centrale bol-elektrode met paarse/magenta corona, 12 kronkelende fractale ontladingsfilamenten die organisch golven naar het glas.
+     - Bij aanwijzen of tikken springen de bliksemschichten magnetisch naar het contactpunt met een intense dielektrische bundel, oppervlakte-flare en vonkjes.
+     - 4 kleurenthema's: Neon-Xenon, Bliksem, Zonnewind, Aurora.
+  3. **Bubbels / Noppenfolie (`src/focus/bubbles.js`):**
+     - Eeuwig voorbijglijdende noppenfolie-wand in frosted glass esthetiek met zachte diepteschaduwen en witte randglans.
+     - 1 klik popt direct een bubbel met een rimpeling en gesynthetiseerd plop-geluid via Web Audio.
+     - Slepen / ingedrukt houden veegt over de bubbels en popt elke bubbel waar de cursor overheen zweeft.
+     - 4 formaten/thema's: Klassiek, Groot, Micro, Regenboog.
+  4. **Compact Fidget Keuzemenu (`src/focus/fidget.js`, `src/styles.css`):**
+     - Vervangt de overvolle, overlappende schuine-streep balk door een compacte capsuleknop (`.fidget-menu-btn`) met statusstip, actieve fidgetnaam en chevron (`● BREAKOUT ▾`).
+     - Bij klik opent een frosted glass popover (`.fidget-popover`, `backdrop-filter: blur(24px)`) georganiseerd in twee overzichtelijke kolommen:
+       - *Vloeistof & Veld* (Water, Gelei, Lava, Gloed, Topo, Plasma)
+       - *Interactief & Spel* (Paneel, Life, Breakout, Bubbels)
+     - Volledig toetsenbord- en toegankelijkheidsvriendelijk (`Escape` en buitenklik sluiten het menu, `aria-expanded`, `aria-selected`).
+     - WebGL canvas overlay-fix (`display: none !important` via `[hidden]` en buffer clearing) zodat 2D en WebGL fidgets naadloos naast elkaar wisselen.
+  5. **Taalondersteuning & Caching:**
+     - `src/core/i18n.js` uitgebreid met Nederlandse en Engelse labels voor alle nieuwe modi en categorieen.
+     - `sw.js` cache gebumpt naar `orbit-v7` met de nieuwe JS-bestanden toegevoegd aan de `SHELL` pre-cache.
+- **Gewijzigde bestanden:**
+  - `src/focus/breakout.js` (nieuw)
+  - `src/focus/plasma.js` (nieuw)
+  - `src/focus/bubbles.js` (nieuw)
+  - `src/focus/fidget.js`
+  - `src/styles.css`
+  - `src/core/i18n.js`
+  - `sw.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - CDP verificatie in headless Edge voor Breakout, Plasma, Bubbels en het geopende keuzemenu. Nul console- of runtimefouten.
+- **Impact op opslag / state:**
+  - Service worker cache gebumpt naar `orbit-v7`. Geen brekende storage wijzigingen.
