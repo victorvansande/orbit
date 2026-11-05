@@ -2250,6 +2250,7 @@ function openFeats() {
 }
 $('feats-btn')?.addEventListener('click', () => { setMenu(false); openFeats(); });
 $('feats-badge')?.addEventListener('click', () => { setMenu(false); openFeats(); });
+document.querySelector('.menu-feats-row')?.addEventListener('click', () => { setMenu(false); openFeats(); });
 $('stats-rank-hint')?.addEventListener('click', openFeats);
 $('feats-close').addEventListener('click', () => featsDialog.close());
 featsDialog.addEventListener('click', e => { if (e.target === featsDialog) featsDialog.close(); });

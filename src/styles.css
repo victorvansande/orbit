@@ -213,14 +213,15 @@ body.is-focus .greeting { z-index: 4; }
 }
 .hud-actions .recap-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
 .menu-feats-row { cursor: pointer; }
+.menu-feats-row:hover .feats-badge { color: var(--ink-2); }
 .hud-menu .feats-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  min-height: 28px; padding: 0 4px; border: 0; background: none;
+  display: inline-flex; align-items: center; justify-content: flex-end; gap: 7px;
+  flex: none; min-height: 32px; margin: 0; padding: 0; border: 0; background: none;
   font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
-  color: var(--ink); cursor: pointer; transition: opacity .2s var(--ease);
+  color: var(--ink); cursor: pointer; transition: color .2s var(--ease);
   --rank-cut: var(--surface);
 }
-.hud-menu .feats-badge:hover { opacity: .75; }
+.hud-menu .feats-badge:hover { color: var(--ink-2); }
 .hud-menu .feats-badge svg { width: 14px; height: 14px; overflow: visible; flex: none; }
 /* Instellingen: één knopje met een paneel. Desktop: linksonder (aanzicht, focus, tempo, thema, sneltoetsen);
    gsm: in de kop (thema, tempo, uitleg, archief, sync) */
@@ -1278,9 +1279,9 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, 
 .fx-wall canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fx-wall-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; padding: 6px 14px; border-radius: 999px; background: var(--bg); color: var(--ink); font-size: 14px; white-space: nowrap; pointer-events: none; }
 /* ---- Prestaties ---- */
-.feats-badge { display: inline-flex; align-items: center; gap: 6px; flex-basis: 100%; margin-top: 13px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease); --tier: var(--tier-gold); }
-.feats-badge:hover { color: var(--ink); }
-.feats-badge svg { width: 16px; height: 16px; overflow: visible; }
+.feats-badge { display: inline-flex; align-items: center; gap: 7px; flex: none; margin: 0; padding: 0; border: 0; background: none; font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); cursor: pointer; transition: color .2s var(--ease); --tier: var(--tier-gold); }
+.feats-badge:hover { color: var(--ink-2); }
+.feats-badge svg { width: 14px; height: 14px; overflow: visible; flex: none; }
 .fb-ring { fill: none; stroke: var(--tier, var(--ink-3)); stroke-width: 1.3; }
 .fb-star, .fb-spark { fill: var(--tier, var(--ink-3)); }
 .fb-q { fill: var(--ink-3); font: 600 11px var(--mono); text-anchor: middle; }

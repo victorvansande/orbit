@@ -430,6 +430,33 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Screenshots gecontroleerd: `hud_right_clean.png`, `stats_bar_hint.png`, `menu_with_feats.png`.
 - **Impact op opslag / state:** Geen.
 
+### 31. Uitlijning van rang en punten in het instellingenmenu
+- **Vraag van Victor:** "De rang en punten staan heel raar uitgelijnd in het settings menu" (met screenshot `media_1793882000105_38476cd9.png`).
+- **Oorzaak van de scheefgroei:**
+  - Een oude CSS-regel op regel 1281 (`.feats-badge { flex-basis: 100%; margin-top: 13px; ... }`) die nog dateerde uit de tijd dat de badge onder de teller in de zijbalk stond, werkte door op `#feats-badge` in het menu.
+  - Door `flex-basis: 100%` rekte de badge-knop zich horizontaal over de volledige restbreedte van de rij uit, terwijl de inhoud (`<svg>` en tekst) links binnen die knop werd uitgelijnd (vlak naast het label `Achievements` / `Prestaties`).
+  - Bovendien drukte `margin-top: 13px` de badge naar beneden, waardoor deze ver onder de verticale as van het label kwam te hangen.
+- **Oplossing & Implementatie:**
+  - In `src/styles.css` is de oude regel op regel 1281 ontdaan van `flex-basis: 100%` en `margin-top: 13px`.
+  - `.hud-menu .feats-badge` heeft expliciet `flex: none; margin: 0; padding: 0; justify-content: flex-end;` gekregen, waardoor de badge zich automatisch rechts uitlijnt via `justify-content: space-between` van de rij.
+  - De badge eindigt nu op exact dezelfde rechterkolom als de knoppen erboven (bv. `Open demo`), en is exact verticaal gecentreerd op de regel (binnen een halve pixel).
+  - Tevens is in `src/app.js` een klik-luisteraar aan de hele rij `.menu-feats-row` toegevoegd, zodat een klik overal op de rij het venster opent.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`
+  - `src/app.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Geautomatiseerde CDP-metingen uitgevoerd in headless Edge (`verify_menu_feats_align.mjs`):
+    - `demoButton.right = 423px`, `featsBadge.right = 423px` (`rightDelta = 0px`, exact gelijk).
+    - `demoLabel.left = 57px`, `featsLabel.left = 57px` (`leftDelta = 0px`, exact gelijk).
+    - Verticaal centrum van de 48px-rij (`top: 697px`) en de 32px-badge (`top: 704.5px`) vallen exact samen op 720,5-721 px.
+  - Screenshot gemaakt en geverifieerd (`menu_feats_aligned_en.png`).
+  - Klik op de hele rij opent het Prestaties-venster.
+  - Console 100% foutloos (`errors: 0`).
+- **Impact op opslag / state:** Geen.
+
+
 
 
 
