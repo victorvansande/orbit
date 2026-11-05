@@ -539,3 +539,53 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Syntaxcontrole: `Get-Content src/scene/scene.js -Raw | node --input-type=module --check` foutloos.
   - Geautomatiseerde CDP-test in headless Edge (`verify_ring_pulse.mjs`): taak toevoegen -> aankomst -> 0 console logs/exceptions.
 - **Impact op opslag / state:** Geen.
+
+
+### 35. Statuskleuren, rustige tellerbalk, D2 datum in focus, mobiele swipe-notities, audio limiter & Game of Life
+- **Vraag van Victor:**
+  1. Statuskleuren: koppelen grijs (licht pulserend), verbinden oranje, offline rood, verbonden blauw (licht pulserend), gesynchroniseerd groen. Tandwieltje naast instellingen neemt deze exacte kleuren en effecten over, behalve als het gesynchroniseerd is (dan terug naar standaard). Gebruik Orbit's eigen momentkleuren.
+  2. Punt 2: Doe voorstel A (onderste scheidingslijn onder teller weghalen).
+  3. Punt 3: D2 (Datum in focusmodus: groot dagcijfer in Geist Light naast de klok met scheidingslijn en gestapelde weekdag/maand).
+  4. Punt 5: Optie A (Geen permanent notitie-icoontje op mobiel; notitie toevoegen via swipe la).
+  5. Geluid bij maandwissel: Luide krak / pop oplossen bij het opslokken van de sterretjes.
+  6. Game of Life: Voeg een 100% werkende Conway's Game of Life toe aan de fidgets.
+- **Oplossing & Implementatie:**
+  1. **Statuskleuren & Tandwiel:**
+     - Orbit tokens gedefinieerd op :root en dark: `--orbit-red`, `--orbit-orange`, `--orbit-green`, `--orbit-blue`, `--orbit-gray`.
+     - Keyframe animaties `@keyframes sync-pulse-soft` en `@keyframes gear-settle-green` toegevoegd in `src/styles.css`.
+     - `.menu-gear` neemt de statuskleur en puls over. Bij `online` voert het tandwieltje een subtiele settle-animatie uit (groen gloeien -> rustig uitdoven naar inherit).
+  2. **Tellerscheiding (Voorstel A):**
+     - `border-top: none;` op `.stats-bar`, met 12 px rustige ademruimte tussen de dot matrix cijfers en de actieknoppen eronder. Hokjesgevoel op mobiel volledig verdwenen.
+  3. **Datum D2 in Focusmodus:**
+     - In `index.html` en `src/styles.css` structuur `.focus-time-row` met `.clock` en `.focus-d2` (verticale scheidingslijn `.d2-sep`, slank dagcijfer `.d2-day` in Geist Light 300, en `.d2-stack` met weekdag en maand in Geist Mono 500 kapitaaltjes).
+     - Hoogte dynamisch geschaald via `--dm-h: min(84px, 9.4vh)` op desktop en `52px` op mobiel.
+  4. **Mobiele Swipe-notities (Optie A):**
+     - Lege notitieknoppen (`.t-note-btn:not(.has-note)`) verborgen op touch (`opacity: 0; pointer-events: none;`).
+     - `.t-swipe-note-btn` toegevoegd in de swipe-to-reveal la. Bij naar links vegen schuift de taak 72 px in en verschijnen zowel de rode Delete-knop als de `+ Notitie` knop.
+  5. **Audio pop/krak fix:**
+     - In `src/scene/sound.js` een centrale `masterLimiter = ctx.createDynamicsCompressor()` ingevoerd voor alle audiokanalen om clippen en vervorming bij opstapeling van tonen te voorkomen.
+     - In `ping()`: gain curve zacht laten uitdoven naar 0.00001 direct voor `o.stop(stopT)` om DC-offsets en harde schakelklikken te elimineren.
+     - In `monthTicks()`: bus gain begrensd en dynamisch volume per bolletje geschaald.
+  6. **Conway's Game of Life in Fidgets:**
+     - Nieuwe module `src/focus/life.js` met een 60 × 42 toroïdaal raster volgens Conway's B3/S23 regels.
+     - 60 fps vloeiende bioluminescente nagloed op stervende en levende cellen.
+     - Anti-stagnatiemotor voorkomt dat het scherm doodvalt of vastloopt in statische blokken; periodieke kosmische bezoekers houden het bakje oneindig fascinerend.
+     - 5 iconische werelden wisselbaar via het pijltje onder het bakje: Oersoep, Zweverkanon (Gosper Glider Gun), Pulsar, Eikel (Acorn), Vloot.
+     - Volledige interactie: tikken spawnt zwevers, acorns en pulsars; slepen tekent levende cellen direct op het raster.
+     - Ondersteunt zowel lichte als donkere thema's en volgt de kleurkiezer van het bakje.
+     - Vertaald in `src/core/i18n.js` (NL en EN), toegevoegd aan `SHELL` in `sw.js` en service worker gebumpt naar `orbit-v6`.
+- **Gewijzigde bestanden:**
+  - `src/focus/life.js` (nieuw)
+  - `src/focus/fidget.js`
+  - `src/scene/sound.js`
+  - `src/styles.css`
+  - `src/app.js`
+  - `index.html`
+  - `src/core/i18n.js`
+  - `sw.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - CDP verificatie in headless Edge op zowel desktop als mobiel: 0 errors, focus D2 datum perfect uitgelijnd, swipe drawers soepel, Game of Life evolueert met 60fps bioluminescentie en wisselt feilloos tussen alle 5 presets.
+- **Impact op opslag / state:**
+  - Service worker cache gebumpt naar `orbit-v6` zodat clients direct de nieuwe life.js module ophalen. Geen brekende storage wijzigingen.

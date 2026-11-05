@@ -23,9 +23,10 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'panel'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'panel', 'life'];
 
 import { createPanel } from './panel.js';
+import { createLife } from './life.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -605,7 +606,13 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const mode = () => {
     if (!modes[modeName]) {
       // paneel: dertien schermen, krijgt de toestand van Orbit en de kleur van de kleurkiezer (fosfor)
-      modes[modeName] = modeName === 'panel' ? createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen }) : FACTORIES[modeName]();
+      if (modeName === 'panel') {
+        modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen });
+      } else if (modeName === 'life') {
+        modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
+      } else {
+        modes[modeName] = FACTORIES[modeName]();
+      }
       modes[modeName].init();
     }
     return modes[modeName];
@@ -616,13 +623,13 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   nextBtn.type = 'button'; nextBtn.className = 'fidget-next'; nextBtn.hidden = true;
   nextBtn.innerHTML = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg>';
   box.after(nextBtn);
-  function showScreen(i, n) {
-    const text = `${label('next')} (${i + 1} / ${n})`;
+  function showScreen(i, n, name) {
+    const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
-  nextBtn.addEventListener('click', () => { if (modeName === 'panel') mode().next(1); });
+  nextBtn.addEventListener('click', () => { if (modeName === 'panel' || modeName === 'life') mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
-    if (modeName !== 'panel' || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    if ((modeName !== 'panel' && modeName !== 'life') || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     e.preventDefault(); e.stopPropagation();
     mode().next(e.key === 'ArrowLeft' ? -1 : 1);
   });
@@ -643,7 +650,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
       frag.append(b);
       return frag;
     }), reset, pick);
-    nextBtn.hidden = modeName !== 'panel';
+    nextBtn.hidden = modeName !== 'panel' && modeName !== 'life';
   }
   bar.addEventListener('pointerdown', e => e.stopPropagation());   // de knopjes tellen niet als tik in het bakje
   // kleurkiezer rechts in de rij: een rondje in de gekozen kleur (native kiezer), en terug naar de standaardkleuren
@@ -770,7 +777,11 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   });
   box.addEventListener('pointermove', e => {
     if (reducedMotion.matches) return;
-    mode().move(local(e));
+    const pt = local(e);
+    if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) >= 6) {
+      mode().drag?.(pt);
+    }
+    mode().move(pt);
   });
   const release = e => {
     if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) < 6) mode().tap(local(e));

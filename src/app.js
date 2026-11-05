@@ -357,7 +357,14 @@ function renderClock() {
     try { still = minimalFx || reducedMotion.matches; } catch { /* minimalFx bestaat pas later bij het opstarten */ }
     morphMatrix(clock, time, { still, only: true });
   } else setMatrix(clock, time);
-  $('clock-date').textContent = DAY_FMT.format(now);
+  const cd = $('clock-date');
+  if (cd) cd.textContent = DAY_FMT.format(now);
+  const d2Day = $('d2-day');
+  if (d2Day) d2Day.textContent = dd;
+  const d2Wk = $('d2-weekday');
+  if (d2Wk) d2Wk.textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'short' }).format(now).replace('.', '').toUpperCase();
+  const d2Mo = $('d2-month');
+  if (d2Mo) d2Mo.textContent = new Intl.DateTimeFormat(LOCALE, { month: 'short' }).format(now).replace('.', '').toUpperCase();
 }
 
 // Focusmodus: de eerstvolgende deadline (ook een verstreken), met hetzelfde label als in de lijst
@@ -678,19 +685,30 @@ function trackRow(t) {
     deleteTask(t.id, li);
   });
 
+  const swipeNote = el('button', 't-swipe-note-btn');
+  swipeNote.type = 'button';
+  swipeNote.innerHTML = NOTE_SVG;
+  swipeNote.setAttribute('aria-label', tx(t.note ? 'task.noteShow' : 'task.noteAdd'));
+  swipeNote.title = tx(t.note ? 'task.noteShow' : 'task.noteAdd');
+  swipeNote.addEventListener('click', e => {
+    e.stopPropagation();
+    closeAllSwiped();
+    openNote(t, li);
+  });
+
   const row = el('div', 'track-row');
   row.append(title, noteButton(t, li));
   if (t.due) {
     const [chip, editor] = dueControls(t, li);
     row.append(chip);
-    li.append(check, del, row, editor);
+    li.append(check, del, swipeNote, row, editor);
   } else {
     const [levelBtn, picker] = levelControls(t, li);
     row.append(levelBtn);
-    li.append(check, del, row, picker);
+    li.append(check, del, swipeNote, row, picker);
   }
   li.append(notePanel(t, li));
-  attachSwipe(li, row, t, del);
+  attachSwipe(li, row, t, del, swipeNote);
 
   li.addEventListener('pointerenter', e => { scene.highlight({ task: t.id }); if (e.pointerType === 'mouse') runMarquee(title, true); });
   li.addEventListener('pointerleave', e => { scene.highlight({}); if (e.pointerType === 'mouse' && !li.contains(document.activeElement)) stopMarquee(title); });
@@ -746,7 +764,7 @@ function stopMarquee(box) {
   if (cur && cur !== 'none') inner.animate([{ transform: cur }, { transform: 'translateX(0)' }], { duration: 320, easing: 'cubic-bezier(.4,0,.2,1)' });
 }
 
-function attachSwipe(li, row, t, del) {
+function attachSwipe(li, row, t, del, swipeNote) {
   let startX = 0, startY = 0, dx = 0, locked = '', dragging = false;
 
   const onPointerDown = e => {
@@ -760,7 +778,6 @@ function attachSwipe(li, row, t, del) {
     if (startX === 0 && startY === 0) return;
     const curDx = e.clientX - startX, curDy = e.clientY - startY;
     if (!locked) {
-      // Voorkom dat verticaal scrollen per ongeluk als swipe wordt gezien
       if (Math.abs(curDy) > 6 && Math.abs(curDy) >= Math.abs(curDx)) {
         locked = 'v'; startX = 0; startY = 0; return;
       }
@@ -774,44 +791,57 @@ function attachSwipe(li, row, t, del) {
       e.preventDefault();
       row.style.transition = 'none';
       del.style.transition = 'none';
-      const base = li.classList.contains('is-swiped') ? -36 : 0;
+      if (swipeNote) swipeNote.style.transition = 'none';
+      const base = li.classList.contains('is-swiped') ? -72 : 0;
       let raw = base + dx;
-      if (raw < -36) {
-        raw = -36 + (raw - (-36)) * 0.35; // zachte elastische begrenzing
+      if (raw < -72) {
+        raw = -72 + (raw - (-72)) * 0.35;
       }
-      // Voorstel 1 (Victor, 31/10/2026): inspringende padding-right zodat tekst nooit over afvinkbolletje schuift
-      const clamped = Math.min(0, Math.max(-48, raw));
-      const pad = -clamped; // 0 tot 48 px
+      const clamped = Math.min(0, Math.max(-96, raw));
+      const pad = -clamped;
       row.style.transform = '';
       row.style.paddingRight = pad + 'px';
-      del.style.opacity = String(Math.min(1, Math.max(0, pad / 28)));
-      del.style.pointerEvents = pad >= 20 ? 'auto' : 'none';
+      const op = String(Math.min(1, Math.max(0, pad / 36)));
+      del.style.opacity = op;
+      del.style.pointerEvents = pad >= 24 ? 'auto' : 'none';
+      if (swipeNote) {
+        swipeNote.style.opacity = op;
+        swipeNote.style.pointerEvents = pad >= 24 ? 'auto' : 'none';
+      }
     }
   };
 
   const onPointerEnd = e => {
     if (!dragging && locked !== 'h') { startX = 0; startY = 0; return; }
     try { li.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-    const base = li.classList.contains('is-swiped') ? -36 : 0;
+    const base = li.classList.contains('is-swiped') ? -72 : 0;
     const final = base + dx;
     startX = 0; startY = 0; locked = ''; dragging = false;
 
     row.style.transition = 'padding-right .2s var(--ease), transform .2s var(--ease)';
     del.style.transition = 'opacity .2s var(--ease)';
+    if (swipeNote) swipeNote.style.transition = 'opacity .2s var(--ease)';
 
-    // Swipe opent enkel het prullenbakje via padding-right (geen fysieke verschuiving links)
-    if (final <= -18) {
+    if (final <= -28) {
       closeAllSwiped(li);
       row.style.transform = '';
-      row.style.paddingRight = '36px';
+      row.style.paddingRight = '72px';
       del.style.opacity = '1';
       del.style.pointerEvents = 'auto';
+      if (swipeNote) {
+        swipeNote.style.opacity = '1';
+        swipeNote.style.pointerEvents = 'auto';
+      }
       li.classList.add('is-swiped');
     } else {
       row.style.transform = '';
       row.style.paddingRight = '';
       del.style.opacity = '';
       del.style.pointerEvents = '';
+      if (swipeNote) {
+        swipeNote.style.opacity = '';
+        swipeNote.style.pointerEvents = '';
+      }
       li.classList.remove('is-swiped');
     }
   };
@@ -830,6 +860,8 @@ function closeAllSwiped(except) {
       if (r) { r.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)'; r.style.transform = ''; r.style.paddingRight = ''; }
       const d = el.querySelector('.t-del-btn');
       if (d) { d.style.opacity = ''; d.style.pointerEvents = ''; }
+      const n = el.querySelector('.t-swipe-note-btn');
+      if (n) { n.style.opacity = ''; n.style.pointerEvents = ''; }
     }
   }
 }
@@ -842,6 +874,19 @@ document.addEventListener('pointerdown', e => {
 // het archief). Ergens anders tikken klapt ze weer dicht (Victor, 29/10/2026: ze bleef op gsm permanent openstaan).
 const NOTE_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M3 4.5h10M3 8h10M3 11.5h6"/></svg>';
 const openNotes = new Set();   // taken waarvan de notitie openstaat (blijft open als de lijst opnieuw getekend wordt terwijl je typt)
+function openNote(t, li) {
+  openNotes.add(t.id);
+  const btn = li.querySelector('.t-note-btn');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  const panel = li.querySelector('.t-note');
+  if (panel) {
+    panel.hidden = false;
+    li.classList.add('is-noting');
+    const area = panel.querySelector('textarea');
+    if (area) { fitNote(area); area.focus(); }
+  }
+}
+
 function noteButton(t, li) {
   const btn = el('button', t.note ? 't-note-btn has-note' : 't-note-btn');
   btn.type = 'button';
@@ -849,16 +894,18 @@ function noteButton(t, li) {
   btn.setAttribute('aria-label', tx('task.note', { title: t.title }));
   btn.title = tx(t.note ? 'task.noteShow' : 'task.noteAdd');
   btn.setAttribute('aria-expanded', String(openNotes.has(t.id)));
-  // een tik op het icoontje terwijl de notitie openstaat: niet eerst dichtklappen bij het verlaten van het tekstvak
   btn.addEventListener('pointerdown', () => { btn.dataset.down = '1'; setTimeout(() => { delete btn.dataset.down; }, 600); });
   btn.addEventListener('click', () => {
     const open = !openNotes.has(t.id);
-    if (open) openNotes.add(t.id); else openNotes.delete(t.id);
-    btn.setAttribute('aria-expanded', String(open));
-    const panel = li.querySelector('.t-note');
-    panel.hidden = !open;
-    li.classList.toggle('is-noting', open);
-    if (open) { const area = panel.querySelector('textarea'); fitNote(area); area.focus(); }
+    if (open) {
+      openNote(t, li);
+    } else {
+      openNotes.delete(t.id);
+      btn.setAttribute('aria-expanded', 'false');
+      const panel = li.querySelector('.t-note');
+      if (panel) panel.hidden = true;
+      li.classList.remove('is-noting');
+    }
   });
   return btn;
 }
@@ -2940,8 +2987,21 @@ function serverHint(e) {
 function renderSync({ status, lastSync, code } = { status: sync.status, lastSync: sync.lastSync, code: sync.code }) {
   try { renderPairHint(); } catch { /* bij het opstarten nog niet klaar */ }
   const btn = $('sync-btn');
-  btn.dataset.status = status;
-  $('menu-btn').dataset.status = status;      // gsm: de status blijft zichtbaar als bolletje op het knopje
+  const effectiveStatus = (status === 'online' && !lastSync) ? 'connected' : status;
+  btn.dataset.status = effectiveStatus;
+  const menuBtn = $('menu-btn');
+  if (menuBtn) {
+    if (menuBtn.dataset.status !== effectiveStatus) {
+      menuBtn.dataset.status = effectiveStatus;
+    } else if (effectiveStatus === 'online') {
+      const gear = menuBtn.querySelector('.menu-gear');
+      if (gear) {
+        gear.style.animation = 'none';
+        void gear.offsetHeight;
+        gear.style.animation = '';
+      }
+    }
+  }      // gsm: de status blijft zichtbaar als bolletje op het knopje
   // verbonden maar nog niets uitgewisseld: nog niet "gesynchroniseerd" noemen
   const text = status === 'online' && !lastSync ? tx('sync.connected') : SYNC_TEXT[status];
   // wijzigingen die nog naar de server moeten: zichtbaar tot de server ze bevestigt

@@ -7,12 +7,19 @@ export const SOUND_STYLE = 'sonar';            // gekozen door Victor (04/11/202
 const NOTES = [0, 1318.5, 1046.5, 880, 784, 659.3];   // per moment (1 = Nu): E6, C6, A5, G5, E5
 const MELODY = [0, 2, 4, 7, 9, 7, 4, 2, 4, 9, 12, 9];   // halve tonen boven C6, voor 'melodie'
 
-let ctx = null;
+let ctx = null, masterLimiter = null;
 function audio() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
+    masterLimiter = ctx.createDynamicsCompressor();
+    masterLimiter.threshold.value = -3;
+    masterLimiter.knee.value = 8;
+    masterLimiter.ratio.value = 20;
+    masterLimiter.attack.value = 0.002;
+    masterLimiter.release.value = 0.12;
+    masterLimiter.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
@@ -140,7 +147,10 @@ function ping(a, out, t, f, { g = 1, dur = 0.16, det = 0, lv = 3, echo, fb: fbk 
     lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); wet.gain.value = wg;
     e.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wet).connect(out);
   }
-  o.start(t); o.stop(t + att + dur * 1.5 + 0.1);
+  const stopT = t + att + dur * 1.5 + 0.1;
+  e.gain.setValueAtTime(0.00001, stopT - 0.015);
+  e.gain.linearRampToValueAtTime(0, stopT);
+  o.start(t); o.stop(stopT);
 }
 SOUNDS.sonar = (a, out, t, f, n, level = 3) => ping(a, out, t, SONAR_NOTES[level] || P.A4, { det: DET[n % DET.length], g: 1 - 0.05 * (n % 3), lv: level });
 
@@ -162,7 +172,7 @@ function cue(fn, force = false, gain = SONAR_GAIN) {
     played.push(performance.now());
     const out = a.createGain();
     out.gain.value = gain;
-    out.connect(a.destination);
+    out.connect(masterLimiter || a.destination);
     fn(a, out, a.currentTime + 0.02);
   };
   if (a.state === 'running') { go(); return; }
@@ -314,11 +324,14 @@ function monthChord(a, out, t, notes, { g = 1, att = 0.08, dur = 2.6, open = 240
 function monthTicks(a, out, t0, arrivals) {
   const notes = [P.E6, P.D6, P.C6, P.A5, P.G5, P.E5];
   let last = -1, extra = 0, n = 0;   // eerste tikje altijd
+  const bus = a.createGain();
+  bus.gain.value = 0.75;
+  bus.connect(out);
   for (let i = 0; i < arrivals.length; i++) {
     const x = arrivals[i], u = x.u;
     if (x.t - last < 0.045) { extra++; continue; }
-    ping(a, panTo(a, out, 0.5 * Math.cos(x.a || 0)), t0 + x.t, notes[Math.min(5, Math.floor(u * 6))],
-      { g: Math.min(0.5, (0.2 + 0.16 * u) * (1 + 0.15 * extra)), dur: 0.07, echo: 0.07, fb: 0.18, wet: 0.35, det: DET[n++ % DET.length] });
+    ping(a, panTo(a, bus, 0.5 * Math.cos(x.a || 0)), t0 + x.t, notes[Math.min(5, Math.floor(u * 6))],
+      { g: Math.min(0.38, (0.16 + 0.12 * u) * (1 + 0.08 * Math.min(extra, 3))), dur: 0.07, echo: 0.06, fb: 0.14, wet: 0.28, det: DET[n++ % DET.length] });
     last = x.t; extra = 0;
   }
 }
@@ -387,6 +400,6 @@ export function playDone({ level = 3, n = 0, style = SOUND_STYLE, force = false 
   if (!a) return;
   const out = a.createGain();
   out.gain.value = 0.9;
-  out.connect(a.destination);
+  out.connect(masterLimiter || a.destination);
   (SOUNDS[style] || SOUNDS.glas)(a, out, a.currentTime + 0.01, NOTES[level] || NOTES[3], n);
 }
