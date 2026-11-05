@@ -200,7 +200,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         const x = i * gap, y = j * gap, r = Math.hypot(x, y);
         if (r > R) continue;
         const outer = 1 - smoothstep(R * 0.45, R, r);
-        const inner = (0.25 + 0.75 * smoothstep(30, 210, r)) * smoothstep(142, 174, r);
+        // Raster vervaagt volledig buiten de buitenste ring (Ooit, 174) zodat binnen de banen geen punten staan
+        const inner = smoothstep(180, 216, r);
         if (inner < 0.005) continue;
         grid.push({ x, y, r, a: GRID_ALPHA * outer * inner });
       }

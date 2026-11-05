@@ -2182,7 +2182,7 @@ function renderFeatsBadge(r = featsNow()) {
     if (r.stars) {
       hint.style.setProperty('--tier', `var(--tier-${rankMetal(r.rank.level)})`);
       hint.style.setProperty('--rank-cut', 'var(--bg)');
-      hint.innerHTML = `<svg viewBox="${RANK_BOX}" aria-hidden="true">${rankSvg(r.rank.level)}</svg>`;
+      hint.innerHTML = `<svg viewBox="${RANK_BOX}" aria-hidden="true">${rankSvg(r.rank.level)}</svg><span class="stats-rank-name">${r.rank.name}</span>`;
       hint.title = `${r.rank.name} · ${r.points.toLocaleString(LOCALE)} pts (${tx('feats.title')})`;
     }
   }

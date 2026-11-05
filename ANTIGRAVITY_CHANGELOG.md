@@ -484,6 +484,36 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Browser-integratietest (`verify_orb_motion.mjs`): 1 taak in Week -> 2e taak toegevoegd -> screenshot gemaakt (`week_two_orbs_balanced.png`) -> 3e taak toegevoegd -> screenshot gemaakt (`week_three_orbs_balanced.png`) -> 1 taak afgevinkt. Geen overlap, 0 console-errors.
 - **Impact op opslag / state:** Geen.
 
+### 33. Rangnaam bij insigne op gsm en achtergrondraster vervaging buiten de buitenste ring
+- **Vraag van Victor:**
+  1. *"Zet enkel op gsm weergave onderaan bij het icoontje ook de rang van de achievements"* (met screenshot `media_1793889585139_87718339.jpg`).
+  2. *"Sommige bolletjes van het dot raster achtergrond renderen nog binnen de buitenste orbit. Laat ze nog net iets vroeger vervagen"*.
+- **Oplossing & Implementatie:**
+  1. **Rangnaam onderaan op gsm (`#stats-rank-hint`):**
+     - In `src/app.js` (`renderFeatsBadge()`) bevat `#stats-rank-hint` nu naast het SVG-embleem ook `<span class="stats-rank-name">${r.rank.name}</span>`.
+     - In `src/styles.css` is `.stats-rank-name` op desktop standaard verborgen (`display: none;`), zodat naast `⚙ INSTELLINGEN` enkel het compacte 14x14 px insigne zichtbaar blijft.
+     - Onder `@media (max-width: 999px)` staat `.stats-rank-name` op `display: inline;`, met `font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);` en een comfortabele mobiele trefzone (`min-height: 32px`).
+     - Het insigne en de rangtekst (bv. `✦ STARGAZER` / `✦ NAVIGATOR`) zijn strak links uitgelijnd met de dot matrix cijfers (`left: 16px`).
+     - Een tik opent direct het Prestaties-venster.
+  2. **Vervaging achtergrondraster buiten de buitenste ring:**
+     - In `src/scene/scene.js` (`buildGrid()`) gebruikte `inner` voorheen `smoothstep(142, 174, r)`. Omdat de buitenste ring ('Ooit') op straal 174 ligt, waren punten tussen $r = 142$ en $r = 174$ al deels zichtbaar binnen het banengebied.
+     - De overgang is aangepast naar `smoothstep(180, 216, r)`. Voor alle $r \le 180$ is de transparantie nu strikt 0; punten binnen of op de buitenste ring ($r \le 174$) worden overgeslagen en niet meer aangemaakt.
+     - Buiten straal 180 vervaagt het raster zacht en geleidelijk naar 100% zichtbaarheid.
+- **Gewijzigde bestanden:**
+  - `src/scene/scene.js`
+  - `src/app.js`
+  - `src/styles.css`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Geautomatiseerde CDP-meting in headless Edge (`verify_mobile_rank_and_grid.mjs`):
+    - Mobiel (375x812): `nameDisplay = "block"`, `nameText = "Scout"`, `hintRect.left = 16px` exact gelijk aan `dmLeft = 16px`. Tik opent dialoogvenster (`open = true`). Screenshot geverifieerd (`mobile_stats_rank_name.png`).
+    - Desktop (1440x900): `nameDisplay = "none"`, enkel het 14px insigne naast `⚙ INSTELLINGEN`.
+    - Raster: alle punten binnen $r \le 180$ verdwenen. Screenshot geverifieerd (`grid_outside_outer_orbit.png`).
+    - 0 console-errors.
+- **Impact op opslag / state:** Geen.
+
+
 
 
 

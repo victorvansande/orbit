@@ -312,13 +312,16 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .stats-bar .wall-toggle { margin: 0; }
 .stats-menu-slot { display: flex; align-items: center; gap: 8px; }
 .stats-rank-hint {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px; padding: 0; border: 0; background: none;
-  cursor: pointer; --rank-cut: var(--bg);
-  transition: transform .2s var(--ease), opacity .2s var(--ease);
+  display: inline-flex; align-items: center; justify-content: flex-start;
+  gap: 7px; padding: 0; border: 0; background: none;
+  font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3); cursor: pointer; --rank-cut: var(--bg);
+  transition: color .2s var(--ease), opacity .2s var(--ease);
 }
-.stats-rank-hint:hover { transform: scale(1.22); }
-.stats-rank-hint svg { width: 14px; height: 14px; overflow: visible; flex: none; }
+.stats-rank-hint:hover { color: var(--ink); }
+.stats-rank-hint svg { width: 14px; height: 14px; overflow: visible; flex: none; transition: transform .2s var(--ease); }
+@media (hover: hover) { .stats-rank-hint:hover svg { transform: scale(1.22); } }
+.stats-rank-name { display: none; }
 .stats-bar .menu-btn { min-height: auto; padding: 0; border: 0; border-radius: 0; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); }
 .stats-bar .menu-btn:hover, .stats-bar .menu-btn[aria-expanded="true"] { color: var(--ink); }
 .stats .stats-detail { width: 100%; margin-top: 12px; }
@@ -1141,6 +1144,8 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .wheel[data-orientation="horizontal"] .wi-label { font-size: 13px; padding: 4px 10px; }
   .wheel-hint { right: 0; left: 0; bottom: auto; top: 4px; max-width: none; text-align: center; opacity: 0; }
   .tracks { position: relative; left: auto; top: auto; bottom: auto; width: auto; padding: 6px var(--pad) 48px; }
+  .stats-rank-hint { min-height: 32px; }
+  .stats-rank-name { display: inline; }
   .groups { overflow: visible; mask-image: none; margin-right: 0; padding-right: 0; padding-bottom: 0; }
   /* Focus op gsm: één kolom die precies het scherm vult (kop, scène, klok en Nu, knoppen), niets overlapt */
   .focus-info { display: none; }
