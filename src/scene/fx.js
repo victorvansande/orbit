@@ -266,10 +266,10 @@ export function coreWave({ center }) {
   };
 }
 
-export function smallNight({ star, stars = [], onOpen = () => {}, done = () => {} }) {
-  const ov = overlay('fx-night'), cv = ov.cv;
-  let W = ov.W, H = ov.H, g = ov.g;
-  const rgb = name => { g.fillStyle = css(name); const h = g.fillStyle.slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(','); };
+export function smallNight({ star, stars = [], scene = null, onOpen = () => {}, done = () => {} }) {
+  let W = innerWidth, H = innerHeight, theme = document.documentElement.dataset.theme;
+  const probe = document.createElement('canvas').getContext('2d');
+  const rgb = name => { probe.fillStyle = css(name); const h = probe.fillStyle.slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(','); };
   let ink = rgb('--ink'), paper = rgb('--bg');
   const R = Math.max(70, Math.min(120, Math.min(W, H) * 0.13));   // straal van de kleine nacht
   const easeIO = x => (x = Math.min(1, Math.max(0, x)), x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
@@ -281,12 +281,11 @@ export function smallNight({ star, stars = [], onOpen = () => {}, done = () => {
     const hole = t < NIGHT.open ? 0 : R * 1.3 * easeIO((t - NIGHT.open) / (NIGHT.end - NIGHT.open));
     return fall * disc * smoothstep(hole - R * 0.45, hole, r);
   };
-  const box = () => [star.x - R * 1.4, star.y - R * 1.4, R * 2.8, R * 2.8];
   const near = stars.filter(s => Math.hypot(s.x - star.x, s.y - star.y) < R);
   const t0 = performance.now();
-  let opened = false, raf = 0;
+  let opened = false, stopped = false;
 
-  function star4(x, y, r, rot) {
+  function star4(g, x, y, r, rot) {
     g.beginPath();
     for (let i = 0; i < 4; i++) {
       const a = rot + i * Math.PI / 2, b = a + Math.PI / 4, c = a + Math.PI / 2;
@@ -296,37 +295,54 @@ export function smallNight({ star, stars = [], onOpen = () => {}, done = () => {
     g.fill();
   }
 
-  function frame(now) {
-    const ch = ov.fresh();
-    if (ch) { W = ov.W; H = ov.H; g = ov.g; ink = rgb('--ink'); paper = rgb('--bg'); }
+  function renderOn(g, now, ox = 0, oy = 0) {
+    if (stopped) return;
+    const sizeChanged = innerWidth !== W || innerHeight !== H;
+    const th = document.documentElement.dataset.theme;
+    if (th !== theme) { theme = th; ink = rgb('--ink'); paper = rgb('--bg'); }
     const t = (now - t0) / 1000;
-    if ((t >= NIGHT.open || ch === 'size') && !opened) { opened = true; onOpen(); }
-    if (t >= NIGHT.end || ch === 'size') { stop(); done(); return; }   // gsm gedraaid: de ster staat elders
-    g.clearRect(0, 0, W, H);
-    const N = 40, grad = g.createRadialGradient(star.x, star.y, 0, star.x, star.y, R * 1.3);
+    if ((t >= NIGHT.open || sizeChanged) && !opened) { opened = true; onOpen(); }
+    if (t >= NIGHT.end || sizeChanged) { stop(); done(); return; }   // gsm gedraaid: de ster staat elders
+    const sx = star.x - ox, sy = star.y - oy;
+    const N = 40, grad = g.createRadialGradient(sx, sy, 0, sx, sy, R * 1.3);
     for (let i = 0; i <= N; i++) grad.addColorStop(i / N, `rgba(${ink},${cover(R * 1.3 * i / N, t).toFixed(4)})`);
-    g.globalAlpha = 1; g.fillStyle = grad; g.fillRect(...box());
+    g.globalAlpha = 1; g.fillStyle = grad; g.fillRect(sx - R * 1.4, sy - R * 1.4, R * 2.8, R * 2.8);
     g.fillStyle = `rgb(${paper})`;
     for (const s of near) {
       const a = cover(Math.hypot(s.x - star.x, s.y - star.y), t);
       if (a < 0.01) continue;
       g.globalAlpha = a * (0.55 + 0.25 * Math.sin(now / 900 + s.x));
-      star4(s.x, s.y, s.r, 0);
+      star4(g, s.x - ox, s.y - oy, s.r, 0);
     }
     // de nieuwe ster bloeit open in papierkleur en zakt naar haar gewone maat; vanaf het openen neemt de scène haar over
     const ac = cover(0, t);
     if (t > NIGHT.born && ac > 0.01) {
       const u = t - NIGHT.born, k = easeOut(u / 0.35) * (1 + 1.8 * (1 - easeOut(u / 1.6))), r = star.r * k;
-      const glow = g.createRadialGradient(star.x, star.y, 0, star.x, star.y, 8 + r * 4);
+      const glow = g.createRadialGradient(sx, sy, 0, sx, sy, 8 + r * 4);
       glow.addColorStop(0, `rgba(${paper},${0.3 * ac})`); glow.addColorStop(1, `rgba(${paper},0)`);
-      g.globalAlpha = 1; g.fillStyle = glow; g.fillRect(star.x - 8 - r * 4, star.y - 8 - r * 4, 16 + r * 8, 16 + r * 8);
+      g.globalAlpha = 1; g.fillStyle = glow; g.fillRect(sx - 8 - r * 4, sy - 8 - r * 4, 16 + r * 8, 16 + r * 8);
       g.fillStyle = `rgb(${paper})`; g.globalAlpha = ac;
-      star4(star.x, star.y, r, (1 - easeOut(u / 1.2)) * Math.PI / 4);
+      star4(g, sx, sy, r, (1 - easeOut(u / 1.2)) * Math.PI / 4);
     }
     g.globalAlpha = 1;
-    raf = requestAnimationFrame(frame);
   }
-  function stop() { cancelAnimationFrame(raf); cv.remove(); }
+
+  // Teken in de scène vóór drawCore zodat de rode kern altijd vóór deze animatie tekent, nooit erachter (Victor, 05/11/2026)
+  if (scene?.setNightDraw) {
+    function stop() { if (stopped) return; stopped = true; scene.setNightDraw(null); }
+    scene.setNightDraw((g, now, rect) => renderOn(g, now, rect.left, rect.top));
+    return;
+  }
+
+  const ov = overlay('fx-night'), cv = ov.cv;
+  let raf = 0;
+  function stop() { if (stopped) return; stopped = true; cancelAnimationFrame(raf); cv.remove(); }
+  function frame(now) {
+    ov.fresh();
+    ov.g.clearRect(0, 0, ov.W, ov.H);
+    renderOn(ov.g, now, 0, 0);
+    if (!stopped) raf = requestAnimationFrame(frame);
+  }
   raf = requestAnimationFrame(frame);
 }
 

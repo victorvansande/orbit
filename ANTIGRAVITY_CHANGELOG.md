@@ -230,3 +230,37 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/focus/timer.js`: `.timer-expand` ondergebracht in `.timer-row`, klik op `.timer-min` op desktop gekoppeld aan `toggle()`.
   - `src/styles.css`: Kaartstijl verwijderd van `.timer`, layout en typografie voor ingeklapte hint en vrij uitgeklapte toestand (`.timer.is-open:not(.is-compact)`) ingesteld met behoud van de mobiele weergave (`.timer.is-compact`).
 - **Impact op opslag / state:** Geen (`priority-orbit.timer.v1` en `priority-orbit.timer.ui.v1` blijven ongewijzigd).
+
+---
+
+## 05/11/2026
+
+### 23. Verfijning fysica, ronde kern, warm archiefpapier, dark mode toast en settings-integratie
+- **Vraag van Victor:**
+  1. Orb-herschikking bij afvinken: orbs draaien soms een volle slag rond. Uit de voorstellen koos Victor **Voorstel A2 (Zwaartepunt-uitlijning)**.
+  2. Orb-aankomst: nieuwe orbs kwamen te wild van ver buiten beeld invliegen. Uit de voorstellen koos Victor **Voorstel B3 (Lokale baan-ontvouwing)**.
+  3. Kernweergave op kleine schermen: de kern oogde soms hoekig/hexagonaal. Uit de voorstellen koos Victor **Voorstel C1 (Concentrische cirkelringen)**.
+  4. Dieptevolgorde kleine nacht: de rode kern moet altijd vóór de animatie van de nieuwe ster (`smallNight`) tekenen, nooit erachter.
+  5. Lichte modus papier: lichte modus heeft een zachte tint nodig zodat pure witte effecten afsteken zonder verblinding. Victor koos **Voorstel P2 (Warm Archiefpapier, #EBE8DF)**.
+  6. Dark mode toast: maak notificaties in donkere modus echt volledig zwart met een zuiver witte knop en zwarte tekst, exact spiegelend aan de lichte modus.
+  7. Achtergrondraster: de cursor-volgende stippen laten vervagen zodra ze binnen de eerste orbit komen om visuele drukte met de baanlijnen te vermijden.
+  8. Instellingenknop: de zwevende Settings-knop meer visueel integreren in het blok erboven (onder de takenlijst) zodat het één geheel vormt.
+- **Oplossing & Implementatie:**
+  - **A2 Zwaartepunt-uitlijning:** In `src/scene/scene.js` (`layoutOffsets()`) worden bestaande bollen geordend op hun actuele cirkelpositie. Het gelijkmatige doelrooster wordt gecentreerd op hun gemiddelde hoekverschil. Resterende bollen leggen zo vloeiend over 2,4 s het kortste pad af zonder 360 graden rondzwiepingen of plotse sprongen.
+  - **B3 Lokale baan-ontvouwing:** In plaats van invliegen vanaf straal 320 ontplooien nieuwe bollen zich nu vlak buiten hun doelring (+26 px, `ARRIVE_SPAN = 26`) over een korte tangentiële kwartboog (`ARRIVE_SWEEP = 0.55`) en landen direct op kruissnelheid met een zachte infade.
+  - **C1 Concentrische cirkelringen:** `coreGrid(spacing, rMax)` bouwt de rode kern op uit concentrische ringen met een lichte alternerende kwartdraai en een zachte uitloop aan de buitenrand (`smoothstep(0.82, 1.04, uR)`). De kern blijft op elk formaat (ook mobiel en zijaanzicht) zuiver cirkelvormig.
+  - **Rode kern vóór kleine nacht:** In `src/scene/fx.js` tekent `smallNight` via `scene.setNightDraw()` direct in de scènepas vlak vóór `drawCore()`. De rode kern blijft te allen tijde haarscherp vóór de nachtgloed en de opbloeiende ster staan.
+  - **Voorstel P2 Warm Archiefpapier:** `:root` tokens bijgewerkt naar `--bg: #EBE8DF`, `--surface: #F8F6F0`, `--well: #E0DDD3` en `--backdrop: rgba(235, 232, 223, .6)`. Tevens gesynchroniseerd in `index.html` (`meta[name="theme-color"]`), `src/app.js`, `src/scene/scene.js` (`THEMES.light.paper`), `src/focus/panel.js` en `src/data/recap.js`.
+  - **Dark Mode Toast:** In `src/styles.css` is `#undo` in lichte modus spierwit met een zwarte knop, en onder `:root[data-theme="dark"]` is de toast zuiver zwart (`#000000`, rand `rgba(255, 255, 255, .14)`) met een zuiver witte knop (`#FFFFFF`, tekst `#000000`).
+  - **Achtergrondraster-vervaging:** In `src/scene/scene.js` vervagen de achtergrondstippen binnen de buitenste orbit via `smoothstep(142, 174, r)`. Buiten de banen blijft het volledige interactieve raster intact.
+  - **Instellingen-integratie:** In `index.html` is `<div class="stats-meta" id="stats-meta">` toegevoegd. In `src/app.js` (`placeMenu()`) wordt `#menu-btn` op desktop in `#stats-meta` geplaatst wanneer de statistieken actief zijn, strak uitgelijnd naast de prestatiebadge in monospace kapitaaltjes, terwijl de takenlijst doorloopt tot `bottom: 30px`.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`
+  - `index.html`
+  - `src/scene/scene.js`
+  - `src/scene/fx.js`
+  - `src/app.js`
+  - `src/focus/panel.js`
+  - `src/data/recap.js`
+- **Getest:** Gecontroleerd met headless Edge op 1440x900 en 375x812 in licht en donker thema: console foutloos, P2 papierkleur en dark mode toast geverifieerd via getComputedStyle, menuklik en interactie geverifieerd via geautomatiseerde inspectie.
+- **Impact op opslag / state:** Geen.

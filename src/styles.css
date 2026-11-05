@@ -2,11 +2,11 @@
    Desktop: lijst links, scène in het midden, wiel rechts. Onder 1000 px alles onder elkaar. */
 
 :root {
-  --qr-bg: #FBFBFA;
+  --qr-bg: #F8F6F0;
   --qr-ink: #1B1B22;
   --dm-ghost: .08;
-  --bg: #F1F1EF;
-  --surface: #FBFBFA;
+  --bg: #EBE8DF;
+  --surface: #F8F6F0;
   --ink: #1B1B22;
   --ink-2: #5E5E68;
   --ink-3: #9A9AA3;
@@ -25,7 +25,7 @@
   --shadow: rgba(20, 20, 30, .07);
   --shadow-2: rgba(20, 20, 30, .1);
   --shadow-3: rgba(24, 22, 40, .16);
-  --backdrop: rgba(241, 241, 239, .6);
+  --backdrop: rgba(235, 232, 223, .6);
   --turn-light: #fff;   /* maandwissel: het licht waaruit de recap verschijnt, wit in beide thema's */
   --placeholder: #BDBDC3;
   --late: #D7261C;
@@ -34,7 +34,7 @@
   --water-calm: #5E5E68; --water-mid: #BE123C; --water-hot: #FB923C;   /* kleuren van de Grainient dusk */
   --fidget-on-dark: rgba(255, 255, 255, .6); --fidget-on-dark-strong: #FFFFFF;   /* keuzerij boven het donkere verloop van gloed */
   --tier-bronze: #A95C3E; --tier-silver: #798994; --tier-gold: #BF934A; --tier-platinum: #2C8494;   /* prestaties: R2 klassiek metaal (koper, tin, honing, ijsblauw) */
-  --well: #E9E9E6; --well-shade: rgba(27, 27, 34, .16); --well-shade-2: rgba(27, 27, 34, .07); --well-lip: rgba(255, 255, 255, .85);   /* bakje, ingelaten in het papier */
+  --well: #E0DDD3; --well-shade: rgba(27, 27, 34, .16); --well-shade-2: rgba(27, 27, 34, .07); --well-lip: rgba(255, 255, 255, .85);   /* bakje, ingelaten in het papier */
   --grain-blend: multiply;
   --grain-opacity: .14;
   --warm: #FFB46A;           /* avondtint over het papier */
@@ -262,7 +262,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* ---- Takenlijst ---- */
 .tracks {
   position: fixed; z-index: 2;
-  left: var(--pad); top: 112px; bottom: 92px;
+  left: var(--pad); top: 112px; bottom: 30px;
   width: 300px;
   display: flex; flex-direction: column;
   transition: opacity .5s var(--ease), transform .5s var(--ease), visibility .5s;
@@ -282,7 +282,14 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .tracks-demo { margin: 8px 0 4px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; max-width: 30ch; }
 .tracks-empty { margin-top: 18px; color: var(--ink-2); font-size: 13.5px; max-width: 26ch; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
-.stats { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.stats { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.tracks:has(.hud-menu.is-open) { z-index: 8; }
+.stats .hud-menu { left: 0; bottom: calc(100% + 10px); width: max-content; min-width: 400px; white-space: nowrap; }
+.stats-meta { flex-basis: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 13px; }
+.stats-meta:empty { display: none; }
+.stats-meta .feats-badge { flex-basis: auto; margin-top: 0; }
+.stats-meta .menu-btn { margin-left: auto; min-height: auto; padding: 0; border: 0; border-radius: 0; font: 500 10px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); }
+.stats-meta .menu-btn:hover, .stats-meta .menu-btn[aria-expanded="true"] { color: var(--ink); }
 .stats .stats-detail { flex-basis: 100%; }
 /* knopje: muur van afgevinkte taken achter de sterrenhemel (icoon en tekst perfect gecentreerd, op de basislijn van stars collected) */
 .wall-toggle {
@@ -766,7 +773,9 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); touch-action: none; user-select: none; -webkit-user-select: none; }   /* naar beneden vegen = wegvegen (app.js) */
 #toast-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#undo { flex: none; min-height: 34px; padding: 0 14px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 12.5px; font-weight: 500; }
+#undo { flex: none; min-height: 34px; padding: 0 14px; border-radius: 999px; background: #000000; color: #FFFFFF; font-size: 12.5px; font-weight: 500; }
+:root[data-theme="dark"] .toast { background: #000000; color: #FFFFFF; border-color: rgba(255, 255, 255, .14); }
+:root[data-theme="dark"] #undo { background: #FFFFFF; color: #000000; }
 
 /* ---- Venster: nieuwe taak ---- */
 .composer {

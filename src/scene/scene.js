@@ -25,7 +25,7 @@ const FIT_NARROW = 372;                 // gsm: de ringen vullen bijna de hele b
 
 // Kleuren van structuur en labels per thema; de bollen houden hun eigen kleur
 const THEMES = {
-  light: { glow: 0.2, grid: 1, ink: [24, 24, 32], paper: [241, 241, 239], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
+  light: { glow: 0.2, grid: 1, ink: [24, 24, 32], paper: [235, 232, 223], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
   dark:  { glow: 0.24, grid: 1.3, ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
 };
 // Diepte in de banen (B1, Victor, 02/11/2026): hoe verder van de kern, hoe lichter en fijner de stippen. Vroeger overal 0,2
@@ -45,15 +45,22 @@ const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 const BURN_LIFE = 0.95;     // afvinken: duur van het opbranden van de bol (s)
 // Fijner raster (K2, Victor, 02/11/2026): 2,35 in plaats van 3,1 eenheden tussen de puntjes, puntjes 0,78 keer zo groot (CORE_DOT);
 // op gsm blijft het grove raster via CORE_MIN_PX, daar is het effect gelijk aan vroeger.
-const CORE_RMIN = 15, CORE_RMAX = 25, CORE_SPACING = 2.35, CORE_DOT = 0.78, CORE_MIN_PX = 5;   // 15 % groter sinds de oogjes
+const CORE_RMIN = 15, CORE_RMAX = 25, CORE_SPACING = 2.35, CORE_DOT = 0.78, CORE_MIN_PX = 3.6;   // C1: concentrische cirkelringen (altijd zuiver rond)
 const coreGrids = new Map();
-function coreGrid(spacing) {
-  const key = spacing.toFixed(2);
+function coreGrid(spacing, rMax = CORE_RMAX) {
+  const rings = Math.max(4, Math.round(rMax / spacing));
+  const key = `${rings}:${rMax.toFixed(1)}`;
   if (!coreGrids.has(key)) {
-    const pts = [], n = Math.ceil((CORE_RMAX + 6) / spacing);
-    for (let row = -n; row <= n; row++) for (let col = -n; col <= n; col++) {
-      const x = (col + (row & 1) * 0.5) * spacing, y = row * spacing * 0.866, r = Math.hypot(x, y);
-      if (r <= CORE_RMAX + 6) pts.push({ x, y, r });
+    const pts = [{ x: 0, y: 0, r: 0 }];
+    const dr = rMax / rings;
+    for (let k = 1; k <= rings; k++) {
+      const rk = k * dr;
+      const count = Math.max(6, Math.round((TAU * rk) / dr));
+      const twist = (k & 1) ? Math.PI / count : 0;
+      for (let i = 0; i < count; i++) {
+        const a = (TAU * i) / count + twist;
+        pts.push({ x: Math.cos(a) * rk, y: Math.sin(a) * rk, r: rk });
+      }
     }
     coreGrids.set(key, pts);
   }
@@ -61,21 +68,11 @@ function coreGrid(spacing) {
 }
 const GRID_ALPHA = 0.18, GRID_MAX = 3600;   // 0,13 was op sommige schermen amper zichtbaar
 const EDGE = 180;   // net buiten de buitenste ring (Ooit, 174): rand van de scène voor tekst ernaast
-const ARRIVE_R = 320;
+const ARRIVE_SPAN = 26;    // B3 (Victor, 05/11/2026): lokale baan-ontvouwing vlak buiten de eigen doelring
+const ARRIVE_SWEEP = 0.55; // Korte kwartboog die raaklijnig op kruissnelheid op de baan landt
 const SKY_IN = 50;   // binnengrens van de sterrenhemel in stage-eenheden, buiten de ring Nu (38); zelfde als SKY_MIN in stats.js
-// Invliegen (Victor, 03/11/2026: "soms nog wat hakkelig ... niet aangepast aan de snelheid"): op de klok in plaats van per
-// beeld, met een eigen duur per tempo. De straal krimpt als 1 − (1 − u)^2,6 (snel waar de bol nog doorzichtig is, zacht
-// op zijn ring). Ver buiten zijn ring draait hij niet even snel rond als op zijn baan (een Nu-bol raasde zo tot 1800
-// eenheden per seconde): zijn hoeksnelheid is ω × ring / straal, dus overal ongeveer zijn gewone snelheid. Het verschil zit
-// in `lag`, een voorsprong die tijdens de vlucht tot 0 afneemt, zodat hij precies op zijn plek uitkomt.
-const ARRIVE_POW = 2.6;
-const arriveR = (target, u) => target + (ARRIVE_R - target) * Math.pow(1 - u, ARRIVE_POW);
-function arriveLag(target, u, dur) {
-  let sum = 0;
-  const N = 16, du = (1 - u) / N;
-  for (let k = 0; k < N; k++) sum += 1 - target / arriveR(target, u + (k + 0.5) * du);
-  return sum * du * dur;
-}
+const arriveR = (target, u) => { const rem = 1 - u; return target + ARRIVE_SPAN * (rem * rem * rem); };
+const arriveLag = u => { const rem = 1 - u; return -ARRIVE_SWEEP * (rem * rem); };
 
 const ease = cubicBezier(0.4, 0, 0.2, 1);
 
@@ -146,6 +143,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let sonar = null;                          // {t0, target}: ring van tekens vanuit de kern, de gezochte bol licht op
   let turn = null;                           // maandwissel: {t0, plan, onBurst, fired}, de oude hemel gaat naar de kern (turn.js)
   let skyWave = null;                        // {t0, old}: nieuwe hemel, de ring van tekens neemt de oude sterren mee
+  let nightDraw = null;                      // kleine nacht bij een nieuwe ster: tekent vóór drawCore zodat de rode kern er altijd vóór staat
   let minimal = false;                       // Minimaal (Instellingen → Effecten): alle extra effecten uit
   // muur van afgevinkte taken achter de sterrenhemel (typographic wall): basislaag gecachet, verlichte woorden apart
   let wallWords = [], wallOn = false, wallK = 0, wallLayout = null, wallBase = null, wallKey = '', wallSweep = null;
@@ -202,7 +200,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         const x = i * gap, y = j * gap, r = Math.hypot(x, y);
         if (r > R) continue;
         const outer = 1 - smoothstep(R * 0.45, R, r);
-        const inner = 0.25 + 0.75 * smoothstep(30, 210, r);
+        const inner = (0.25 + 0.75 * smoothstep(30, 210, r)) * smoothstep(142, 174, r);
+        if (inner < 0.005) continue;
         grid.push({ x, y, r, a: GRID_ALPHA * outer * inner });
       }
     }
@@ -269,14 +268,54 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   /* ---- Taken ---- */
   function layoutOffsets() {
     for (const lv of LEVELS) {
-      const own = [...orbs.values()].filter(o => !o.leaving && o.level === lv.id).sort((a, b) => a.createdAt - b.createdAt);
-      own.forEach((o, i) => { o.targetOffset = TAU * i / own.length; });
-      // Altijd met de klok mee (Victor, 03/11/2026: "soms bewegen de orbs dan plots tegen wijzerzin"): de kortste weg naar
-      // de nieuwe plek kon achteruit gaan. Het hele patroon draait daarom mee tot geen enkele bol terug moet; wie verder
-      // moet, versnelt even, wie al goed staat, blijft op zijn baan.
-      let back = 0;
-      for (const o of own) if (!o.fresh) back = Math.min(back, wrapAngle(o.targetOffset - o.offset));
-      if (back < 0) for (const o of own) o.targetOffset -= back;
+      const own = [...orbs.values()].filter(o => !o.leaving && o.level === lv.id);
+      if (!own.length) continue;
+      const est = own.filter(o => !o.fresh);
+      if (!est.length) {
+        own.sort((a, b) => a.createdAt - b.createdAt);
+        own.forEach((o, i) => {
+          const ang = TAU * i / own.length;
+          o.offset = o.targetOffset = o.startOffset = ang;
+          o.shiftT = 1; o.shiftDur = 1;
+        });
+        continue;
+      }
+      // Zwaartepunt-uitlijning (A2, Victor, 05/11/2026): sorteer bestaande bollen op hun huidige cirkelpositie
+      // en centreer het gelijkmatige rooster op hun gemiddelde zwaartepunt zodat elke bol rustig het kortste pad neemt.
+      est.sort((a, b) => ((wrapAngle(a.offset) + TAU) % TAU) - ((wrapAngle(b.offset) + TAU) % TAU));
+      const ordered = est.slice();
+      for (const f of own.filter(o => o.fresh)) {
+        let bestIdx = ordered.length, bestGap = -1, bestMid = 0;
+        for (let i = 0; i < ordered.length; i++) {
+          const a = ((wrapAngle(ordered[i].offset) + TAU) % TAU);
+          const b = i + 1 < ordered.length ? ((wrapAngle(ordered[i + 1].offset) + TAU) % TAU) : ((wrapAngle(ordered[0].offset) + TAU) % TAU) + TAU;
+          const gap = b - a;
+          if (gap > bestGap) { bestGap = gap; bestIdx = i + 1; bestMid = a + gap / 2; }
+        }
+        f.offset = f.targetOffset = f.startOffset = bestMid;
+        f.shiftT = 1; f.shiftDur = 1;
+        ordered.splice(bestIdx, 0, f);
+      }
+      const n = ordered.length, base = ordered[0].offset;
+      let sumDiff = 0;
+      const raw = ordered.map((o, i) => {
+        const ideal = base + TAU * i / n;
+        if (!o.fresh) sumDiff += wrapAngle(o.offset - ideal);
+        return ideal;
+      });
+      const avgShift = sumDiff / est.length;
+      ordered.forEach((o, i) => {
+        const goal = o.offset + wrapAngle(raw[i] + avgShift - o.offset);
+        if (o.fresh) {
+          o.offset = o.targetOffset = o.startOffset = raw[i] + avgShift;
+          o.shiftT = 1; o.shiftDur = 1;
+        } else if (Math.abs(wrapAngle(goal - o.targetOffset)) > 1e-3) {
+          o.startOffset = o.offset;
+          o.targetOffset = goal;
+          o.shiftT = 0;
+          o.shiftDur = 2.4;
+        }
+      });
     }
   }
 
@@ -287,12 +326,15 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     for (const task of list) {
       let o = orbs.get(task.id);
       if (!o || o.leaving) {
+        const target = LEVEL_BY_ID.get(task.level).orbit;
         o = {
           id: task.id, level: task.level, createdAt: task.createdAt, title: task.title,
-          r: reducedMotion.matches ? LEVEL_BY_ID.get(task.level).orbit : ARRIVE_R,
-          alpha: reducedMotion.matches ? 1 : 0, offset: 0, targetOffset: 0, fresh: true, lag: 0,
+          r: reducedMotion.matches ? target : target + ARRIVE_SPAN,
+          alpha: reducedMotion.matches ? 1 : 0,
+          offset: 0, targetOffset: 0, startOffset: 0, shiftT: 1, shiftDur: 1,
+          fresh: true, lag: reducedMotion.matches ? 0 : -ARRIVE_SWEEP,
           wait: 0,
-          arrive: reducedMotion.matches ? null : { t0: performance.now() + (intro ? (0.55 + i * tempo.gap) * 1000 : 0), dur: tempo.arrive },
+          arrive: reducedMotion.matches ? null : { t0: performance.now() + (intro ? (0.55 + i * tempo.gap) * 1000 : 0), dur: tempo.arrive * 0.72 },
           sx: null, sy: null, sr: 0, blend: null,
         };
         orbs.set(task.id, o);
@@ -300,7 +342,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       } else if (o.level !== task.level) {
         // absolute hoek behouden bij een niveauwissel, daarna zacht herschikken
         const a = phase.get(o.level) + o.offset + (o.lag || 0);
-        o.offset = a - phase.get(task.level);
+        o.offset = o.targetOffset = o.startOffset = a - phase.get(task.level);
+        o.shiftT = 1;
         o.lag = 0; o.arrive = null;
         o.level = task.level;
       }
@@ -397,28 +440,27 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         const u = (now - o.arrive.t0) / 1000 / o.arrive.dur;
         o.wait = u < 0 ? 1 : 0;
         if (u < 0) { if (o.leaving) orbs.delete(o.id); continue; }
-        const w = TAU / lvO.period * speed.get(o.level);
-        if (!motion) { o.r = target; o.lag = 0; o.arrive = null; }
-        else if (u >= 1) { o.r = target; o.arrive = null; }
+        if (!motion || u >= 1) { o.r = target; o.lag = 0; o.arrive = null; if (!o.leaving) o.alpha = 1; }
         else {
-          // De voorsprong wordt één keer bepaald en daarna elk beeld afgebouwd met de snelheid van dat moment, nooit sneller
-          // dan de ring zelf draait: zo gaat de bol altijd vooruit, ook als zijn ring stilvalt omdat je een rij aanwijst
-          // (Victor, 03/11/2026: een nieuwe weektaak "verandert in het midden van de inspring-animatie van richting";
-          // de voorsprong hing aan de snelheid van dat moment en sprong terug als die wegviel).
-          if (!o.arrive.lagSet) { o.lag = w * arriveLag(target, u, o.arrive.dur); o.arrive.lagSet = true; }
-          else o.lag = Math.max(0, o.lag - w * (1 - target / Math.max(target, o.r)) * dt);
           o.r = arriveR(target, u);
-          if (!o.leaving) o.alpha = Math.max(o.alpha, smoothstep(0, 0.3, u));
+          o.lag = arriveLag(u);
+          if (!o.leaving) o.alpha = Math.max(o.alpha, smoothstep(0, 0.45, u));
         }
-      } else o.r = motion ? smooth(o.r, target, 2.6, dt) : target;
-      // wat er na de vlucht nog over is (de ring stond even stil), lost zacht op: hooguit 60 % van de ringsnelheid, dus nooit achteruit
-      if (!o.arrive && o.lag > 0) o.lag = motion ? Math.max(0, o.lag - TAU / lvO.period * speed.get(o.level) * 0.6 * dt) : 0;
-      let dOff = wrapAngle(o.targetOffset - o.offset);
-      if (dOff < -1e-3) dOff += TAU;   // nooit achteruit (zie layoutOffsets)
-      o.offset += dOff * (motion ? 1 - Math.exp(-4 * dt) : 1);
+      } else {
+        o.r = motion ? smooth(o.r, target, 2.6, dt) : target;
+        o.lag = 0;
+      }
+      if (!motion) {
+        o.offset = o.targetOffset;
+        o.shiftT = 1;
+      } else if (o.shiftT < 1) {
+        o.shiftT = Math.min(1, o.shiftT + dt / (o.shiftDur || 2.4));
+        const e = smoothstep(0, 1, o.shiftT);
+        o.offset = o.startOffset + (o.targetOffset - o.startOffset) * e;
+      }
       // werkelijke snelheid (radiaal en extra hoeksnelheid) voor een staart die de echte baan volgt
       o.vr = dt > 0 ? (o.r - r0) / dt : 0;
-      o.vo = dt > 0 ? wrapAngle(o.offset + (o.lag || 0) - off0) / dt : 0;
+      o.vo = dt > 0 ? clamp(wrapAngle(o.offset + (o.lag || 0) - off0) / dt, -0.35, 0.35) : 0;
       if (!o.arrive || o.leaving) o.alpha = smooth(o.alpha, o.leaving ? 0 : 1, o.leaving ? 8 : 3, dt);
       if (o.leaving && o.alpha < 0.01) orbs.delete(o.id);
       if (o.blend) { o.blend.p += dt / 0.45; if (o.blend.p >= 1) o.blend = null; }
@@ -1137,7 +1179,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const rippleAmp = still ? 0 : (0.5 + 0.9 * strength) * (1 - p * 0.6) * live * waveVis * beatScale;
     const breatheAmp = still ? 0 : (0.12 + 0.1 * sleepK) * (1 - live) * waveVis;
     const t = now / 1000;
-    const spacing = Math.max(CORE_SPACING, Math.round(CORE_MIN_PX / cam.s / 0.25) * 0.25);
+    const spacing = Math.min(rMax / 4.2, Math.max(CORE_SPACING, CORE_MIN_PX / cam.s));
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
     const eyes = faceState(now, rMax, spacing, z);
     const tw = turnWaves(now);   // maandwissel: een rimpel door de puntjes bij elke ster die aankomt
@@ -1145,9 +1187,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In vier stappen
     // gebundeld, zodat het één pad per tint blijft.
     const paths = [[], [], [], []];
-    for (const d of coreGrid(spacing)) {
-      if (d.r > rMax) continue;
-      const base = 0.25 + 1.05 * Math.pow(1 - d.r / rMax, 0.7);
+    for (const d of coreGrid(spacing, rMax)) {
+      if (d.r > rMax + 0.05) continue;
+      const uR = Math.min(1, d.r / rMax);
+      const edgeSoft = 1 - smoothstep(0.82, 1.04, uR);
+      const base = (0.2 + 1.08 * Math.pow(1 - uR, 0.68)) * (0.72 + 0.28 * edgeSoft);
       const bump = rippleAmp ? Math.exp(-(((d.r - front) / (3.2 * grow)) ** 2)) * rippleAmp : 0;
       const breathe = breatheAmp ? breatheAmp * Math.sin(t * (1.3 - 0.85 * sleepK) - d.r * 0.25) : 0;
       let gulp = 0;
@@ -1586,6 +1630,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawWall(now);
     drawRings(now);
     drawVortex();
+    if (nightDraw) nightDraw(ctx, now, canvas.getBoundingClientRect());
     const swell = turnCore(now);
     if (swell !== 1 && coreHit) {   // maandwissel: de kern zwelt rond haar eigen middelpunt
       const { x, y } = coreHit;
@@ -1833,6 +1878,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         (performance.now() - lastStarAt < 3000)
       );
     },
+    setNightDraw(fn) { nightDraw = fn; },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;

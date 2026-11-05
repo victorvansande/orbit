@@ -480,6 +480,7 @@ function renderStats({ quiet = false } = {}) {
   const all = totalDone(done);
   $('stats').hidden = all === 0;
   $('stat-mini').hidden = all === 0;
+  try { placeMenu(); } catch { /* bij opstarten nog niet klaar */ }
   if (!all) return;
   // de teller telt alle verzamelde sterren; de gekozen hemel bepaalt enkel welke sterren in de scène staan
   const total = all;
@@ -1312,7 +1313,7 @@ function fallNight(id, wait, give) {
       scene.releaseStars(true); nightBusy = false; setTimeout(give, 900); return;
     }
     smallNight({
-      star, stars: pts.filter(p => p !== star),
+      star, stars: pts.filter(p => p !== star), scene,
       onOpen() { scene.releaseStars(); },
       done() { nightBusy = false; give(); },
     });
@@ -1776,7 +1777,7 @@ function inkRgb() { return resolvedTheme() === 'dark' ? '236, 236, 241' : '27, 2
 function applyTheme() {
   const name = resolvedTheme();
   document.documentElement.dataset.theme = name;
-  document.querySelector('meta[name="theme-color"]').setAttribute('content', name === 'dark' ? '#0F0F12' : '#F1F1EF');
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', name === 'dark' ? '#0F0F12' : '#EBE8DF');
   scene.setTheme(name);
   try { renderStats(); } catch { /* bij het opstarten nog niet klaar */ }
   for (const b of themeButtons) b.setAttribute('aria-checked', String(b.dataset.themePref === themePref));
@@ -1895,6 +1896,7 @@ placeGlass();
 function setFocus(on) {
   document.body.classList.toggle('is-focus', on);
   placeGlass();
+  try { placeMenu(); } catch { /* ignore */ }
   if (on) weather.start(); else weather.stop();
   if (on && desktop.matches && !minimalFx) fidget.start(); else fidget.stop();
   if (on) timer.start(); else timer.stop();   // ook op gsm (Victor, 02/11/2026: "ook op gsm moet ik kunnen focussen")
@@ -3100,7 +3102,15 @@ function placeMenu() {
     $('menu-view').append($('view-switch'), $('focus-btn'));
     $('menu-tempo').append($('tempo'));
     hudMenu.before(actions);
-    controls.append(menuBtn, $('focus-exit'), hudMenu);
+    const inFocus = document.body.classList.contains('is-focus');
+    const statsEl = $('stats'), metaEl = $('stats-meta');
+    if (!inFocus && statsEl && !statsEl.hidden && metaEl) {
+      metaEl.append(menuBtn);
+      statsEl.append(hudMenu);
+      controls.append($('focus-exit'));
+    } else {
+      controls.append(menuBtn, $('focus-exit'), hudMenu);
+    }
   } else {
     controls.append($('view-switch'), $('focus-btn'));
     $('menu-tempo').append($('tempo'));
