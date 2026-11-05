@@ -137,6 +137,7 @@ export function createPlasma({ reducedMotion, accent, onPreset }) {
     init() {
       setPreset(0);
     },
+    step() {},
     mount(el) {
       if (!cv) {
         cv = document.createElement('canvas');

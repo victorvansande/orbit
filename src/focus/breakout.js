@@ -253,6 +253,7 @@ export function createBreakout({ reducedMotion, accent, onPreset }) {
     init() {
       resetLevel(0);
     },
+    step() {},
     mount(el) {
       if (!cv) {
         cv = document.createElement('canvas');

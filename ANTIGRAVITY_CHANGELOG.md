@@ -656,3 +656,28 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - CDP verificatie in headless Edge voor Breakout, Plasma, Bubbels en het geopende keuzemenu. Nul console- of runtimefouten.
 - **Impact op opslag / state:**
   - Service worker cache gebumpt naar `orbit-v7`. Geen brekende storage wijzigingen.
+
+### 05/11/2026 - Bugfix: Fidget frame-crash en blanco scherm hersteld
+- **Wat is er veranderd:**
+  1. **Herstel `mode().step` contract:**
+     - De animatielus in `src/focus/fidget.js` riep binnen `frame(now)` ongeconditioneerd `mode().step(...)` aan.
+     - Omdat de drie nieuwe fidgets (`breakout.js`, `plasma.js`, `bubbles.js`) hun animatie in `frame(now)` uitvoeren en geen `step()` hadden gedefinieerd, crashte de lus direct op `TypeError: mode().step is not a function`.
+     - Hierdoor werd `render(now)` nooit bereikt, werd de nieuwe canvas nooit gemount/getoond, en bleef het fidgetbakje volledig zwart/blanco. Zodra de animatielus crashte, bleef ook elke andere gekozen fidget blanco omdat de lus gestopt was.
+     - Opgelost door `step() {}` toe te voegen aan de 3 fidgets en in `fidget.js` optionele chaining `mode().step?.(...)` toe te passen.
+  2. **Robuuste foutbeveiliging in `frame`:**
+     - De berekenings- en renderstap binnen `frame()` is ingekapseld in een `try ... catch`. Mocht een specifieke modus onverhoopt een fout genereren, dan blijft `requestAnimationFrame(frame)` doorlopen en herstelt het bakje zichzelf direct zodra naar een andere fidget wordt geschakeld.
+  3. **Pointer-coördinaten en interactieve methodes:**
+     - In `local(e)` is een veilige fallback ingebouwd (`const el = [cv, cvGL, own].find(...) || cv`) zodat `getBoundingClientRect()` nooit op `undefined` kan worden aangeroepen.
+     - Eventhandlers gebruiken nu overal optionele chaining (`mode().move?.()`, `mode().leave?.()`, `mode().tap?.()`, `mode().up?.()`).
+  4. **Service worker:**
+     - Service worker cache bijgewerkt naar `orbit-v8` in `sw.js`.
+- **Gewijzigde bestanden:**
+  - `src/focus/breakout.js`
+  - `src/focus/plasma.js`
+  - `src/focus/bubbles.js`
+  - `src/focus/fidget.js`
+  - `sw.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - CDP verificatie in headless Edge voor alle 10 fidgets achter elkaar. Alle 10 renderen gegarandeerd met actieve inhoud en 0 fouten.

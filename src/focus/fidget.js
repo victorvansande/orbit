@@ -719,7 +719,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     if (!b) return;
     toggleMenu(false);
     if (b.dataset.mode === modeName) return;
-    mode().leave();
+    mode().leave?.();
     mode().unmount?.();
     modeName = b.dataset.mode;
     try { localStorage.setItem(MODE_KEY, modeName); } catch { /* geen opslag */ }
@@ -860,21 +860,29 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
 
   function frame(now) {
     if (!running) return;
-    acc += Math.min(100, now - (last || now));
-    last = now;
-    let n = 0;
-    while (acc >= STEP_MS && n < 3) {
-      // zwaartekracht recht naar onder; ax en ay blijven voor een schok op de inhoud, maar die is er niet meer
-      mode().step({ gx: 0, gy: 1, ax: 0, ay: 0 });
-      acc -= STEP_MS; n++;
+    try {
+      acc += Math.min(100, now - (last || now));
+      last = now;
+      let n = 0;
+      while (acc >= STEP_MS && n < 3) {
+        // zwaartekracht recht naar onder; ax en ay blijven voor een schok op de inhoud, maar die is er niet meer
+        mode().step?.({ gx: 0, gy: 1, ax: 0, ay: 0 });
+        acc -= STEP_MS; n++;
+      }
+      if (n === 3) acc = 0;
+      render(now);
+    } catch (err) {
+      console.error('Fidget frame error in mode ' + modeName, err);
     }
-    if (n === 3) acc = 0;
-    render(now);
     raf = requestAnimationFrame(frame);
   }
 
   // scherm naar het assenstelsel van het bakje
-  const local = e => { const r = [cv, cvGL, own].find(el => !el.hidden).getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * HH }; };
+  const local = e => {
+    const el = [cv, cvGL, own].find(node => !node.hidden) || cv;
+    const r = el.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / (r.width || 1) * W, y: (e.clientY - r.top) / (r.height || 1) * HH };
+  };
   // een tik is indrukken en loslaten zonder veel te bewegen; bewegen (ook ingedrukt) roert in de inhoud
   box.addEventListener('pointerdown', e => {
     if (reducedMotion.matches) return;
@@ -887,16 +895,16 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) >= 6) {
       mode().drag?.(pt);
     }
-    mode().move(pt);
+    mode().move?.(pt);
   });
   const release = e => {
-    if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) < 6) mode().tap(local(e));
+    if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) < 6) mode().tap?.(local(e));
     press = null;
     mode().up?.(local(e));
   };
   box.addEventListener('pointerup', release);
   box.addEventListener('pointercancel', () => { press = null; });
-  box.addEventListener('pointerleave', () => { press = null; mode().leave(); });
+  box.addEventListener('pointerleave', () => { press = null; mode().leave?.(); });
 
   return {
     start() {
@@ -907,7 +915,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     },
     stop() {
       running = false; cancelAnimationFrame(raf);
-      press = null; mode().leave();
+      press = null; mode().leave?.();
       for (const m of Object.values(modes)) m.unmount?.();   // topo: eigen lus en WebGL-context opruimen
     },
   };
