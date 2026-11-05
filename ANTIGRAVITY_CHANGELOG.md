@@ -372,4 +372,25 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
 - **Getest:** Headless browser test uitgevoerd met metingen van bounding rects: `.stat-dm.left = 40px`, `#menu-btn.left = 40px`, `.menu-gear.left = 40px` (volledig uitgelijnd). Screenshot geverifieerd (`stats_settings_left_clean.png`) en opening van het instellingenmenu boven de knop gecontroleerd (`stats_menu_open.png`).
 - **Impact op opslag / state:** Geen.
 
+### 29. Evenwichtige verticale spacing in de zijbalk-voet
+- **Vraag van Victor:** "De spacing boven en onder is niet even groot. Verwijder de ruimte boven de tekst en maak ze gelijk met eronder".
+- **Oorzaak van de scheefgroei:**
+  - `.stats` had `padding-top: 14px;`.
+  - `.stats-head` en `.stats-total` hadden `min-height: 32px;` met `align-items: flex-end;`.
+  - Daardoor werd de 22 px hoge dot matrix teller naar onderen gedrukt en ontstond er `14px + 10px = 24px` tot 33 px lege ruimte boven de teller/tekst, terwijl de ruimte eronder naar de scheidingslijn slechts `10px` bedroeg (2,5x zo klein).
+- **Oplossing & Implementatie:**
+  - In `src/styles.css` is `padding-top` van `.stats` teruggebracht van 14 px naar 10 px.
+  - De overbodige `min-height: 32px` op `.stats-head` en `.stats-total` is vervangen door `min-height: auto` (hoogte sluit nu exact aan op de 22 px van de dot matrix teller).
+  - De tussenruimtes en paddings zijn symmetrisch gelijkgetrokken:
+    - Ruimte van bovenste scheidingslijn tot bovenkant matrix-teller: **11 px**.
+    - Ruimte van onderkant matrix-teller tot middelste scheidingslijn: **10 px**.
+    - Ruimte van middelste scheidingslijn tot Instellingen: **10 px**.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:** Nauwkeurig opgemeten in headless Chrome via CDP: `spaceAboveDm: 11px`, `spaceBelowDmToDivider: 10px`, `spaceBelowDividerToMenu: 10px`. Screenshot geverifieerd (`stats_final_balanced.png`).
+- **Impact op opslag / state:** Geen.
+
+
 

@@ -305,11 +305,11 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .tracks-demo { margin: 8px 0 4px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; max-width: 30ch; }
 .tracks-empty { margin-top: 18px; color: var(--ink-2); font-size: 13.5px; max-width: 26ch; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
-.stats { position: relative; display: flex; flex-direction: column; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.stats { position: relative; display: flex; flex-direction: column; margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
 .tracks:has(.hud-menu.is-open) { z-index: 8; }
 .stats .hud-menu { left: 0; bottom: calc(100% + 8px); width: max-content; min-width: 400px; white-space: nowrap; }
-.stats-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; width: 100%; min-height: 32px; }
-.stats-bar { display: flex; align-items: center; justify-content: flex-start; width: 100%; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.stats-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; width: 100%; min-height: auto; }
+.stats-bar { display: flex; align-items: center; justify-content: flex-start; width: 100%; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); }
 .stats-bar .wall-toggle { margin: 0; }
 .stats-menu-slot { display: flex; align-items: center; }
 .stats-bar .menu-btn { min-height: auto; padding: 0; border: 0; border-radius: 0; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); }
@@ -341,7 +341,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 }
 .wall-toggle[aria-pressed="true"]::after { background: currentColor; }
 .stats-total {
-  display: flex; align-items: flex-end; gap: 10px; min-height: 32px; text-align: left;
+  display: flex; align-items: flex-end; gap: 10px; min-height: auto; text-align: left;
   font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
   transition: color .2s var(--ease);
 }
