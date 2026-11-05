@@ -69,7 +69,7 @@ function coreGrid(spacing, rMax = CORE_RMAX) {
 const GRID_ALPHA = 0.18, GRID_MAX = 3600;   // 0,13 was op sommige schermen amper zichtbaar
 const EDGE = 180;   // net buiten de buitenste ring (Ooit, 174): rand van de scène voor tekst ernaast
 const ARRIVE_SPAN = 26;    // B3 (Victor, 05/11/2026): lokale baan-ontvouwing vlak buiten de eigen doelring
-const ARRIVE_SWEEP = 0.55; // Korte kwartboog die raaklijnig op kruissnelheid op de baan landt
+const ARRIVE_SWEEP = 0.28; // Korte kwartboog die raaklijnig op kruissnelheid op de baan landt
 const SKY_IN = 50;   // binnengrens van de sterrenhemel in stage-eenheden, buiten de ring Nu (38); zelfde als SKY_MIN in stats.js
 const arriveR = (target, u) => { const rem = 1 - u; return target + ARRIVE_SPAN * (rem * rem * rem); };
 const arriveLag = u => { const rem = 1 - u; return -ARRIVE_SWEEP * (rem * rem); };
@@ -274,39 +274,61 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const est = own.filter(o => !o.fresh);
 
       if (!est.length) {
-        // Cold start (allemaal nieuw): gelijkmatig verdelen over de ring
+        // Cold start (alle bollen nieuw op deze ring): gelijkmatig verdelen over de ring
         own.sort((a, b) => a.createdAt - b.createdAt);
         own.forEach((o, i) => {
           o.offset = o.targetOffset = (TAU * i) / own.length;
+          o.fresh = false;
         });
         continue;
       }
 
-      // Voorstel A1 (Vaste Koers, Victor 05/11/2026): bestaande bollen behouden ALTIJD hun eigen offset.
-      // Geen enkele bol verschuift, versnelt of draait achteruit bij het afvinken van een andere taak.
-      for (const o of est) {
-        o.targetOffset = o.offset;
+      // Verse bollen kiezen elk het grootste vrije gat tussen reeds geplaatste bollen
+      const placed = est.slice();
+      for (const f of fresh) {
+        placed.sort((a, b) => ((wrapAngle(a.offset) + TAU) % TAU) - ((wrapAngle(b.offset) + TAU) % TAU));
+        let bestGap = -1, bestMid = 0;
+        for (let i = 0; i < placed.length; i++) {
+          const a = ((wrapAngle(placed[i].offset) + TAU) % TAU);
+          const next = placed[(i + 1) % placed.length];
+          let b = ((wrapAngle(next.offset) + TAU) % TAU);
+          if (b <= a) b += TAU;
+          const gap = b - a;
+          if (gap > bestGap) {
+            bestGap = gap;
+            bestMid = (a + gap / 2) % TAU;
+          }
+        }
+        f.offset = bestMid;
+        placed.push(f);
       }
 
-      // Nieuwe (verse) bollen kiezen het grootste vrije gat tussen bestaande bollen
-      if (fresh.length) {
-        const sorted = est.slice().sort((a, b) => ((wrapAngle(a.offset) + TAU) % TAU) - ((wrapAngle(b.offset) + TAU) % TAU));
-        for (const f of fresh) {
-          let bestGap = -1, bestMid = 0, bestIdx = sorted.length;
-          for (let i = 0; i < sorted.length; i++) {
-            const a = (wrapAngle(sorted[i].offset) + TAU) % TAU;
-            const next = sorted[(i + 1) % sorted.length];
-            let b = (wrapAngle(next.offset) + TAU) % TAU;
-            if (b <= a) b += TAU;
-            const gap = b - a;
-            if (gap > bestGap) {
-              bestGap = gap;
-              bestMid = (a + gap / 2) % TAU;
-              bestIdx = i + 1;
-            }
-          }
-          f.offset = f.targetOffset = bestMid;
-          sorted.splice(bestIdx, 0, f);
+      // Symmetrisch N-rooster: centreer de doelen op het circulaire gemiddelde van alle bollen,
+      // zodat elke bol de minimale verplaatsing heeft en de bollen perfect evenredig verdeeld raken.
+      const all = own.slice().sort((a, b) => ((wrapAngle(a.offset) + TAU) % TAU) - ((wrapAngle(b.offset) + TAU) % TAU));
+      const N = all.length;
+      if (N === 1) {
+        all[0].targetOffset = all[0].offset;
+        all[0].fresh = false;
+        continue;
+      }
+
+      let sumSin = 0, sumCos = 0;
+      for (let k = 0; k < N; k++) {
+        const d = wrapAngle(all[k].offset - (k * TAU / N));
+        sumSin += Math.sin(d);
+        sumCos += Math.cos(d);
+      }
+      const theta0 = Math.atan2(sumSin, sumCos);
+
+      for (let k = 0; k < N; k++) {
+        const ideal = theta0 + (k * TAU / N);
+        const diff = wrapAngle(ideal - all[k].offset);
+        all[k].targetOffset = all[k].offset + diff;
+        if (all[k].fresh) {
+          // Verse bol start direct op zijn ideale roosterpositie
+          all[k].offset = all[k].targetOffset;
+          all[k].fresh = false;
         }
       }
     }
@@ -335,8 +357,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       } else if (o.level !== task.level) {
         // absolute hoek behouden bij een niveauwissel, daarna zacht herschikken
         const a = phase.get(o.level) + o.offset + (o.lag || 0);
-        o.offset = o.targetOffset = o.startOffset = a - phase.get(task.level);
-        o.shiftT = 1;
+        o.offset = o.targetOffset = a - phase.get(task.level);
         o.lag = 0; o.arrive = null;
         o.level = task.level;
       }
@@ -345,7 +366,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       o.late = Boolean(o.due) && isOverdue(o.due);
     }
     layoutOffsets();
-    for (const o of orbs.values()) if (o.fresh) { o.offset = o.targetOffset; o.fresh = false; }
     nowCount = list.filter(t => t.level === URGENT_LEVEL).length;
     todayCount = list.filter(t => t.level === URGENT_LEVEL + 1).length;
   }
@@ -355,6 +375,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const o = orbs.get(id);
     if (!o) return null;
     orbs.delete(id);
+    layoutOffsets();
     const spot = o.sx == null ? null : [(o.sx - cam.cx) / cam.s, (o.sy - cam.cy) / cam.s];
     if (reducedMotion.matches || o.sx == null) return spot;
     // A Opgebrand (Victor, 03/11/2026): de bol brandt op langs zijn eigen baan, zonder ster (de enige ster is de nieuwe in de hemel)
@@ -442,8 +463,26 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         o.r = motion ? smooth(o.r, target, 2.6, dt) : target;
         o.lag = 0;
       }
-      // Vaste koers (A1, Victor 05/11/2026): offset volgt direct targetOffset, nooit achteruit
-      o.offset = o.targetOffset;
+      // Zachte, geleidelijke herverdeling (Victor 05/11/2026):
+      // Als een taak wordt afgevinkt of toegevoegd, verdelen de bollen zich traag
+      // en gelijkmatig over hun ring, ZONDER ooit achteruit te gaan of te verspringen.
+      if (!motion || reducedMotion.matches) {
+        o.offset = o.targetOffset;
+      } else {
+        const diff = wrapAngle(o.targetOffset - o.offset);
+        if (Math.abs(diff) > 1e-4) {
+          const omega = (TAU / lvO.period) * speed.get(lvO.id);
+          let step = diff * (1 - Math.exp(-0.45 * dt));
+          // Harde garantie: de bol gaat NOOIT achteruit in de ruimte!
+          // De vertraging is begrensd op max 25% van de baansnelheid,
+          // zodat de werkelijke hoeksnelheid (omega + step/dt) altijd >= 0.75 * omega blijft.
+          const maxStep = Math.max(1e-4, 0.25 * omega * dt);
+          step = clamp(step, -maxStep, maxStep);
+          o.offset += step;
+        } else {
+          o.offset = o.targetOffset;
+        }
+      }
       // werkelijke snelheid (radiaal en extra hoeksnelheid) voor een staart die de echte baan volgt
       o.vr = dt > 0 ? (o.r - r0) / dt : 0;
       o.vo = dt > 0 ? clamp(wrapAngle(o.offset + (o.lag || 0) - off0) / dt, -0.35, 0.35) : 0;

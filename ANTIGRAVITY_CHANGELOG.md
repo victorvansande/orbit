@@ -456,6 +456,35 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Console 100% foutloos (`errors: 0`).
 - **Impact op opslag / state:** Geen.
 
+### 32. Trage, geleidelijke herverdeling van bollen over de ringen zonder omkeren of verspringen
+- **Vraag van Victor:** "Er is nog steeds iets niet juist in de logica van hoe orbs verdwijnen op hun orbit en terug verschijnen. Dit gebeurde net (zie screenshot) toen ik een taak toevoegde aan de 'week' orbit. De orbs verschijnen echt vlak na elkaar. Probeer dit op te lossen. Kan je anders gewoon implementeren dat als een bolletje wordt afgevinkt, de andere bolletjes heeel traag en geleidelijk zich terug even verdelen over hun orbit, zonder ooit in de tegengestelde richting te gaan of snel te verspringen?" (met screenshot `media_1793882530011_98b8db5d.png`).
+- **Oorzaak van het probleem:**
+  - In de eerdere opzet (Vaste Koers A1) verplaatsten bestaande bollen zich helemaal niet meer (`o.targetOffset = o.offset`). Hierdoor ontstond na meerdere taken een 'klont' van bollen aan één zijde van de ring, terwijl de andere helft leeg was.
+  - Bovendien kon bij het invoegen van nieuwe taken een verouderde array-volgorde ontstaan en was `ARRIVE_SWEEP` (0.55 rad = 31,5°) zo wijd dat een invliegende bol te dicht op de staart van een voorganger landde.
+- **Oplossing & Implementatie:**
+  1. **Symmetrisch N-rooster via circulair gemiddelde:**
+     - In `src/scene/scene.js` (`layoutOffsets()`) kiezen nieuwe (verse) bollen altijd het grootste vrije gat tussen reeds geplaatste bollen.
+     - Vervolgens wordt voor alle $N$ bollen op die ring een ideaal, gelijkmatig rooster berekend ($\Delta\theta = 2\pi / N$).
+     - De oriëntatie $\theta_0$ van dit rooster wordt gecentreerd op het circulaire gemiddelde van de huidige bolposities, zodat de benodigde correctie voor elke bol minimaal is.
+     - Verse bollen starten direct op hun ideale roosterpositie (zodat ze nooit vlakbij een andere bol spawnen).
+  2. **Trage, niet-omkerende herverdeling in de renderlus:**
+     - In plaats van instant verspringen (`o.offset = o.targetOffset;`) glijden de bollen zachtjes naar hun `targetOffset` via `diff * (1 - Math.exp(-0.45 * dt))`.
+     - De maximale correctiesnelheid is begrensd op $\pm 25\%$ van de baansnelheid van de ring: `clamp(step, -0.25 * omega * dt, 0.25 * omega * dt)`.
+     - **Harde garantie:** de werkelijke hoeksnelheid in de ruimte is altijd minimaal $\omega - 0.25\omega = 0.75\omega > 0$. De bol gaat **NOOIT achteruit**, stopt nooit en verspringt nooit snel; hij versnelt of vertraagt hoogstens subtiel met 25%, wat oogt als een volkomen natuurlijke zwaartekrachtsaanpassing over 5-8 seconden.
+  3. **Directe trigger bij afvinken:**
+     - `complete(id)` roept nu direct `layoutOffsets()` aan zodra een bol uit `orbs` is verwijderd. De overgebleven bollen verdelen zich direct traag en sereen over de hele ring.
+  4. **Kortere invlieg-sweep:**
+     - `ARRIVE_SWEEP` is teruggebracht van 0.55 rad (31,5°) naar 0.28 rad (16°), zodat de raaklijnige landing strak binnen het eigen baansegment blijft.
+- **Gewijzigde bestanden:**
+  - `src/scene/scene.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Wiskundige simulatietest (`test_orb_distribution.mjs`): alle ringen (periodes 1.1s tot 38s) getest bij toevoegen en afvinken; bollen bereiken perfect evenwicht (hoekfout < 1,6°); 0 omkeringen (`worldVelocity > 0` in 100% van de frames).
+  - Browser-integratietest (`verify_orb_motion.mjs`): 1 taak in Week -> 2e taak toegevoegd -> screenshot gemaakt (`week_two_orbs_balanced.png`) -> 3e taak toegevoegd -> screenshot gemaakt (`week_three_orbs_balanced.png`) -> 1 taak afgevinkt. Geen overlap, 0 console-errors.
+- **Impact op opslag / state:** Geen.
+
+
 
 
 
