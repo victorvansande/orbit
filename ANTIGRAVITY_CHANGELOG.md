@@ -593,7 +593,7 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
 - **Impact op opslag / state:**
   - Service worker cache gebumpt naar `orbit-v6` zodat clients direct de nieuwe life.js module ophalen. Geen brekende storage wijzigingen.
 
-### 05/11/2026 - Orb verslepen zonder staart, Gesynchroniseerd-label fade & Standalone Fidgets Prototype
+### 05/11/2026 - Orb verslepen zonder staart & Gesynchroniseerd-label fade
 - **Wat is er veranderd:**
   1. **Orb verslepen hersteld (geen komeet-animatie):**
      - Wanneer een gebruiker een orb oppakt en op een andere orbit laat vallen, kreeg deze voorheen per abuis een radiale komeetstaart/aankomst alsof hij net uit de diepe ruimte kwam binnengevlogen.
@@ -604,21 +604,13 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   3. **Datum in Focusmodus (Voorstel 2 - Rustige subregel):**
      - De matrixklok staat weer 100% vrij en gecentreerd op haar eigen rij.
      - Direct onder de klok (14 px) toont `#clock-date` de datum in Geist Mono 11px kapitaaltjes met het dagnummer zuiver wit uitgelicht (`<b class="cd-day">`).
-  4. **Standalone Fidgets Prototype (`ontwerp/fidgets.html`):**
-     - Een interactief standalone prototype gebouwd waarin 5 nieuwe fysica- en wiskunde-geïnspireerde fidget-concepten direct te ervaren zijn in de exacte afmetingen van het Orbit-bakje (325.6 × 226.8 px):
-       1. **Ferro (Ferrovloeistof):** 650 magnetische dipolen die zich richten naar veldlijnen; klik/sleep induceert een elektromagnetische schokgolf en polariteitspuls.
-       2. **Chladni (Akoestische Resonantie):** 1.200 zandkorrels op een vibrerende plaat die bij trilling migreren naar stilstaande knooplijnen (nodal patterns); presets voor 4 harmonische modes.
-       3. **Moiré (Optische Interferentie):** Twee concentrische en lineaire rasters die over elkaar roteren en reageren op muis/touch; creëert diepe optische patronen en driedimensionale interferentiegolven.
-       4. **Slingshot (Zwaartekracht & Banen):** Micro-kometen met Orbit-staartjes in een zwaartekrachtveld; ingedrukt houden trekt kometen aan, slepen/slingeren lanceert nieuwe hemellichamen in een omloopbaan.
-       5. **Turing (Morfogenese / Reactie-Diffusie):** Gray-Scott biochemische simulatie die levende labyrinten, luipaardvlekken en celdelingen genereert; presets voor Labyrint, Koraal, Cellen en Solitonen.
-     - Volledige functionaliteit met presets, kleurkiezer, licht/donker modus, touch en muisinteractie.
+  4. **Voorstellen & Prototype conceptfidgets geschrapt:**
+     - De 5 voorgestelde fidget-concepten (Ferro, Chladni, Moiré, Slingshot, Turing) en de prototypepagina `ontwerp/fidgets.html` zijn op verzoek van Victor volledig geschrapt. De bestaande fidgets (de actieve zandloper en Conway's Game of Life) in Orbit blijven ongewijzigd.
 - **Gewijzigde bestanden:**
-  - `ontwerp/fidgets.html` (nieuw)
-  - `ontwerp/fidgets/index.html` (nieuw)
   - `src/scene/scene.js`
   - `src/styles.css`
   - `src/app.js`
   - `CLAUDE.md`
   - `ANTIGRAVITY_CHANGELOG.md`
 - **Getest:**
-  - Geautomatiseerde CDP-test in headless Edge: alle 5 fidget-modi renderen met 60fps canvas en reageren op interactie en presets.
+  - CDP verificatie in headless Edge van de focusmodus en drag & drop interacties.
