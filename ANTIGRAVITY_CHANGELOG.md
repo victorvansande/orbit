@@ -358,3 +358,18 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
 - **Getest:** Automatische headless Edge-test uitgevoerd waarbij een taak werd afgevinkt en op de piek van de `smallNight`-gloed (T+2.3s) een screenshot werd gemaakt (`night_peak_depth.png`). Bevestigd dat banen en orbs achter de witte gloed verdwijnen, terwijl de rode kern met oogjes er volkomen scherp en ononderbroken bovenop staat. Console 100% foutloos (`errors: 0`).
 - **Impact op opslag / state:** Geen.
 
+### 28. Instellingen linksonder uitgelijnd met de dot matrix teller
+- **Vraag van Victor:** "zet de settings links onder, aligned met de dot matrix, niet rechts".
+- **Oplossing & Implementatie:**
+  - In `src/styles.css` is `.stats-bar` aangepast van `justify-content: flex-end;` naar `justify-content: flex-start;`.
+  - Bij `.stats-menu-slot` is `margin-left: auto;` verwijderd (`display: flex; align-items: center;`).
+  - Hierdoor staat de knop `⚙ INSTELLINGEN` nu strak aan de linkerzijde van de tweede regel onder de scheidingslijn, exact verticaal uitgelijnd met de stippencijfers (`.stat-dm`) van de matrix-teller direct erboven (beide exact op `left: 40px`).
+  - De muurknop (`☲ MUUR ⚬`) blijft rechts op de eerste regel staan naast de teller.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:** Headless browser test uitgevoerd met metingen van bounding rects: `.stat-dm.left = 40px`, `#menu-btn.left = 40px`, `.menu-gear.left = 40px` (volledig uitgelijnd). Screenshot geverifieerd (`stats_settings_left_clean.png`) en opening van het instellingenmenu boven de knop gecontroleerd (`stats_menu_open.png`).
+- **Impact op opslag / state:** Geen.
+
+
