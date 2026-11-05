@@ -2984,6 +2984,8 @@ function serverHint(e) {
   return tx('sync.orbitConnecting');
 }
 
+let initialSyncSettled = false;
+
 function renderSync({ status, lastSync, code } = { status: sync.status, lastSync: sync.lastSync, code: sync.code }) {
   try { renderPairHint(); } catch { /* bij het opstarten nog niet klaar */ }
   const btn = $('sync-btn');
@@ -2993,7 +2995,20 @@ function renderSync({ status, lastSync, code } = { status: sync.status, lastSync
   if (menuBtn) {
     if (menuBtn.dataset.status !== effectiveStatus) {
       menuBtn.dataset.status = effectiveStatus;
-    } else if (effectiveStatus === 'online') {
+    }
+  }
+  if (effectiveStatus === 'online' && !initialSyncSettled) {
+    initialSyncSettled = true;
+    const syncLabel = $('sync-label');
+    if (syncLabel) {
+      syncLabel.classList.remove('sync-label-settle');
+      void syncLabel.offsetWidth;
+      syncLabel.classList.add('sync-label-settle');
+      syncLabel.addEventListener('animationend', () => {
+        syncLabel.classList.remove('sync-label-settle');
+      }, { once: true });
+    }
+    if (menuBtn) {
       const gear = menuBtn.querySelector('.menu-gear');
       if (gear) {
         gear.style.animation = 'none';

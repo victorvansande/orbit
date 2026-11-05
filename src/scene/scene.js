@@ -357,10 +357,20 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         orbs.set(task.id, o);
         i++;
       } else if (o.level !== task.level) {
-        // absolute hoek behouden bij een niveauwissel, daarna zacht herschikken
-        const a = phase.get(o.level) + o.offset + (o.lag || 0);
-        o.offset = o.targetOffset = a - phase.get(task.level);
-        o.lag = 0; o.arrive = null;
+        const target = LEVEL_BY_ID.get(task.level).orbit;
+        o.r = target;
+        o.vr = 0;
+        o.vo = 0;
+        o.lag = 0;
+        o.arrive = null;
+        o.blend = null;
+        if (o.dropAngle != null) {
+          o.offset = wrapAngle(o.dropAngle - phase.get(task.level));
+          o.dropAngle = null;
+        } else {
+          const a = phase.get(o.level) + o.offset + (o.lag || 0);
+          o.offset = a - phase.get(task.level);
+        }
         o.level = task.level;
       }
       o.title = task.title;
@@ -1806,8 +1816,25 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (d.type === 'orb') {
       const o = orbs.get(d.id);
       if (d.active && o) {
-        o.blend = { x: pointer.x, y: pointer.y, p: 0 };
-        if (!cancelled && dropLevel && dropLevel !== o.level) onReassign(d.id, dropLevel);
+        if (!cancelled && dropLevel) {
+          const targetR = LEVEL_BY_ID.get(dropLevel).orbit;
+          const dropAngle = (Math.atan2(pointer.y - cam.cy, pointer.x - cam.cx) + TAU) % TAU;
+          o.r = targetR;
+          o.vr = 0;
+          o.vo = 0;
+          o.arrive = null;
+          o.lag = 0;
+          o.blend = null;
+          if (dropLevel !== o.level) {
+            o.dropAngle = dropAngle;
+            onReassign(d.id, dropLevel);
+          } else {
+            o.offset = wrapAngle(dropAngle - phase.get(o.level));
+            layoutOffsets();
+          }
+        } else {
+          o.blend = { x: pointer.x, y: pointer.y, p: 0 };
+        }
       } else if (!d.active) {
         pinned = pinned === d.id ? null : d.id;
         onHover(pinned, pinned ? orbs.get(pinned)?.level ?? null : null);
