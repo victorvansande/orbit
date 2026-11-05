@@ -3098,14 +3098,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && hudMenu.cl
 document.querySelector('.hud-actions').addEventListener('click', e => { if (e.target.closest('button')) setMenu(false); });
 function placeMenu() {
   const controls = document.querySelector('.controls'), actions = document.querySelector('.hud-actions');
+  hudMenu.append(actions);   // Voorstel 4 (Victor 05/11/2026): hulplinks zitten rustig in het Instellingenmenu, niet los op het hoofdscherm
   if (desktop.matches) {
     $('menu-view').append($('view-switch'), $('focus-btn'));
     $('menu-tempo').append($('tempo'));
-    hudMenu.before(actions);
     const inFocus = document.body.classList.contains('is-focus');
-    const statsEl = $('stats'), metaEl = $('stats-meta');
-    if (!inFocus && statsEl && !statsEl.hidden && metaEl) {
-      metaEl.append(menuBtn);
+    const statsEl = $('stats'), slot = $('stats-menu-slot');
+    if (!inFocus && statsEl && !statsEl.hidden && slot) {
+      slot.append(menuBtn);
       statsEl.append(hudMenu);
       controls.append($('focus-exit'));
     } else {
@@ -3114,7 +3114,6 @@ function placeMenu() {
   } else {
     controls.append($('view-switch'), $('focus-btn'));
     $('menu-tempo').append($('tempo'));
-    hudMenu.append(actions);
     document.querySelector('.hud-right').append(menuBtn, hudMenu);
   }
   setMenu(false);

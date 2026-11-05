@@ -227,6 +227,10 @@ body.is-focus .greeting { z-index: 4; }
 @keyframes menu-in { from { opacity: 0; transform: translateY(4px); } }
 /* desktop: zo breed als de langste regel, niets breekt af */
 .controls .hud-menu { left: 0; bottom: calc(100% + 10px); width: max-content; min-width: 400px; white-space: nowrap; }
+@media (min-width: 1000px) {
+  .controls:not(:has(#menu-btn)) { display: none; }
+  body.is-focus .controls { display: flex; }
+}
 .controls:has(.hud-menu.is-open) { z-index: 8; }
 /* desktop, focusmodus: focus verlaten zonder eerst het paneel te openen */
 .focus-exit { display: none; }
@@ -282,15 +286,20 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .tracks-demo { margin: 8px 0 4px; color: var(--ink-3); font-size: 12.5px; line-height: 1.45; max-width: 30ch; }
 .tracks-empty { margin-top: 18px; color: var(--ink-2); font-size: 13.5px; max-width: 26ch; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
-.stats { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.stats { position: relative; display: flex; flex-direction: column; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
 .tracks:has(.hud-menu.is-open) { z-index: 8; }
-.stats .hud-menu { left: 0; bottom: calc(100% + 10px); width: max-content; min-width: 400px; white-space: nowrap; }
-.stats-meta { flex-basis: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 13px; }
-.stats-meta:empty { display: none; }
-.stats-meta .feats-badge { flex-basis: auto; margin-top: 0; }
-.stats-meta .menu-btn { margin-left: auto; min-height: auto; padding: 0; border: 0; border-radius: 0; font: 500 10px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); }
-.stats-meta .menu-btn:hover, .stats-meta .menu-btn[aria-expanded="true"] { color: var(--ink); }
-.stats .stats-detail { flex-basis: 100%; }
+.stats .hud-menu { left: 0; bottom: calc(100% + 8px); width: max-content; min-width: 400px; white-space: nowrap; }
+.stats-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.stats-badges { display: flex; align-items: center; gap: 8px; }
+.stats-badges:empty { display: none; }
+.stats-badges .recap-pill { margin-top: 0; }
+.stats-badges .feats-badge { flex-basis: auto; margin-top: 0; }
+.stats-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.stats-bar .wall-toggle { margin: 0; }
+.stats-menu-slot { margin-left: auto; display: flex; align-items: center; }
+.stats-bar .menu-btn { margin-left: auto; min-height: auto; padding: 0; border: 0; border-radius: 0; font: 500 10px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); }
+.stats-bar .menu-btn:hover, .stats-bar .menu-btn[aria-expanded="true"] { color: var(--ink); }
+.stats .stats-detail { width: 100%; margin-top: 12px; }
 /* knopje: muur van afgevinkte taken achter de sterrenhemel (icoon en tekst perfect gecentreerd, op de basislijn van stars collected) */
 .wall-toggle {
   position: relative;

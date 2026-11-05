@@ -91,7 +91,8 @@ export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => 
 
   function frame(now) {
     if (!running) return;
-    if (now - lastRead > 250) { st = timerState(); lastRead = now; }
+    if (!st || now - lastRead > 250) { st = timerState(); lastRead = now; }
+    if (!st) return;
     const left = st.endAt ? Math.max(0, st.endAt - Date.now()) : st.left, total = st.dur * 60000;
     const active = !st.done && (st.endAt > 0 || (left > 0 && left < total));
     if (active) {

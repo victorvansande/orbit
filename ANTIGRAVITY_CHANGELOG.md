@@ -264,3 +264,28 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `src/data/recap.js`
 - **Getest:** Gecontroleerd met headless Edge op 1440x900 en 375x812 in licht en donker thema: console foutloos, P2 papierkleur en dark mode toast geverifieerd via getComputedStyle, menuklik en interactie geverifieerd via geautomatiseerde inspectie.
 - **Impact op opslag / state:** Geen.
+
+### 24. Vaste koers A1 (geen tegenstroom of verdwijnende orbs), Voorstel 4 metaband en oogjes-voorstellen
+- **Vraag van Victor:**
+  1. "Er is een grote bug dat de orbs gewoon doet verdwijnen. Ik wil ook terugkomen op de beslissing voor A2. Hier kunnen orbs blijkbaar toch in tegengestelde richting bewegen en dit wil ik vermijden. Pas daarom A1 toe"
+  2. "Voorstel 4 voor de settings verdeling" (naar aanleiding van de 4 lay-outopties in bottom-layout-options.html).
+  3. "de orb kern zijn oogjes lijken nu heel boos door de redesign. Ze zijn ook erg ongedetailleerd hoe kleiner de kern wordt. Doe voorstellen voor een redesign van de oogjes en hun animaties"
+- **Oplossing & Implementatie:**
+  - **Voorstel A1 (Vaste Koers):** In `src/scene/scene.js` (`layoutOffsets()`) behouden bestaande bollen altijd ongewijzigd hun eigen offset (`o.targetOffset = o.offset`). Bij het afvinken van een taak via `complete(id)` wordt `layoutOffsets()` niet meer aangeroepen: overblijvende bollen varen ongestoord op hun eigen koers en kruissnelheid door. Alleen nieuw toegevoegde (verse) bollen kiezen automatisch het grootste vrije gat tussen bestaande bollen. In de update-lus volgt `o.offset = o.targetOffset` direct zonder interpolatiefouten of 360-graden omkeringen. Dit lost tevens de bug op waarbij bollen door wrapAngle-sprongen plotseling verdwenen.
+  - **Voorstel 4 (De Compacte Metaband):** In `index.html` en `src/styles.css` is het statistiekenblok opgedeeld in twee zuivere stroken:
+    - Bovenstrook (`.stats-head`): links de stippenteller (`06 STARS THIS MONTH`), rechts het badge-cluster (`OCTOBER IN STARS` en `PILOT · 458 PTS`).
+    - Onderstrook (`.stats-bar`): links de knop `☲ MUUR ⚬`, rechts de knop `⚙ SETTINGS` (via `#stats-menu-slot`).
+    - Secundaire hulplinks (`ACHIEVEMENTS / GUIDE / ARCHIVE / PAIR`) zijn op desktop net als op mobiel verplaatst naar het Instellingen-popover (`#hud-menu`), waardoor de rommelige losse vierde footerregel verdwenen is.
+    - Lege `.controls` balk op desktop wordt via `@media (min-width: 1000px) { .controls:not(:has(#menu-btn)) { display: none; } }` netjes verborgen.
+  - **Frame-initialisatiefix in `src/focus/glass.js`:** Null-guard toegevoegd (`if (!st || now - lastRead > 250) st = timerState(); if (!st) return;`) zodat de zandloper nooit een runtime TypeError kan triggeren voor de timer-state geladen is.
+  - **Voorstellen Herontwerp Oogjes:** Interactieve demonstrator gebouwd in `core-eyes-options.html` met 4 oplossingen (O1 Horizontaal oogrooster, O2 Karakter-pil met drijvende pupil, O3 5x3 Retro micro-matrix, en O4 Kwarts lens met fonkelglans) inclusief live 60fps animaties, muistracking, knipper-, blij- en nachtstand en schaalvergelijking.
+- **Gewijzigde bestanden:**
+  - `src/scene/scene.js`
+  - `src/focus/glass.js`
+  - `index.html`
+  - `src/styles.css`
+  - `src/app.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:** Gecontroleerd via headless browser op desktop (1440x900) en mobiel (375x812): taken afgevinkt, orb-continuïteit geverifieerd (orbs blijven zichtbaar, bewegen uitsluitend voorwaarts), lay-out inspectie bevestigt 2 strakke rijen en 0 fouten in de console.
+- **Impact op opslag / state:** Geen.
