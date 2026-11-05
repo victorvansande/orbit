@@ -358,13 +358,15 @@ function renderClock() {
     morphMatrix(clock, time, { still, only: true });
   } else setMatrix(clock, time);
   const cd = $('clock-date');
-  if (cd) cd.textContent = DAY_FMT.format(now);
-  const d2Day = $('d2-day');
-  if (d2Day) d2Day.textContent = dd;
-  const d2Wk = $('d2-weekday');
-  if (d2Wk) d2Wk.textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'short' }).format(now).replace('.', '').toUpperCase();
-  const d2Mo = $('d2-month');
-  if (d2Mo) d2Mo.textContent = new Intl.DateTimeFormat(LOCALE, { month: 'short' }).format(now).replace('.', '').toUpperCase();
+  if (cd) {
+    const parts = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).formatToParts(now);
+    cd.replaceChildren(...parts.map(p => {
+      const el = document.createElement(p.type === 'day' ? 'b' : 'span');
+      if (p.type === 'day') el.className = 'cd-day';
+      el.textContent = p.value;
+      return el;
+    }));
+  }
 }
 
 // Focusmodus: de eerstvolgende deadline (ook een verstreken), met hetzelfde label als in de lijst

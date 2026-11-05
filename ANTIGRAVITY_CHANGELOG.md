@@ -556,9 +556,12 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
      - `.menu-gear` neemt de statuskleur en puls over. Bij `online` voert het tandwieltje een subtiele settle-animatie uit (groen gloeien -> rustig uitdoven naar inherit).
   2. **Tellerscheiding (Voorstel A):**
      - `border-top: none;` op `.stats-bar`, met 12 px rustige ademruimte tussen de dot matrix cijfers en de actieknoppen eronder. Hokjesgevoel op mobiel volledig verdwenen.
-  3. **Datum D2 in Focusmodus:**
-     - In `index.html` en `src/styles.css` structuur `.focus-time-row` met `.clock` en `.focus-d2` (verticale scheidingslijn `.d2-sep`, slank dagcijfer `.d2-day` in Geist Light 300, en `.d2-stack` met weekdag en maand in Geist Mono 500 kapitaaltjes).
-     - Hoogte dynamisch geschaald via `--dm-h: min(84px, 9.4vh)` op desktop en `52px` op mobiel.
+  3. **Datum in Focusmodus (Voorstel 2 · Rustige subregel onder de klok):**
+     - D2 (dagcijfer direct naast de klok) werd door Victor afgewezen omdat het te veel info op één horizontale rij gaf en te druk oogde.
+     - Uit de 4 voorgestelde alternatieven koos Victor **Voorstel 2**:
+     - De matrixklok staat weer 100% vrij, dominant en sereen op haar eigen rij.
+     - Direct onder de klok (14 px tussenruimte op desktop, 12 px op mobiel) verschijnt de datum via `#clock-date`: bv. `DONDERDAG 5 NOVEMBER` in Geist Mono 11px kapitaaltjes (`letter-spacing: .14em; color: var(--ink-2)`), waarbij het dagcijfer via `<b class="cd-day">` zuiver wit (`var(--ink)`) is geaccentueerd.
+     - Vormt een natuurlijke en rustige overgang vóórdat de deadlines en Nu-taken beginnen.
   4. **Mobiele Swipe-notities (Optie A):**
      - Lege notitieknoppen (`.t-note-btn:not(.has-note)`) verborgen op touch (`opacity: 0; pointer-events: none;`).
      - `.t-swipe-note-btn` toegevoegd in de swipe-to-reveal la. Bij naar links vegen schuift de taak 72 px in en verschijnen zowel de rode Delete-knop als de `+ Notitie` knop.

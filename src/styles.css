@@ -777,17 +777,7 @@ body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
   pointer-events: none;
 }
 /* Matrixklok (src/scene/matrix.js): stippen van 5 × 7, onverlichte stippen als zachte schim */
-.focus-time-row { --dm-h: min(84px, 9.4vh); display: flex; align-items: center; gap: 16px; height: var(--dm-h); }
 .clock { --dm-h: min(84px, 9.4vh); display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
-.focus-d2 { display: inline-flex; align-items: center; gap: 12px; height: 100%; }
-.d2-sep { width: 1px; height: calc(var(--dm-h) * 0.72); background: var(--line); flex: none; }
-.d2-day {
-  font-family: var(--sans); font-weight: 300; font-size: calc(var(--dm-h) * 0.92); line-height: 1;
-  letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; flex: none;
-}
-.d2-stack { display: flex; flex-direction: column; justify-content: center; gap: 3px; }
-.d2-weekday { font: 500 11px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
-.d2-month { font: 500 11px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 .clock .dm { display: block; height: 100%; width: auto; overflow: visible; }
 .dm .o { fill: currentColor; animation: dm-in .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d); }
 .dm .g { fill: currentColor; opacity: var(--dm-ghost); }
@@ -808,7 +798,8 @@ body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
 .fw-place:empty { display: none; }
 .focus-weather:hover .fw-icon, .focus-weather:hover .fw-temp { color: var(--ink); }
 .fw-rain { flex-basis: 100%; font: 500 11px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
-.clock-date { margin-top: 10px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.clock-date { margin-top: 14px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+.clock-date .cd-day { font-weight: 600; color: var(--ink); }
 .focus-due { margin-top: 18px; font-size: 14px; line-height: 1.4; color: var(--ink-2); max-width: 36ch; }
 .focus-due b { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--core); margin-right: 8px; }   /* label in het Orbit-rood (Victor, 03/11/2026) */
 .focus-due.is-late { color: var(--late); }
@@ -1210,7 +1201,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
     display: block; order: 2; position: relative; left: auto; bottom: auto; transform: none;
     padding: 4px var(--pad) 12px;
   }
-  body.is-focus .focus-time-row, body.is-focus .clock { --dm-h: 52px; }
+  body.is-focus .clock { --dm-h: 52px; }
   .focus-weather { margin-bottom: 10px; }
   body.is-focus .clock-date { margin-top: 12px; }
   body.is-focus .focus-now { margin-top: 38px; max-width: none; }
