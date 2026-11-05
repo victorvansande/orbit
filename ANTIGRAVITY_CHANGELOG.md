@@ -592,3 +592,33 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - CDP verificatie in headless Edge op zowel desktop als mobiel: 0 errors, focus D2 datum perfect uitgelijnd, swipe drawers soepel, Game of Life evolueert met 60fps bioluminescentie en wisselt feilloos tussen alle 5 presets.
 - **Impact op opslag / state:**
   - Service worker cache gebumpt naar `orbit-v6` zodat clients direct de nieuwe life.js module ophalen. Geen brekende storage wijzigingen.
+
+### 05/11/2026 - Orb verslepen zonder staart, Gesynchroniseerd-label fade & Standalone Fidgets Prototype
+- **Wat is er veranderd:**
+  1. **Orb verslepen hersteld (geen komeet-animatie):**
+     - Wanneer een gebruiker een orb oppakt en op een andere orbit laat vallen, kreeg deze voorheen per abuis een radiale komeetstaart/aankomst alsof hij net uit de diepe ruimte kwam binnengevlogen.
+     - In `src/scene/scene.js` wordt bij het voltooien van een drag (`pointerup`) de orb direct op de doelring geplaatst (`o.r = targetR`, `o.vr = 0`, `o.arrive = null`, `o.lag = 0`, `o.blend = null`). De bol landt direct op zijn cirkelbaan en voegt zich organisch in het N-rooster tussen de andere bollen.
+  2. **'Gesynchroniseerd' woord-settle:**
+     - Het woord 'gesynchroniseerd' in de kopbalk was voorheen constant groen.
+     - In `src/styles.css` en `src/app.js` is `#sync-label` in rust nu sereen grijs (`var(--ink-3)`). Enkel bij het openen van de pagina wanneer sync gereedkomt speelt een zachte pulserende animatie (`@keyframes sync-label-settle-green`) die na twee rustige pulsen uitdooft. Het groene statusstipje (`.sync-dot`) blijft discreet groen.
+  3. **Datum in Focusmodus (Voorstel 2 - Rustige subregel):**
+     - De matrixklok staat weer 100% vrij en gecentreerd op haar eigen rij.
+     - Direct onder de klok (14 px) toont `#clock-date` de datum in Geist Mono 11px kapitaaltjes met het dagnummer zuiver wit uitgelicht (`<b class="cd-day">`).
+  4. **Standalone Fidgets Prototype (`ontwerp/fidgets.html`):**
+     - Een interactief standalone prototype gebouwd waarin 5 nieuwe fysica- en wiskunde-geïnspireerde fidget-concepten direct te ervaren zijn in de exacte afmetingen van het Orbit-bakje (325.6 × 226.8 px):
+       1. **Ferro (Ferrovloeistof):** 650 magnetische dipolen die zich richten naar veldlijnen; klik/sleep induceert een elektromagnetische schokgolf en polariteitspuls.
+       2. **Chladni (Akoestische Resonantie):** 1.200 zandkorrels op een vibrerende plaat die bij trilling migreren naar stilstaande knooplijnen (nodal patterns); presets voor 4 harmonische modes.
+       3. **Moiré (Optische Interferentie):** Twee concentrische en lineaire rasters die over elkaar roteren en reageren op muis/touch; creëert diepe optische patronen en driedimensionale interferentiegolven.
+       4. **Slingshot (Zwaartekracht & Banen):** Micro-kometen met Orbit-staartjes in een zwaartekrachtveld; ingedrukt houden trekt kometen aan, slepen/slingeren lanceert nieuwe hemellichamen in een omloopbaan.
+       5. **Turing (Morfogenese / Reactie-Diffusie):** Gray-Scott biochemische simulatie die levende labyrinten, luipaardvlekken en celdelingen genereert; presets voor Labyrint, Koraal, Cellen en Solitonen.
+     - Volledige functionaliteit met presets, kleurkiezer, licht/donker modus, touch en muisinteractie.
+- **Gewijzigde bestanden:**
+  - `ontwerp/fidgets.html` (nieuw)
+  - `ontwerp/fidgets/index.html` (nieuw)
+  - `src/scene/scene.js`
+  - `src/styles.css`
+  - `src/app.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Geautomatiseerde CDP-test in headless Edge: alle 5 fidget-modi renderen met 60fps canvas en reageren op interactie en presets.
