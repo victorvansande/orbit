@@ -205,14 +205,6 @@ body.is-focus .greeting { z-index: 4; }
 .sync-btn[data-status="offline"] { color: var(--late); }
 @keyframes sync-blink { 50% { opacity: .25; } }
 .hud-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; pointer-events: auto; }
-.hud-actions .feats-badge {
-  display: inline-flex; align-items: center; gap: 6px; flex-basis: auto; margin-top: 0;
-  min-height: 28px; padding: 0; border: 0; background: none;
-  font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
-  color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease);
-}
-.hud-actions .feats-badge:hover { color: var(--ink); }
-.hud-actions .feats-badge svg { width: 14px; height: 14px; overflow: visible; flex: none; }
 .hud-actions .recap-pill {
   display: inline-flex; align-items: center; gap: 6px; margin-top: 0;
   min-height: 24px; padding: 0 9px; border-radius: 999px;
@@ -220,10 +212,16 @@ body.is-focus .greeting { z-index: 4; }
   color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s var(--ease);
 }
 .hud-actions .recap-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
-.hud-actions #feats-badge:not([hidden]) ~ #feats-btn,
-.hud-actions #feats-badge:not([hidden]) ~ .feats-btn-slash {
-  display: none;
+.menu-feats-row { cursor: pointer; }
+.hud-menu .feats-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 28px; padding: 0 4px; border: 0; background: none;
+  font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink); cursor: pointer; transition: opacity .2s var(--ease);
+  --rank-cut: var(--surface);
 }
+.hud-menu .feats-badge:hover { opacity: .75; }
+.hud-menu .feats-badge svg { width: 14px; height: 14px; overflow: visible; flex: none; }
 /* Instellingen: één knopje met een paneel. Desktop: linksonder (aanzicht, focus, tempo, thema, sneltoetsen);
    gsm: in de kop (thema, tempo, uitleg, archief, sync) */
 .stat-mini { display: none; }
@@ -311,7 +309,15 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .stats-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; width: 100%; min-height: auto; }
 .stats-bar { display: flex; align-items: center; justify-content: flex-start; width: 100%; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); }
 .stats-bar .wall-toggle { margin: 0; }
-.stats-menu-slot { display: flex; align-items: center; }
+.stats-menu-slot { display: flex; align-items: center; gap: 8px; }
+.stats-rank-hint {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; padding: 0; border: 0; background: none;
+  cursor: pointer; --rank-cut: var(--bg);
+  transition: transform .2s var(--ease), opacity .2s var(--ease);
+}
+.stats-rank-hint:hover { transform: scale(1.22); }
+.stats-rank-hint svg { width: 14px; height: 14px; overflow: visible; flex: none; }
 .stats-bar .menu-btn { min-height: auto; padding: 0; border: 0; border-radius: 0; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); }
 .stats-bar .menu-btn:hover, .stats-bar .menu-btn[aria-expanded="true"] { color: var(--ink); }
 .stats .stats-detail { width: 100%; margin-top: 12px; }

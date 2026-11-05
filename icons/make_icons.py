@@ -2,7 +2,7 @@
 Daarna: node icons/render_icons.mjs (PNG's en favicon.ico)."""
 import json, os, re
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-PAPER, INK, RED = '#F1F1EF', '#1B1B22', '#E70049'
+PAPER, INK, RED = '#EBE8DF', '#1B1B22', '#E70049'
 DARK_BG, DARK_INK, DARK_RED = '#19191D', '#ECECF1', '#F0306A'
 # app-icoon transparant (iOS liquid glass, Android 'any'): middengrijs blijft leesbaar op licht en donker, de kop blijft rood
 GLASS_INK = '#8A8A94'
@@ -21,14 +21,14 @@ def svg(body, bg=None, rx=0):
     rect = f'<rect width="100" height="100" rx="{rx}" fill="{bg}"/>' if bg else ''
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">{rect}{body}</svg>\n'
 
-S, SS = M['SYMBOL'], M['SYMBOL_SMALL']
+S, SS = M['SYMBOL_SMALL'], M['SYMBOL_SMALL']
 files = {
-    'icons/icon-full.svg': svg(place(S, 70, f'fill="{GLASS_INK}"', f'fill="{RED}"')),
-    'icons/icon-any.svg': svg(place(S, 66, f'fill="{GLASS_INK}"', f'fill="{RED}"')),
+    'icons/icon-full.svg': svg(place(SS, 70, f'fill="{GLASS_INK}"', f'fill="{RED}"')),
+    'icons/icon-any.svg': svg(place(SS, 66, f'fill="{GLASS_INK}"', f'fill="{RED}"')),
     # maskable: alles binnen de veilige cirkel van 80 %
-    'icons/icon-maskable.svg': svg(place(S, 58, f'fill="{INK}"', f'fill="{RED}"'), PAPER),
+    'icons/icon-maskable.svg': svg(place(SS, 58, f'fill="{INK}"', f'fill="{RED}"'), PAPER),
     # Material You: één kleur op transparant
-    'icons/icon-monochrome.svg': svg(place(S, 58, 'fill="#fff"', 'fill="#fff"')),
+    'icons/icon-monochrome.svg': svg(place(SS, 58, 'fill="#fff"', 'fill="#fff"')),
 }
 # favicon: de kleine tekening op een papieren tegel, volgt licht en donker
 files['favicon.svg'] = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><style>'

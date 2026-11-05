@@ -392,5 +392,44 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
 - **Getest:** Nauwkeurig opgemeten in headless Chrome via CDP: `spaceAboveDm: 11px`, `spaceBelowDmToDivider: 10px`, `spaceBelowDividerToMenu: 10px`. Screenshot geverifieerd (`stats_final_balanced.png`).
 - **Impact op opslag / state:** Geen.
 
+### 30. Prestaties naar instellingenmenu, discreet rang-insigne in de voetbalk, en uniforme dikkere logovariant voor alle iconen
+- **Vraag van Victor:**
+  1. *"optie 1. Zet enkel het logotje van de huidige rang ook naast de settings als hint dat daar de achievements te vinden zijn"*
+  2. *"Maak de app-icon en favicon dezelfde dikkere variant van het logo als op de site zelf terug te vinden is, overal trouwens, Ik begrijp niet goed waarom er soms de dunnere variant wordt gebruikt."*
+- **Oplossing & Implementatie:**
+  1. **Prestaties in Instellingen (Optie 1) & Rang-insigne hint:**
+     - De volledige prestatiebadge (`#feats-badge`) is uit de cockpithoek rechtsboven (`.hud-actions`) gehaald en verplaatst naar het instellingenmenu (`#hud-menu`) als een vaste profielregel (`.menu-feats-row`).
+     - De navigatiestrook rechtsboven is nu sereen en zuiver: `UITLEG / ARCHIEF / KOPPELEN` (plus eventuele maandrecap).
+     - In `.stats-bar` naast `⚙ INSTELLINGEN` is een discreet rang-insigne (`#stats-rank-hint`) geplaatst. Dit toont enkel het SVG-embleem van de actuele rang in de metallieke tier-kleur (brons, zilver, goud, platina, diamant).
+     - Bij hover schaalt het insigne subtiel (`transform: scale(1.22)`), toont een tooltip met de rang en punten, en bij klik opent het direct het volledige Prestaties-venster (`#feats`).
+     - In `src/app.js` beheert `renderFeatsBadge` zowel de menu-rij als de hint in de voetbalk, en `placeMenu` voegt `menuBtn` vooraan toe (`slot.prepend(menuBtn)`) zodat de volgorde `[⚙ INSTELLINGEN] [✦ RANG-INSIGNE]` strak behouden blijft.
+  2. **Uniforme dikkere logovariant overal:**
+     - Oorspronkelijk kende `src/core/mark.js` twee varianten: `SYMBOL` (de dunnere variant) en `SYMBOL_SMALL` (de dikkere variant met een grotere cirkelkop en vollere staart).
+     - De website toonde al de dikkere variant (`LOCKUP_SMALL`), maar icon-generatiescripts en app-iconen vielen terug op de dunnere variant.
+     - In `src/core/mark.js` zijn `SYMBOL` en `LOCKUP` nu gelijkgesteld aan de dikkere variant (`SYMBOL_SMALL` / `LOCKUP_SMALL`).
+     - Alle SVG-iconen (`icons/icon-full.svg`, `icons/icon-any.svg`, `icons/icon-maskable.svg`, `icons/icon-monochrome.svg`, `favicon.svg`, `brand/merk/svg/*`, `brand/merk/favicon/*`) zijn vernieuwd met de dikkere variant.
+     - `favicon.svg` achtergrondkleur is bijgewerkt naar het gekozen Warm Archiefpapier `#EBE8DF`.
+     - Alle PNG-formaten (16, 32, 48, 180, 192, 512, maskable, dark) en de multi-resolutie `favicon.ico` (16, 32 en 48 px) zijn opnieuw gegenereerd via headless Edge.
+- **Gewijzigde bestanden:**
+  - `index.html`
+  - `src/app.js`
+  - `src/styles.css`
+  - `src/core/mark.js`
+  - `icons/make_icons.py`
+  - `favicon.svg`
+  - `favicon.ico`
+  - `icons/*` (alle PNG's en SVG's)
+  - `brand/merk/*` (alle PNG's, SVG's en ICO)
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Automatische headless browser inspectie (`verify_opt1_hint.mjs`): console 100% foutloos (`errors: 0`).
+  - Geverifieerd dat `.hud-actions` rechtsboven ontdaan is van badge en overtollige slashes.
+  - Geverifieerd dat `#stats-rank-hint` naast `#menu-btn` staat op `left: 157.7px` (uitgelijnd).
+  - Geverifieerd dat klik op het insigne het Prestaties-dialoogvenster opent.
+  - Screenshots gecontroleerd: `hud_right_clean.png`, `stats_bar_hint.png`, `menu_with_feats.png`.
+- **Impact op opslag / state:** Geen.
+
+
 
 

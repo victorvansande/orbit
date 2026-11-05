@@ -2167,11 +2167,25 @@ function checkFeats(pop) {
   noteRank(r, pop);
 }
 function renderFeatsBadge(r = featsNow()) {
-  const b = $('feats-badge'), sl = $('feats-slash');
-  b.hidden = !r.stars;
-  if (sl) sl.hidden = !r.stars;
-  b.style.setProperty('--tier', `var(--tier-${rankMetal(r.rank.level)})`);
-  b.innerHTML = `<svg viewBox="${RANK_BOX}" aria-hidden="true">${rankSvg(r.rank.level)}</svg><span>${tx('feats.badge', { rank: r.rank.name, n: r.points.toLocaleString(LOCALE) })}</span>`;
+  const b = $('feats-badge'), hint = $('stats-rank-hint');
+  if (b) {
+    b.style.setProperty('--tier', `var(--tier-${rankMetal(r.rank.level)})`);
+    b.style.setProperty('--rank-cut', 'var(--surface)');
+    if (r.stars) {
+      b.innerHTML = `<svg viewBox="${RANK_BOX}" aria-hidden="true">${rankSvg(r.rank.level)}</svg><span>${tx('feats.badge', { rank: r.rank.name, n: r.points.toLocaleString(LOCALE) })}</span>`;
+    } else {
+      b.innerHTML = `<span>${tx('feats.title')}</span>`;
+    }
+  }
+  if (hint) {
+    hint.hidden = !r.stars;
+    if (r.stars) {
+      hint.style.setProperty('--tier', `var(--tier-${rankMetal(r.rank.level)})`);
+      hint.style.setProperty('--rank-cut', 'var(--bg)');
+      hint.innerHTML = `<svg viewBox="${RANK_BOX}" aria-hidden="true">${rankSvg(r.rank.level)}</svg>`;
+      hint.title = `${r.rank.name} · ${r.points.toLocaleString(LOCALE)} pts (${tx('feats.title')})`;
+    }
+  }
 }
 function renderFeats() {
   const r = featsNow();
@@ -2234,8 +2248,9 @@ function openFeats() {
   if (!featsDialog.open) featsDialog.showModal();
   featsDialog.querySelector('.feats-card').scrollTop = 0;
 }
-$('feats-btn').addEventListener('click', () => { setMenu(false); openFeats(); });
-$('feats-badge').addEventListener('click', openFeats);
+$('feats-btn')?.addEventListener('click', () => { setMenu(false); openFeats(); });
+$('feats-badge')?.addEventListener('click', () => { setMenu(false); openFeats(); });
+$('stats-rank-hint')?.addEventListener('click', openFeats);
 $('feats-close').addEventListener('click', () => featsDialog.close());
 featsDialog.addEventListener('click', e => { if (e.target === featsDialog) featsDialog.close(); });
 
@@ -3107,7 +3122,7 @@ function placeMenu() {
     const inFocus = document.body.classList.contains('is-focus');
     const statsEl = $('stats'), slot = $('stats-menu-slot');
     if (!inFocus && statsEl && !statsEl.hidden && slot) {
-      slot.append(menuBtn);
+      slot.prepend(menuBtn);
       statsEl.append(hudMenu);
       controls.append($('focus-exit'));
     } else {
