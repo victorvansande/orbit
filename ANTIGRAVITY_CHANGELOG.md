@@ -519,3 +519,23 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
 
 
 
+
+### 34. Subtiele, minimale landingspuls op de orbit bij nieuwe taken
+- **Vraag van Victor:** *"7: voeg dit toe maar het is wel weer een extra animatie dat voor drukte kan zorgen. Pas het toe maar erg subtiel, minimaal, strak en passend."*
+- **Oplossing & Implementatie:**
+  - In `src/scene/scene.js` is `ringPulse` (een Map per ringniveau) geïntroduceerd.
+  - Wanneer een nieuwe bol landt via de lokale baan-ontvouwing (`o.arrive`), triggert de voltooiing van de landing (`u >= 1`) bij een actieve taaktoevoeging (`!o.isIntro`) een zachte impuls op de doelring (`ringPulse.set(lvO.id, 1)`).
+  - De puls dooft zacht en snel uit over circa 350 ms (`Math.max(0, p - dt * 2.8)`).
+  - In `drawRings(now)` is de puls wiskundig gekoppeld via een kwadratische curve (`pulseEased = pulse * pulse`):
+    - Alpha van de ringstippen krijgt een bescheiden verhoging van maximaal +0.18.
+    - Kleur van de ringstippen krijgt een zachte 45% opwarming naar de eigen momentkleur (`mixInk(colors.get(lv.id), 0.45 * pulseEased)`).
+    - Stipgrootte zwelt maximaal 15% op (`0.15 * pulseEased`) voor een subtiel, tactiel "landingsgevoel" dat nooit flitst of schreeuwt.
+  - Bij `isIntro` (het initiële laden van de pagina), `reducedMotion` of in de instelling Minimaal (`minimal: true`) is de landingspuls strikt uitgeschakeld om elke drukte te voorkomen.
+- **Gewijzigde bestanden:**
+  - `src/scene/scene.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Syntaxcontrole: `Get-Content src/scene/scene.js -Raw | node --input-type=module --check` foutloos.
+  - Geautomatiseerde CDP-test in headless Edge (`verify_ring_pulse.mjs`): taak toevoegen -> aankomst -> 0 console logs/exceptions.
+- **Impact op opslag / state:** Geen.

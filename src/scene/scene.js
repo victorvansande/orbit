@@ -118,6 +118,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   const phase = new Map(LEVELS.map(l => [l.id, 0]));
   const speed = new Map(LEVELS.map(l => [l.id, 1]));
   const ringHot = new Map(LEVELS.map(l => [l.id, 0]));
+  const ringPulse = new Map(LEVELS.map(l => [l.id, 0]));
   const orbs = new Map();
   const burns = [];      // afgevinkte bollen die opbranden
   let sky = [];          // sterrenhemel: één ster per afgevinkte taak
@@ -349,7 +350,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
           alpha: reducedMotion.matches ? 1 : 0,
           offset: 0, targetOffset: 0, startOffset: 0, shiftT: 1, shiftDur: 1,
           fresh: true, lag: reducedMotion.matches ? 0 : -ARRIVE_SWEEP,
-          wait: 0,
+          wait: 0, isIntro: Boolean(intro),
           arrive: reducedMotion.matches ? null : { t0: performance.now() + (intro ? (0.55 + i * tempo.gap) * 1000 : 0), dur: tempo.arrive * 0.72 },
           sx: null, sy: null, sr: 0, blend: null,
         };
@@ -444,6 +445,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const dragging = drag?.type === 'orb' && drag.active;
       const lit = dragging ? dropLevel === lv.id : hot === lv.id;
       ringHot.set(lv.id, smooth(ringHot.get(lv.id), lit ? 1 : 0, 9, dt));
+      const p = ringPulse.get(lv.id) || 0;
+      if (p > 0) ringPulse.set(lv.id, Math.max(0, p - dt * 2.8));
     }
 
     orbVeil = motion ? smooth(orbVeil, turn ? 0 : 1, turn ? 5 : 1.6, dt) : (turn ? 0 : 1);
@@ -454,7 +457,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         const u = (now - o.arrive.t0) / 1000 / o.arrive.dur;
         o.wait = u < 0 ? 1 : 0;
         if (u < 0) { if (o.leaving) orbs.delete(o.id); continue; }
-        if (!motion || u >= 1) { o.r = target; o.lag = 0; o.arrive = null; if (!o.leaving) o.alpha = 1; }
+        if (!motion || u >= 1) {
+          o.r = target; o.lag = 0; o.arrive = null;
+          if (!o.leaving) {
+            o.alpha = 1;
+            if (!o.isIntro && !reducedMotion.matches && !minimal) ringPulse.set(lvO.id, 1);
+          }
+        }
         else {
           o.r = arriveR(target, u);
           o.lag = arriveLag(u);
@@ -1118,15 +1127,18 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     rings.forEach((ring, idx) => {
       const lv = ring.lv;
       const hot = ringHot.get(lv.id);
+      const pulse = (ringPulse.get(lv.id) || 0) * (reducedMotion.matches || minimal ? 0 : 1);
+      const pulseEased = pulse * pulse;
       const base = RING_ALPHA[idx] ?? RING_ALPHA[RING_ALPHA.length - 1];
       const intro = introAlpha(now, 0.15 + idx * 0.12, 0.8);
-      const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot, 0, 1) * intro * orbVeil;   // tijdens de maandwissel wijken ook de ringen: enkel de kern en de sterren
+      const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot + 0.18 * pulseEased, 0, 1) * intro * orbVeil;   // tijdens de maandwissel wijken ook de ringen: enkel de kern en de sterren
       const z = ring.z * cam.depth;
       // stippen
-      ctx.fillStyle = rgba(hot > 0.02 ? mixInk(colors.get(lv.id), hot) : INK, 1);
+      const blend = Math.max(hot, 0.45 * pulseEased);
+      ctx.fillStyle = rgba(blend > 0.02 ? mixInk(colors.get(lv.id), blend) : INK, 1);
       // In het zijaanzicht worden de ringen platte ellipsen die elkaar kruisen. Twee ingrepen houden het rustig:
       // elke tweede stip vervaagt, en de achterkant van elke ring (van je af) krijgt minder dekking dan de voorkant.
-      const r = (1 + 0.35 * hot) * (RING_DOT[idx] ?? 1) * cam.du;
+      const r = (1 + 0.35 * hot + 0.15 * pulseEased) * (RING_DOT[idx] ?? 1) * cam.du;
       const cue = cam.depth * (1 - hot);
       const buckets = new Map();
       for (let i = 0, j = 0; i < ring.pts.length; i += 2, j++) {
