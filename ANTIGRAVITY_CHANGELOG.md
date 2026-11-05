@@ -289,3 +289,23 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `ANTIGRAVITY_CHANGELOG.md`
 - **Getest:** Gecontroleerd via headless browser op desktop (1440x900) en mobiel (375x812): taken afgevinkt, orb-continuïteit geverifieerd (orbs blijven zichtbaar, bewegen uitsluitend voorwaarts), lay-out inspectie bevestigt 2 strakke rijen en 0 fouten in de console.
 - **Impact op opslag / state:** Geen.
+
+### 25. Opgelost: Lege hemel bij afvinken van een taak (TDZ ReferenceError in smallNight)
+- **Vraag van Victor:** "Grote bug: bij het afvinken van een taak wordt de hemel plots helemaal leeg, geen orbs, alles weg" (met bijgevoegde schermafbeelding van de lege scène zonder kern of orbs).
+- **Oorzaak:**
+  - In `src/scene/fx.js` (`smallNight`) was bij de scènepas-wijziging (Victor 05/11/2026: rode kern vóór kleine nacht tekenen) een tweede `function stop()` gedefinieerd onderaan in de overlay-tak.
+  - Omdat JavaScript function declarations hoorbaar hoist naar de functiescope, overschreef de tweede `stop()` de eerste.
+  - Zodra de kleine nacht na 3,5 seconden eindigde (`t >= NIGHT.end`), riep `renderOn()` de gehoiste `stop()` aan. Deze probeerde `raf` te annuleren (`cancelAnimationFrame(raf)`).
+  - Omdat de scènepas-tak echter al vroeg in de functie terugkeerde (`return;`), was de `let raf = 0;` toewijzing nooit lexicaal geëvalueerd. Dit resulteerde in een fatale Temporal Dead Zone (TDZ) fout: `ReferenceError: Cannot access 'raf' before initialization`.
+  - Doordat deze fout ongevangen in `draw(now)` optrad vlak vóór `drawCore()` en `drawOrbs()`, werd de rest van het frame afgebroken én stopte de `requestAnimationFrame(frame)` lus volledig. Hierdoor verdwenen zowel de kern als alle orbs plotseling van het scherm.
+- **Oplossing & Implementatie:**
+  - In `src/scene/fx.js` is `stop()` samengevoegd tot één centrale functie bovenaan `smallNight`, die zowel de scènepas (`scene.setNightDraw(null)`) als de overlay (`cancelAnimationFrame(raf)`) netjes afhandelt. Geen dubbele declaraties of TDZ-toegang meer mogelijk.
+  - In `src/scene/scene.js` (`draw(now)`) is de aanroep van `nightDraw` omgeven met een `try ... catch`-blok, zodat een eventuele neveneffect-fout nooit meer de kern of de orbs kan blokkeren.
+  - In `src/scene/scene.js` (`frame(now)`) zijn `update()` en `draw()` beveiligd met `try ... catch`. De animatielus (`requestAnimationFrame`) blijft hierdoor te allen tijde doordraaien.
+- **Gewijzigde bestanden:**
+  - `src/scene/fx.js`
+  - `src/scene/scene.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:** Geautomatiseerde test via headless Edge: taak afgevinkt, animatietijdlijn 4,5 s gemonitord inclusief nachtcyclus, console 100% foutloos (`errors: 0`), orbs en kern blijven te allen tijde actief doordraaien op de hemel.
+- **Impact op opslag / state:** Geen.

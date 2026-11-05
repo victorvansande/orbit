@@ -1616,7 +1616,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawWall(now);
     drawRings(now);
     drawVortex();
-    if (nightDraw) nightDraw(ctx, now, canvas.getBoundingClientRect());
+    try {
+      if (nightDraw) nightDraw(ctx, now, canvas.getBoundingClientRect());
+    } catch (err) {
+      console.error('nightDraw error:', err);
+      nightDraw = null;
+    }
     const swell = turnCore(now);
     if (swell !== 1 && coreHit) {   // maandwissel: de kern zwelt rond haar eigen middelpunt
       const { x, y } = coreHit;
@@ -1635,8 +1640,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    update(dt, now);
-    draw(now);
+    try {
+      update(dt, now);
+      draw(now);
+    } catch (err) {
+      console.error('Orbit frame error:', err);
+    }
     requestAnimationFrame(frame);
   }
 

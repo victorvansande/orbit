@@ -284,6 +284,18 @@ export function smallNight({ star, stars = [], scene = null, onOpen = () => {}, 
   const near = stars.filter(s => Math.hypot(s.x - star.x, s.y - star.y) < R);
   const t0 = performance.now();
   let opened = false, stopped = false;
+  let ov = null, cv = null, raf = 0;
+
+  function stop() {
+    if (stopped) return;
+    stopped = true;
+    if (scene?.setNightDraw) {
+      scene.setNightDraw(null);
+    } else {
+      cancelAnimationFrame(raf);
+      if (cv) cv.remove();
+    }
+  }
 
   function star4(g, x, y, r, rot) {
     g.beginPath();
@@ -329,14 +341,12 @@ export function smallNight({ star, stars = [], scene = null, onOpen = () => {}, 
 
   // Teken in de scène vóór drawCore zodat de rode kern altijd vóór deze animatie tekent, nooit erachter (Victor, 05/11/2026)
   if (scene?.setNightDraw) {
-    function stop() { if (stopped) return; stopped = true; scene.setNightDraw(null); }
     scene.setNightDraw((g, now, rect) => renderOn(g, now, rect.left, rect.top));
     return;
   }
 
-  const ov = overlay('fx-night'), cv = ov.cv;
-  let raf = 0;
-  function stop() { if (stopped) return; stopped = true; cancelAnimationFrame(raf); cv.remove(); }
+  ov = overlay('fx-night');
+  cv = ov.cv;
   function frame(now) {
     ov.fresh();
     ov.g.clearRect(0, 0, ov.W, ov.H);
