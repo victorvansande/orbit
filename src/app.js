@@ -1994,8 +1994,9 @@ function recapDue(now = new Date()) {
   return recapStats(prev).total ? prev : null;
 }
 function renderRecapPill() {
-  const m = recapDue(), pill = $('recap-pill');
+  const m = recapDue(), pill = $('recap-pill'), sl = $('recap-slash');
   pill.hidden = !m;
+  if (sl) sl.hidden = !m;
   if (m) { pill.textContent = capFirst(tx('recap.pill', { month: monthName(m) })); pill.dataset.month = monthKey(m); }
 }
 // de kern zegt het, hooguit één keer per dag: de laatste 3 dagen van de maand, en op de 1e tot de 5e (als je hem nog niet zag)
@@ -2166,8 +2167,9 @@ function checkFeats(pop) {
   noteRank(r, pop);
 }
 function renderFeatsBadge(r = featsNow()) {
-  const b = $('feats-badge');
+  const b = $('feats-badge'), sl = $('feats-slash');
   b.hidden = !r.stars;
+  if (sl) sl.hidden = !r.stars;
   b.style.setProperty('--tier', `var(--tier-${rankMetal(r.rank.level)})`);
   b.innerHTML = `<svg viewBox="${RANK_BOX}" aria-hidden="true">${rankSvg(r.rank.level)}</svg><span>${tx('feats.badge', { rank: r.rank.name, n: r.points.toLocaleString(LOCALE) })}</span>`;
 }
@@ -3098,10 +3100,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && hudMenu.cl
 document.querySelector('.hud-actions').addEventListener('click', e => { if (e.target.closest('button')) setMenu(false); });
 function placeMenu() {
   const controls = document.querySelector('.controls'), actions = document.querySelector('.hud-actions');
-  hudMenu.append(actions);   // Voorstel 4 (Victor 05/11/2026): hulplinks zitten rustig in het Instellingenmenu, niet los op het hoofdscherm
   if (desktop.matches) {
     $('menu-view').append($('view-switch'), $('focus-btn'));
     $('menu-tempo').append($('tempo'));
+    document.querySelector('.hud-right').append(actions);   // Voorstel 3 (Top-Cockpit, Victor 05/11/2026): opties rechtsboven
     const inFocus = document.body.classList.contains('is-focus');
     const statsEl = $('stats'), slot = $('stats-menu-slot');
     if (!inFocus && statsEl && !statsEl.hidden && slot) {
@@ -3114,6 +3116,7 @@ function placeMenu() {
   } else {
     controls.append($('view-switch'), $('focus-btn'));
     $('menu-tempo').append($('tempo'));
+    hudMenu.append(actions);
     document.querySelector('.hud-right').append(menuBtn, hudMenu);
   }
   setMenu(false);

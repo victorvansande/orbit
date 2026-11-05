@@ -309,3 +309,52 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `ANTIGRAVITY_CHANGELOG.md`
 - **Getest:** Geautomatiseerde test via headless Edge: taak afgevinkt, animatietijdlijn 4,5 s gemonitord inclusief nachtcyclus, console 100% foutloos (`errors: 0`), orbs en kern blijven te allen tijde actief doordraaien op de hemel.
 - **Impact op opslag / state:** Geen.
+
+### 26. Voorstel 3 (Top-Cockpit): herstel van rust en ademruimte in cockpit en zijbalk-voet
+- **Vraag van Victor:** "Dit ziet er na je aanpassingen nog rommeliger uit dan voordien. Verzin betere alternatieven en stel ze voor, je mag de rij opties die eerst rechts boven stond ook gerust terugzetten." Uit de vier voorstellen koos Victor **Voorstel 3 (Top-Cockpit: Profiel Bovenin)**.
+- **Oorzaak van de rommelige eerdere stand:**
+  - In Voorstel 4 werden 3 brede elementen (de stippenteller "99 STARS ALL TIME", de maandrecap-pil "OCTOBER IN STARS" en de rangbadge "STARGAZER · 21 PTS") samengeperst op één enkele flex-regel in een zijbalk van circa 310 px.
+  - Doordat deze drie elementen samen circa 400 px vereisen, brak alle tekst geforceerd af in 2 tot 3 regels ("STARS \n ALL \n TIME" en "STARGAZER \n · 21 PTS"), wat leidde tot een benauwd en rommelig aanzicht.
+- **Oplossing & Implementatie (Voorstel 3):**
+  - **Top-Cockpit rechtsboven (`.hud-right`):**
+    - Onder datum en week is de volledige profiel- en cockpitstrook geplaatst (`.hud-actions`): de actuele rangbadge met insigne-icoon (`#feats-badge`, bv. "✦ NAVIGATOR · 294 PTS"), de maandrecap-pil (`#recap-pill`, "● OKTOBER IN STERREN" wanneer actief), "UITLEG" (`#intro-btn`), "ARCHIEF" (`#archive-btn`) en "KOPPELEN" (`#sync-btn`).
+    - Wanneer de gebruiker een rang behaalt, vervangt de rangbadge automatisch de generieke knop "PRESTATIES".
+    - Sliders/scheidingstekens (`/`) verbergen zich automatisch wanneer een badge of recap niet actief is (`#feats-badge[hidden] + .slash`, `#recap-pill[hidden] + .slash`).
+    - Op desktop heeft de topbar honderden pixels vrije ruimte: alle items staan strak en sereen op één enkele horizontale regel zonder enige tekstafbreking.
+  - **Serene zijbalk-voet (`#stats`):**
+    - Alle badges en pillen zijn weggehaald onder de takenlijst.
+    - Rij 1 (`.stats-head`): links de stippenteller (`#stats-total`, bv. "99 STARS THIS MONTH"), rechts de muurknop (`#wall-toggle`, "☲ MUUR ⚬"), strak op dezelfde basislijn.
+    - Rij 2 (`.stats-bar`): rechts de instellingenknop (`#menu-btn`, "⚙ INSTELLINGEN").
+    - Hoogte van `.stats-head` is exact 32 px (strakke enkele regel, geen afbrekingen).
+  - **Mobiel (`< 1000px`):**
+    - `placeMenu()` verplaatst `.hud-actions` op mobiel zoals vanouds netjes binnen het Instellingen-popover (`#hud-menu`), zodat het mobiele scherm compact blijft.
+- **Gewijzigde bestanden:**
+  - `index.html`
+  - `src/app.js`
+  - `src/styles.css`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:** Gecontroleerd via headless browser op desktop (1440x900) met 99 sterren, prestatierang en maandrecap: `headHeight: 32px` (geen tekstafbreking), `featsBadgeVisible: true`, `recapPillVisible: true`, `menuBtnInBar: true`, 0 fouten in de console.
+- **Impact op opslag / state:** Geen.
+
+### 27. Dieptevolgorde kleine nacht: orbs en banen achter de nieuwe-ster-animatie, kern erbovenop
+- **Vraag van Victor:** "Het klopt dat ik vroeg dat de kern altijd over de animatie van een nieuwe ster tekent, maar de orbs en hun orbits moeten wel erachter getekend worden, niet ervoor".
+- **Oorzaak:** In `src/scene/scene.js` was de render-volgorde `drawRings` -> `nightDraw` -> `drawCore` -> `drawOrbs` -> `drawEffects`. Hierdoor tekenden de orbs en hun staarten nog steeds bovenop de witte gloed van de nieuwe steranimatie (`smallNight`).
+- **Oplossing & Implementatie:**
+  - In `src/scene/scene.js` zijn `drawOrbs()` en `drawEffects()` verplaatst naar vóór `nightDraw`.
+  - De render-volgorde in `draw(now)` is nu exact gelaagd:
+    1. `drawWall(now)` (muur)
+    2. `drawRings(now)` (banen / stippenlijnen)
+    3. `drawVortex()` (draaikolk)
+    4. `drawOrbs()` (orbs met hun halo en staart: achter de nachtanimatie)
+    5. `drawEffects()`
+    6. `nightDraw(ctx, now, ...)` (kleine nacht: dekt de banen en orbs af met haar zachte lichtschijf)
+    7. `drawCore(now)` (de centrale rode kern: dekt de nacht af en blijft altijd haarscherp op de voorgrond)
+    8. `drawSonar(now)`, `drawSparks(now)`, `drawLabels()`.
+- **Gewijzigde bestanden:**
+  - `src/scene/scene.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:** Automatische headless Edge-test uitgevoerd waarbij een taak werd afgevinkt en op de piek van de `smallNight`-gloed (T+2.3s) een screenshot werd gemaakt (`night_peak_depth.png`). Bevestigd dat banen en orbs achter de witte gloed verdwijnen, terwijl de rode kern met oogjes er volkomen scherp en ononderbroken bovenop staat. Console 100% foutloos (`errors: 0`).
+- **Impact op opslag / state:** Geen.
+

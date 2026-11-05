@@ -1616,6 +1616,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawWall(now);
     drawRings(now);
     drawVortex();
+    drawOrbs();
+    drawEffects();
+    // Kleine nacht bij een nieuwe ster: tekent over de banen en orbs heen, maar achter de rode kern (Victor, 05/11/2026)
     try {
       if (nightDraw) nightDraw(ctx, now, canvas.getBoundingClientRect());
     } catch (err) {
@@ -1630,8 +1633,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.restore();
       coreHit = { x, y, r: coreHit.r };
     } else drawCore(now);
-    drawOrbs();
-    drawEffects();
     drawSonar(now);
     drawSparks(now);
     drawLabels();

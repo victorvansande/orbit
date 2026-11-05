@@ -199,8 +199,12 @@
       </div>
       <p class="menu-row menu-keys" data-ih="menu.keys"><kbd>N</kbd> nieuw <kbd>1</kbd><kbd>2</kbd> aanzicht <kbd>Z</kbd> ongedaan <kbd>A</kbd> archief <kbd>?</kbd> uitleg</p>
       <div class="menu-row hud-actions">
+        <button type="button" class="feats-badge" id="feats-badge" hidden></button>
+        <span class="slash feats-slash" id="feats-slash" aria-hidden="true" hidden>/</span>
+        <button type="button" class="recap-pill" id="recap-pill" hidden></button>
+        <span class="slash recap-slash" id="recap-slash" aria-hidden="true" hidden>/</span>
         <button type="button" class="sync-btn" id="feats-btn" data-i="menu.feats">Prestaties</button>
-        <span class="slash" aria-hidden="true">/</span>
+        <span class="slash feats-btn-slash" aria-hidden="true">/</span>
         <button type="button" class="sync-btn" id="intro-btn" data-i="menu.intro">Uitleg</button>
         <span class="slash" aria-hidden="true">/</span>
         <button type="button" class="sync-btn" id="archive-btn" data-i="menu.archive">Archief</button>
@@ -252,13 +256,9 @@
       <button type="button" class="stats-total" id="stats-toggle" aria-expanded="false" aria-controls="stats-detail">
         <span class="stat-dm" id="stat-total" role="img"></span><span id="stat-stars-label">stars all time</span>
       </button>
-      <div class="stats-badges" id="stats-badges">
-        <button type="button" class="recap-pill" id="recap-pill" hidden></button>
-        <button type="button" class="feats-badge" id="feats-badge" hidden></button>
-      </div>
+      <button type="button" class="wall-toggle" id="wall-toggle" aria-pressed="false" title="Muur van afgevinkte taken achter de hemel" data-ia="title:wall.title" hidden><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2 4h5M9 4h5M2 8h3M7 8h7M2 12h6M10 12h4"/></svg><span data-i="wall.label">Muur</span></button>
     </div>
     <div class="stats-bar" id="stats-bar">
-      <button type="button" class="wall-toggle" id="wall-toggle" aria-pressed="false" title="Muur van afgevinkte taken achter de hemel" data-ia="title:wall.title" hidden><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2 4h5M9 4h5M2 8h3M7 8h7M2 12h6M10 12h4"/></svg><span data-i="wall.label">Muur</span></button>
       <div class="stats-menu-slot" id="stats-menu-slot"></div>
     </div>
     <div class="stats-detail" id="stats-detail" hidden>
