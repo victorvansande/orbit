@@ -881,3 +881,31 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `live_composer_5ring.png`: 5 ringen ragfijn zichtbaar, geselecteerde ring groen (Week), rode kern geankerd in het midden, geen op-en-neer gedobber.
   - Mobiel: instellingenknop blijft zoals ontworpen in de topbar; `.stats-rank-hint` in de voettekst toont de rangnaam zonder overbodige linkerrand.
 - **Impact op opslag / state:** Geen.
+
+### 29. Herontwerp Uitleg-menu (Richting A: De Typografische Monografie)
+- **Vraag van Victor:** "maak dit menu wat mooier, beter uitgelijnd, strakker en ordelijker. Het is het allereerste wat nieuwe gebruikers zien dus het moet er heel duidelijk, afgeleid en afgewerkt uitzien" -> Na afwijzen van generieke bento/pill ontwerpen gekozen voor "Richting A kies ik" (De Typografische Monografie).
+- **Gewijzigde bestanden:**
+  - `index.html`:
+    - Oude v1 lockup in `#intro-title` vervangen door het officiële nieuwe geïntegreerde Orbit-woordmerk (`viewBox="0 -730 2359.49 742"`).
+    - Grid herstructureerd van 10 verspringende blokken naar 6 perfect gebalanceerde redactionele secties: Toevoegen & verplaatsen (`N` · ↕), Afvinken & herstel (`Z`), Hemel & sterrenbeelden (`✦`), Prestaties & rangen (`P`), De bezielde kern (`●`), en Focus & rust (`F` · `T`).
+    - Sneltoetsen onderaan omgevormd tot een rustige mono-strook (`.intro-keys`).
+  - `src/styles.css`:
+    - `.intro`: breedte op desktop verruimd naar `min(720px, calc(100vw - 32px))`.
+    - `.intro-card`: royale ademruimte (`padding: 28px 32px 24px`), `scrollbar-width: thin` met haarlijn-duim (`var(--line-2)`) en transparante track.
+    - `.intro-lockup`: hoogte 38px, `fill: var(--ink)` met `.bm-head` in amarant (`var(--core)`).
+    - `.intro-levels`: minimalistische horizontale momentenladder met 6px ronde kleurstippen.
+    - `.intro-grid`: 2 kolommen met `1px solid var(--line)` haarlijnen onder titels, Geist Mono kapitaaltjes met letterafstand en uitgelijnde baselines.
+    - `@media (max-width: 600px)`: vloeiende enkelkoloms lay-out op mobiel.
+  - `src/core/i18n.js`:
+    - Nederlandse en Engelse woordenboeken bijgewerkt met strak gebalanceerde teksten (elk blok circa 3-4 regels, 150-180 tekens) voor alle 6 secties.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v14`.
+  - `CLAUDE.md` en `ANTIGRAVITY_CHANGELOG.md`: gedocumenteerd.
+- **Getest:**
+  - Headless Edge tests via CDP:
+    - `live_intro_desktop_dark.png`: donker thema NL (748px hoog, past zonder scrollbalk, baselines strak uitgelijnd).
+    - `live_intro_desktop_light.png`: licht thema NL (warme riso-papieren esthetiek).
+    - `live_intro_desktop_en.png`: Engels woordenboek (alle teksten, momenten en sneltoetsen netjes vertaald).
+    - `live_intro_mobile_dark.png`: mobiele weergave (390x844, één kolom, elegante kaart).
+  - Consolefouten: 0 fouten.
+- **Impact op opslag / state:** Geen.
