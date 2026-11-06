@@ -747,3 +747,27 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - iPhone liggend (844x390): `isFullyOnScreen: true`, perfect verticaal en horizontaal gecentreerd.
     - Desktop (1280x820): `isFullyOnScreen: true`, vaste positie rechtsonder in de cockpit behouden.
     - Lava, Breakout en Bubbels geverifieerd zonder consolefouten.
+
+### 06/11/2026 - Fidget menu-opties op desktop verbergen zolang niet gehoverd
+- **Wat is er veranderd:**
+  1. **Schoon scherm zonder menu-opties bij afwezigheid van cursor:**
+     - In `src/styles.css` is voor desktop (`@media (min-width: 1000px)`) ingesteld dat `.fidget-modes` standaard onzichtbaar is (`opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-4px)`).
+     - De animaties (water, lava, gloed, life, breakout, bubbels) worden hierdoor over het volledige venster weergegeven zonder storende tekst of knoppen bovenop het effect.
+  2. **Zachte transitie bij hover, focus of interactie:**
+     - Zodra de gebruiker over het venster beweegt (`.fidget:hover`), met het toetsenbord navigeert (`.fidget:focus-within`), of het keuzemenu of de kleurkiezer geopend is (`.fidget.has-menu-open`, `.fidget.has-color-open`), verschijnen de bedieningselementen vloeiend met een 0.22s ease transitie.
+     - Ook de subtiele gradient-overlay aan de bovenzijde (`.fidget.is-gl::before` bij topo en lava) dooft zachtjes uit wanneer er niet gehoverd wordt.
+  3. **Ondersteuning voor mobiel:**
+     - Op mobiel (`@media (max-width: 999px)`) blijven de opties en het sluitkruisje bij het openen van de modale kaart duidelijk in beeld, maar doven ze via de klasse `.is-interacting` zachtjes uit zodra de gebruiker op het canvas tikt of sleept, zodat ook daar een schoon speelscherm ontstaat.
+  4. **Service worker:**
+     - Service worker cache bijgewerkt naar `orbit-v11` in `sw.js`.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`
+  - `src/focus/fidget.js`
+  - `sw.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Verificatie in headless Edge op desktop en mobiel:
+    - Zonder hover: `modesOpacity: "0"`, `modesVisibility: "hidden"`.
+    - Met interactie/focus/menu-open: `modesOpacity: "1"`, `modesVisibility: "visible"`.
+    - Geen console- of runtimefouten.

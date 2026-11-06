@@ -677,6 +677,48 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* keuze bovenin: zelfde kapitaaltjes als Boven / Zijkant, klein en rustig */
 .fidget-modes { position: absolute; z-index: 10; top: 10px; left: 11px; right: 11px; display: flex; align-items: center; justify-content: space-between; font: 500 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); pointer-events: none; }
 .fidget-modes > * { pointer-events: auto; }
+
+/* Desktop: menu en knoppen bovenin verbergen zolang er niet over het bakje gehoverd wordt */
+@media (min-width: 1000px) {
+  .fidget-modes {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity .22s var(--ease), transform .22s var(--ease), visibility .22s;
+  }
+  .fidget-modes > * { pointer-events: none; }
+  .fidget:hover .fidget-modes,
+  .fidget:focus-within .fidget-modes,
+  .fidget.has-menu-open .fidget-modes,
+  .fidget.has-color-open .fidget-modes,
+  .fidget:has(.fidget-menu-btn[aria-expanded="true"]) .fidget-modes {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .fidget:hover .fidget-modes > *,
+  .fidget:focus-within .fidget-modes > *,
+  .fidget.has-menu-open .fidget-modes > *,
+  .fidget.has-color-open .fidget-modes > *,
+  .fidget:has(.fidget-menu-btn[aria-expanded="true"]) .fidget-modes > * {
+    pointer-events: auto;
+  }
+
+  /* Zachte verloopbalk bovenaan (bij topo en lava op lichte achtergrond) dooft ook uit wanneer niet gehoverd */
+  .fidget.is-gl:not(.on-dark):not(.is-panel)::before {
+    opacity: 0;
+    transition: opacity .22s var(--ease);
+  }
+  .fidget.is-gl:not(.on-dark):not(.is-panel):hover::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):focus-within::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel).has-menu-open::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel).has-color-open::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):has(.fidget-menu-btn[aria-expanded="true"])::before {
+    opacity: 1;
+  }
+}
 .fidget-menu-wrap { position: relative; }
 .fidget-menu-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 7px 0 6px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; transition: all .2s var(--ease); }
 .fidget-menu-btn:hover, .fidget-menu-btn[aria-expanded="true"] { color: var(--ink); background: var(--well-shade); border-color: var(--line); }
@@ -1360,6 +1402,13 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 
   /* Fidget sluitknopje op mobiel in de menubalk */
   .fidget-close { display: inline-flex; }
+
+  /* Tijdens actieve touch-interactie op het mobiele canvas doven de menu-opties zachtjes uit voor een schoon scherm */
+  .fidget.is-interacting:not(.has-menu-open) .fidget-modes {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s var(--ease);
+  }
 
   /* Zorg dat idle de controls niet verbergt zolang de fidget open is */
   body.has-fidget-open.is-idle .controls > :not(.timer) {

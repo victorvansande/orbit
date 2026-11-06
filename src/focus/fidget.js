@@ -690,6 +690,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     const show = open ?? popover.hidden;
     popover.hidden = !show;
     menuBtn.setAttribute('aria-expanded', String(show));
+    box.classList.toggle('has-menu-open', show);
     if (show) {
       const activeOpt = popover.querySelector('[aria-selected="true"]');
       activeOpt?.focus();
@@ -758,6 +759,12 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     for (const m of Object.values(modes)) m.recolor?.(own);
     if (!running) render(performance.now());
   }
+  input.addEventListener('focus', () => box.classList.add('has-color-open'));
+  input.addEventListener('blur', () => box.classList.remove('has-color-open'));
+  input.addEventListener('change', () => {
+    setAccent(input.value);
+    box.classList.remove('has-color-open');
+  });
   input.addEventListener('input', () => setAccent(input.value));
   reset.addEventListener('click', () => setAccent(null));
 
@@ -895,6 +902,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   // een tik is indrukken en loslaten zonder veel te bewegen; bewegen (ook ingedrukt) roert in de inhoud
   box.addEventListener('pointerdown', e => {
     if (reducedMotion.matches) return;
+    if (!bar.contains(e.target)) box.classList.add('is-interacting');
     press = { x0: e.clientX, y0: e.clientY };
     mode().down?.(local(e));
   });
@@ -907,13 +915,14 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     mode().move?.(pt);
   });
   const release = e => {
+    box.classList.remove('is-interacting');
     if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) < 6) mode().tap?.(local(e));
     press = null;
     mode().up?.(local(e));
   };
   box.addEventListener('pointerup', release);
-  box.addEventListener('pointercancel', () => { press = null; });
-  box.addEventListener('pointerleave', () => { press = null; mode().leave?.(); });
+  box.addEventListener('pointercancel', () => { box.classList.remove('is-interacting'); press = null; });
+  box.addEventListener('pointerleave', () => { box.classList.remove('is-interacting'); press = null; mode().leave?.(); });
 
   function start() {
     if (running) return;
