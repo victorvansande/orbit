@@ -629,6 +629,8 @@ $('stat-mini').addEventListener('click', () => {
 /* ---- Takenlijst ---- */
 const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const TRASH_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12.5 4.5l-.7 9a1.5 1.5 0 0 1-1.5 1.5H5.7a1.5 1.5 0 0 1-1.5-1.5l-.7-9M6.5 7.5v4M9.5 7.5v4"/></svg>';
+const ORBIT_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>';
+const CALENDAR_SVG = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5 1.5v2.5M11 1.5v2.5"/></svg>';
 const leaving = new Set();
 
 const wall = createWall({ reducedMotion });
@@ -664,6 +666,7 @@ function renderTracks() {
 function trackRow(t) {
   const li = el('li', 'track');
   li.dataset.id = t.id;
+  if (t.note) li.classList.add('has-note');
 
   const check = el('button', 't-check');
   check.type = 'button';
@@ -677,12 +680,13 @@ function trackRow(t) {
   title.title = t.title + ' · ' + tx('task.dbl');
   title.addEventListener('dblclick', () => editTitle(t.id, title));
 
-  const del = el('button', 't-del-btn');
-  del.type = 'button';
-  del.innerHTML = TRASH_SVG;
-  del.setAttribute('aria-label', tx('task.delete', { title: t.title }));
-  del.title = tx('task.delete', { title: t.title });
-  del.addEventListener('click', e => {
+  // Mobiele swipe knoppen (op li achter de rij, zichtbaar bij vegen)
+  const swipeDel = el('button', 't-swipe-del-btn');
+  swipeDel.type = 'button';
+  swipeDel.innerHTML = TRASH_SVG;
+  swipeDel.setAttribute('aria-label', tx('task.delete', { title: t.title }));
+  swipeDel.title = tx('task.delete', { title: t.title });
+  swipeDel.addEventListener('click', e => {
     e.stopPropagation();
     deleteTask(t.id, li);
   });
@@ -698,19 +702,57 @@ function trackRow(t) {
     openNote(t, li);
   });
 
-  const row = el('div', 'track-row');
-  row.append(title, noteButton(t, li));
+  // Rechter metadata zone (Variant 1: De Stille Kolom — 0 px layout-shift)
+  const meta = el('div', 't-meta');
+  const labels = el('div', 't-meta-labels');
+  const actions = el('div', 't-meta-actions');
+  meta.append(labels, actions);
+
+  // Notitie: knop in acties (hover) en discreet icoon in labels (ruststand als er een notitie is)
+  const noteBtn = noteButton(t, li);
+  noteBtn.classList.add('t-act-btn', 't-act-note');
+
+  const noteLabel = el('button', 't-meta-note' + (t.note ? ' has-note' : ''));
+  noteLabel.type = 'button';
+  noteLabel.innerHTML = NOTE_SVG;
+  noteLabel.setAttribute('aria-label', tx(t.note ? 'task.noteShow' : 'task.noteAdd'));
+  noteLabel.title = tx(t.note ? 'task.noteShow' : 'task.noteAdd');
+  noteLabel.addEventListener('pointerdown', () => { noteLabel.dataset.down = '1'; setTimeout(() => { delete noteLabel.dataset.down; }, 600); });
+  noteLabel.addEventListener('click', () => openNote(t, li));
+  labels.append(noteLabel);
+
+  // Desktop actie: verwijderen
+  const actDel = el('button', 't-act-btn t-act-del');
+  actDel.type = 'button';
+  actDel.innerHTML = TRASH_SVG;
+  actDel.setAttribute('aria-label', tx('task.delete', { title: t.title }));
+  actDel.title = tx('task.delete', { title: t.title });
+  actDel.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteTask(t.id, li);
+  });
+
+  let extraDrawer = null;
   if (t.due) {
-    const [chip, editor] = dueControls(t, li);
-    row.append(chip);
-    li.append(check, del, swipeNote, row, editor);
+    const { chip, actionBtn, editor } = dueControls(t, li);
+    labels.append(chip);
+    actions.append(actionBtn, noteBtn, actDel);
+    extraDrawer = editor;
   } else {
-    const [levelBtn, picker] = levelControls(t, li);
-    row.append(levelBtn);
-    li.append(check, del, swipeNote, row, picker);
+    const { actionBtn, labelBtn, panel } = levelControls(t, li);
+    labels.append(labelBtn);
+    actions.append(actionBtn, noteBtn, actDel);
+    extraDrawer = panel;
   }
+
+  const row = el('div', 'track-row');
+  row.append(title, meta);
+
+  li.append(check, swipeDel, swipeNote, row);
+  if (extraDrawer) li.append(extraDrawer);
   li.append(notePanel(t, li));
-  attachSwipe(li, row, t, del, swipeNote);
+
+  attachSwipe(li, row, t, swipeDel, swipeNote);
 
   li.addEventListener('pointerenter', e => { scene.highlight({ task: t.id }); if (e.pointerType === 'mouse') runMarquee(title, true); });
   li.addEventListener('pointerleave', e => { scene.highlight({}); if (e.pointerType === 'mouse' && !li.contains(document.activeElement)) stopMarquee(title); });
@@ -794,6 +836,8 @@ function attachSwipe(li, row, t, del, swipeNote) {
       row.style.transition = 'none';
       del.style.transition = 'none';
       if (swipeNote) swipeNote.style.transition = 'none';
+      const meta = row.querySelector('.t-meta');
+      if (meta) meta.style.transition = 'none';
       const base = li.classList.contains('is-swiped') ? -72 : 0;
       let raw = base + dx;
       if (raw < -72) {
@@ -810,6 +854,7 @@ function attachSwipe(li, row, t, del, swipeNote) {
         swipeNote.style.opacity = op;
         swipeNote.style.pointerEvents = pad >= 24 ? 'auto' : 'none';
       }
+      if (meta) meta.style.opacity = String(Math.max(0, 1 - pad / 36));
     }
   };
 
@@ -823,6 +868,8 @@ function attachSwipe(li, row, t, del, swipeNote) {
     row.style.transition = 'padding-right .2s var(--ease), transform .2s var(--ease)';
     del.style.transition = 'opacity .2s var(--ease)';
     if (swipeNote) swipeNote.style.transition = 'opacity .2s var(--ease)';
+    const meta = row.querySelector('.t-meta');
+    if (meta) { meta.style.transition = 'opacity .2s var(--ease)'; meta.style.opacity = ''; }
 
     if (final <= -28) {
       closeAllSwiped(li);
@@ -860,7 +907,9 @@ function closeAllSwiped(except) {
       el.classList.remove('is-swiped');
       const r = el.querySelector('.track-row');
       if (r) { r.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)'; r.style.transform = ''; r.style.paddingRight = ''; }
-      const d = el.querySelector('.t-del-btn');
+      const m = el.querySelector('.t-meta');
+      if (m) { m.style.transition = 'opacity .2s var(--ease)'; m.style.opacity = ''; }
+      const d = el.querySelector('.t-swipe-del-btn') || el.querySelector('.t-del-btn');
       if (d) { d.style.opacity = ''; d.style.pointerEvents = ''; }
       const n = el.querySelector('.t-swipe-note-btn');
       if (n) { n.style.opacity = ''; n.style.pointerEvents = ''; }
@@ -878,8 +927,7 @@ const NOTE_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" st
 const openNotes = new Set();   // taken waarvan de notitie openstaat (blijft open als de lijst opnieuw getekend wordt terwijl je typt)
 function openNote(t, li) {
   openNotes.add(t.id);
-  const btn = li.querySelector('.t-note-btn');
-  if (btn) btn.setAttribute('aria-expanded', 'true');
+  for (const btn of li.querySelectorAll('.t-note-btn, .t-act-note')) btn.setAttribute('aria-expanded', 'true');
   const panel = li.querySelector('.t-note');
   if (panel) {
     panel.hidden = false;
@@ -933,13 +981,19 @@ function notePanel(t, li) {
     if (value) task.note = value; else delete task.note;
     touch(task);
     saveTasks();
-    li.querySelector('.t-note-btn').classList.toggle('has-note', Boolean(value));
+    for (const b of li.querySelectorAll('.t-note-btn, .t-meta-note, .t-act-note')) b.classList.toggle('has-note', Boolean(value));
+    li.classList.toggle('has-note', Boolean(value));
   };
   area.addEventListener('input', () => { fitNote(area); clearTimeout(timer); timer = setTimeout(save, 500); });
-  const close = () => { openNotes.delete(t.id); panel.hidden = true; li.classList.remove('is-noting'); li.querySelector('.t-note-btn')?.setAttribute('aria-expanded', 'false'); };
+  const close = () => {
+    openNotes.delete(t.id);
+    panel.hidden = true;
+    li.classList.remove('is-noting');
+    for (const b of li.querySelectorAll('.t-note-btn, .t-act-note')) b.setAttribute('aria-expanded', 'false');
+  };
   area.addEventListener('blur', () => {
     save();
-    if (!area.isConnected || li.querySelector('.t-note-btn')?.dataset.down) return;   // lijst opnieuw getekend, of een tik op het icoontje (dat klapt zelf dicht)
+    if (!area.isConnected || li.querySelector('.t-note-btn')?.dataset.down || li.querySelector('.t-meta-note')?.dataset.down) return;   // lijst opnieuw getekend, of een tik op het icoontje (dat klapt zelf dicht)
     close();
   });
   area.addEventListener('keydown', e => {
@@ -956,13 +1010,21 @@ function notePanel(t, li) {
   return panel;
 }
 
-// Gewone taak: bolletje rechts opent een keuze van de vijf momenten
+// Gewone taak: niveauknop rechts opent een keuze van de vijf momenten
 function levelControls(t, li) {
-  const levelBtn = el('button', 't-level');
+  const levelBtn = el('button', 't-act-btn t-act-level');
   levelBtn.type = 'button';
+  levelBtn.innerHTML = ORBIT_SVG;
   levelBtn.setAttribute('aria-label', tx('task.level', { level: LEVEL_BY_ID.get(t.level).name }));
+  levelBtn.title = tx('task.pick');
   levelBtn.setAttribute('aria-expanded', 'false');
-  levelBtn.append(el('span', 'orb-dot'));
+
+  const mobileLevel = el('button', 't-meta-level');
+  mobileLevel.type = 'button';
+  mobileLevel.innerHTML = ORBIT_SVG;
+  mobileLevel.setAttribute('aria-label', tx('task.level', { level: LEVEL_BY_ID.get(t.level).name }));
+  mobileLevel.title = tx('task.pick');
+  mobileLevel.setAttribute('aria-expanded', 'false');
 
   const picker = el('div', 't-picker');
   picker.hidden = true;
@@ -979,13 +1041,18 @@ function levelControls(t, li) {
     opt.addEventListener('click', () => setLevel(t.id, lv.id));
     picker.append(opt);
   }
-  levelBtn.addEventListener('click', () => {
+
+  const toggle = () => {
     const open = picker.hidden;
     picker.hidden = !open;
     levelBtn.setAttribute('aria-expanded', String(open));
+    mobileLevel.setAttribute('aria-expanded', String(open));
     li.classList.toggle('is-picking', open);
-  });
-  return [levelBtn, picker];
+  };
+  levelBtn.addEventListener('click', toggle);
+  mobileLevel.addEventListener('click', toggle);
+
+  return { actionBtn: levelBtn, labelBtn: mobileLevel, panel: picker };
 }
 
 // Taak met deadline: vaste schil, de datum rechts opent een bewerker (wijzigen of wissen)
@@ -996,6 +1063,13 @@ function dueControls(t, li) {
   if (t.repeat) { chip.insertAdjacentHTML('afterbegin', REPEAT_SVG); chip.title = tx(`repeat.${t.repeat}`); }
   chip.setAttribute('aria-label', tx('task.due', { label: dueLabel(t.due) }));
   chip.setAttribute('aria-expanded', 'false');
+
+  const dueAction = el('button', 't-act-btn t-act-due');
+  dueAction.type = 'button';
+  dueAction.innerHTML = CALENDAR_SVG;
+  dueAction.setAttribute('aria-label', tx('task.due', { label: dueLabel(t.due) }));
+  dueAction.title = tx('composer.due');
+  dueAction.setAttribute('aria-expanded', 'false');
 
   const editor = el('div', 't-due-edit');
   editor.hidden = true;
@@ -1011,14 +1085,18 @@ function dueControls(t, li) {
   repeat.addEventListener('change', () => setRepeat(t.id, repeat.value));
   editor.append(input, repeat, clear);
 
-  chip.addEventListener('click', () => {
+  const toggle = () => {
     const open = editor.hidden;
     editor.hidden = !open;
     chip.setAttribute('aria-expanded', String(open));
+    dueAction.setAttribute('aria-expanded', String(open));
     li.classList.toggle('is-picking', open);
     if (open) input.focus();
-  });
-  return [chip, editor];
+  };
+  chip.addEventListener('click', toggle);
+  dueAction.addEventListener('click', toggle);
+
+  return { chip, actionBtn: dueAction, editor };
 }
 
 const REPEAT_SVG = '<svg class="t-rep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></svg>';
@@ -1143,8 +1221,7 @@ function deleteTask(id, li) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
 
-  const del = li.querySelector('.t-del-btn');
-  if (del) del.remove();
+  for (const d of li.querySelectorAll('.t-del-btn, .t-swipe-del-btn, .t-act-del')) d.remove();
   groupsEl.style.pointerEvents = 'none';
 
   const trackRow = li.querySelector('.track-row');

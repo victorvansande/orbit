@@ -1042,4 +1042,45 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Volledige app-boot geverifieerd in Chromium headless zonder consolefouten.
 - **Impact op opslag / state:** Geen.
 
+### 35. Herontwerp takenlijst naar Variant 1 "De Stille Kolom"
+- **Vraag van Victor:** "Kan je dit menu qua ordening wat opschonen? Het ziet er best rommelig uit. De info is allemaal wel nuttig denk ik, maar de manier waarop alles georganiseerd is, de locatie van alle tekst en elementen etc maakt alles rommelig. Stel wat varianten voor" + screenshot. Na interactief vergelijkingsbord (`task-list-variants.html` en visuele samenvatting) koos Victor: "Variant 1".
+- **Probleemanalyse van de eerdere layout:**
+  1. *Verspringende inhoud (Layout Shift):* Bij hover op desktop sprong `.track-row` 36 px naar links (`padding-right: 36px`), waardoor de taaktitel onder de cursor danste en onrust veroorzaakte.
+  2. *Zwevende glyphs in het midden:* Het notitie-icoon reserveerde een vaste middelste rasterkolom (`minmax(0, 1fr) 26px 32px`), waardoor titels te vroeg afgekapt werden (+26 px verloren ruimte).
+  3. *Overtollige dubbele statusbollen:* Onder een groepskop met reeds een gekleurde stip (bv. "● Week") verscheen bij hover rechts n&oacute;g een gekleurde stip (`.orb-dot`), wat visuele ruis veroorzaakte en leek op een ongelezen status.
+- **Doorgevoerde wijzigingen (Variant 1: De Stille Kolom):**
+  - `src/styles.css`:
+    - `.track-row`: omgezet van een 3-koloms grid naar een zuivere flex-rij (`display: flex; align-items: center; min-height: 42px; width: 100%; padding-right: 0`). De regel `.track:not(.is-picking):hover .track-row { padding-right: 36px; }` is volledig verwijderd. **0 px layout-shift** bij hover op desktop.
+    - `.t-title`: `flex: 1 1 0%; min-width: 0;` met zachte nevel-fade over de laatste 28 px. Heeft nu volle breedte tot aan de metadatazone (+26 px extra titelruimte).
+    - `.t-edit`: flexibel meeschalend met de rij bij dubbelklikken/aanpassen van titels.
+    - `.t-meta`: vaste rechter metadatazone van 84 px (`flex-shrink: 0; position: relative`).
+    - `.t-meta-labels`: toont in ruststand discrete passieve labels (deadline-chip `.t-due` en/of notitielabel `.t-meta-note`, strak rechts uitgelijnd).
+    - `.t-meta-actions`: 3 discrete actieknoppen van 26 px (`.t-act-btn`) die bij hover op desktop zacht infaden (`opacity: 1`) terwijl de labels uitfaden:
+      1. Niveaukiezer (`.t-act-level`) met ragfijn `ORBIT_SVG` icoon (twee concentrische cirkels in lijnstijl, geen verwarrende gekleurde stip meer).
+      2. Notitieknop (`.t-act-note`) met subtiel tone-stipje in de momentkleur bij bestaande notitie.
+      3. Prullenbakknop (`.t-act-del`) met zachte rode tint (`var(--late)`) bij hover.
+    - Mobiele swipe: `.track.is-swiped .t-meta` dooft uit naar `opacity: 0`, zodat bij het vegen alleen de twee grote touch-knoppen (notitie en verwijderen) in de 72 px drawer overblijven.
+  - `src/app.js`:
+    - `ORBIT_SVG` en `CALENDAR_SVG` toegevoegd.
+    - `trackRow(t)`: opgebouwd volgens Variant 1 met `.t-meta`, `.t-meta-labels`, `.t-meta-actions` en gescheiden mobiele swipe-knoppen (`swipeDel`, `swipeNote`).
+    - `levelControls(t, li)`: gebruikt `ORBIT_SVG` voor zowel de desktop actieknop als het mobiele niveauknopje.
+    - `dueControls(t, li)`: deadline-chip in labels, kalender-icoon in acties, datum-editor geopend via toggle.
+    - `attachSwipe`: live drag fade-out van `.t-meta` via `pad / 36` voor 60fps soepele touch-ervaring.
+    - `deleteTask`: verwijdert alle delete-knoppen tegelijk tijdens de uitschuifanimatie naar links.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v20`.
+  - `CLAUDE.md`:
+    - Interactiesectie en Overdracht bijgewerkt.
+- **Getest:**
+  - Automated CDP Puppeteer tests uitgevoerd op desktop (1440×900) en mobiel (375×812):
+    - Exact 0 px layout-shift bevestigd (`rowLeft: 0px`, `titleLeft: 0px`, `titleWidth: 0px` verschil voor en na hover).
+    - Hover crossfade bevestigd (`actionsOp: 1`, `labelsOp: 0`).
+    - Notitiepaneel openen, typen en opslaan getest en geverifieerd.
+    - Niveaukiezer openen en niveau wisselen getest en geverifieerd.
+    - Mobiele swipe links getest: 72 px drawer met prullenbak en notitie opent feilloos.
+    - Donker en licht thema visueel geverifieerd via screenshots (`desktop-dark.png`, `desktop-tracks.png`, `mobile-tracks.png`).
+    - 0 applicatie- of consolefouten.
+- **Impact op opslag / state:** Geen; alle taakgegevens, notities en deadlines blijven 100% compatibel.
+
+
 

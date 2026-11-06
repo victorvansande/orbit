@@ -510,7 +510,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transform: translateX(28px) !important; opacity: 0;
   transition: transform .3s cubic-bezier(.4, 0, .2, 1), opacity .24s var(--ease) .04s !important;
 }
-.track.is-leaving > .t-del-btn { opacity: 0 !important; }
+.track.is-leaving > .t-del-btn, .track.is-leaving > .t-swipe-del-btn { opacity: 0 !important; }
 .track.is-leaving .t-title { color: var(--ink-3); }
 .track.is-deleted {
   opacity: 0 !important;
@@ -518,22 +518,21 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   pointer-events: none;
 }
 .track-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) 26px 32px; align-items: center;
+  display: flex; align-items: center;
   min-height: 42px; width: 100%;
   padding-right: 0;
   transition: padding-right .2s var(--ease), transform .2s var(--ease);
   will-change: padding-right, transform;
 }
-.track.has-due .track-row { grid-template-columns: minmax(0, 1fr) 26px auto; }
-.t-del-btn {
+.t-del-btn, .t-swipe-del-btn {
   position: absolute; top: 0; right: 0;
   width: 36px; height: 42px; display: grid; place-items: center;
   color: var(--ink-3); border: 0; background: transparent; border-radius: 7px;
   cursor: pointer; padding: 0; opacity: 0; pointer-events: none; z-index: 1;
   transition: opacity .2s var(--ease), color .2s var(--ease), background-color .2s var(--ease), transform .2s var(--pop);
 }
-.t-del-btn:hover { color: var(--late); background: var(--fill); }
-.t-del-btn:active { transform: scale(.9); }
+.t-del-btn:hover, .t-swipe-del-btn:hover { color: var(--late); background: var(--fill); }
+.t-del-btn:active, .t-swipe-del-btn:active { transform: scale(.9); }
 .t-swipe-note-btn {
   position: absolute; top: 0; right: 36px;
   width: 36px; height: 42px; display: grid; place-items: center;
@@ -544,7 +543,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .t-swipe-note-btn:hover, .t-swipe-note-btn:active { color: var(--ink); background: var(--fill); }
 .track.is-swipe-ready .t-swipe-note-btn { opacity: 1 !important; }
 .track.is-leaving > .t-swipe-note-btn { opacity: 0 !important; }
-.track.is-swipe-ready .t-del-btn { color: var(--late); transform: scale(1.15); opacity: 1 !important; }
+.track.is-swipe-ready .t-del-btn, .track.is-swipe-ready .t-swipe-del-btn { color: var(--late); transform: scale(1.15); opacity: 1 !important; }
 .track.is-hot { background: linear-gradient(90deg, var(--fill), transparent); }
 /* hover alleen met een echte aanwijzer: op touch bleef :hover kleven op de rij die na verwijderen onder de vinger schoof */
 @media (hover: hover) { .track:hover { background: linear-gradient(90deg, var(--fill), transparent); } }
@@ -568,9 +567,10 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .track.is-done .t-check svg path, .focus-now li.is-done .fn-check svg path { stroke-dashoffset: 0; transition: stroke-dashoffset .24s cubic-bezier(.4, 0, .2, 1) .07s; }
 @keyframes check-pop { 0% { transform: scale(.82); } 55% { transform: scale(1.1); } 100% { transform: scale(1); } }
 .t-title {
+  flex: 1 1 0%; min-width: 0;
   padding: 10px 4px 10px 2px; font-size: 14.5px;
-  white-space: nowrap; overflow: hidden; text-overflow: clip; min-width: 0; cursor: default;
-  --mql: 0px; --mqr: 34px;
+  white-space: nowrap; overflow: hidden; text-overflow: clip; cursor: default;
+  --mql: 0px; --mqr: 28px;
   mask-image: linear-gradient(to right, transparent 0, black var(--mql), black calc(100% - var(--mqr)), transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0, black var(--mql), black calc(100% - var(--mqr)), transparent 100%);
   transition: --mql .4s var(--ease), --mqr .4s var(--ease);
@@ -580,33 +580,89 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .t-title-in { display: inline-block; }
 /* tijdens het doorschuiven vervaagt het begin in plaats van het einde (zacht, via geregistreerde eigenschappen) */
 .t-title.is-marquee { --mql: 14px; --mqr: 4px; }
-.t-edit { min-width: 0; width: 100%; padding: 9px 6px 9px 2px; border: 0; border-bottom: 1px solid var(--ink); background: transparent; font: 14.5px var(--font); color: var(--ink); outline: none; }
-.t-level { width: 32px; height: 42px; display: grid; place-items: center; border-radius: 8px; }
-.t-level .orb-dot { transition: transform .2s var(--pop); }
-.t-level:hover .orb-dot, .track.is-picking .t-level .orb-dot { transform: scale(1.35); }
+.t-edit {
+  flex: 1 1 0%; min-width: 0; width: 100%;
+  padding: 9px 6px 9px 2px; border: 0; border-bottom: 1px solid var(--ink);
+  background: transparent; font: 14.5px var(--font); color: var(--ink); outline: none;
+}
+
+/* ---- Rechter metadata zone: Variant 1 De Stille Kolom ---- */
+.t-meta {
+  width: 84px; flex-shrink: 0; height: 42px;
+  position: relative; display: flex; align-items: center; justify-content: flex-end;
+}
+.t-meta-labels {
+  display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+  width: 100%; height: 100%; padding-right: 4px;
+  transition: opacity .16s var(--ease);
+}
+.t-meta-actions {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: flex-end; gap: 2px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .16s var(--ease);
+}
+.t-act-btn {
+  position: relative; width: 26px; height: 30px;
+  display: grid; place-items: center;
+  color: var(--ink-3); background: transparent; border: 0; border-radius: 6px;
+  padding: 0; cursor: pointer;
+  transition: color .15s var(--ease), background-color .15s var(--ease), transform .15s var(--pop);
+}
+.t-act-btn:hover { color: var(--ink); background: var(--fill); }
+.t-act-btn:active { transform: scale(.92); }
+.t-act-btn.t-act-del:hover { color: var(--late); background: var(--fill); }
+.t-act-btn.has-note { color: var(--ink); }
+.t-act-btn.has-note::after {
+  content: ""; position: absolute; top: 5px; right: 4px;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--c, var(--ink));
+}
+.track.is-noting .t-act-btn.has-note::after { opacity: 0; }
+.track.is-noting .t-act-note,
+.track.is-picking .t-act-level,
+.track.is-picking .t-act-due {
+  color: var(--ink); background: var(--fill);
+}
+
+.t-meta-note {
+  width: 22px; height: 30px; display: none; place-items: center;
+  color: var(--ink-3); border: 0; background: transparent; cursor: pointer; padding: 0;
+  border-radius: 6px;
+  transition: color .15s var(--ease);
+}
+.t-meta-note.has-note, .track.has-note .t-meta-note { display: grid; color: var(--ink-2); }
+.t-meta-note:hover { color: var(--ink); }
+
+.t-meta-level {
+  display: none; width: 24px; height: 30px; place-items: center;
+  color: var(--ink-3); border: 0; background: transparent; padding: 0;
+  cursor: pointer; border-radius: 6px;
+  transition: color .15s var(--ease);
+}
+.t-meta-level:hover { color: var(--ink); }
+
+.t-due {
+  min-height: 28px; padding: 0 4px;
+  font: 500 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-3); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 3px;
+  border: 0; background: transparent; border-radius: 6px; cursor: pointer;
+  transition: color .15s var(--ease);
+}
+.t-due:hover, .track.is-picking .t-due { color: var(--ink); }
+.t-due.is-late { color: var(--late); }
+.t-due .t-rep { width: 11px; height: 11px; margin-right: 2px; }
+
 .t-picker { grid-column: 1 / -1; display: flex; gap: 2px; padding: 0 0 8px 28px; }
 .t-opt { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; }
 .t-opt:hover { background: var(--fill); }
 .t-opt[aria-current="true"] { box-shadow: inset 0 0 0 1px var(--line); }
-/* notitie: icoontje naast de titel, tekstvak eronder over de hele breedte */
-.t-note-btn { width: 26px; height: 42px; display: grid; place-items: center; color: var(--ink-3); border-radius: 7px; transition: color .2s var(--ease), opacity .2s var(--ease); }
-.t-note-btn:hover, .track.is-noting .t-note-btn { color: var(--ink); }
-.t-note-btn { position: relative; }
-.t-note-btn.has-note { color: var(--ink); }
-/* een taak met notitie: een stipje in de kleur van het moment, zodat je het ziet zonder iets open te klappen */
-.t-note-btn.has-note::after { content: ""; position: absolute; top: 12px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--c, var(--ink)); }
-.track.is-noting .t-note-btn.has-note::after { opacity: 0; }
+
 .t-note { grid-column: 1 / -1; padding: 0 8px 10px 30px; }
 .t-note-text { display: block; width: 100%; min-height: 34px; max-height: 220px; resize: none; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--fill); color: var(--ink); font: 13.5px/1.45 var(--font); outline: none; overflow-y: auto; }
 .t-note-text::placeholder { color: var(--ink-3); }
 .t-note-text:focus { box-shadow: inset 0 0 0 1px var(--line); }
-.t-due {
-  min-height: 42px; padding: 0 2px 0 8px;
-  font: 500 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase;
-  color: var(--ink-3); white-space: nowrap;
-}
-.t-due:hover, .track.is-picking .t-due { color: var(--ink); }
-.t-due.is-late { color: var(--late); }
+
 .t-due-edit { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 0 0 10px 30px; }
 .due-input {
   height: 34px; padding: 0 12px;
@@ -1661,20 +1717,29 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 }
 
 @media (hover: hover) {
-  .t-level .orb-dot { opacity: 0; transition: opacity .2s var(--ease), transform .2s var(--pop); }
-  .track:hover .t-level .orb-dot, .t-level:focus-visible .orb-dot, .track.is-picking .t-level .orb-dot, .track.is-hot .t-level .orb-dot { opacity: 1; }
-  .t-note-btn:not(.has-note) { opacity: 0; }
-  .track:hover .t-note-btn, .t-note-btn:focus-visible, .track.is-noting .t-note-btn { opacity: 1; }
-  .track:not(.is-picking):hover .track-row, .track.is-swiped .track-row { padding-right: 36px; }
-  .track:not(.is-picking):hover .t-del-btn, .t-del-btn:focus-visible, .track.is-swiped .t-del-btn { opacity: 1; pointer-events: auto; }
-}
-@media (hover: hover) {
-  .t-swipe-note-btn { display: none !important; }
+  .t-meta-level { display: none !important; }
+  .t-swipe-del-btn, .t-swipe-note-btn { display: none !important; }
+  .track:hover .t-meta-labels,
+  .track.is-picking .t-meta-labels,
+  .track.is-noting .t-meta-labels,
+  .track:focus-within .t-meta-labels {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .track:hover .t-meta-actions,
+  .track.is-picking .t-meta-actions,
+  .track.is-noting .t-meta-actions,
+  .track:focus-within .t-meta-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 @media (hover: none) {
-  .t-note-btn:not(.has-note) { opacity: 0; pointer-events: none; }
+  .t-meta-actions { display: none !important; }
+  .track:not(.has-due) .t-meta-level { display: grid; }
   .track.is-swiped .track-row { padding-right: 72px; }
-  .track.is-swiped .t-del-btn,
+  .track.is-swiped .t-meta { opacity: 0; pointer-events: none; }
+  .track.is-swiped .t-swipe-del-btn,
   .track.is-swiped .t-swipe-note-btn { opacity: 1; pointer-events: auto; }
 }
 @media (hover: none) { .hud-menu .menu-keys, .controls kbd, .menu-label kbd, .hud-menu kbd { display: none; } }
