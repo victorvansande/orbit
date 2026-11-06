@@ -222,6 +222,7 @@
     <button type="button" role="radio" aria-checked="false" data-view="side" data-i="view.side">Zijkant</button>
   </div>
   <button type="button" class="focus-btn" id="focus-btn" aria-pressed="false">Focus <kbd>F</kbd></button>
+  <button type="button" class="focus-btn focus-fidget-btn" id="focus-fidget-btn" aria-expanded="false" aria-controls="fidget"><span data-i="fidget.title">Fidget</span></button>
   <button type="button" class="menu-btn focus-exit" id="focus-exit"><span data-i="focus.exit">Focus uit</span> <kbd>Esc</kbd></button>
   <div class="views tempo" id="tempo" role="radiogroup" aria-label="Tempo" data-ia="aria-label:tempo">
     <span class="tempo-label"><span data-i="tempo">Tempo</span> <kbd>T</kbd></span>
@@ -306,6 +307,7 @@
 <!-- Bakje: digitale fidgets in de focusmodus (src/focus/fidget.js), keuze bovenin -->
 <div class="timer" id="timer" role="group" aria-label="Focustimer" data-ia="aria-label:timer.aria"></div>
 <div class="glass" id="glass" role="group" aria-hidden="true"></div>
+<div class="fidget-backdrop" id="fidget-backdrop" hidden></div>
 <div class="fidget" id="fidget" role="group" aria-label="Bakje om mee te spelen" data-ia="aria-label:fidget.aria"><div class="fidget-modes" role="radiogroup" aria-label="Soort" data-ia="aria-label:fidget.kind"></div><canvas aria-hidden="true"></canvas></div>
 <div class="focus-info">
   <a class="focus-weather" id="focus-weather" hidden><svg class="fw-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#w-cloud"/></svg><span class="fw-temp"></span><span class="fw-place"></span><span class="fw-rain" hidden></span></a>

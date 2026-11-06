@@ -1948,6 +1948,7 @@ function setFocus(on) {
   try { placeMenu(); } catch { /* ignore */ }
   if (on) weather.start(); else weather.stop();
   if (on && desktop.matches && !minimalFx) fidget.start(); else fidget.stop();
+  if (!on) fidget.closeMobile?.();
   if (on) timer.start(); else timer.stop();   // ook op gsm (Victor, 02/11/2026: "ook op gsm moet ik kunnen focussen")
   if (on && !$('greeting').hidden) hideGreeting();   // anders botst de begroeting op gsm met de klok
   $('focus-btn').setAttribute('aria-pressed', String(on));
@@ -3207,7 +3208,7 @@ function placeMenu() {
       controls.append(menuBtn, $('focus-exit'), hudMenu);
     }
   } else {
-    controls.append($('view-switch'), $('focus-btn'));
+    controls.append($('view-switch'), $('focus-btn'), $('focus-fidget-btn'));
     $('menu-tempo').append($('tempo'));
     hudMenu.append(actions);
     document.querySelector('.hud-right').append(menuBtn, hudMenu);

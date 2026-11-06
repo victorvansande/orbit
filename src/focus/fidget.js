@@ -737,7 +737,16 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const reset = Object.assign(document.createElement('button'), { type: 'button', className: 'fidget-color-reset', textContent: '↺' });
   reset.setAttribute('aria-label', label('colorReset')); reset.title = label('colorReset');
   pick.append(input);
-  rightBar.append(reset, pick);
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'fidget-close';
+  closeBtn.setAttribute('aria-label', label('close') || 'Sluiten');
+  closeBtn.innerHTML = '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  closeBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleMobile(false);
+  });
+  rightBar.append(reset, pick, closeBtn);
 
   function setAccent(c) {
     ACCENT = c;
@@ -906,17 +915,75 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   box.addEventListener('pointercancel', () => { press = null; });
   box.addEventListener('pointerleave', () => { press = null; mode().leave?.(); });
 
+  function start() {
+    if (running) return;
+    if (reducedMotion.matches) { render(performance.now()); return; }
+    running = true; last = 0; acc = 0;
+    raf = requestAnimationFrame(frame);
+  }
+
+  function stop() {
+    running = false; cancelAnimationFrame(raf);
+    press = null; mode().leave?.();
+    for (const m of Object.values(modes)) m.unmount?.();
+  }
+
+  const mobileBtn = document.getElementById('focus-fidget-btn');
+  const backdrop = document.getElementById('fidget-backdrop');
+
+  function toggleMobile(open) {
+    const isMobile = !matchMedia('(min-width: 1000px)').matches;
+    if (!isMobile) return;
+    const show = open ?? !box.classList.contains('is-open');
+    box.classList.toggle('is-open', show);
+    if (backdrop) backdrop.hidden = !show;
+    mobileBtn?.setAttribute('aria-expanded', String(show));
+    document.body.classList.toggle('has-fidget-open', show);
+    if (show) {
+      nextBtn.hidden = !hasPresets(modeName);
+      if (reducedMotion.matches) render(performance.now());
+      else if (!running) start();
+      render(performance.now());
+    } else {
+      stop();
+    }
+  }
+
+  mobileBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleMobile();
+  });
+
+  backdrop?.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    toggleMobile(false);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && box.classList.contains('is-open')) {
+      toggleMobile(false);
+      mobileBtn?.focus();
+    }
+  });
+
+  matchMedia('(min-width: 1000px)').addEventListener('change', e => {
+    if (e.matches) {
+      box.classList.remove('is-open');
+      if (backdrop) backdrop.hidden = true;
+      document.body.classList.remove('has-fidget-open');
+      mobileBtn?.setAttribute('aria-expanded', 'false');
+      if (document.body.classList.contains('is-focus')) start();
+    } else {
+      stop();
+    }
+  });
+
   return {
-    start() {
-      if (running) return;
-      if (reducedMotion.matches) { render(performance.now()); return; }
-      running = true; last = 0; acc = 0;
-      raf = requestAnimationFrame(frame);
-    },
-    stop() {
-      running = false; cancelAnimationFrame(raf);
-      press = null; mode().leave?.();
-      for (const m of Object.values(modes)) m.unmount?.();   // topo: eigen lus en WebGL-context opruimen
-    },
+    start,
+    stop,
+    toggleMobile,
+    closeMobile() { toggleMobile(false); },
+    isOpen() { return box.classList.contains('is-open'); }
   };
 }

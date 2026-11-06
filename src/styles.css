@@ -305,12 +305,13 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transition: opacity .4s var(--ease);
 }
 .views { display: flex; align-items: center; gap: 8px; }
-.views button, .focus-btn { min-height: 44px; color: var(--ink-3); text-transform: uppercase; letter-spacing: inherit; transition: color .2s var(--ease); }
-.views button:hover, .focus-btn:hover { color: var(--ink-2); }
-.views button[aria-checked="true"], .focus-btn[aria-pressed="true"] { color: var(--ink); }
+.views button, .focus-btn, .focus-fidget-btn { min-height: 44px; color: var(--ink-3); text-transform: uppercase; letter-spacing: inherit; transition: color .2s var(--ease); }
+.views button:hover, .focus-btn:hover, .focus-fidget-btn:hover { color: var(--ink-2); }
+.views button[aria-checked="true"], .focus-btn[aria-pressed="true"], .focus-fidget-btn[aria-expanded="true"] { color: var(--ink); }
 .views button[aria-checked="true"] { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 .slash { color: var(--line); }
-.focus-btn { display: flex; align-items: center; gap: 8px; }
+.focus-btn, .focus-fidget-btn { display: flex; align-items: center; gap: 8px; }
+.focus-fidget-btn { display: none; background: transparent; border: none; padding: 0; cursor: pointer; }
 .tempo { padding-left: 22px; border-left: 1px solid var(--line); }
 .tempo-label { display: flex; align-items: center; gap: 6px; margin-right: 4px; color: var(--ink-3); }
 
@@ -704,6 +705,21 @@ body.is-focus .fidget-next:hover, body.is-focus .fidget-next:focus-visible { opa
 .fidget-color-reset { margin-left: auto; min-height: 22px; font: inherit; letter-spacing: 0; color: inherit; cursor: pointer; }
 .fidget-color-reset:hover { color: var(--ink-2); }
 .fidget-color-reset[hidden] + .fidget-color { margin-left: auto; }
+.fidget-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--line-soft);
+  color: var(--ink-2);
+  border: none;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: all .15s var(--ease);
+}
+.fidget-close:hover { background: var(--line); color: var(--ink); }
 /* Zandloper: focustimer boven het bakje als vrije hint zonder kaart (Victor, 04/11/2026, Voorstel 1).
    Ingeklapt: klein glas (36 × 60 px) en het dunne minutencijfer (T3), exact zoals het glas buiten de focus; aanwijzen toont de bediening.
    Uitgeklapt: de zandloper groeit vrij in de ruimte boven het bakje met de stippencijfers eronder, zonder kaart erachter. */
@@ -784,7 +800,7 @@ body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
 .timer.is-open:not(.is-compact) .timer-min { display: none; }
 .timer-num { font: 300 30px/.8 var(--font); letter-spacing: -.02em; text-transform: none; font-variant-numeric: tabular-nums; }
 .timer-min small { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-@media (max-width: 999px) { .fidget, .timer, .fidget-next { display: none; } }
+@media (max-width: 999px) { .fidget:not(.is-open), .timer:not(.is-compact), .fidget-next:not(.is-open) { display: none; } }
 .focus-info {
   position: fixed; z-index: 2;
   left: var(--pad); bottom: 92px;
@@ -1261,6 +1277,87 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .timer.is-compact .timer-row button { min-height: 40px; }
   .timer.is-compact .timer-durs { gap: 14px; }
   .timer.is-compact .timer-go, .timer.is-compact .timer-go:hover:not(:disabled) { padding: 0; box-shadow: none; }
+  /* Fidget knop op mobiel in focusmodus */
+  .controls .focus-fidget-btn { min-height: 36px; }
+  body.is-focus .controls .focus-fidget-btn { display: inline-flex; }
+
+  /* Fidget backdrop op mobiel */
+  .fidget-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: backdrop-fade-in .2s var(--ease);
+  }
+  @keyframes backdrop-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Fidget venster op mobiel: zwevend gecentreerd, perfect geschaald */
+  .fidget {
+    --fidget-scale: min(1, calc((100vw - 24px) / 325.6), calc((100vh - 120px) / 226.8));
+    display: none;
+    position: fixed;
+    z-index: 85;
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%) scale(var(--fidget-scale));
+    transform-origin: center center;
+    width: 325.6px;
+    height: 226.8px;
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: 0 0 0 1px var(--line), 0 20px 50px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .22s var(--ease), visibility .22s;
+  }
+  .fidget.is-open {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    animation: fidget-pop-in .22s var(--ease);
+  }
+  @keyframes fidget-pop-in {
+    from { opacity: 0; transform: translate(-50%, -46%) scale(calc(var(--fidget-scale) * 0.95)); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(var(--fidget-scale)); }
+  }
+
+  /* Pijltje onder het bakje op mobiel */
+  body.has-fidget-open .fidget-next:not([hidden]) {
+    display: grid !important;
+    position: fixed;
+    z-index: 86;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    top: calc(50% + 126px * var(--fidget-scale, 1));
+    transform: translate(-50%, 0);
+    width: 44px;
+    height: 30px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: 0 4px 16px var(--shadow-2);
+    color: var(--ink-2);
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  /* Fidget sluitknopje op mobiel in de menubalk */
+  .fidget-close { display: inline-flex; }
+
+  /* Zorg dat idle de controls niet verbergt zolang de fidget open is */
+  body.has-fidget-open.is-idle .controls > :not(.timer) {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
   .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
   /* smal scherm: twee regels in plaats van afkappen (zinnen als "Nieuwe hemel. Je vorige sterren ..." vielen weg) */
   .toast { border-radius: 22px; }

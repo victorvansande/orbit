@@ -681,3 +681,40 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - `ANTIGRAVITY_CHANGELOG.md`
 - **Getest:**
   - CDP verificatie in headless Edge voor alle 10 fidgets achter elkaar. Alle 10 renderen gegarandeerd met actieve inhoud en 0 fouten.
+
+### 06/11/2026 - Alle fidgets beschikbaar op mobiel via knop in focusscherm
+- **Wat is er veranderd:**
+  1. **Discreet Fidget-knopje op mobiel in de focusbalk:**
+     - In `index.html` een knop `#focus-fidget-btn` toegevoegd binnen `.controls` naast de bestaande weergave- en focusknoppen.
+     - In `src/styles.css` is deze knop op desktop verborgen (`display: none`) en verschijnt hij op mobiele schermen (`@media (max-width: 999px)`) uitsluitend wanneer `body.is-focus` actief is.
+     - `placeMenu()` in `src/app.js` geactualiseerd zodat het knopje op mobiel netjes in `.controls` behouden blijft.
+  2. **Zwevende modale fidgetkaart met frosted glass:**
+     - Achtergrond-overlay `.fidget-backdrop` met `background: rgba(0, 0, 0, 0.48)` en `backdrop-filter: blur(10px)` (inclusief `-webkit-backdrop-filter`).
+     - `#fidget` wordt op mobiel gecentreerd weergegeven (`position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(...)`).
+     - Schaalbaarheid via CSS variabele `--fidget-scale: min(1, calc((100vw - 24px) / 325.6), calc((100vh - 120px) / 226.8))` zodat de kaart nooit buiten het scherm valt, ook niet op kleine schermen (320px) of in landschapsmodus.
+     - Subtiele pop-in en fade-in animaties (`.fidget.is-open` en `backdrop-fade-in`).
+  3. **Volledige functionaliteit van alle 10 widgets:**
+     - Toegang tot alle 10 fidgets (Water, Gelei, Lava, Gloed, Topo, Plasma, Paneel, Life, Breakout, Bubbels) via het compacte popover-menu.
+     - Kleurenkiezer, preset-/levelwisselaar (`.fidget-next` zwevend onder het bakje) en interactieve touch-besturing.
+     - De pointer-mapping in `fidget.js` berekent coördinaten via `getBoundingClientRect()`, wat automatisch compenseert voor CSS transform-scaling waardoor touch-invoer 100% pixel-precies blijft.
+  4. **Sluitmogelijkheden en batterijbesparing:**
+     - Sluiten kan via het nieuwe `✕`-knopje (`.fidget-close`) in de menubalk, door op de backdrop te tikken, via de `Escape`-toets of door de focusmodus te verlaten.
+     - De animatielus (`fidget.start()`) start pas zodra het fidget-venster op mobiel wordt geopend en stopt (`fidget.stop()`) zodra het wordt gesloten, waardoor onnodig batterij- en CPU-verbruik op mobiele toestellen wordt voorkomen.
+  5. **Internationalisatie en Service Worker:**
+     - Vertalingen toegevoegd voor `'fidget.title'` en `'fidget.close'` in `src/core/i18n.js` (NL en EN).
+     - Service worker cache bijgewerkt naar `orbit-v9` in `sw.js`.
+- **Gewijzigde bestanden:**
+  - `index.html`
+  - `src/styles.css`
+  - `src/focus/fidget.js`
+  - `src/app.js`
+  - `src/core/i18n.js`
+  - `sw.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Uitgebreide CDP-verificatie in headless Edge op mobiel viewportformaat (390x844) en desktop (1280x820):
+    - Fidget knop verschijnt in focusbalk op mobiel en ontbreekt op desktop.
+    - Tikken op de knop opent het zwevende venster en toont de frosted glass achtergrond.
+    - Wisselen tussen widgets (o.a. Plasma, Breakout, Bubbels) en touch interacties verlopen vlekkeloos met 0 fouten.
+    - Sluiten via sluitknop en backdrop functioneert correct.
