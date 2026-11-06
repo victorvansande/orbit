@@ -931,10 +931,20 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const mobileBtn = document.getElementById('focus-fidget-btn');
   const backdrop = document.getElementById('fidget-backdrop');
 
+  function updateMobileScale() {
+    if (matchMedia('(min-width: 1000px)').matches) return;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const scale = Math.min(1, (vw - 32) / 325.6, (vh - 140) / 226.8);
+    const clamped = Math.max(0.65, Math.min(1, scale));
+    box.style.setProperty('--fidget-scale', clamped.toFixed(3));
+  }
+
   function toggleMobile(open) {
     const isMobile = !matchMedia('(min-width: 1000px)').matches;
     if (!isMobile) return;
     const show = open ?? !box.classList.contains('is-open');
+    if (show) updateMobileScale();
     box.classList.toggle('is-open', show);
     if (backdrop) backdrop.hidden = !show;
     mobileBtn?.setAttribute('aria-expanded', String(show));
@@ -965,6 +975,13 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
       toggleMobile(false);
       mobileBtn?.focus();
     }
+  });
+
+  window.addEventListener('resize', () => {
+    if (box.classList.contains('is-open')) updateMobileScale();
+  });
+  window.addEventListener('orientationchange', () => {
+    if (box.classList.contains('is-open')) updateMobileScale();
   });
 
   matchMedia('(min-width: 1000px)').addEventListener('change', e => {

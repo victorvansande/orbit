@@ -718,3 +718,32 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Tikken op de knop opent het zwevende venster en toont de frosted glass achtergrond.
     - Wisselen tussen widgets (o.a. Plasma, Breakout, Bubbels) en touch interacties verlopen vlekkeloos met 0 fouten.
     - Sluiten via sluitknop en backdrop functioneert correct.
+
+### 06/11/2026 - Bugfix: Fidget-venster positionering op mobiel hersteld
+- **Wat is er veranderd:**
+  1. **Oorzaak analyse van het van het scherm vallen:**
+     - De CSS-selector `body.is-focus .fidget` op desktop had een hogere specificiteit dan de mobiele `.fidget` regels en paste `transform: none;` toe.
+     - Hierdoor werd `transform: translate(-50%, -50%)` genegeerd en bleef het venster met zijn linkerbovenhoek op `left: 50%; top: 50%` staan, waardoor de rechter- en onderkant van het 326px brede venster rechtsonder van het scherm vielen.
+     - Bovendien evalueerde `scale(calc((100vw - 24px) / 325.6))` in CSS zonder eenheid in de noemer tot een `<length>` in plaats van een getal, waardoor strikte CSS-parsers de transformatiedeclaratie als ongeldig afwezen.
+  2. **Isolatie van desktop-stijlen:**
+     - De desktop-positionering van `.fidget` en `.fidget-next` is strikt ingekaderd binnen `@media (min-width: 1000px)`. Desktop-regels kunnen mobiele weergaves daardoor onder geen beding meer overschrijven.
+  3. **Robuuste centrering via inset:**
+     - Op mobiel is `.fidget` gecentreerd via `position: fixed; inset: 0 !important; margin: auto !important;`. Dit garandeert dat het venster altijd exact in het midden van het scherm staat, zelfs als transformaties niet ondersteund worden of worden gereset.
+  4. **Betrouwbare numerieke schaling via JavaScript:**
+     - In `src/focus/fidget.js` is `updateMobileScale()` toegevoegd. Deze functie berekent bij het openen en tijdens `resize` en `orientationchange` een zuivere getalswaarde voor `--fidget-scale` (bijvoorbeeld 0.884 op een scherm van 320px breed).
+     - In CSS wordt geschaald via `transform: scale(var(--fidget-scale, 1)) !important;` met `transform-origin: center center;` en `animation-fill-mode: forwards`.
+  5. **Service worker:**
+     - Service worker cache bijgewerkt naar `orbit-v10` in `sw.js`.
+- **Gewijzigde bestanden:**
+  - `src/styles.css`
+  - `src/focus/fidget.js`
+  - `sw.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - CDP-verificatie in headless Edge voor verschillende viewports:
+    - iPhone staand (390x844): `isFullyOnScreen: true`, 32.2px gelijke marges links en rechts.
+    - Compact scherm (320x568): `isFullyOnScreen: true`, schaalt netjes naar 288px breedte met veilige marges.
+    - iPhone liggend (844x390): `isFullyOnScreen: true`, perfect verticaal en horizontaal gecentreerd.
+    - Desktop (1280x820): `isFullyOnScreen: true`, vaste positie rechtsonder in de cockpit behouden.
+    - Lava, Breakout en Bubbels geverifieerd zonder consolefouten.

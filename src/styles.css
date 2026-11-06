@@ -643,16 +643,16 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 
 /* ---- Focusmodus ---- */
 /* Bakje water: rustig fidget-venster rechtsonder in de focusmodus (alleen desktop) */
-.fidget {
-  position: fixed; z-index: 2; right: var(--pad); bottom: 92px;
-  /* Ingelaten (gekozen door Victor): een paar millimeter in het papier gedrukt, schaduw binnen de bovenrand, lichtrandje onderaan */
-  /* de effecten vullen het hele afgeronde vak (Victor: geen kader in het kader); de keuzerij ligt erbovenop */
-  border-radius: 16px; overflow: hidden; background: var(--well);
-  box-shadow: 0 1px 0 var(--well-lip);
-  opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none;
-  transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
+@media (min-width: 1000px) {
+  .fidget {
+    position: fixed; z-index: 2; right: var(--pad); bottom: 92px;
+    border-radius: 16px; overflow: hidden; background: var(--well);
+    box-shadow: 0 1px 0 var(--well-lip);
+    opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none;
+    transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
+  }
+  body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 }
-body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 /* de schaduw binnen de bovenrand ligt over het effect, zodat ook een vol verloop (gloed) ingelaten blijft */
 .fidget::after { content: ''; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1.5px 3px var(--well-shade), inset 0 1px 1px var(--well-shade-2); }
 .fidget { touch-action: none; user-select: none; -webkit-user-select: none; }   /* staat vast: niet meer te slepen */
@@ -663,14 +663,16 @@ body.is-focus .fidget { opacity: 1; visibility: visible; transform: none; pointe
 .fidget-own .topography-canvas { display: block; width: 100%; height: 100%; }
 .fidget-own .panel-canvas { display: block; width: 100%; height: 100%; }   /* paneel (src/focus/panel.js) */
 /* pijltje onder het bakje: volgend scherm van het paneel, heel subtiel, gecentreerd onder het vak (325,6 px breed) */
-.fidget-next {
-  position: fixed; z-index: 2; right: calc(var(--pad) + 162.8px); bottom: 64px; width: 40px; height: 24px;
-  display: grid; place-items: center; color: var(--ink-3); cursor: pointer;
-  opacity: 0; visibility: hidden; transform: translate(50%, 10px); pointer-events: none;
-  transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s, color .2s var(--ease);
+@media (min-width: 1000px) {
+  .fidget-next {
+    position: fixed; z-index: 2; right: calc(var(--pad) + 162.8px); bottom: 64px; width: 40px; height: 24px;
+    display: grid; place-items: center; color: var(--ink-3); cursor: pointer;
+    opacity: 0; visibility: hidden; transform: translate(50%, 10px); pointer-events: none;
+    transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s, color .2s var(--ease);
+  }
+  body.is-focus .fidget-next { opacity: .5; visibility: visible; transform: translate(50%, 0); pointer-events: auto; }
+  body.is-focus .fidget-next:hover, body.is-focus .fidget-next:focus-visible { opacity: 1; color: var(--ink-2); }
 }
-body.is-focus .fidget-next { opacity: .5; visibility: visible; transform: translate(50%, 0); pointer-events: auto; }
-body.is-focus .fidget-next:hover, body.is-focus .fidget-next:focus-visible { opacity: 1; color: var(--ink-2); }
 .fidget-next svg { width: 10px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }   /* lava en gloed: echte WebGL, zoals hun bron bij React Bits */
 /* keuze bovenin: zelfde kapitaaltjes als Boven / Zijkant, klein en rustig */
 .fidget-modes { position: absolute; z-index: 10; top: 10px; left: 11px; right: 11px; display: flex; align-items: center; justify-content: space-between; font: 500 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); pointer-events: none; }
@@ -1295,36 +1297,43 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 
   /* Fidget venster op mobiel: zwevend gecentreerd, perfect geschaald */
   .fidget {
-    --fidget-scale: min(1, calc((100vw - 24px) / 325.6), calc((100vh - 120px) / 226.8));
+    --fidget-scale: 1;
     display: none;
     position: fixed;
     z-index: 85;
-    left: 50%;
-    top: 50%;
-    right: auto;
-    bottom: auto;
-    transform: translate(-50%, -50%) scale(var(--fidget-scale));
-    transform-origin: center center;
+    inset: 0 !important;
+    margin: auto !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 325.6px;
     height: 226.8px;
     border-radius: 18px;
+    overflow: hidden;
     background: var(--surface);
     box-shadow: 0 0 0 1px var(--line), 0 20px 50px rgba(0, 0, 0, 0.6);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity .22s var(--ease), visibility .22s;
+    transform: scale(var(--fidget-scale, 1)) !important;
+    transform-origin: center center;
+    transition: opacity .22s var(--ease), visibility .22s, transform .22s var(--ease);
   }
+  body.is-focus .fidget.is-open,
   .fidget.is-open {
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
-    animation: fidget-pop-in .22s var(--ease);
+    inset: 0 !important;
+    margin: auto !important;
+    transform: scale(var(--fidget-scale, 1)) !important;
+    animation: fidget-pop-in .22s var(--ease) forwards;
   }
   @keyframes fidget-pop-in {
-    from { opacity: 0; transform: translate(-50%, -46%) scale(calc(var(--fidget-scale) * 0.95)); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(var(--fidget-scale)); }
+    from { opacity: 0; transform: scale(calc(var(--fidget-scale, 1) * 0.95)); }
+    to { opacity: 1; transform: scale(var(--fidget-scale, 1)); }
   }
 
   /* Pijltje onder het bakje op mobiel */
@@ -1332,11 +1341,11 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
     display: grid !important;
     position: fixed;
     z-index: 86;
-    left: 50%;
-    right: auto;
-    bottom: auto;
-    top: calc(50% + 126px * var(--fidget-scale, 1));
-    transform: translate(-50%, 0);
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    top: calc(50% + 124px * var(--fidget-scale, 1)) !important;
+    transform: translate(-50%, 0) !important;
     width: 44px;
     height: 30px;
     background: var(--surface);
