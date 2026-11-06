@@ -965,3 +965,33 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Smal scherm (320x568 iPhone SE): modal opent met scale 0.885, canvas matched container, geen horizontale scroll.
     - Consolefouten: 0 fouten.
 - **Impact op opslag / state:** Geen nieuwe opslagsleutels; bewaart keuze in bestaande `priority-orbit.fidget.v1`.
+
+### 32. Volledige weergave van letter 't' in geïntegreerd woordmerk (viewBox correctie)
+- **Vraag van Victor:** "the t is not fully there and cut off." (met schermafbeelding `image.png` waarop de rechterzijde van de 't' in het topbar-logo verticaal afgesneden was).
+- **Oorzaak:**
+  - De 'rbit' padcoördinaten in de geïntegreerde lockup lopen na de groepstranslatie `translate(343.486, 0)` door tot `x = 2480.49` (de rechterdwarsbalk en de boog van de letter 't').
+  - De oorspronkelijke `viewBox` stond ingesteld op `0 -730 2359.49 742`.
+  - Hierdoor was de viewBox precies 121 font-eenheden te smal (`2480.49 - 2359.49 = 121`), waardoor de browser de rechterflank van de letter 't' afkapte en de intrinsieke verhouding te smal berekende (3.18 : 1 in plaats van 3.34 : 1).
+- **Gewijzigde bestanden:**
+  - `index.html`:
+    - `.brand-mark` in topbar (`viewBox="0 -730 2480.49 742"`).
+    - `.intro-lockup` in `#intro-title` (`viewBox="0 -730 2480.49 742"`).
+  - `src/core/mark.js`:
+    - `INTEGRATED.w` gecorrigeerd van `235.95` naar `248.05`.
+  - `brand/merk/svg/`:
+    - `orbit-integrated-fullcolour.svg`: viewBox aangepast naar `0 -730 2480.49 742`.
+    - `orbit-integrated-fullcolour-reversed.svg`: viewBox aangepast naar `0 -730 2480.49 742`.
+    - `orbit-integrated-black.svg`: viewBox aangepast naar `0 -730 2480.49 742`.
+    - `orbit-integrated-white.svg`: viewBox aangepast naar `0 -730 2480.49 742`.
+    - `orbit-integrated-red.svg`: viewBox aangepast naar `0 -730 2480.49 742`.
+  - `brand/merkgids/index.html`:
+    - Hoogtes van de geïntegreerde showcase-afbeeldingen herberekend naar `185px` (bij breedte 620px) en `138px` (bij breedte 460px) conform de werkelijke 3.34 : 1 verhouding.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v17`.
+  - `CLAUDE.md` en `ANTIGRAVITY_CHANGELOG.md`: documentatie bijgewerkt.
+- **Getest:**
+  - Headless Chromium visual render & DOM bounding box inspectie:
+    - BBox van `.brand-mark` en elementen geëvalueerd; de volledige letter 't' valt nu 100% binnen de SVG viewBox.
+    - Schermafbeeldingen gemaakt en visueel gecontroleerd op desktop en mobiel.
+  - Consolefouten: 0 fouten.
+- **Impact op opslag / state:** Geen.
