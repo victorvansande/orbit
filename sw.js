@@ -4,7 +4,7 @@
 // localStorage, en sync stuurt wat offline veranderde door zodra er weer verbinding is.
 // Alleen de eigen bestanden en de lettertypes; nooit de sync-server of de weerdienst.
 
-const CACHE = 'orbit-v12';
+const CACHE = 'orbit-v13';
 const TIMEOUT = 3500;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.svg?v=2', 'favicon.ico?v=2',

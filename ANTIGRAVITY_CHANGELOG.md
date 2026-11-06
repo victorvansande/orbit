@@ -844,3 +844,40 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Playwright visual render test `scratch/verify_merkgids.mjs` uitgevoerd tegen `brand/merkgids/index.html`:
     - Alle 23 afbeeldingen in de merkgids laden foutloos (0 mislukte verzoeken, 0 consolefouten).
     - Zowel de lichte als donkere platen met het nieuwe geïntegreerde woordmerk renderen haarscherp.
+
+### 27. Reveal-animatie voor geïntegreerd woordmerk linksboven
+- **Commit:** `7fa8800`
+- **Vraag van Victor:** Verander het logo links boven naar het nieuwe woordmerk met de orbit als O. Als je over het logo gaat met je muis of er op tikt op mobiel, verschijnt de O van achter de orbit mooi, smooth en doordacht als animatie. Daarna gaat het weer weg.
+- **Gewijzigde bestanden:**
+  - `index.html`: `.brand-mark` voorzien van de typografische 'O' in een aparte `<g class="bm-o-wrap" transform="translate(83.34, 0)">` achter het Orbit-symbool.
+  - `src/styles.css`: Reveal-animatie `@keyframes brand-o-reveal` met 4 fasen (opbloeien, zachte ademhaling, rustige uitdoving over 2.4s), `pointer-events: auto` op `.brand`.
+  - `src/app.js`: Eventlisteners op `.brand` voor hover en tik met automatische reset-timer.
+  - `sw.js`: Cache-versie verhoogd naar `orbit-v12`.
+- **Getest:** Visueel gecontroleerd via headless Edge op desktop en mobiel in donker en licht thema.
+
+### 28. Verfijnde Composer-orbit (Voorstel 1: Het 5-Bansysteem) en Rangnaam met scheiding op desktop
+- **Commit:** `d27e9b4`
+- **Vraag van Victor:**
+  1. "Deze animatie is leuk, je ziet de orbit die je selecteert maar ze is wat onafgewerkt. Kan je enkele voorstellen maken om dit te verfijnen? De hele orbit beweegt ook random wat naar boven en onder, redelijk traag, dit hoeft ook niet." -> Na voorstellen gekozen voor Voorstel 1 (Het 5-Bansysteem).
+  2. "Zet de naam van de huidige rang naast het symbooltje en zorg voor een subtiele scheiding met settings."
+- **Gewijzigde bestanden:**
+  - `src/app.js`:
+    - 5 concentrische banen in grafiet met lage dekking (`ORB_RADII = [64, 98, 132, 166, 200]`).
+    - Gekozen ring licht op in de tint van het moment met subtiele overgangspuls (`orbPulse`).
+    - Vloeiende radiale overgang (`orbRadius += (orbTargetRadius - orbRadius) * dt`) bij niveauwissel via klik of toetsenbord.
+    - Komeet getekend via `drawRefinedComet` met chord-gradient en 3.2x zachte radiale kopgloed, zonder harde conic-gradient wig-afsnijdingen.
+    - Rode centrale Nu-kern als stabiel baken.
+  - `src/styles.css`:
+    - `.composer-orb`: `animation: float` en `.is-swap` verwijderd, zodat het venster rustig en geankerd blijft.
+    - `.stats-rank-name`: `display: inline` gemaakt op desktop (voorheen verborgen met `display: none`).
+    - `.stats-menu-slot`: voorzien van `gap: 11px`.
+    - `.stats-menu-slot > .menu-btn + .stats-rank-hint`: voorzien van `border-left: 1px solid var(--line); padding-left: 11px;`. Sluit exact aan op de vormentaal van `.tempo` en `.stats`.
+  - `sw.js`: Cache-versie verhoogd naar `orbit-v13`.
+  - `CLAUDE.md`: Overdracht bijgewerkt.
+  - `ANTIGRAVITY_CHANGELOG.md`: Wijzigingen gedocumenteerd.
+- **Getest:**
+  - Visuele verificatie via headless Edge op 1440x900 (desktop) en 390x844 (mobiel) in zowel Donker als Licht thema.
+  - `live_stats_bar_dark.png` en `live_stats_bar_light.png`: rangnaam (bv. `STERRENKIJKER`) staat haarscherp naast de badge, gescheiden van `INSTELLINGEN` via de subtiele 14px hoge haarlijn (`var(--line)`).
+  - `live_composer_5ring.png`: 5 ringen ragfijn zichtbaar, geselecteerde ring groen (Week), rode kern geankerd in het midden, geen op-en-neer gedobber.
+  - Mobiel: instellingenknop blijft zoals ontworpen in de topbar; `.stats-rank-hint` in de voettekst toont de rangnaam zonder overbodige linkerrand.
+- **Impact op opslag / state:** Geen.

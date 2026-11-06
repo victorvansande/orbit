@@ -1569,58 +1569,136 @@ const composerOrb = $('composer-orb');
 let composerLevel = DEFAULT_LEVEL, composerDue = '', closeTimer = 0;
 let wheelLevel = DEFAULT_LEVEL;     // moment van het wiel, terug als de deadline gewist wordt
 
-// Mini-orbit in het venster: een taps bolletje rond een kleine kern, in kleur en tempo van het moment
-let orbRaf = 0;
-function drawComposerOrbit(now) {
-  const lv = LEVEL_BY_ID.get(composerLevel);
-  const g = composerOrb.getContext('2d');
-  const size = composerOrb.width, C = size / 2, TAU = Math.PI * 2;
-  const R = size * 0.27, head = size * 0.034, span = 1.9;
-  const period = Math.min(lv.period, 6);
-  const a = reducedMotion.matches ? -Math.PI / 2 : (now / 1000) / period * TAU;
-  g.clearRect(0, 0, size, size);
-  // kern: kleine stip
-  g.fillStyle = `rgba(${inkRgb()}, .2)`;
-  g.beginPath();
-  g.arc(C, C, size * 0.02, 0, TAU);
-  g.fill();
-  // baan
-  g.lineWidth = size * 0.003;
-  g.strokeStyle = `rgba(${inkRgb()}, .14)`;
-  g.beginPath();
-  g.arc(C, C, R, 0, TAU);
-  g.stroke();
-  // komeet: volle kop, de staart dooft langs de boog uit (conische gradient rond het midden)
-  const tone = resolvedTheme() === 'dark' ? lv.dark : lv.color;
-  const steps = 24, left = [], right = [];
+const ORB_RADII = [64, 98, 132, 166, 200];
+let orbRadius = 64, orbTargetRadius = 64, orbAngle = 0, orbLastTime = 0, orbPulse = 0;
+
+function hexToRgba(hex, alpha) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+}
+
+// Verfijnde komeet zonder conic-gradient wig-afsnijdingen, met chord-gradient en 3,2x radiale kopgloed
+function drawRefinedComet(g, cx, cy, R, angle, span, headRadius, tone, isDark) {
+  const steps = 36;
+  const left = [], right = [];
   for (let k = 0; k <= steps; k++) {
-    const p = k / steps, t = a - p * span;
-    const w = head * (1 - p * 0.82);
-    left.push(C + Math.cos(t) * (R + w), C + Math.sin(t) * (R + w));
-    right.push(C + Math.cos(t) * (R - w), C + Math.sin(t) * (R - w));
+    const p = k / steps;
+    const theta = angle - p * span;
+    const w = headRadius * Math.pow(1 - p * 0.85, 1.25);
+    left.push(cx + Math.cos(theta) * (R + w), cy + Math.sin(theta) * (R + w));
+    right.push(cx + Math.cos(theta) * (R - w), cy + Math.sin(theta) * (R - w));
   }
-  if (g.createConicGradient) {
-    const fade = g.createConicGradient(a - span, C, C);
-    fade.addColorStop(0, `${tone}00`);
-    fade.addColorStop(span / TAU, `${tone}f2`);
-    fade.addColorStop(Math.min(1, span / TAU + 0.001), `${tone}00`);
-    g.fillStyle = fade;
-  } else g.fillStyle = `${tone}80`;
+
+  const hx = cx + Math.cos(angle) * R;
+  const hy = cy + Math.sin(angle) * R;
+  const tx = left[left.length - 2];
+  const ty = left[left.length - 1];
+
+  const fade = g.createLinearGradient(hx, hy, tx, ty);
+  fade.addColorStop(0, hexToRgba(tone, 0.95));
+  fade.addColorStop(0.35, hexToRgba(tone, 0.72));
+  fade.addColorStop(0.75, hexToRgba(tone, 0.22));
+  fade.addColorStop(1, hexToRgba(tone, 0));
+
+  g.fillStyle = fade;
   g.beginPath();
   g.moveTo(left[0], left[1]);
   for (let k = 1; k <= steps; k++) g.lineTo(left[2 * k], left[2 * k + 1]);
   for (let k = steps; k >= 0; k--) g.lineTo(right[2 * k], right[2 * k + 1]);
   g.closePath();
   g.fill();
+
+  const glowR = headRadius * 3.2;
+  const glow = g.createRadialGradient(hx, hy, headRadius * 0.4, hx, hy, glowR);
+  glow.addColorStop(0, hexToRgba(tone, isDark ? 0.30 : 0.22));
+  glow.addColorStop(0.45, hexToRgba(tone, isDark ? 0.12 : 0.08));
+  glow.addColorStop(1, hexToRgba(tone, 0));
+
+  g.fillStyle = glow;
+  g.beginPath();
+  g.arc(hx, hy, glowR, 0, Math.PI * 2);
+  g.fill();
+
   g.fillStyle = tone;
   g.beginPath();
-  g.arc(C + Math.cos(a) * R, C + Math.sin(a) * R, head, 0, TAU);
+  g.arc(hx, hy, headRadius, 0, Math.PI * 2);
   g.fill();
+}
+
+// Mini-orbit in het venster (Voorstel 1): 5 concentrische banen, glijdende komeet en centrale Nu-kern
+let orbRaf = 0;
+function drawComposerOrbit(now) {
+  const lv = LEVEL_BY_ID.get(composerLevel);
+  const g = composerOrb.getContext('2d');
+  const size = composerOrb.width, C = size / 2, TAU = Math.PI * 2;
+  const isDark = resolvedTheme() === 'dark';
+  const tone = isDark ? lv.dark : lv.color;
+
+  if (!orbLastTime) orbLastTime = now;
+  const dt = Math.min((now - orbLastTime) / 1000, 0.1);
+  orbLastTime = now;
+
+  // Soepele straalovergang tussen banen bij niveauwissel
+  orbRadius += (orbTargetRadius - orbRadius) * Math.min(dt * 10, 0.25);
+  if (orbPulse > 0) orbPulse = Math.max(0, orbPulse - dt * 2.4);
+
+  const period = Math.min(lv.period, 6);
+  if (!reducedMotion.matches) {
+    orbAngle = (orbAngle + (dt / period) * TAU) % TAU;
+  } else {
+    orbAngle = -Math.PI / 2;
+  }
+
+  g.clearRect(0, 0, size, size);
+
+  // 1. Alle 5 concentrische banen in ragfijn grafiet
+  for (let k = 0; k < ORB_RADII.length; k++) {
+    const r = ORB_RADII[k];
+    const isSelected = (k + 1 === composerLevel);
+    g.beginPath();
+    g.arc(C, C, r, 0, TAU);
+    if (isSelected) {
+      g.lineWidth = size * 0.0036;
+      g.strokeStyle = hexToRgba(tone, 0.38 + orbPulse * 0.48);
+    } else {
+      g.lineWidth = size * 0.0022;
+      g.strokeStyle = `rgba(${inkRgb()}, 0.085)`;
+    }
+    g.stroke();
+  }
+
+  // 2. Subtiele rimpel bij het wisselen van niveau
+  if (orbPulse > 0.01) {
+    g.beginPath();
+    g.arc(C, C, orbTargetRadius + (1 - orbPulse) * 10, 0, TAU);
+    g.lineWidth = size * 0.0028;
+    g.strokeStyle = hexToRgba(tone, orbPulse * 0.4);
+    g.stroke();
+  }
+
+  // 3. Centrale rode Orbit-kern (baken van Nu)
+  const coreTone = isDark ? '#F0306A' : '#E70049';
+  g.fillStyle = hexToRgba(coreTone, isDark ? 0.22 : 0.18);
+  g.beginPath();
+  g.arc(C, C, size * 0.038, 0, TAU);
+  g.fill();
+  g.fillStyle = coreTone;
+  g.beginPath();
+  g.arc(C, C, size * 0.012, 0, TAU);
+  g.fill();
+
+  // 4. Komeet op de actieve baan
+  const headRadius = size * 0.025;
+  const span = 1.35;
+  drawRefinedComet(g, C, C, orbRadius, orbAngle, span, headRadius, tone, isDark);
+
   if (composer.open && !reducedMotion.matches) orbRaf = requestAnimationFrame(drawComposerOrbit);
 }
 
 function paintComposerOrb() {
   const lv = LEVEL_BY_ID.get(composerLevel);
+  orbTargetRadius = ORB_RADII[composerLevel - 1] || ORB_RADII[0];
+  orbPulse = 1.0;
   cancelAnimationFrame(orbRaf);
   orbRaf = requestAnimationFrame(drawComposerOrbit);
   toneNode(composer, lv);
@@ -1632,9 +1710,6 @@ function paintComposerOrb() {
   $('composer-levels').classList.toggle('is-locked', Boolean(composerDue));
   $('due-hint').textContent = composerDue && composerRepeat ? tx('repeat.hint', { repeat: tx(`repeat.${composerRepeat}`), label: dueLabel(composerDue) })
     : composerDue ? tx('composer.hint', { label: dueLabel(composerDue), level: lv.name }) : '';
-  composerOrb.classList.remove('is-swap');
-  void composerOrb.offsetWidth;
-  composerOrb.classList.add('is-swap');
 }
 
 function buildComposerLevels() {
@@ -1656,6 +1731,9 @@ function openComposer(level = wheel.level) {
   composer.classList.remove('is-closing');
   composerLevel = level;
   wheelLevel = level;
+  orbRadius = orbTargetRadius = ORB_RADII[composerLevel - 1] || ORB_RADII[0];
+  orbLastTime = 0;
+  orbPulse = 0.5;
   composerForm.reset();
   $('due-toggle').hidden = false;
   setComposerRepeat('');
