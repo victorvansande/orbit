@@ -909,3 +909,27 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - `live_intro_mobile_dark.png`: mobiele weergave (390x844, één kolom, elegante kaart).
   - Consolefouten: 0 fouten.
 - **Impact op opslag / state:** Geen.
+
+### 30. Mobiele verfijning en adaptatie van het Uitleg-menu
+- **Vraag van Victor:** "make sure it also looks good and adapted on mobile"
+- **Gewijzigde bestanden:**
+  - `index.html`:
+    - In `#intro` de sectiekoppen voorzien van `.intro-meta-desk` (toont sneltoetsen op desktop) en `.intro-meta-mob` (toont redactionele hoofdstuknummers `01` t/m `06` op mobiel).
+  - `src/styles.css`:
+    - Op mobiel (< 600 px) en touchscreens (`hover: none`):
+      - Storende desktop scrollbalk-track volledig verborgen (`scrollbar-width: none; -ms-overflow-style: none; ::-webkit-scrollbar { display: none; }`) waardoor de 22px afgeronde hoeken van de kaart en de `1px solid var(--line)` rand overal zuiver en gaaf blijven.
+      - Sneltoetsen onderaan (`.intro-keys`) verborgen op mobiel; in de koppen tonen de metadata strakke kapitaalnummers `01` t/m `06` in Geist Mono.
+      - Sticky footer (`.intro-foot`) verbreed van rand tot rand via negatieve marges (`-20px`) met een vloeiend 24px oplosverloop (`::before`) zodat er bij het scrollen geen tekst door de hoeken lekt.
+      - De "Aan de slag" knop (`#intro-close`) beslaat op mobiel de volle breedte met een comfortabele trefzone van 44px hoogte en respecteert `env(safe-area-inset-bottom)`.
+      - `overscroll-behavior-y: contain` en `-webkit-overflow-scrolling: touch` voor een soepele, natuurlijke veegervaring.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v15`.
+  - `CLAUDE.md` en `ANTIGRAVITY_CHANGELOG.md`: bijgewerkt.
+- **Getest:**
+  - Headless Edge visual renders via CDP:
+    - `final_mobile_390_dark_top.png` & `_bottom.png`: iPhone 14/15/16 donker thema (hoofdstukken 01-06, volle knop, perfect scrollbereik).
+    - `final_mobile_390_light_top.png` & `_bottom.png`: iPhone licht thema.
+    - `final_mobile_375_dark_top.png`: iPhone SE (375x667, compact en perfect geproportioneerd).
+    - `final_desktop_dark.png`: desktop blijft onaangetast met toetsenbord-sneltoetsen en zijwaartse knop.
+  - Consolefouten: 0 fouten.
+- **Impact op opslag / state:** Geen.
