@@ -1,6 +1,6 @@
 /* ---- Matrixklok: cijfers van 5 × 7 stippen, zoals in Kwick ---- */
 // Elk teken is een eigen SVG; bij een nieuwe minuut wordt alleen het gewijzigde cijfer opnieuw opgebouwd,
-// zodat enkel dat cijfer zijn stippen laat oplichten. Effen stippen, geen gloed (huisstijl van Orbit).
+// zodat enkel dat cijfer zijn stippen laat oplichten. Subtiele lichte gloed (#dm-glow) voor actieve stippen (Victor, 06/11/2026).
 
 const GLYPHS = {
   '0': ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],

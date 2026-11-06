@@ -912,6 +912,11 @@ body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
 .clock { --dm-h: min(84px, 9.4vh); display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
 .clock .dm { display: block; height: 100%; width: auto; overflow: visible; }
 .dm .o { fill: currentColor; animation: dm-in .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d); }
+/* Subtiele gloed voor actieve stippen alsof het een dot matrix van echt licht is (Victor, 06/11/2026) */
+[data-theme="dark"] .dm .o,
+.mg-dm .dm .o {
+  filter: url(#dm-glow);
+}
 .dm .g { fill: currentColor; opacity: var(--dm-ghost); }
 @keyframes dm-in { from { opacity: .1; transform: scale(.4); transform-box: fill-box; transform-origin: center; } }
 /* Weer boven de klok, links gelijk met de klok; link naar Kwick, zelfde lijniconen als Kwick.

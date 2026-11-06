@@ -1021,3 +1021,25 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - Consolefouten: 0 fouten.
 - **Impact op opslag / state:** Geen; valkuil-vrije migratie naar actieve modus.
 
+### 34. Subtiele dot matrix gloed voor actieve stippen (maandwissel, klok en tellers)
+- **Vraag van Victor:** "Kan je hier de rode dots die 'aan' staan een heel klein beetje, heel subtiel laten gloeien alsof het echt een dot matrix van licht is? Zoals je denk ik al een beetje deed bij de klok op focus mode en de star counter? Zoniet, laat die op dezelfde manier gloeien."
+- **Doorgevoerde wijzigingen:**
+  - `index.html`:
+    - SVG filter `<filter id="dm-glow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="0.18" flood-color="currentColor" flood-opacity="0.75"/></filter>` toegevoegd aan de `<defs>` sectie.
+    - Door de filterregio op 200% te stellen en `overflow: visible` op de `.dm` SVGs, wordt de gloed nergens door viewBox-randen of tegelgrenzen afgesneden.
+    - `flood-color="currentColor"` zorgt ervoor dat de gloed dynamisch de kleur van de stip volgt: warm rood (`var(--core)`) bij de maandwissel, en zacht wit fosforlicht (`var(--ink)`) bij de klok en tellers in het donkere thema.
+  - `src/styles.css`:
+    - `filter: url(#dm-glow)` gekoppeld aan `.mg-dm .dm .o` (altijd zacht oplichtend rood bij het maandnummer in zowel licht als donker thema) en `[data-theme="dark"] .dm .o` (voor de focusklok, stappenteller/sterrenteller en zandloperminuten in het donkere thema).
+    - In het lichte thema behouden de klok en teller hun strakke grafiet/inkt-stippen zonder schaduwranden.
+  - `src/scene/matrix.js`:
+    - Toelichting in de codekop bijgewerkt.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v19`.
+  - `CLAUDE.md`:
+    - Overdracht bijgewerkt.
+- **Getest:**
+  - Headless Chromium screenshots geverifieerd voor donker en licht thema op de maandwissel (`.mg-dm`), focusklok (`.clock`) en sterrenteller (`.stat-dm`).
+  - Volledige app-boot geverifieerd in Chromium headless zonder consolefouten.
+- **Impact op opslag / state:** Geen.
+
+

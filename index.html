@@ -283,8 +283,12 @@
 </section>
 
 <!-- Weericonen, overgenomen uit Kwick (src/focus/weather.js) -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
   <defs>
+    <!-- Subtiele gloed voor actieve stippen in de dot matrix (klok, teller, maandwissel, Victor 06/11/2026) -->
+    <filter id="dm-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="0.18" flood-color="currentColor" flood-opacity="0.75"/>
+    </filter>
     <path id="w-cloudp" d="M7 18.5h10a3.5 3.5 0 0 0 .3-6.99 5 5 0 0 0-9.6-1.3A4 4 0 0 0 7 18.5z"/>
     <mask id="w-mpc" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
       <rect width="24" height="24" fill="#fff"/>
