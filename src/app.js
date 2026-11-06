@@ -1887,6 +1887,31 @@ if (DEMO_MODE) {
   document.title = `${document.title} · ${tx('demo.badge')}`;
 }
 
+/* ---- Merk v2 interactie: onthul 'O' bij hover (desktop) of tik (mobiel) ---- */
+const brandEl = document.querySelector('.brand');
+if (brandEl) {
+  let brandAnimTimer = null;
+  const triggerBrandO = () => {
+    brandEl.classList.remove('is-animating');
+    void brandEl.offsetWidth; // herstart animatie bij herhaalde tik/hover
+    brandEl.classList.add('is-animating');
+    clearTimeout(brandAnimTimer);
+    brandAnimTimer = setTimeout(() => {
+      brandEl.classList.remove('is-animating');
+    }, 2450);
+  };
+  brandEl.addEventListener('pointerenter', (e) => {
+    if (e.pointerType !== 'touch') triggerBrandO();
+  });
+  brandEl.addEventListener('click', triggerBrandO);
+  brandEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      triggerBrandO();
+    }
+  });
+}
+
 /* ---- Focusmodus ---- */
 let idleTimer = 0;
 const weather = createWeather($('focus-weather'));

@@ -772,7 +772,41 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Met interactie/focus/menu-open: `modesOpacity: "1"`, `modesVisibility: "visible"`.
     - Geen console- of runtimefouten.
 
-### 06/11/2026 - Geïntegreerd woordmerk met beeldmerk als 'O' (Voorstel 1)
+### 06/11/2026 - Geïntegreerd woordmerk in topbar met reveal-animatie van de 'O'
+- **Wat is er veranderd:**
+  1. **Vraag van Victor:**
+     - Verander het logo linksboven naar het nieuwe woordmerk met de Orbit als 'O'.
+     - Als je over het logo gaat met je muis (desktop) of erop tikt (mobiel), verschijnt de 'O' van achter de orbit mooi, smooth en doordacht als animatie. Daarna gaat het weer weg.
+  2. **Implementatie in de topbar:**
+     - `index.html`: Het oude SVG-beeldmerk in `<h1 class="brand">` vervangen door het geïntegreerde woordmerk (viewBox `0 -730 2359.49 742`).
+     - De typografische 'O' uit *Instrument Sans* is geplaatst in een transform-wrapper `<g transform="translate(83.34, 0)">` achter het Orbit-symbool.
+     - `.brand` voorzien van `pointer-events: auto; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;` zodat interacties vlekkeloos doorkomen ondanks de `pointer-events: none` op `.topbar`.
+     - Toegankelijkheid gewaarborgd met `tabindex="0"`, `role="button"`, `aria-label="Orbit"` en toetsenbordbediening (`Enter` / `Spatie`).
+  3. **Vloeiende Soft Bloom & Breathe animatie:**
+     - `@keyframes reveal-o` (duur 2.4s met `var(--ease)`):
+       - `0%`: `opacity: 0; transform: scale(0.88);`
+       - `20%`: `opacity: 0.88; transform: scale(1);` (de 'O' bloeit soepel op vanuit het optische midden `393px -360px` achter de lus)
+       - `75%`: `opacity: 0.88; transform: scale(1);` (ademt rustig in beeld, perfect leesbaar als "Orbit")
+       - `100%`: `opacity: 0; transform: scale(0.94);` (lost geleidelijk en sereen weer op)
+     - Respecteert `@media (prefers-reduced-motion: reduce)`: animatie wordt dan direct onderdrukt.
+  4. **Interactielogica:**
+     - `src/app.js`: Pointerenter (muis) en click/tap (mobiel touch) activeren `.is-animating` op `.brand`.
+     - Bij herhaalde tikken of snelle hovers wordt de animatie via een reflow direct en vloeiend gereset.
+     - Een timeout van 2450 ms ruimt de toestand na voltooiing weer netjes op.
+  5. **Service Worker:**
+     - Cache-versie in `sw.js` opgehoogd naar `orbit-v12`.
+- **Gewijzigde bestanden:**
+  - `index.html`
+  - `src/styles.css`
+  - `src/app.js`
+  - `sw.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Visuele verificatie via headless Edge op 1280x820 (desktop) en 375x812 (mobiel) in zowel Donker als Licht thema.
+  - Vóór klik: schoon geïntegreerd woordmerk zonder 'O'.
+  - Tijdens klik/hover: 'O' bloeit met 88% dekking op achter de lus, optisch perfect gecentreerd.
+  - Na afloop: 'O' lost volledig op en keert terug naar opacity 0 zonder lay-outverschuiving.
 - **Wat is er veranderd:**
   1. **Vraag van Victor:**
      - Voeg aan het logobestand toe dat het beeldmerk direct als de letter 'O' gebruikt kan worden in het woordmerk (zoals getoond in een mockup-voorbeeld).
