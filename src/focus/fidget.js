@@ -23,7 +23,7 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma', 'panel', 'life', 'breakout', 'bubbles'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma', 'wayglim', 'panel', 'life', 'breakout', 'bubbles'];
 
 import { createPanel } from './panel.js';
 import { createLife } from './life.js';
@@ -562,6 +562,55 @@ function topo() {
     recolor(el) { if (destroy) { this.unmount(); this.mount(el); } },
   };
 }
+/* ---- Wayglim: geanimeerde golf met korrel en licht ---- */
+// Export van Wayglim (src/vendor/wayglim.js), WebGL2. Pas geladen als je hem kiest;
+// opgeruimd zodra je een andere soort kiest of de focus sluit.
+function wayglim() {
+  let destroy = null, loading = false, wanted = false, container = null;
+  return {
+    own: true,
+    init() {}, step() {}, move() {}, leave() {}, tap() {},
+    mount(el) {
+      wanted = true;
+      container = el;
+      el.style.backgroundColor = 'rgb(11, 5, 7)';
+      if (destroy || loading) return;
+      loading = true;
+      import('../vendor/wayglim.js').then(({ createWayglim }) => {
+        loading = false;
+        if (wanted && !destroy) {
+          let opts = undefined;
+          if (ACCENT) {
+            const ramp = accentRamp(ACCENT);
+            opts = {
+              params: {
+                spectrum: 'custom',
+                customColors: [ramp[1], ramp[2], ramp[3], ramp[4]],
+              }
+            };
+          }
+          const player = createWayglim(el, opts);
+          destroy = () => { player?.destroy?.(); };
+        }
+      }).catch(() => { loading = false; });
+    },
+    unmount() {
+      wanted = false;
+      destroy?.();
+      destroy = null;
+      if (container) {
+        container.style.backgroundColor = '';
+        container = null;
+      }
+    },
+    recolor(el) {
+      if (destroy) {
+        this.unmount();
+        this.mount(el);
+      }
+    },
+  };
+}
 let gl2;
 const hasGL2 = () => {
   if (gl2 === undefined) {
@@ -572,7 +621,7 @@ const hasGL2 = () => {
   return gl2;
 };
 
-const FACTORIES = { water, jelly, lava, grain, topo };
+const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
 
 export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const cv = box.querySelector('canvas');
@@ -646,11 +695,11 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
 
   // keuze bovenin het bakje: elegant en compact dropdown-menu (Victor, 05/11/2026)
   const bar = box.querySelector('.fidget-modes');
-  // zonder WebGL geen lava of gloed (dan ook niet als keuze)
-  const available = () => MODES.filter(m => (!['lava', 'grain'].includes(m) || getGL()) && (m !== 'topo' || hasGL2()));
+  // zonder WebGL geen lava of gloed (dan ook niet als keuze); zonder WebGL2 geen topo of wayglim
+  const available = () => MODES.filter(m => (!['lava', 'grain'].includes(m) || getGL()) && (!['topo', 'wayglim'].includes(m) || hasGL2()));
 
   const GROUPS = [
-    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma'] },
+    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma', 'wayglim'] },
     { key: 'groupPlay', modes: ['panel', 'life', 'breakout', 'bubbles'] }
   ];
 
@@ -823,8 +872,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     const m = mode();
     cv.hidden = Boolean(m.gl || m.own); cvGL.hidden = !m.gl; own.hidden = !m.own;
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
-    box.classList.toggle('on-dark', modeName === 'grain');
-    box.classList.toggle('is-panel', modeName === 'panel');   // gloed vult het vak met een donker verloop: lichte keuzerij
+    box.classList.toggle('on-dark', ['grain', 'wayglim'].includes(modeName));
+    box.classList.toggle('is-panel', modeName === 'panel');   // gloed en wayglim vullen het vak met een donker verloop/achtergrond: lichte keuzerij
     if (!m.gl) {
       const ctx = getGL();
       if (ctx) {

@@ -933,3 +933,35 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - `final_desktop_dark.png`: desktop blijft onaangetast met toetsenbord-sneltoetsen en zijwaartse knop.
   - Consolefouten: 0 fouten.
 - **Impact op opslag / state:** Geen.
+
+### 31. Wayglim WebGL2 fidget in focusmodus
+- **Vraag van Victor:** Victor deelde de volledige Wayglim geanimeerde hero-achtergrond (`WayglimBackground.tsx` / `mountCfMotion`) en vroeg: "Kan je dit als fidget toevoegen?"
+- **Gewijzigde bestanden:**
+  - `src/vendor/wayglim.js`:
+    - Nieuw vendor-bestand met de verbatim Wayglim engine (`mountCfMotion`), inclusief Paper Shaders (Apache 2.0 licentie), noise textuur, presets (`WAYGLIM_SETTINGS`), `WAYGLIM_BACKGROUND` (`rgb(11, 5, 7)`), `WAYGLIM_ASPECT` (`1.777778`) en factory `createWayglim(container, options)`.
+  - `src/focus/fidget.js`:
+    - `MODES`: `'wayglim'` toegevoegd als 11e optie.
+    - `FACTORIES`: geregistreerd met factory `wayglim()`.
+    - `available()`: WebGL2-detectie toegevoegd via `hasGL2()` (`(!['topo', 'wayglim'].includes(m) || hasGL2())`).
+    - `GROUPS`: ingedeeld onder `groupFluid` ("Vloeistof & Veld").
+    - `render()`: `box.classList.toggle('on-dark', ['grain', 'wayglim'].includes(modeName))` activeert heldere witte contraststijl voor de bedieningselementen over de donkere achtergrond.
+    - Kleurafstemming: bij selectie van een eigen accentkleur (`ACCENT`) via de kleurkiezer wordt via `accentRamp(ACCENT)` een aangepast 4-kleurenspectrum (`customColors`) aan Wayglim doorgegeven. Bij reset (↺) keert Wayglim direct terug naar de originele studio sunset look.
+    - Levenscyclus: dynamische `import('../vendor/wayglim.js')` pas bij keuze; bij verlaten of focus sluiten worden requestAnimationFrame, ResizeObserver, IntersectionObserver en contexten netjes opgeruimd via `player.destroy()`.
+  - `src/core/i18n.js`:
+    - Vertaalsleutel `'fidget.wayglim': 'Wayglim'` toegevoegd aan zowel het Nederlandse als het Engelse woordenboek.
+  - `src/styles.css`:
+    - `.fidget-own canvas`: voorzien van `display: block; width: 100% !important; height: 100% !important; left: 0 !important; top: 0 !important;` zodat het canvas altijd exact het fidgetvenster vult zonder double-scaling bij CSS transform scales op mobiel.
+  - `sw.js`:
+    - `src/vendor/wayglim.js` toegevoegd aan `SHELL`.
+    - Cache-versie verhoogd van `orbit-v15` naar `orbit-v16`.
+  - `CLAUDE.md`:
+    - `Bestanden`-tabel en `Overdracht` bijgewerkt.
+- **Getest:**
+  - Syntaxtesten met Node.js (`--check` / `--input-type=module`): 0 fouten op alle bestanden.
+  - Headless Chromium CDP geautomatiseerde tests:
+    - Desktop (1440x900): focusmodus geopend, fidget popover geopend, Wayglim gekozen, WebGL2-canvas geverifieerd (buffer 651x454 voor 2x DPR retina, lay-out 326x227), `.on-dark` en `.is-gl` actief, menu-naam "Wayglim".
+    - Kleurkiezer: custom kleur `#00ff88` ingesteld en geverifieerd dat Wayglim herbouwt met customColors; reset (↺) herstelt de standaard sunset-look.
+    - Mobiel (375x667): mobiele `#focus-fidget-btn` geopend, modal opent met scale 1.000, canvas lay-out 326x227, geen horizontale scroll.
+    - Smal scherm (320x568 iPhone SE): modal opent met scale 0.885, canvas matched container, geen horizontale scroll.
+    - Consolefouten: 0 fouten.
+- **Impact op opslag / state:** Geen nieuwe opslagsleutels; bewaart keuze in bestaande `priority-orbit.fidget.v1`.
