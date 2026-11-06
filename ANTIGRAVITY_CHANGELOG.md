@@ -771,3 +771,42 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Zonder hover: `modesOpacity: "0"`, `modesVisibility: "hidden"`.
     - Met interactie/focus/menu-open: `modesOpacity: "1"`, `modesVisibility: "visible"`.
     - Geen console- of runtimefouten.
+
+### 06/11/2026 - Geïntegreerd woordmerk met beeldmerk als 'O' (Voorstel 1)
+- **Wat is er veranderd:**
+  1. **Vraag van Victor:**
+     - Voeg aan het logobestand toe dat het beeldmerk direct als de letter 'O' gebruikt kan worden in het woordmerk (zoals getoond in een mockup-voorbeeld).
+     - De mockup dient echter puur als inspiratie: het ontwerp moest volledig vanaf stap 0 geconstrueerd worden zodat alle afmetingen, schalen, overshoots, gewichten en tussenafstanden wiskundig en optisch kloppen.
+     - Vijf doorgerekende voorstellen voorgelegd (V1 Ascender-uitlijning, V2 Cap-height, V3 Hybride, V4 X-height, V5 Extra lucht). Victor koos **Voorstel 1 (Ascender-uitlijning, hoogte 742, gap 65)**.
+  2. **Typografische constructie vanaf stap 0:**
+     - Gebaseerd op het officiële fontgrid van *Instrument Sans Medium* (1000 units/em, ascender b = -720, x-height = -520, baseline y = 0).
+     - Het Orbit-symbool (ellips 410x270 onder -24 graden, kop op 70 graden, tapse staart) is geschaald naar hoogte 742 font-units.
+     - **Ascender-uitlijning met curve-overshoot:** De top van de ellips bereikt y = -730. Dit geeft een optische overshoot van 10 eenheden ten opzichte van de rechte stok van de 'b' op y = -720. Hierdoor oogt de ronde letterkapitaal optisch exact even hoog als de stokletter in plaats van kleiner.
+     - **Baseline-overgang:** De buitenste onderboog van de ellips landt op y = +12 (subtiele baseline-overshoot). De rode kern (Nu) zweeft op y ≈ -50 comfortabel en geborgen binnen de kom van de letter, waardoor er geen storende staart of descender onder de basislijn uitsteekt.
+     - **Spatiëring en kerning:** De tussenruimte (gap) tussen het symbool en de stam van de 'r' is vastgesteld op 65 font-units (offset naar x = 343.49). Dit zorgt voor een natuurlijke, vloeiende woordcadans die direct en vanzelfsprekend leest als "Orbit".
+     - **Totale verhouding:** Totale inkt-afmetingen 2359.49 x 742 (aspect ratio 3.18 : 1).
+  3. **Geleverde assets en documentatie:**
+     - Vijf officiële vector-SVGs gegenereerd in `brand/merk/svg/`:
+       - `orbit-integrated-fullcolour.svg` (Inkt `#1B1B22`, Nu `#E70049`)
+       - `orbit-integrated-fullcolour-reversed.svg` (Inkt licht `#ECECF1`, Nu `#F0306A`)
+       - `orbit-integrated-black.svg` (Zwart `#000000`)
+       - `orbit-integrated-white.svg` (Wit `#FFFFFF`)
+       - `orbit-integrated-red.svg` (Monochroom amaranth `#E70049`)
+     - `brand/merk/manifest.json`: de vijf nieuwe SVG-bestanden opgenomen in de officiële manifestlijst.
+     - `brand/merkgids/index.html`: nieuwe showcase-platen toegevoegd (licht en donker), typografische verantwoording opgenomen in de sectie Lockups, bestandenlijst bijgewerkt, en de eerdere kanttekening ("leest mogelijk als C orbit") herzien doordat deze geïntegreerde variant die verwarring structureel oplost.
+     - `src/core/mark.js`: `INTEGRATED` export toegevoegd met schaal (0.11628), offsets, basislijn (73) en kopcoördinaten.
+- **Gewijzigde bestanden:**
+  - `brand/merk/svg/orbit-integrated-fullcolour.svg` (nieuw)
+  - `brand/merk/svg/orbit-integrated-fullcolour-reversed.svg` (nieuw)
+  - `brand/merk/svg/orbit-integrated-black.svg` (nieuw)
+  - `brand/merk/svg/orbit-integrated-white.svg` (nieuw)
+  - `brand/merk/svg/orbit-integrated-red.svg` (nieuw)
+  - `brand/merk/manifest.json`
+  - `brand/merkgids/index.html`
+  - `src/core/mark.js`
+  - `CLAUDE.md`
+  - `ANTIGRAVITY_CHANGELOG.md`
+- **Getest:**
+  - Playwright visual render test `scratch/verify_merkgids.mjs` uitgevoerd tegen `brand/merkgids/index.html`:
+    - Alle 23 afbeeldingen in de merkgids laden foutloos (0 mislukte verzoeken, 0 consolefouten).
+    - Zowel de lichte als donkere platen met het nieuwe geïntegreerde woordmerk renderen haarscherp.

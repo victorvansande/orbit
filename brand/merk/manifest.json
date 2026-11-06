@@ -24,6 +24,11 @@
   "merk/svg/orbit-horizontal-white.svg",
   "merk/svg/orbit-stacked-white.svg",
   "merk/svg/orbit-horizontal-red.svg",
-  "merk/svg/orbit-stacked-red.svg"
+  "merk/svg/orbit-stacked-red.svg",
+  "merk/svg/orbit-integrated-fullcolour.svg",
+  "merk/svg/orbit-integrated-fullcolour-reversed.svg",
+  "merk/svg/orbit-integrated-black.svg",
+  "merk/svg/orbit-integrated-white.svg",
+  "merk/svg/orbit-integrated-red.svg"
  ]
 }
