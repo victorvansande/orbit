@@ -995,3 +995,29 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Schermafbeeldingen gemaakt en visueel gecontroleerd op desktop en mobiel.
   - Consolefouten: 0 fouten.
 - **Impact op opslag / state:** Geen.
+
+### 33. Verwijdering fidgets Bubbles, Plasma en Breakout
+- **Vraag van Victor:** "verwijder de bubbles, plasma en breakout fidgets"
+- **Doorgevoerde wijzigingen:**
+  - `src/focus/breakout.js`, `src/focus/plasma.js`, `src/focus/bubbles.js`:
+    - De drie afzonderlijke fidget-bestanden verwijderd uit de codebase via `git rm`.
+  - `src/focus/fidget.js`:
+    - Imports van `createBreakout`, `createPlasma`, `createBubbles` verwijderd.
+    - `MODES` bijgewerkt naar 8 stuks: `['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'panel', 'life']`.
+    - Factory-branches voor breakout, plasma en bubbles in `mode()` verwijderd.
+    - `hasPresets` teruggebracht naar `['panel', 'life']`.
+    - `GROUPS` bijgewerkt: `groupFluid` (`water`, `jelly`, `lava`, `grain`, `topo`, `wayglim`), `groupPlay` (`panel`, `life`).
+    - Bestaande opslag-fallback (`!available().includes(modeName)`) zorgt ervoor dat als een gebruiker eerder breakout, plasma of bubbles had geselecteerd, het bakje geruisloos terugvalt naar `water` zonder fouten.
+  - `src/core/i18n.js`:
+    - Woordenboeken NL en EN geschoond van de vertaalsleutels voor plasma, breakout en bubbels.
+  - `sw.js`:
+    - `SHELL`-lijst ontdaan van de 3 verwijderde JavaScript-bestanden.
+    - Cache-versie verhoogd naar `orbit-v18`.
+  - `CLAUDE.md`:
+    - Bestanden-tabel en overdracht bijgewerkt.
+- **Getest:**
+  - Syntaxcontrole met `node --check` op alle gewijzigde JS-bestanden (foutloos).
+  - Headless Chromium CDP tests: focusmodus geopend, popover geopend, geverifieerd dat er exact 8 opties getoond worden onder de 2 groepen, wisselen tussen fidgets getest, fallback getest.
+  - Consolefouten: 0 fouten.
+- **Impact op opslag / state:** Geen; valkuil-vrije migratie naar actieve modus.
+

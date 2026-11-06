@@ -23,13 +23,10 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma', 'wayglim', 'panel', 'life', 'breakout', 'bubbles'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'panel', 'life'];
 
 import { createPanel } from './panel.js';
 import { createLife } from './life.js';
-import { createBreakout } from './breakout.js';
-import { createPlasma } from './plasma.js';
-import { createBubbles } from './bubbles.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -662,12 +659,6 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
         modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen });
       } else if (modeName === 'life') {
         modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
-      } else if (modeName === 'breakout') {
-        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
-      } else if (modeName === 'plasma') {
-        modes[modeName] = createPlasma({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
-      } else if (modeName === 'bubbles') {
-        modes[modeName] = createBubbles({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -685,7 +676,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
-  const hasPresets = m => ['panel', 'life', 'breakout', 'plasma', 'bubbles'].includes(m);
+  const hasPresets = m => ['panel', 'life'].includes(m);
   nextBtn.addEventListener('click', () => { if (hasPresets(modeName)) mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
     if (!hasPresets(modeName) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
@@ -699,8 +690,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   const available = () => MODES.filter(m => (!['lava', 'grain'].includes(m) || getGL()) && (!['topo', 'wayglim'].includes(m) || hasGL2()));
 
   const GROUPS = [
-    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'plasma', 'wayglim'] },
-    { key: 'groupPlay', modes: ['panel', 'life', 'breakout', 'bubbles'] }
+    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim'] },
+    { key: 'groupPlay', modes: ['panel', 'life'] }
   ];
 
   const menuWrap = document.createElement('div');
@@ -883,7 +874,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     }
     if (m.own) {
       m.mount(own);
-      m.frame?.(now);   // paneel, life, breakout, plasma, bubbels: tekenen mee in de lus
+      m.frame?.(now);   // paneel, life: tekenen mee in de lus
       return;
     }
     if (m.gl) {
