@@ -1158,13 +1158,13 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 }
 .sync::backdrop { background: var(--backdrop); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .sync-card {
-  display: flex; flex-direction: column; gap: 16px;
-  padding: 24px 26px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 22px 24px 20px;
   background: var(--surface); border-radius: 24px;
   box-shadow: 0 40px 90px var(--shadow-3), 0 2px 8px var(--shadow);
 }
 .sync[open] .sync-card { animation: pop-in .36s var(--pop); }
-.sync-view { display: flex; flex-direction: column; gap: 14px; }
+.sync-view { display: flex; flex-direction: column; gap: 12px; }
 .sync-text { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
 .sync-note { font-size: 12.5px; color: var(--ink-3); }
 .sync-label { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
@@ -1180,24 +1180,35 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 .sync-error { font-size: 13px; color: var(--late); }
 .sync-vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* voor de sleutelhanger, niet te zien */
 .sync-share-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.sync-share-grid .btn-ghost { width: 100%; justify-content: center; }
-.sync-note-box { font-size: 12.5px; line-height: 1.45; color: var(--ink-3); text-align: center; margin: 0; padding: 0 4px; }
-.sync-keep-card { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--fill); border: 1px solid var(--line); border-radius: 16px; }
-.sync-keep-head { display: flex; align-items: center; justify-content: space-between; }
-.sync-keep-tag { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
-.sync-keep-badge { font: 500 10.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); padding: 3px 7px; border-radius: 999px; background: var(--chip); border: 1px solid var(--line); }
+.sync-share-grid .btn-ghost { width: 100%; justify-content: center; min-height: 38px; }
+.sync-more { width: 100%; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; }
+.sync-more summary {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3); cursor: pointer; list-style: none; padding: 4px 0;
+  transition: color .2s var(--ease);
+}
+.sync-more summary::-webkit-details-marker { display: none; }
+.sync-more summary::after { content: " ▾"; font-size: 10px; opacity: .7; }
+.sync-more[open] summary::after { content: " ▴"; }
+.sync-more summary:hover { color: var(--ink); }
+.sync-more[open] summary { margin-bottom: 10px; color: var(--ink-2); }
+.sync-more .sync-keep-card {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px; background: var(--fill); border: 1px solid var(--line); border-radius: 14px;
+}
 .sync-keep-text { font-size: 12.5px; line-height: 1.45; color: var(--ink-2); margin: 0; }
-.sync-keep-card .btn-ghost { align-self: flex-start; }
+.sync-more .sync-keep-card .btn-ghost { align-self: flex-start; }
 .sync-key { flex: none; width: 100%; }   /* in de kolom van het formulier, anders werd flex-basis 200px de hoogte */
 .sync-code { font: 500 clamp(16px, 5.2vw, 26px)/1.2 var(--mono); letter-spacing: .08em; white-space: nowrap; text-align: center; padding: 14px 0; border: 1px dashed var(--dash); border-radius: 14px; user-select: all; }
-.sync-meta { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); text-align: center; margin: 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.sync-meta { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); text-align: center; margin: 0; padding-top: 10px; border-top: 1px solid var(--line); }
 .sync-meta:empty { display: none; }
-.sync-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sync-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 2px; }
 .sync-foot #sync-stop { color: var(--ink-3); }
 .sync-foot #sync-stop:hover { color: var(--late); border-color: var(--late); }
 /* QR-code: altijd donker op licht, ook in het donkere thema (scant het best) */
-.sync-qr-cluster { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0 6px; }
-.sync-qr { align-self: center; width: min(200px, 56vw); aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--qr-bg); box-shadow: 0 4px 16px var(--shadow-2); }
+.sync-qr-cluster { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 2px 0 4px; }
+.sync-qr { align-self: center; width: min(156px, 48vw); aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--qr-bg); box-shadow: 0 4px 16px var(--shadow-2); }
 .sync-qr svg { display: block; width: 100%; height: 100%; }
 .qr-bg { fill: var(--qr-bg); }
 .qr-ink { fill: var(--qr-ink); }

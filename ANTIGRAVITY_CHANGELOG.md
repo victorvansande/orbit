@@ -1262,3 +1262,46 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Gewone klik zonder slepen opent het venster wel zoals verwacht.
     - Console 100% foutloos (0 fouten).
 - **Impact op opslag / state:** Geen.
+
+### 42. Koppelvenster (#sync-on) opgeschoond en ingekort
+- **Vraag van Victor:** "Dit ziet er nog steeds rommelig uit en een te lang venster voor de relatief weinige info die het moet weergeven. Kan je het nog wat opschonen, eventueel inkorten en beter maken?" (met screenshot `IMG_6248.jpeg` van iPhone).
+- **Probleemanalyse:**
+  - Het koppelvenster in gekoppelde/verzendstand (`#sync-on`) had een hoogte van `818 px`. Op een mobiel scherm (zoals Victor's iPhone met 812 px viewport) vulde het dialoogvenster 100% van het scherm van boven naar onder.
+  - Oorzaken van de onrust en lengte:
+    1. QR-code was `min(200px, 56vw)` met extra marges.
+    2. Een 5 regels tellende paragraaf grijze tekst (`.sync-note-box`) herhaalde wat de statusregel erboven al bondig zei ("Scan met het toestel dat moet ontvangen").
+    3. De sleutelhanger/reservekopie (`#sync-keep`) nam als zware, omkaderde subkaart van 120 px een prominente centrale plek in, hoewel het een optionele voorzorgsmaatregel is.
+- **Doorgevoerde wijzigingen:**
+  - `index.html`:
+    - Overbodige tekstparagraaf `.sync-note-box` verwijderd.
+    - `#sync-keep` ingekapseld in een subtiel inklapbaar detail: `<details class="sync-more" id="sync-more"><summary data-i="sync.moreBackup">Reservekopie in sleutelhanger</summary>...</details>`.
+    - Dubbele kop `.sync-keep-head` ("Sleutelhanger / Reservekopie") binnen het formulier verwijderd omdat de summary dit al vermeldt.
+  - `src/styles.css`:
+    - `.sync-card`: padding verfijnd naar `22px 24px 20px`, gap naar `14px`.
+    - `.sync-view`: gap naar `12px`.
+    - `.sync-qr-cluster`: gap naar `10px`, padding `2px 0 4px`.
+    - `.sync-qr`: breedte verfijnd naar `min(156px, 48vw)` (bespaart 44 px en scant net zo snel).
+    - `.sync-share-grid .btn-ghost`: min-height `38px`.
+    - `.sync-more`: discrete scheidingslijn bovenaan, gecentreerde monospace summary met subtiel pijltje (`▾` / `▴`) en hover-effect.
+    - `.sync-more .sync-keep-card`: rustige padding (`12px 14px`), achtergrond en rand passend bij een secundaire lade.
+    - `.sync-meta`: padding-top `10px`.
+    - `.sync-foot`: padding-top `2px`.
+  - `src/app.js`:
+    - In `openSync()` wordt `$('sync-more').open = false` gereset zodat het venster altijd compact en rustig opent.
+  - `src/core/i18n.js`:
+    - Vertaalsleutel `'sync.moreBackup'` toegevoegd in Nederlands ("Reservekopie in sleutelhanger") en Engels ("Backup in keychain").
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v27`.
+- **Resultaat en afmetingen:**
+  - Hoogte daalde van `817.75 px` naar `486.1 px` (-331.6 px).
+  - Het venster zweeft nu sereen in het midden van het scherm met ~163 px vrije marge boven en onder op een 812 px mobiel scherm.
+- **Getest:**
+  - Geautomatiseerde CDP-testsuite in Chromium:
+    - Mobiel 375×812 in donkere modus: hoogte 486 px, 0 scroll.
+    - Mobiel 375×812 in lichte modus: hoogte 486 px, 0 scroll.
+    - Desktop 1440×900 in donkere modus: 0 scroll.
+    - Desktop 1440×900 in lichte modus: 0 scroll.
+    - Uitklappen van het sleutelhangerdetail geverifieerd.
+    - Console 100% foutloos (0 fouten).
+- **Impact op opslag / state:** Geen. Alle sleutelhanger- en ontkoppelmechanismen functioneren ongewijzigd.
+

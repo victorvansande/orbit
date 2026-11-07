@@ -3348,6 +3348,7 @@ function openSync(view = 'auto') {
   if (DEMO_MODE) { showToast(tx('demo.noSync')); return; }   // de demo koppelt nooit, anders gaat ze naar je echte lijst
   syncView = view;
   $('sync-error').hidden = true;
+  const more = $('sync-more'); if (more) more.open = false;
   if (view === 'auto' && sync.code) sync.send();
   renderSync();
   if (!syncDialog.open) syncDialog.showModal();

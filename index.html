@@ -544,20 +544,16 @@
       </div>
       <p class="sync-code" id="sync-code" hidden></p>
 
-      <p class="sync-note-box" data-i="sync.onNote">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Naar de app op het beginscherm van deze zelfde gsm? Tik op "Kopieer link", open de app en plak de link bij Koppelen.</p>
-
-      <!-- voorstel A: de synccode als wachtwoord aanbieden aan de sleutelhanger; Safari en iOS bewaren een ingediend
-           wachtwoordformulier, daarom gaat het naar een onzichtbaar kader met about:blank (er gaat niets naar een server) -->
-      <form class="sync-keep-card" id="sync-keep" method="post" action="about:blank" target="sync-keep-sink">
-        <div class="sync-keep-head">
-          <span class="sync-keep-tag" data-i="sync.keychain">Sleutelhanger</span>
-          <span class="sync-keep-badge" data-i="sync.backup">Reservekopie</span>
-        </div>
-        <p class="sync-keep-text" id="sync-keep-text" data-i="sync.keepText">Bewaar de synccode in je sleutelhanger. Verliest dit toestel ooit zijn gegevens, dan haal je met die code je taken terug van de Orbit-server.</p>
-        <input class="sync-vh" type="text" name="username" autocomplete="username" value="Orbit" tabindex="-1" aria-hidden="true">
-        <input class="sync-vh" type="password" name="password" id="sync-keep-code" autocomplete="new-password" tabindex="-1" aria-hidden="true">
-        <button type="submit" class="btn-ghost" id="sync-keep-btn" data-i="sync.keep">Bewaar in sleutelhanger</button>
-      </form>
+      <!-- De synccode als wachtwoord aanbieden aan de sleutelhanger; discreet onder een inklapbaar detail (Safari en iOS bewaren een ingediend formulier) -->
+      <details class="sync-more" id="sync-more">
+        <summary data-i="sync.moreBackup">Reservekopie in sleutelhanger</summary>
+        <form class="sync-keep-card" id="sync-keep" method="post" action="about:blank" target="sync-keep-sink">
+          <p class="sync-keep-text" id="sync-keep-text" data-i="sync.keepText">Bewaar de synccode in je sleutelhanger. Verliest dit toestel ooit zijn gegevens, dan haal je met die code je taken terug van de Orbit-server.</p>
+          <input class="sync-vh" type="text" name="username" autocomplete="username" value="Orbit" tabindex="-1" aria-hidden="true">
+          <input class="sync-vh" type="password" name="password" id="sync-keep-code" autocomplete="new-password" tabindex="-1" aria-hidden="true">
+          <button type="submit" class="btn-ghost" id="sync-keep-btn" data-i="sync.keep">Bewaar in sleutelhanger</button>
+        </form>
+      </details>
       <iframe name="sync-keep-sink" class="sync-vh" title="" tabindex="-1" aria-hidden="true"></iframe>
 
       <p class="sync-meta" id="sync-meta"></p>
