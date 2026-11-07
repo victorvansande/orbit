@@ -111,7 +111,7 @@ function win(g, x, y, w, h, title, act = 0) {
   g.strokeStyle = act ? c(P.bg, 0.9) : mid(0.7); g.strokeRect(x + w - 10.5, y + 3.5, 6, 6);
 }
 // trechter als draadmodel
-const PROF = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
+const PROF = [[0, -300], [38, -200], [66, -125], [98, -70], [134, -30], [174, 0]];
 const depth = r => { for (let i = 1; i < PROF.length; i++) if (r <= PROF[i][0]) { const [r0, z0] = PROF[i - 1], [r1, z1] = PROF[i]; return z0 + (r - r0) / (r1 - r0) * (z1 - z0); } return 0; };
 function halfRadar(g, cx, cy, R, t) {
   g.strokeStyle = mid(0.45);
@@ -277,7 +277,7 @@ function wireplot() {
       const cx = 108, cy = 66, s = 0.5, tilt = 1.0;
       const Pt = (r, a, z) => { const x = Math.cos(a + spin) * r, y = Math.sin(a + spin) * r; return [cx + x * s, cy + (y * Math.cos(tilt) - z * Math.sin(tilt)) * s]; };
       const lines = [];
-      [174, 140, 106, 72, 38].forEach(r => { const l = []; for (let k = 0; k <= 48; k++) l.push(Pt(r, k / 48 * TAU, depth(r))); lines.push(l); });
+      [174, 134, 98, 66, 38].forEach(r => { const l = []; for (let k = 0; k <= 48; k++) l.push(Pt(r, k / 48 * TAU, depth(r))); lines.push(l); });
       for (let m = 0; m < 16; m++) { const l = []; for (let k = 0; k <= 18; k++) { const r = 174 - k / 18 * 166; l.push(Pt(r, m / 16 * TAU, depth(r))); } lines.push(l); }
       const total = lines.reduce((a, l) => a + l.length - 1, 0); let budget = u * total, pen = null;
       g.strokeStyle = mid(0.12); for (let x = 8; x < 216; x += 16) { g.beginPath(); g.moveTo(x, 8); g.lineTo(x, 176); g.stroke(); }
@@ -671,7 +671,7 @@ function panel() {
 
 /* ---- P7 Draadmodel ---- */
 function wire() {
-  const PROF = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
+  const PROF = [[0, -300], [38, -200], [66, -125], [98, -70], [134, -30], [174, 0]];
   const depth = r => { for (let i = 1; i < PROF.length; i++) if (r <= PROF[i][0]) { const [r0, z0] = PROF[i - 1], [r1, z1] = PROF[i]; return z0 + (r - r0) / (r1 - r0) * (z1 - z0); } return 0; };
   let tilt = 0.95, want = 0.95;
   return {
@@ -681,7 +681,7 @@ function wire() {
       const cx = 96, cy = TOP + 58, s = 0.42, spin = t * 0.25;
       const P = (r, a, z) => { const x = Math.cos(a + spin) * r, y = Math.sin(a + spin) * r; const y2 = y * Math.cos(tilt) - z * Math.sin(tilt); return [cx + x * s, cy + y2 * s * -1 * -1]; };
       // ringen
-      for (const r of [24, 38, 72, 106, 140, 174]) {
+      for (const r of [24, 38, 66, 98, 134, 174]) {
         g.strokeStyle = rgba(th.ink, r === 174 ? 0.4 : 0.22); g.beginPath();
         for (let k = 0; k <= 48; k++) { const [x, y] = P(r, k / 48 * TAU, depth(r)); k ? g.lineTo(x, y) : g.moveTo(x, y); }
         g.stroke();

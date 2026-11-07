@@ -3,9 +3,9 @@
 // color: tint op licht papier, dark: gedempte tint voor de donkere modus (minder verzadigd, geen kleurboek-effect)
 export const LEVELS = [
   { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#E70049', dark: '#F0306A', size: 7,   tail: 3 },
-  { id: 2, name: 'Vandaag', ring: 72,  orbit: 72,  period: 2.8, color: '#E08600', dark: '#F5A623', size: 6,   tail: 2 },
-  { id: 3, name: 'Week',    ring: 106, orbit: 106, period: 7,   color: '#0FAE69', dark: '#20E08A', size: 5.5, tail: 2 },
-  { id: 4, name: 'Maand',   ring: 140, orbit: 140, period: 16,  color: '#1F78B4', dark: '#38A0F0', size: 5,   tail: 1 },
+  { id: 2, name: 'Vandaag', ring: 66,  orbit: 66,  period: 2.8, color: '#E08600', dark: '#F5A623', size: 6,   tail: 2 },
+  { id: 3, name: 'Week',    ring: 98,  orbit: 98,  period: 7,   color: '#0FAE69', dark: '#20E08A', size: 5.5, tail: 2 },
+  { id: 4, name: 'Maand',   ring: 134, orbit: 134, period: 16,  color: '#1F78B4', dark: '#38A0F0', size: 5,   tail: 1 },
   { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#08415C', dark: '#B3B9D6', size: 5,   tail: 1 },
 ];
 export const LEVEL_BY_ID = new Map(LEVELS.map(l => [l.id, l]));
@@ -20,7 +20,7 @@ export const URGENT_LEVEL = 1;
 export const DEFAULT_LEVEL = 3;
 
 // Diepteprofiel van de trechter [straal, z]
-const PROFILE = [[0, -300], [38, -200], [72, -125], [106, -70], [140, -30], [174, 0]];
+const PROFILE = [[0, -300], [38, -200], [66, -125], [98, -70], [134, -30], [174, 0]];
 export const RIM = PROFILE[PROFILE.length - 1][0];
 export const TIP_Z = PROFILE[0][1];
 

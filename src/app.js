@@ -1653,7 +1653,7 @@ const composerOrb = $('composer-orb');
 let composerLevel = DEFAULT_LEVEL, composerDue = '', closeTimer = 0;
 let wheelLevel = DEFAULT_LEVEL;     // moment van het wiel, terug als de deadline gewist wordt
 
-const ORB_RADII = [64, 98, 132, 166, 200];
+const ORB_RADII = [64, 92, 124, 160, 200];
 let orbRadius = 64, orbTargetRadius = 64, orbAngle = 0, orbLastTime = 0, orbPulse = 0;
 
 function hexToRgba(hex, alpha) {

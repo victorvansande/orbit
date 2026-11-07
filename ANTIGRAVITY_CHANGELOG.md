@@ -1343,4 +1343,33 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Consolefouten: 0.
 - **Impact op opslag / state:** Geen.
 
+### 44. Subtiel toenemend verschil in afstand tussen binnenste en buitenste ringen
+- **Vraag van Victor:** "Kan je een subtiel verschil in afstand tussen de binnenste en buitenste ringen maken? Ik bedoel dat er net iets minder plek is tussen de binnenste ringen tegenover de buitente?"
+- **Probleemanalyse:**
+  - Voorheen waren de 5 ringstralen exact uniform lineair verdeeld: `[38, 72, 106, 140, 174]`, telkens met exact 34 px tussenruimte (72-38=34, 106-72=34, 140-106=34, 174-140=34).
+  - Dit zorgde voor een mechanisch, statisch rooster zonder het natuurlijke gevoel van een zwaartekrachtput waarbij de binnenste banen compacter bij het centrum liggen en de buitenste banen juist wijder uitwaaieren.
+- **Doorgevoerde wijzigingen:**
+  - `src/core/config.js`:
+    - `LEVELS`: ringstralen en baanstralen subtiel herverdeeld naar `[38, 66, 98, 134, 174]`.
+      - Tussenruimte 1 (Nu → Vandaag): 28 px (was 34, -6 px)
+      - Tussenruimte 2 (Vandaag → Week): 32 px (was 34, -2 px)
+      - Tussenruimte 3 (Week → Maand): 36 px (was 34, +2 px)
+      - Tussenruimte 4 (Maand → Ooit): 40 px (was 34, +6 px)
+      - Elk opeenvolgend gat groeit met exact 4 px (28, 32, 36, 40 px).
+      - Totale straalspanwijdte blijft exact 136 px (174 - 38 = 136), waardoor Nu (38) zijn royale ademruimte rond de kern behoudt en Ooit (174) exact binnen de viewport-fit van de scène blijft zonder overloop of herkalibratie van het achtergrondraster.
+    - `PROFILE`: trechterdiepteprofiel `[[0, -300], [38, -200], [66, -125], [98, -70], [134, -30], [174, 0]]` vloeiend afgestemd op de nieuwe ringstralen voor het 3D-zijaanzicht.
+  - `src/app.js`:
+    - `ORB_RADII` in de taakcomposer afgestemd op dezelfde verhoudingen: `[64, 92, 124, 160, 200]` (gaten van 28, 32, 36, 40 px).
+  - `src/focus/panel.js`:
+    - `PROF`, draadmodel-ringen en radarstralen synchroon bijgewerkt naar `[38, 66, 98, 134, 174]`.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v29`.
+- **Getest:**
+  - Visuele inspectie via screenshots in Chromium (1440×900 boven- en zijaanzicht, 375×812 mobiel).
+  - Donker en licht thema gecontroleerd.
+  - Geen horizontale scroll (`scrollWidth === innerWidth`).
+  - 0 consolefouten.
+- **Impact op opslag / state:** Geen. Bestaande taken en data blijven onaangeroerd.
+
+
 
