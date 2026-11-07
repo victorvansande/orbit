@@ -304,11 +304,18 @@ const wheel = createWheel($('wheel'), {
   reducedMotion,
   onChange(level) {
     playTick();   // heel zacht, droog klikje per moment (Victor, 04/11/2026)
-    scene.highlight({ level });
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => scene.highlight({}), 4500);   // lang genoeg om de legende te lezen (was 1,1 s, toen nog met pillen)
+    if (desktop.matches) {
+      scene.highlight({ level });
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => scene.highlight({}), 4500);   // lang genoeg om de legende te lezen (was 1,1 s, toen nog met pillen)
+    }
   },
-  onHover(level) { clearTimeout(flashTimer); scene.highlight({ level }); },
+  onHover(level) {
+    if (desktop.matches) {
+      clearTimeout(flashTimer);
+      scene.highlight({ level });
+    }
+  },
   onOpen(level) { openComposer(level); },
 });
 

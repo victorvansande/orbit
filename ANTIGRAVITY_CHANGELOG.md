@@ -1305,3 +1305,42 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Console 100% foutloos (0 fouten).
 - **Impact op opslag / state:** Geen. Alle sleutelhanger- en ontkoppelmechanismen functioneren ongewijzigd.
 
+### 43. Wiel op gsm altijd onderaan het beginscherm zonder zichtbare taken
+- **Vraag van Victor:** "Kan je ervoor zorgen dat op gsm-weergave de boog met selecties voor een nieuwe taak toe te voegen altijd onderaan het scherm toont, zonder dat er al taken zichtbaar zijn, zodat het homescreen zonder scrollen er altijd clean uitziet? Snap je?" (met screenshot `IMG_6251.jpeg` van iPhone).
+- **Probleemanalyse:**
+  - Op mobiele weergave (`@media (max-width: 999px)`) was `.stage` ingesteld op `min(calc(100vw + 62px), 68svh)` (~437 px op een 375 px toestel).
+  - Daardoor was de totale hoogte van topbar (~72 px) + stage (437 px) + controls (36 px) + wiel (154 px) slechts ~699 px. Op schermen van 812 px, 844 px of 932 px hoog bleven er 113 tot 233 px onder het wiel over, waardoor de takenlijst (`.tracks` met de kop "TASKS 08", "• TODAY 01" en taakkaarten) al op het beginscherm lekte.
+  - Daarnaast triggerde draaien aan of selecteren op het wiel `onChange` en `onHover` in `src/app.js` de aanroep `scene.highlight({ level })`, waardoor `scene.js` via `onLegend` 4 tot 5 regels van bestaande taken op het scherm toonde midden tussen de hemel en de knoppen.
+- **Doorgevoerde wijzigingen:**
+  - `src/styles.css`:
+    - `.stage` hoogte op gsm dynamisch ingesteld op:
+      `calc(100vh - env(safe-area-inset-top, 0px) - 256px - max(8px, env(safe-area-inset-bottom, 0px)))`
+      en `calc(100svh - env(safe-area-inset-top, 0px) - 256px - max(8px, env(safe-area-inset-bottom, 0px)))` met `min-height: 260px;`.
+      De 256 px compenseert exact voor de topbar (72 px), controls (36 px) en wiel (148 px).
+    - `.controls`: `margin-top: 0; min-height: 36px;` (dubbele declaratie opgeruimd).
+    - `.wheel`: `margin-top: 0; margin-bottom: 0;` zodat het wiel precies aan de schermonderrand rust (boven de home-indicator).
+    - `.tracks`: `margin-top: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px)); padding: 16px var(--pad) calc(48px + env(safe-area-inset-bottom, 0px));`. Hierdoor begint de takenlijst gegarandeerd onder de eerste schermvouw (`tracks.top >= window.innerHeight`).
+  - `src/app.js`:
+    - In `createWheel`: `scene.highlight({ level })` bij `onChange` en `onHover` beschermd met `if (desktop.matches)`. Op gsm blijft het wiel hierdoor puur gefocust op het kiezen van een moment voor een nieuwe taak ("de boog met selecties voor een nieuwe taak toe te voegen"), zonder dat het beginscherm plotseling volloopt met een takenlijst.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v28`.
+- **Resultaat en afmetingen:**
+  - Op alle geteste mobiele formaten (375×812, 390×844, 430×932, 320×667):
+    - `tracksVisibleWithoutScroll`: `false` (0 taken zichtbaar op het beginscherm).
+    - `wheelNearBottom`: `true` (`wh.bottom` binnen 8-15 px van de viewport-onderrand, rekening houdend met de home-indicator).
+    - Bij interactie met het wiel: `legVisible: false` (geen taakregels getoond op mobiel).
+    - Zodra de gebruiker omlaag scrollt: `tracksNowVisible: true` (de takenlijst glijdt soepel en natuurlijk in beeld).
+  - Desktop (1440×900):
+    - Ongewijzigd; legende bij wiel-interactie blijft intact functioneren.
+- **Getest:**
+  - Geautomatiseerde CDP-testsuite in Chromium:
+    - 375×812 (iPhone X/11Pro) in licht en donker.
+    - 390×844 (iPhone 12/13/14) in licht en donker.
+    - 430×932 (iPhone Pro Max) in licht en donker.
+    - 320×667 (iPhone SE) in licht en donker.
+    - 1440×900 desktop in licht en donker.
+    - Scrollgedrag en horizontale scroll gecontroleerd: `scrollWidth === innerWidth` overal `true`.
+    - Consolefouten: 0.
+- **Impact op opslag / state:** Geen.
+
+

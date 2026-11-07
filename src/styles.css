@@ -1509,7 +1509,12 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .wheel { order: 3; overflow: hidden; }
   .tracks { order: 4; }
   .topbar { position: relative; padding: calc(env(safe-area-inset-top, 0px) + 20px) var(--pad) 0; }
-  .stage { position: relative; height: min(calc(100vw + 62px), 68svh); }   /* onderaan een strook van 62 px voor de begroeting (GREET_STRIP) */
+  .stage {
+    position: relative;
+    height: calc(100vh - env(safe-area-inset-top, 0px) - 256px - max(8px, env(safe-area-inset-bottom, 0px)));
+    height: calc(100svh - env(safe-area-inset-top, 0px) - 256px - max(8px, env(safe-area-inset-bottom, 0px)));
+    min-height: 260px;
+  }
   .stage canvas { touch-action: pan-y; }
   .greeting { bottom: 10px; font-size: 15px; line-height: 1.3; color: var(--ink-2); }
   .greeting small { display: none; }
@@ -1518,8 +1523,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   body.has-legend .controls { opacity: 0; pointer-events: none; }   /* de legende neemt even hun plek in */
   .legend-title { color: var(--ink); }
   .grain { position: fixed; }
-  .controls { position: relative; left: auto; bottom: auto; justify-content: center; flex-wrap: wrap; column-gap: 18px; row-gap: 0; margin-top: -4px; padding: 0 var(--pad); }
-  .controls { font-size: 10px; margin-top: 2px; }
+  .controls { position: relative; left: auto; bottom: auto; justify-content: center; flex-wrap: wrap; column-gap: 18px; row-gap: 0; margin-top: 0; padding: 0 var(--pad); font-size: 10px; min-height: 36px; }
   .controls .views button, .controls .focus-btn { min-height: 36px; }
   .tempo { padding-left: 0; border-left: 0; }
   /* Kop op gsm: naam en knop Instellingen, daaronder één regel samenvatting en week; de rest klapt open */
@@ -1571,7 +1575,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   }
   .wheel {
     position: relative; top: auto; right: auto;
-    width: 100%; height: 148px; margin-top: 6px;
+    width: 100%; height: 148px; margin-top: 0; margin-bottom: 0;
     transform: none;
     touch-action: pan-y;
   }
@@ -1579,7 +1583,11 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .wheel-item:not(.is-selected) .wi-label { opacity: 0; }
   .wheel[data-orientation="horizontal"] .wi-label { font-size: 13px; padding: 4px 10px; }
   .wheel-hint { right: 0; left: 0; bottom: auto; top: 4px; max-width: none; text-align: center; opacity: 0; }
-  .tracks { position: relative; left: auto; top: auto; bottom: auto; width: auto; padding: 6px var(--pad) 48px; }
+  .tracks {
+    position: relative; left: auto; top: auto; bottom: auto; width: auto;
+    margin-top: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px));
+    padding: 16px var(--pad) calc(48px + env(safe-area-inset-bottom, 0px));
+  }
   .stats-rank-hint { min-height: 32px; }
   .stats-rank-name { display: inline; }
   .groups { overflow: visible; mask-image: none; margin-right: 0; padding-right: 0; padding-bottom: 0; }
