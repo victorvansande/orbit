@@ -1234,3 +1234,31 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Dynamisch uitklappen van `#sync-code` getest.
     - Console 0 fouten.
 - **Impact op opslag / state:** Geen.
+
+### 41. Meldingen van achievements dismissable gemaakt door naar boven te swipen
+- **Vraag van Victor:** "Maak de meldingen van achievements ook dismissable door ze naar boven te swipen".
+- **Probleemanalyse:**
+  - Meldingen onderaan (`#toast`) konden reeds naar beneden worden weggeveegd via `swipeToast` in `src/app.js`.
+  - Meldingen bovenaan (`#feat-pop` voor achievements en `#rank-pop` voor rangpromoties) bleven echter een vaste tijd staan (`7,2 s` resp. `PROMO_MS`) en verdwenen enkel automatisch of bij een klik (die het dialoogvenster opende). Er was geen veeggebaar om ze direct weg te vegen.
+- **Doorgevoerde wijzigingen:**
+  - `src/styles.css`:
+    - `.feat-pop.is-on` en `.rank-pop.is-on`: `touch-action: none; user-select: none; -webkit-user-select: none;` toegevoegd zodat touch- en muisgebaren soepel verlopen zonder conflict met browser-scroll of tekstselectie.
+  - `src/app.js`:
+    - `swipePopUp(pop, hideFn, getTimer, setTimer)` geïmplementeerd en gekoppeld aan zowel `#feat-pop` als `#rank-pop`.
+    - Volgt de vinger of muis live omhoog (`translate(-50%, ${dy}px)`) en fade-out evenredig met de afstand (`opacity: 1 - up / 80`). Omlaag slepen biedt elastische weerstand (`Math.min(8, d * 0.25)`).
+    - Loslaten na minstens 32 px omhoog of bij een snelle veeg (`up > 12 && up / dt > 0.35`) glijdt de melding vloeiend omhoog uit beeld (`translate(-50%, -${height + 40}px)`, `opacity: 0`) en roept de sluitsequentie aan (`hideFeatPop` / `hideRankPop`).
+    - Loslaten onder de drempel veert soepel terug naar de beginpositie en herstart de timer (2,4 s).
+    - Gebruikt capture-fase op `click` met `moved`-vlag zodat een veeggebaar nooit per ongeluk het prestatie-dialoogvenster opent.
+    - Zowel touch-events (niet-passieve `touchmove` tegen iOS scrollinterferentie) als pointer-events met `setPointerCapture` voor muis en pen.
+    - `#pop-mute` beweegt en vervaagt vloeiend mee als de dempknop actief is.
+    - Bij `hideFeatPop`, `hideRankPop`, `showFeatPop` en `showRankPop` worden de inline transform- en opacity-stijlen netjes gereset.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v26`.
+- **Getest:**
+  - Geautomatiseerde CDP-testsuite gedraaid op `http://localhost:3000/`:
+    - Desktop (1440×900) en mobiel (375×812) in licht en donker thema.
+    - Veeggebaar omhoog getest: melding glijdt omhoog weg (`translate(-50%, -93px)`, `opacity: 0`), sluiting wordt getriggerd (`hidden: true, isOn: false`).
+    - Geverifieerd dat vegen het `#feats`-venster niet opent (`dialogOpen: false`).
+    - Gewone klik zonder slepen opent het venster wel zoals verwacht.
+    - Console 100% foutloos (0 fouten).
+- **Impact op opslag / state:** Geen.

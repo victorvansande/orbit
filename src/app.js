@@ -2500,6 +2500,7 @@ function showFeatPop() {
   pop.className = `feat-pop tier-${x.tier}`;
   pop.innerHTML = `<svg class="feat-badge" viewBox="-12 -12 24 24" aria-hidden="true">${badgeSvg(false, x.tier)}</svg><span class="feat-pop-text"><span class="feat-pop-kicker">${tx('feats.pop')}</span><span class="feat-pop-name"></span></span><span class="feat-pop-pts">+${x.points}</span>`;
   pop.querySelector('.feat-pop-name').textContent = x.name;
+  pop.style.transform = ''; pop.style.opacity = ''; pop.style.transition = '';
   pop.hidden = false;
   placeFeatPop();
   requestAnimationFrame(() => { pop.classList.add('is-on'); followFeatPop(); });
@@ -2534,7 +2535,15 @@ function hideFeatPop() {
   dropMute(pop);
   clearTimeout(popTimer);
   pop.classList.remove('is-on');
-  popTimer = setTimeout(() => { pop.hidden = true; popBusy = false; popId = null; showFeatPop(); }, 450);
+  popTimer = setTimeout(() => {
+    pop.hidden = true;
+    pop.style.transform = '';
+    pop.style.opacity = '';
+    pop.style.transition = '';
+    popBusy = false;
+    popId = null;
+    showFeatPop();
+  }, 450);
 }
 $('feat-pop').addEventListener('pointerenter', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) clearTimeout(popTimer); });
 $('feat-pop').addEventListener('pointerleave', () => { if (popBusy && $('feat-pop').classList.contains('is-on')) { clearTimeout(popTimer); popTimer = setTimeout(hideFeatPop, 2400); } });
@@ -2618,6 +2627,7 @@ function showRankPop() {
   pop.setAttribute('aria-label', tx('rank.newAria', { name: q.name }));
   pop.style.setProperty('--rank-text', `${landAt(q.from, q.to) + 200}ms`);
   pop.classList.toggle('is-still', still);
+  pop.style.transform = ''; pop.style.opacity = ''; pop.style.transition = '';
   pop.hidden = false;
   placeFeatPop(pop);
   const cols = { bg: cs.getPropertyValue('--bg') };
@@ -2634,7 +2644,13 @@ function hideRankPop() {
   clearTimeout(rankTimer);
   pop.classList.remove('is-on');
   rankTimer = setTimeout(() => {
-    pop.hidden = true; promo.stop(); rankBusy = false; rankShown = null;
+    pop.hidden = true;
+    pop.style.transform = '';
+    pop.style.opacity = '';
+    pop.style.transition = '';
+    promo.stop();
+    rankBusy = false;
+    rankShown = null;
     if (rankGive) { rankGive(); rankGive = null; }
     showRankPop();
   }, 450);
@@ -2642,6 +2658,105 @@ function hideRankPop() {
 $('rank-pop').addEventListener('pointerenter', () => { if (rankBusy && $('rank-pop').classList.contains('is-on')) clearTimeout(rankTimer); });
 $('rank-pop').addEventListener('pointerleave', () => { if (rankBusy && $('rank-pop').classList.contains('is-on')) { clearTimeout(rankTimer); rankTimer = setTimeout(hideRankPop, 2400); } });
 $('rank-pop').addEventListener('click', () => { hideRankPop(); openFeats(); });
+
+// Wegvegen naar boven (Victor, 07/11/2026: "Maak de meldingen van achievements ook dismissable door ze naar boven te swipen"):
+// de melding volgt de vinger of muis live naar boven (geen transitie tijdens het slepen); los na 32 px of een snelle veeg
+// en ze glijdt omhoog weg. Omlaag geeft ze maar een klein beetje mee. Wegvegen sluit de melding zonder de prestaties te openen.
+function swipePopUp(pop, hideFn, getTimer, setTimer) {
+  let active = false, y0 = 0, dy = 0, t0 = 0, dragging = false, moved = false;
+  const isPopOn = () => !pop.hidden && pop.classList.contains('is-on');
+  const place = (y, fade) => {
+    pop.style.transform = `translate(-50%, ${y}px)`;
+    pop.style.opacity = String(fade);
+    if (muteFor === pop && !popMute.hidden) popMute.style.opacity = String(fade);
+  };
+  const reset = () => {
+    pop.style.transition = '';
+    pop.style.transform = '';
+    pop.style.opacity = '';
+    if (muteFor === pop && !popMute.hidden) {
+      popMute.style.transition = '';
+      popMute.style.opacity = '';
+    }
+  };
+  const start = y => {
+    if (!isPopOn()) return false;
+    active = true; y0 = y; dy = 0; t0 = performance.now(); dragging = false; moved = false;
+    return true;
+  };
+  const move = y => {
+    if (!active) return false;
+    const d = y - y0;
+    if (!dragging) {
+      if (Math.abs(d) < 6) return false;
+      dragging = true; moved = true;
+      clearTimeout(getTimer());
+      pop.style.transition = 'none';
+      if (muteFor === pop && !popMute.hidden) popMute.style.transition = 'none';
+    }
+    dy = d < 0 ? d : Math.min(8, d * 0.25);
+    const up = Math.max(0, -dy);
+    place(dy, Math.max(0, 1 - up / 80));
+    return true;
+  };
+  const finish = () => {
+    if (!active) return;
+    active = false;
+    if (!dragging) return;
+    dragging = false;
+    const up = -dy;
+    const dt = Math.max(1, performance.now() - t0);
+    const fast = up > 12 && up / dt > 0.35;
+    if (up > 32 || fast) {
+      if (reducedMotion.matches) { reset(); hideFn(); return; }
+      pop.style.transition = 'transform .22s cubic-bezier(.4, 0, .2, 1), opacity .2s cubic-bezier(.4, 0, .2, 1)';
+      if (muteFor === pop && !popMute.hidden) {
+        popMute.style.transition = 'opacity .2s cubic-bezier(.4, 0, .2, 1)';
+        popMute.style.opacity = '0';
+      }
+      place(-(pop.offsetHeight + 40), 0);
+      hideFn();
+    } else {
+      pop.style.transition = 'transform .25s cubic-bezier(.4, 0, .2, 1), opacity .25s cubic-bezier(.4, 0, .2, 1)';
+      if (muteFor === pop && !popMute.hidden) {
+        popMute.style.transition = 'opacity .25s cubic-bezier(.4, 0, .2, 1)';
+        popMute.style.opacity = '';
+      }
+      pop.style.transform = '';
+      pop.style.opacity = '';
+      clearTimeout(getTimer());
+      setTimer(setTimeout(hideFn, 2400));
+    }
+    setTimeout(() => { moved = false; }, 300);
+  };
+
+  pop.addEventListener('touchstart', e => { if (e.touches.length === 1) start(e.touches[0].clientY); }, { passive: true });
+  pop.addEventListener('touchmove', e => {
+    if (!active) return;
+    if (e.touches.length !== 1) { finish(); return; }
+    e.preventDefault();
+    move(e.touches[0].clientY);
+  }, { passive: false });
+  pop.addEventListener('touchend', finish);
+  pop.addEventListener('touchcancel', finish);
+
+  let pid = null;
+  pop.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch' || e.button !== 0 || !start(e.clientY)) return;
+    pid = e.pointerId;
+  });
+  pop.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    if (move(e.clientY)) { try { pop.setPointerCapture(pid); } catch { /* ignore */ } }
+  });
+  const endPointer = e => { if (e.pointerId === pid) { pid = null; finish(); } };
+  pop.addEventListener('pointerup', endPointer);
+  pop.addEventListener('pointercancel', endPointer);
+
+  pop.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+}
+swipePopUp($('feat-pop'), hideFeatPop, () => popTimer, t => { popTimer = t; });
+swipePopUp($('rank-pop'), hideRankPop, () => rankTimer, t => { rankTimer = t; });
 
 /* ---- Scrollen met een venster of menu open: enkel binnen dat venster ---- */
 // Anders scrolde de pagina (of de takenlijst, of het wiel) erachter mee, en op sommige toestellen bleef een lang venster

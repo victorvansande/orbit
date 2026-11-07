@@ -1876,7 +1876,7 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, 
   background: radial-gradient(closest-side, var(--bg) 62%, color-mix(in srgb, var(--bg) 78%, transparent) 80%, transparent);
   transition: transform .45s var(--ease);
 }
-.feat-pop.is-on { opacity: 1; transition-duration: .6s; }
+.feat-pop.is-on { opacity: 1; transition-duration: .6s; touch-action: none; user-select: none; -webkit-user-select: none; }
 .feat-pop.is-on::before { animation: feat-halo .7s cubic-bezier(.4, 0, .2, 1) both; }
 .feat-pop.is-on .fb-ring { stroke-dasharray: 67; transform: rotate(-90deg); transform-box: fill-box; transform-origin: center; animation: feat-ring .9s .1s cubic-bezier(.4, 0, .2, 1) both; }
 .feat-pop.is-on .feat-pop-text, .feat-pop.is-on .feat-pop-pts { animation: feat-text .6s .4s cubic-bezier(.4, 0, .2, 1) both; }
@@ -1932,7 +1932,7 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, 
   content: ''; position: absolute; inset: -34px -70px; z-index: 0; border-radius: 50%; pointer-events: none;
   background: radial-gradient(closest-side, var(--bg) 62%, color-mix(in srgb, var(--bg) 78%, transparent) 80%, transparent);
 }
-.rank-pop.is-on { opacity: 1; transition-duration: .5s; }
+.rank-pop.is-on { opacity: 1; transition-duration: .5s; touch-action: none; user-select: none; -webkit-user-select: none; }
 .rank-pop.is-on::before { animation: feat-halo .7s cubic-bezier(.4, 0, .2, 1) both; }
 .rank-pop > * { position: relative; z-index: 2; }
 .rank-pop-badge { width: 64px; height: 64px; margin-bottom: 4px; }
