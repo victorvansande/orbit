@@ -499,7 +499,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   position: relative; min-height: 42px;
   border-bottom: 1px solid var(--line-soft);
   touch-action: pan-y; overflow: hidden;
-  display: grid; grid-template-columns: 30px 1fr; align-items: center;
+  display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center;
   transition: opacity .3s var(--ease), background-color .2s var(--ease), max-height .28s var(--ease), min-height .28s var(--ease), padding .28s var(--ease);
 }
 /* Afvinken (02/11/2026): eerst vult het rondje zich en tekent het vinkje, dan schuift de inhoud weg en sluit de rij zich
@@ -517,7 +517,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 }
 .track-row {
   display: flex; align-items: center;
-  min-height: 42px; width: 100%;
+  min-height: 42px; width: 100%; min-width: 0;
   padding-right: 0;
   transition: padding-right .2s var(--ease), transform .2s var(--ease);
   will-change: padding-right, transform;
@@ -586,7 +586,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 
 /* ---- Rechter metadata zone: Variant 1 De Stille Kolom ---- */
 .t-meta {
-  width: 84px; flex-shrink: 0; height: 42px;
+  width: 88px; flex-shrink: 0; height: 42px;
   position: relative; display: flex; align-items: center; justify-content: flex-end;
 }
 .t-meta-labels {
@@ -595,7 +595,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transition: opacity .16s var(--ease);
 }
 .t-meta-actions {
-  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
   display: flex; align-items: center; justify-content: flex-end; gap: 2px;
   opacity: 0; pointer-events: none;
   transition: opacity .16s var(--ease);

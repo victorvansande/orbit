@@ -1148,6 +1148,36 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
   - 0 consolefouten, 0 runtime-excepties.
 - **Impact op opslag / state:** Geen.
 
+### 38. Positie actieknoppen en labels in takenlijst hersteld tegen afkappen
+- **Vraag van Victor:** "Zie je hoe hier de optie om de to-do te verwijderen wegvalt van de balk? Fix dit aub. Ook als de todo niet gehighlight is door er op te hoveren, zie je rechts een klein icoontje dat maar een deel getekend wordt omdat het afgekapt is. Snap je mijn vraag?" (met screenshots van 'Ticketjes Lime en bus ingeven': op hover valt de prullenbakknop rechts buiten beeld, in ruststand is het notitie-icoon rechts voor 90% afgekapt).
+- **Probleemanalyse:**
+  - *Grid item minimum sizing:* `.track` was gedefinieerd met `display: grid; grid-template-columns: 30px 1fr;`. Volgens de CSS Grid specificatie is de minimale breedte van een `1fr` track standaard `auto` (`minmax(auto, 1fr)`). Omdat het grid item `.track-row` geen `min-width: 0` had, berekende de browser de minimale breedte van `.track-row` op basis van de tekstinhoud van `.t-title-in` (`white-space: nowrap`).
+  - *Horizontale verschuiving:* Bij een langere titel (zoals "Ticketjes Lime en bus ingeven" of "Buy a present for Saturday") forceerde de tekst dat `.track-row` uitdijde tot 309 px in een container van 290 px (+49 px overflow). Hierdoor werd de rechter metadatazone `.t-meta` 49 px naar rechts geduwd, buiten de bounding box van `.track`.
+  - *Clipping door overflow hidden:* Omdat `.track` `overflow: hidden` heeft, werd alles wat voorbij x = 290 px stak afgesneden. In ruststand viel het notitie-icoon (`.t-meta-note`) op de rand (waardoor enkel de eerste 1-2 px zichtbaar waren), en bij hover viel de prullenbakknop (`.t-act-del`) volledig buiten beeld.
+- **Doorgevoerde wijzigingen:**
+  - `src/styles.css`:
+    - `.track`: `grid-template-columns: 30px minmax(0, 1fr);` zodat de inhoudskolom altijd strikt binnen de containerbreedte blijft.
+    - `.track-row`: `min-width: 0;` toegevoegd zodat de flexcontainer flexibel kan inkrimpen en `.t-title` netjes maskeert met het nevelverloop.
+    - `.t-meta`: breedte verruimd van 84 px naar 88 px voor extra ademruimte.
+    - `.t-meta-actions`: `right: 4px;` (was `right: 2px;`) zodat de actieknoppen (niveaukiezer, notitie, prullenbak) een comfortabele vaste marge van 4 px houden tot de rechterrand en nooit tegen de rand botsen.
+    - `.t-meta-labels`: behoudt `padding-right: 4px;`, zodat zowel in ruststand als bij hover de buitenste elementen strak op exact dezelfde 4 px afstand van de rechterrand uitgelijnd zijn.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v23`.
+  - `CLAUDE.md`:
+    - Sectie `Herontwerp takenlijst: Variant 1 De Stille Kolom` en `Overdracht` bijgewerkt.
+- **Getest:**
+  - Automated CDP-testsuite gedraaid op `http://localhost:3000/`:
+    - Exacte titel "Ticketjes Lime en bus ingeven" met notitie getest:
+      - `overflow`: 0 px (voorheen +49.1 px).
+      - `meta_right === tr_right` (330 px = 330 px).
+      - `note_distance_to_edge`: 32 px (binnen `.t-meta`), `note_clipped`: false.
+      - Op hover: `actDel.right`: 326 px (4 px vrije ademruimte tot `tr_right` 330 px).
+    - Alle 11 taken gecontroleerd op desktop (1440×900) en mobiel (375×667): 0 overflow-issues, 0 layout-shifts, `hasHScroll: false`.
+    - Licht en donker thema geverifieerd.
+    - Console 0 fouten.
+- **Impact op opslag / state:** Geen.
+
+
 
 
 
