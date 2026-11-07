@@ -1398,7 +1398,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
           fade.addColorStop(0, rgba(c, 0.95));
           fade.addColorStop(1, rgba(c, 0));
           ctx.fillStyle = fade;
-          taper(it.r * 2, it.r * 0.35);
+          taper(it.r * 1.15, it.r * 0.35);
           ctx.fillStyle = rgba(c, 1);
         }
       }
@@ -1498,7 +1498,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         const g = ctx.createLinearGradient(trailPts[0], trailPts[1], trailPts[2 * n - 2], trailPts[2 * n - 1]);
         g.addColorStop(0, rgba(c, 0.95 * fadeT)); g.addColorStop(1, rgba(c, 0));
         ctx.fillStyle = g;
-        taper(2 * Math.max(rh, r * 0.6 * (1 - p)), r * 0.3 * (1 - p));
+        taper(1.15 * Math.max(rh, r * 0.6 * (1 - p)), r * 0.3 * (1 - p));
       }
       if (rh > 0.2) {
         if (!minimal) {   // dezelfde zachte gloed als een gewone bol, dooft mee

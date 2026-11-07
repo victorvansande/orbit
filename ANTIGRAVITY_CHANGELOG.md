@@ -1119,5 +1119,35 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - 0 fouten in browserconsole.
 - **Impact op opslag / state:** Geen.
 
+---
+
+## 07/11/2026
+
+### 37. Dot matrix micro-corona & herstel volle komeetkop orbs
+- **Vragen van Victor:**
+  1. "Grote bug: zie je dat er twee groene orbs zijn (WEEK), die geen bolletje hebben en fout gerenderd worden? Kijk hoe dit kan en zorg dat dit nooit meer voorvalt" (met screenshot van afgevlakte/afgekapte staart zonder ronde bol).
+  2. "De gloed die je toevoegde aan de dot matrix lijkt wat te artificieel. Maak hem wat subtieler en realistischer, stel enkel voorstellen voor", gevolgd door: "doe maar 2. micro corona".
+- **Probleemanalyse:**
+  - *Orb-kop rendering:* In `src/scene/scene.js` werd bij `drawOrb` en bij het opbranden van de komeetkop (`taper`) de startbreedte van de staart berekend als `2 * r` (100% van de boldiameter), beginnend vanuit exact het middelpunt van de bol `(p0.x, p0.y)`. Bij hoge snelheden en felle baankleuren (zoals Week-groen) overschilderde de taps toelopende staart de ronde bolcontour volledig, waardoor het leek alsof de bol ontbrak of fout gerenderd werd als een stomp afgeknotte staart.
+  - *Dot matrix gloed:* De eerdere filterinstelling `<feDropShadow dx="0" dy="0" stdDeviation="0.18" flood-opacity="0.75"/>` in SVG user space (`viewBox="-0.5 -0.5 5 7"`, dot radius 0.4, grid spacing 1.0) gaf een te grote waas (blur radius ~0.54) met hoge dekking, waardoor de ruimte tussen aangrenzende stippen dichtliep en een kunstmatig digitaal smudge-effect ontstond.
+- **Doorgevoerde wijzigingen:**
+  - `src/scene/scene.js`:
+    - In `drawOrb` (regulier komeetspoor) en in het afvink-opbrandeffect (`rh`) is de kopbreedte van `taper` gecorrigeerd van `2 * r` naar `1.15 * r` (`taper(it.r * 1.15, it.r * 0.35)`).
+    - De ronde bol (diameter `2.0 * r`) steekt nu aan weerszijden 42,5% buiten de aanzet van de staart uit. De massieve, scherpe ronde kop blijft hierdoor te allen tijde prominent, herkenbaar en perfect afgetekend, ongeacht snelheid, baanniveau of staartlengte.
+  - `index.html`:
+    - `#dm-glow` filter aangepast volgens Voorstel 2 Micro-corona:
+      `<feDropShadow dx="0" dy="0" stdDeviation="0.08" flood-color="currentColor" flood-opacity="0.20"/>`.
+    - De gloed blijft nu strak binnen de rand van elke actieve stip, waardoor het zachte lichtkarakter van een fysieke miniatuur-LED ontstaat zonder dat stippen in elkaar overlopen.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v22`.
+  - `CLAUDE.md`:
+    - Secties `Bol (drawOrb)` en `Overdracht` bijgewerkt.
+- **Getest:**
+  - Headless browser test gedraaid op desktop en mobiel formaat.
+  - Gecontroleerd dat `document.documentElement.scrollWidth === window.innerWidth` (1200 px desktop, 375 px mobiel).
+  - 0 consolefouten, 0 runtime-excepties.
+- **Impact op opslag / state:** Geen.
+
+
 
 
