@@ -1082,5 +1082,42 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - 0 applicatie- of consolefouten.
 - **Impact op opslag / state:** Geen; alle taakgegevens, notities en deadlines blijven 100% compatibel.
 
+### 36. Symmetrische 4-hoeken layout statistiekenbalk (.stats)
+- **Vraag van Victor:** "Zet het prestatie-niveau (navigator) en bijhorende badge rechts uitgelijnd van dit menu, dus mooi rechts uitgelijnd met de muur instelling, zodat er in elke 'hoek' van deze sectie een optie is, nu lijkt het asymetrisch" met screenshot van de onderzijde van de takenkolom.
+- **Probleemanalyse:**
+  - In de eerdere opzet van de statistiekenstrook (`.stats`) stonden bovenaan de sterrenteller (`.stats-total`, links) en de muurschakelaar (`.wall-toggle`, rechts).
+  - In de onderstrook (`.stats-bar`) stonden zowel het instellingen-knopje (`.menu-btn`) als de prestatierang met het badge-icoontje (`#stats-rank-hint`) samen links geclusterd in `#stats-menu-slot`, gescheiden door een verticaal streepje.
+  - De rechterhoek van de onderstrook was hierdoor leeg, wat een visueel asymmetrisch en ongebalanceerd gevoel gaf ten opzichte van de muurknop erboven.
+- **Doorgevoerde wijzigingen:**
+  - `index.html`:
+    - `#stats-rank-hint` losgekoppeld van `#stats-menu-slot` en als directe sibling in `#stats-bar` geplaatst (`<div class="stats-menu-slot" id="stats-menu-slot"></div><button type="button" class="stats-rank-hint" id="stats-rank-hint" hidden ...></button>`).
+  - `src/styles.css`:
+    - `.stats-bar`: voorzien van `justify-content: space-between;`.
+    - `.stats-menu-slot`: vereenvoudigd tot zuivere flex-container voor `#menu-btn` (de eerdere `gap: 11px` en de `border-left` scheidingslijn tussen `#menu-btn` en `#stats-rank-hint` zijn opgeruimd).
+    - `.stats-rank-hint`: uitgelijnd naar rechts via `margin-left: auto; justify-content: flex-end;`.
+    - Interactievriendelijkheid: royale hit-target behouden via `position: relative` en `::before { content: ''; position: absolute; inset: -8px -6px; }`.
+    - Typografische harmonie: alle 3 de tekstknoppen (`.wall-toggle`, `.menu-btn`, `.stats-rank-hint`) delen exact dezelfde `font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3)`.
+  - Resultaat (4 hoeken):
+    - **Linksboven:** `.stats-total` (matrixcijfers + "STARS ALL TIME", links uitgelijnd op x = 40 px)
+    - **Rechtsboven:** `.wall-toggle` ("WALL ⚬", rechts uitgelijnd op x = 340 px)
+    - **Linksonder:** `.menu-btn` ("SETTINGS ⚙", links uitgelijnd op x = 40 px)
+    - **Rechtsonder:** `.stats-rank-hint` ("SCOUT ✦", rechts uitgelijnd op x = 340 px)
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v21`.
+  - `CLAUDE.md`:
+    - Overdracht bijgewerkt.
+- **Getest:**
+  - Automated CDP Puppeteer script gedraaid via `/tmp/verify_stats_layout.py`:
+    - `statsRect`: left = 40, right = 340 (breedte = 300 px).
+    - `statsToggleRect.left`: 40.
+    - `menuBtnRect.left`: 40.
+    - `wallToggleRect.right`: 340.0.
+    - `statsRankHintRect.right`: 340.0.
+    - Pixelprecieze overeenkomst (0.0 px afwijking) op de rechterrand tussen de muurschakelaar en het prestatieniveau.
+    - Mobiele weergave (375×667) gecontroleerd: `#stats-rank-hint` lijnt rechts strak uit met `.wall-toggle` op x = 359 px.
+    - Donker en licht thema visueel geverifieerd via gecropte zoom-screenshots.
+    - 0 fouten in browserconsole.
+- **Impact op opslag / state:** Geen.
+
 
 
