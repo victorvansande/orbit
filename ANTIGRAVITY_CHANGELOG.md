@@ -1177,6 +1177,33 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Console 0 fouten.
 - **Impact op opslag / state:** Geen.
 
+### 39. Maandrecap-kaart altijd in volle lengte zonder scrollbalk
+- **Vraag van Victor:** "De recap-kaart heeft plots een scrollbalk. zorg dat dit nooit gebeurt, de kaart moet altijd in z'n volledige lengte getoond worden, nooit met scrollbar. De site heeft nog veel plek om de kaart dan gewoon wat langer te maken. Pas dit aan. Verander niets aan de inhoud, zorg gewoon dat ze nooit afgekapt wordt en nooit een scrollbalk hoeft te krijgen."
+- **Probleemanalyse:**
+  - *Oorzaak van de scrollbalk:* `.recap-card` had in `src/styles.css` `overflow-y: auto;` en `max-height: min(920px, calc(100dvh - 32px));`. Daarnaast bevatte de knoppenbalk `.recap-foot` in `index.html` de klasse `sticky-foot`, die `position: sticky; bottom: -24px; margin-bottom: -24px; padding: 14px 0 24px;` forceerde.
+  - *Subpixel en hoogte-mismatch:* Door de negatieve ondermarge en padding van `.sticky-foot` berekende de browser `scrollHeight: 668px` tegenover `clientHeight: 666px` (een verschil van slechts 2 px!). Door `overflow-y: auto` toonde de browser op desktop onmiddellijk een verticale scrollbalk. Deze scrollbalk snoepte 15 px breedte af en degradeerde het rustige affichekarakter van de poster.
+- **Doorgevoerde wijzigingen:**
+  - `index.html`:
+    - `.sticky-foot` verwijderd van `<div class="sync-row recap-foot">`. De maandrecap is een vaste posterkaart en geen lange scroll-lijst; de knoppenrij sluit nu natuurlijk en rustig aan op de binnenruimte van de kaart.
+  - `src/styles.css`:
+    - `.recap-card`: `overflow-y: auto` en `max-height` verwijderd; `overflow: visible;` en `gap: 14px;` ingesteld. De kaart toont altijd in haar volle, natuurlijke lengte zonder ooit een scrollbalk te creëren.
+    - `.recap-frame canvas`: `max-height` aangepast naar `min(calc(100dvh - 220px), 540px)`. Op desktop (1440×900, 1920×1080) toont de poster hierdoor op haar volledige natuurlijke 4:5 resolutie (510 px hoog) met royale schermlucht rondom. Op lagere schermhoogtes schaalt het canvas adaptief mee, zodat de complete kaart (header, poster, opties, footer) altijd 100% binnen het venster past zonder enige afkapping.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v24`.
+  - `CLAUDE.md`:
+    - Sectie `Maandrecap: Poster (src/data/recap.js)` en `Overdracht` bijgewerkt.
+- **Getest:**
+  - Automated CDP-testsuite gedraaid op `http://localhost:3000/`:
+    - Getest op 1440×900, 1920×1080, 1280×800, 1024×768, 375×812 en 375×667.
+    - Zowel Post-formaat (4:5) als Story-formaat (9:16) geëvalueerd.
+    - `hasScrollbar`: overal `false`.
+    - `fitsInWindow`: overal `true` (kaarthoogte 708 px op desktop, ruim binnen 757-937 px viewport).
+    - `hscroll`: overal `false`.
+    - Licht en donker thema visueel geverifieerd.
+    - Console 0 fouten.
+- **Impact op opslag / state:** Geen.
+
+
 
 
 
