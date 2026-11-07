@@ -1203,8 +1203,34 @@ Dit bestand houdt alle wijzigingen bij die zijn uitgevoerd met Antigravity. Zo k
     - Console 0 fouten.
 - **Impact op opslag / state:** Geen.
 
-
-
-
-
-
+### 40. Rustige ordening en uitlijning van het koppelvenster (#sync-on)
+- **Vraag van Victor:** "Dit scherm is erg rommelig. Uitlijning, knoppen en andere elementen lijken wat door elkaar te staan. Maak het ordelijker en overzichtelijker aub." (met screenshot van het koppelvenster in gekoppelde/verzendende staat).
+- **Probleemanalyse:**
+  - *Inconsistente uitlijning:* Richting (`.sync-dir`), QR-code (`.sync-qr`) en statusregel (`.sync-status`) waren gecentreerd, maar de toelichting (`.sync-note`) en actieknoppen stonden links uitgelijnd. De knoppen vulden slechts de halve breedte. De sleutelhanger-tekst en -knop zweefden als losse platte alinea's onderaan. De koppelstatus (`.sync-meta`) was weer gecentreerd, en de knoppen in de footer stonden rechts opeengepakt. Hierdoor zigzagde het oog over het dialoogvenster.
+  - *Platte structuur:* Alle elementen stonden als platte broers/zussen in `#sync-on` met een uniforme `gap: 14px`, waardoor de verschillende functionele lagen (QR-cluster, alternatief delen via link/code, sleutelhanger-reservekopie en beëindiging) visueel versmolten tot een onsamenhangende stapel.
+  - *Gevaarlijke knoppencombinatie:* "Ontkoppel dit toestel" stond pal naast de primaire actieknop "Klaar" in de rechterbenedenhoek.
+- **Doorgevoerde wijzigingen:**
+  - `index.html`:
+    - `#sync-on` heringericht met duidelijke semantische groepen:
+      - `.sync-qr-cluster`: Gecentreerd cluster met richting, 200 px afgeronde QR-code met zachte schaduw (`box-shadow: 0 4px 16px var(--shadow-2)`), en statusindicator met bolletje.
+      - `.sync-share-grid`: Symmetrisch 2-koloms knoppenraster over de volle breedte met gelijke knoppen `Kopieer link` en `Toon code`.
+      - `#sync-code`: Klapt indien gewenst rustig uit tussen de deelknoppen en de toelichting.
+      - `.sync-note-box`: Compacte, gecentreerde toelichting in `var(--ink-3)`.
+      - `.sync-keep-card`: Een discrete subkaart (`background: var(--fill)`, `border: 1px solid var(--line)`, `border-radius: 16px`) met koplabels `SLEUTELHANGER` en `RESERVEKOPIE`, duidelijke uitleg en `Bewaar in sleutelhanger`-knop.
+      - `.sync-meta`: Gecentreerde koppelstatus met een subtiele bovenste scheidingslijn (`border-top: 1px solid var(--line)`).
+      - `.sync-foot`: Evenwichtige footer met "Ontkoppel dit toestel" uiterst links (`color: var(--ink-3)`, bij hover `var(--late)`) en de primaire knop "Klaar" rechts (`.btn-solid`).
+  - `src/styles.css`:
+    - Toegevoegd: `.sync-qr-cluster`, `.sync-share-grid`, `.sync-note-box`, `.sync-keep-card`, `.sync-keep-head`, `.sync-keep-tag`, `.sync-keep-badge`, `.sync-keep-text`, `.sync-foot`.
+    - Volledig gebaseerd op bestaande CSS-variabelen voor licht en donker thema; geen losse kleurwaarden.
+  - `src/core/i18n.js`:
+    - Vertaalsleutels toegevoegd voor `sync.keychain` en `sync.backup` in het Nederlands en Engels.
+  - `sw.js`:
+    - Cache-versie verhoogd naar `orbit-v25`.
+- **Getest:**
+  - Getest via geautomatiseerde CDP-sessie in Chrome:
+    - Desktop 1440×900 en mobiel 375×812 / 375×667.
+    - Zowel licht thema als donker thema visueel geverifieerd.
+    - Horizontale scrollbreedte: `document.documentElement.scrollWidth === innerWidth` (geen overflow).
+    - Dynamisch uitklappen van `#sync-code` getest.
+    - Console 0 fouten.
+- **Impact op opslag / state:** Geen.

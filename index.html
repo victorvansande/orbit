@@ -532,26 +532,37 @@
     </div>
 
     <div class="sync-view" id="sync-on" hidden>
-      <p class="sync-dir"><span data-i="sync.thisDevice">Dit toestel</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M2 6h34M31 1l5 5-5 5"/></svg><span data-i="sync.scanning">Toestel dat scant</span></p>
-      <div class="sync-qr" id="sync-qr" role="img" aria-label="QR-code om taken naar een ander toestel te versturen" data-ia="aria-label:sync.qr"></div>
-      <p class="sync-status" id="sync-send-status" role="status"><span class="sync-dot" aria-hidden="true"></span><span id="sync-send-text"></span></p>
-      <p class="sync-text sync-note" data-i="sync.onNote">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Naar de app op het beginscherm van deze zelfde gsm? Tik op "Kopieer link", open de app en plak de link bij Koppelen.</p>
-      <div class="sync-row">
+      <div class="sync-qr-cluster">
+        <p class="sync-dir"><span data-i="sync.thisDevice">Dit toestel</span><svg viewBox="0 0 40 12" width="40" height="12" aria-hidden="true"><path d="M2 6h34M31 1l5 5-5 5"/></svg><span data-i="sync.scanning">Toestel dat scant</span></p>
+        <div class="sync-qr" id="sync-qr" role="img" aria-label="QR-code om taken naar een ander toestel te versturen" data-ia="aria-label:sync.qr"></div>
+        <p class="sync-status" id="sync-send-status" role="status"><span class="sync-dot" aria-hidden="true"></span><span id="sync-send-text"></span></p>
+      </div>
+
+      <div class="sync-share-grid">
         <button type="button" class="btn-ghost" id="sync-copy-link" data-i="sync.copy">Kopieer link</button>
         <button type="button" class="btn-ghost" id="sync-show-code" aria-expanded="false">Toon code</button>
       </div>
       <p class="sync-code" id="sync-code" hidden></p>
+
+      <p class="sync-note-box" data-i="sync.onNote">Scan met de camera van het andere toestel, of kies daar in Orbit "Ontvang op dit toestel". Naar de app op het beginscherm van deze zelfde gsm? Tik op "Kopieer link", open de app en plak de link bij Koppelen.</p>
+
       <!-- voorstel A: de synccode als wachtwoord aanbieden aan de sleutelhanger; Safari en iOS bewaren een ingediend
            wachtwoordformulier, daarom gaat het naar een onzichtbaar kader met about:blank (er gaat niets naar een server) -->
-      <form class="sync-keep" id="sync-keep" method="post" action="about:blank" target="sync-keep-sink">
-        <p class="sync-text sync-note" id="sync-keep-text" data-i="sync.keepText">Bewaar de synccode in je sleutelhanger. Verliest dit toestel ooit zijn gegevens, dan haal je met die code je taken terug van de Orbit-server.</p>
+      <form class="sync-keep-card" id="sync-keep" method="post" action="about:blank" target="sync-keep-sink">
+        <div class="sync-keep-head">
+          <span class="sync-keep-tag" data-i="sync.keychain">Sleutelhanger</span>
+          <span class="sync-keep-badge" data-i="sync.backup">Reservekopie</span>
+        </div>
+        <p class="sync-keep-text" id="sync-keep-text" data-i="sync.keepText">Bewaar de synccode in je sleutelhanger. Verliest dit toestel ooit zijn gegevens, dan haal je met die code je taken terug van de Orbit-server.</p>
         <input class="sync-vh" type="text" name="username" autocomplete="username" value="Orbit" tabindex="-1" aria-hidden="true">
         <input class="sync-vh" type="password" name="password" id="sync-keep-code" autocomplete="new-password" tabindex="-1" aria-hidden="true">
         <button type="submit" class="btn-ghost" id="sync-keep-btn" data-i="sync.keep">Bewaar in sleutelhanger</button>
       </form>
       <iframe name="sync-keep-sink" class="sync-vh" title="" tabindex="-1" aria-hidden="true"></iframe>
+
       <p class="sync-meta" id="sync-meta"></p>
-      <div class="sync-row sync-end">
+
+      <div class="sync-foot">
         <button type="button" class="btn-ghost" id="sync-stop" data-i="sync.stop">Ontkoppel dit toestel</button>
         <button type="button" class="btn-solid" id="sync-close" data-i="done">Klaar</button>
       </div>
