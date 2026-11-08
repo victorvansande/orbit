@@ -664,8 +664,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'life') {
         modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
       } else if (modeName === 'plasma') {
-        // plasmaplaat (Victor, 08/11/2026): twee vormen via het pijltje, kleur uit de kleurkiezer
-        modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null), names: [label('plasmaDisc'), label('plasmaPlate')], onPreset: showScreen });
+        // plasmaplaat (Victor, 08/11/2026): enkel de plaat over het hele vak, kleur uit de kleurkiezer
+        modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null) });
       } else if (modeName === 'breakout') {
         // breakout B4 Fosfor (Victor, 08/11/2026): levels, levens, powerups, highscores; fosfor uit de kleurkiezer
         modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, scores: scores?.game('breakout') });
@@ -689,7 +689,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
-  const hasPresets = m => ['panel', 'life', 'plasma'].includes(m);
+  const hasPresets = m => ['panel', 'life'].includes(m);
   nextBtn.addEventListener('click', () => { if (hasPresets(modeName)) mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
     if (!hasPresets(modeName) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
@@ -880,7 +880,6 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     box.classList.toggle('is-panel', modeName === 'panel');
     box.classList.toggle('is-breakout', modeName === 'breakout');
     box.classList.toggle('is-playing', Boolean(m.busy));   // breakout: de keuzerij wijkt tijdens het spel
-    box.classList.toggle('is-disc', modeName === 'plasma' && !m.onDark);   // plasmaschijf: de keuzerij staat naast de schijf, geen vervaging over de bovenkant   // gloed en wayglim vullen het vak met een donker verloop/achtergrond: lichte keuzerij
     if (!m.gl) {
       const ctx = getGL();
       if (ctx) {

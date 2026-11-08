@@ -78,9 +78,9 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: fidget Plasma, `src/focus/plasma.js`. Open: Victor probeert het op pc en gsm.
 - 08/11/2026, Claude Code: fidget Breakout (B4 Fosfor), `src/focus/breakout.js`.
 - 08/11/2026, Claude Code: fidget Slang (F1), `src/focus/snake.js`. Open: Victor speelt het op pc en gsm.
 - 08/11/2026, Claude Code: F2 Slinger, F3 Zandtafel, F4 Inktdruppel uitgewerkt (artifact "Orbit fidgets" https://claude.ai/artifact/EsaMSw2oYMTvskMbdAGGsC, `ontwerp/fidgets/`). Open: Victor kiest.
 - 08/11/2026, Claude Code: op vraag van Victor (tokens) CLAUDE.md teruggebracht tot deze kern; de volledige vorige inhoud staat letterlijk in `docs/kennis.md`. Open: titel met veel labels (P2-4, eerst voorstellen), oogjes van de kern (O1 tot O4).
 - 08/11/2026, Claude Code: scores van de spelletjes (Slang, Breakout, en elke toekomstige fidget via `GAMES` in `src/data/scores.js`) gaan mee in sync, export en import; samenvoegen verliest nooit een score. Open: Victor speelt op twee toestellen en kijkt of de scores gelijk lopen.
+- 08/11/2026, Claude Code: Plasma enkel nog als plaat; reactie op muis en vinger zoals een echte plasmaplaat (overslaan naar de vinger, nooit in het niets eindigen). Open: Victor probeert het op pc en gsm.
