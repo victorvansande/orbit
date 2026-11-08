@@ -985,9 +985,10 @@ body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
 .dm .o { fill: currentColor; animation: dm-in .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d); }
 /* Subtiele gloed voor actieve stippen alsof het een dot matrix van echt licht is (Victor, 06/11/2026) */
 /* één filter per cijfer in plaats van per stip: zelfde beeld, veel minder werk voor gsm (audit 08/11/2026); op de groep
-   in de svg, niet op de svg zelf: zo verdween de dubbele punt in Safari op iOS (08/11/2026) */
-[data-theme="dark"] .dm .dm-dots,
-.mg-dm .dm .dm-dots {
+   in de svg. Niet op de dubbele punt: Safari op iOS tekent een filter op zo'n smal teken (1 × 7) niet, de hele inhoud
+   verdween, ook als de filter op een groep in de svg stond (Victor, 08/11/2026); op twee stippen zie je de gloed niet */
+[data-theme="dark"] .dm:not(.dm-colon) .dm-dots,
+.mg-dm .dm:not(.dm-colon) .dm-dots {
   filter: url(#dm-glow);
 }
 .dm .g { fill: currentColor; opacity: var(--dm-ghost); }

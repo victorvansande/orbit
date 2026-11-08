@@ -18,8 +18,8 @@ const GLYPHS = {
 
 const NS = 'http://www.w3.org/2000/svg';
 
-// De stippen staan in een groep: de gloed (#dm-glow) zit op die groep, één filter per teken. Als CSS-filter op de <svg>
-// zelf tekende Safari op iOS de smalle dubbele punt niet meer (Victor, 08/11/2026: "de dubbele punt is plots weg").
+// De stippen staan in een groep: de gloed (#dm-glow) zit op die groep, één filter per teken, behalve de dubbele punt
+// (Safari op iOS tekent een filter op zo'n smal teken niet; Victor, 08/11/2026: "de dubbele punt is plots weg").
 function dotGroup(svg) {
   const g = document.createElementNS(NS, 'g');
   g.setAttribute('class', 'dm-dots');
