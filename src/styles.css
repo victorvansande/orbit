@@ -520,7 +520,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transform: translateX(28px) !important; opacity: 0;
   transition: transform .3s cubic-bezier(.4, 0, .2, 1), opacity .24s var(--ease) .04s !important;
 }
-.track.is-leaving > .t-del-btn, .track.is-leaving > .t-swipe-del-btn { opacity: 0 !important; }
+.track.is-leaving > .t-swipe-del-btn { opacity: 0 !important; }
 .track.is-leaving .t-title { color: var(--ink-3); }
 .track.is-deleted {
   opacity: 0 !important;
@@ -534,15 +534,15 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transition: padding-right .2s var(--ease), transform .2s var(--ease);
   will-change: padding-right, transform;
 }
-.t-del-btn, .t-swipe-del-btn {
+.t-swipe-del-btn {
   position: absolute; top: 0; right: 0;
   width: 36px; height: 42px; display: grid; place-items: center;
   color: var(--ink-3); border: 0; background: transparent; border-radius: 7px;
   cursor: pointer; padding: 0; opacity: 0; pointer-events: none; z-index: 1;
   transition: opacity .2s var(--ease), color .2s var(--ease), background-color .2s var(--ease), transform .2s var(--pop);
 }
-.t-del-btn:hover, .t-swipe-del-btn:hover { color: var(--late); background: var(--fill); }
-.t-del-btn:active, .t-swipe-del-btn:active { transform: scale(.9); }
+.t-swipe-del-btn:hover { color: var(--late); background: var(--fill); }
+.t-swipe-del-btn:active { transform: scale(.9); }
 .t-swipe-note-btn {
   position: absolute; top: 0; right: 36px;
   width: 36px; height: 42px; display: grid; place-items: center;
@@ -551,9 +551,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transition: opacity .2s var(--ease), color .2s var(--ease), background-color .2s var(--ease), transform .2s var(--pop);
 }
 .t-swipe-note-btn:hover, .t-swipe-note-btn:active { color: var(--ink); background: var(--fill); }
-.track.is-swipe-ready .t-swipe-note-btn { opacity: 1 !important; }
 .track.is-leaving > .t-swipe-note-btn { opacity: 0 !important; }
-.track.is-swipe-ready .t-del-btn, .track.is-swipe-ready .t-swipe-del-btn { color: var(--late); transform: scale(1.15); opacity: 1 !important; }
 .track.is-hot { background: linear-gradient(90deg, var(--fill), transparent); }
 /* hover alleen met een echte aanwijzer: op touch bleef :hover kleven op de rij die na verwijderen onder de vinger schoof */
 @media (hover: hover) { .track:hover { background: linear-gradient(90deg, var(--fill), transparent); } }
@@ -580,13 +578,13 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   flex: 1 1 0%; min-width: 0;
   padding: 10px 4px 10px 2px; font-size: var(--fs-item);
   white-space: nowrap; overflow: hidden; text-overflow: clip; cursor: default;
-  --mql: 0px; --mqr: 28px;
+  --mql: 0px; --mqr: 20px;   /* vervaagt pas vlak voor het eerste icoon (Victor, 08/11/2026) */
   mask-image: linear-gradient(to right, transparent 0, black var(--mql), black calc(100% - var(--mqr)), transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0, black var(--mql), black calc(100% - var(--mqr)), transparent 100%);
   transition: --mql .4s var(--ease), --mqr .4s var(--ease);
 }
 @property --mql { syntax: '<length>'; inherits: false; initial-value: 0px; }
-@property --mqr { syntax: '<length>'; inherits: false; initial-value: 34px; }
+@property --mqr { syntax: '<length>'; inherits: false; initial-value: 20px; }
 .t-title-in { display: inline-block; }
 /* tijdens het doorschuiven vervaagt het begin in plaats van het einde (zacht, via geregistreerde eigenschappen) */
 .t-title.is-marquee { --mql: 14px; --mqr: 4px; }
@@ -598,7 +596,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 
 /* ---- Rechter metadata zone: Variant 1 De Stille Kolom ---- */
 .t-meta {
-  width: auto; min-width: 88px; flex-shrink: 0; height: 42px;   /* groeit mee met een lange deadline, schuift nooit over de titel */
+  width: auto; flex-shrink: 0; height: 42px;   /* groeit mee met een lange deadline, schuift nooit over de titel */
   position: relative; display: flex; align-items: center; justify-content: flex-end;
 }
 .t-meta-labels {
@@ -1776,12 +1774,18 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
     opacity: 1;
     pointer-events: auto;
   }
+  /* plaats voor de drie knoppen enkel als ze er staan; in rust loopt de titel door tot vlak voor het icoon
+     (Victor, 08/11/2026: de titel vervaagde al ver voor het icoontje). De tekst zelf verschuift niet, enkel waar hij vervaagt. */
+  .track:hover .t-meta,
+  .track.is-picking .t-meta,
+  .track.is-noting .t-meta,
+  .track:focus-within .t-meta { min-width: 88px; }
 }
 @media (hover: none) {
   .t-meta-actions { display: none !important; }
   .track:not(.has-due) .t-meta-level { display: grid; }
   .track.is-swiped .track-row { padding-right: 72px; }
-  .track.is-swiped .t-meta { opacity: 0; pointer-events: none; }
+  .track.is-swiped .t-meta { display: none; }   /* de veegknoppen nemen de plaats in; de titel loopt tot ertegen */
   .track.is-swiped .t-swipe-del-btn,
   .track.is-swiped .t-swipe-note-btn { opacity: 1; pointer-events: auto; }
 }

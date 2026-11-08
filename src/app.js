@@ -815,22 +815,26 @@ function stopMarquee(box) {
   if (cur && cur !== 'none') inner.animate([{ transform: cur }, { transform: 'translateX(0)' }], { duration: 320, easing: 'cubic-bezier(.4,0,.2,1)' });
 }
 
+// Vegen naar links toont Notitie en Verwijder, enkel met een vinger of pen op een toestel zonder aanwijzer: op desktop
+// staan die knoppen bij aanwijzen in de rij, en een muis die sleept schoof de rij vroeger open naar een leeg gat.
+const swipeUI = matchMedia('(hover: none)');
 function attachSwipe(li, row, t, del, swipeNote) {
-  let startX = 0, startY = 0, dx = 0, locked = '', dragging = false;
+  let active = false, startX = 0, startY = 0, dx = 0, locked = '', dragging = false;
 
   const onPointerDown = e => {
-    if (e.target.closest('button, input, textarea, select')) return;
+    if (e.pointerType === 'mouse' || !swipeUI.matches || e.target.closest('button, input, textarea, select')) return;
+    active = true;
     startX = e.clientX;
     startY = e.clientY;
     dx = 0; locked = ''; dragging = false;
   };
 
   const onPointerMove = e => {
-    if (startX === 0 && startY === 0) return;
+    if (!active) return;
     const curDx = e.clientX - startX, curDy = e.clientY - startY;
     if (!locked) {
       if (Math.abs(curDy) > 6 && Math.abs(curDy) >= Math.abs(curDx)) {
-        locked = 'v'; startX = 0; startY = 0; return;
+        locked = 'v'; active = false; return;
       }
       if (Math.abs(curDx) > 10 && Math.abs(curDx) > Math.abs(curDy) * 1.5) {
         locked = 'h'; dragging = true;
@@ -866,11 +870,11 @@ function attachSwipe(li, row, t, del, swipeNote) {
   };
 
   const onPointerEnd = e => {
-    if (!dragging && locked !== 'h') { startX = 0; startY = 0; return; }
+    if (!dragging && locked !== 'h') { active = false; return; }
     try { li.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
     const base = li.classList.contains('is-swiped') ? -72 : 0;
     const final = base + dx;
-    startX = 0; startY = 0; locked = ''; dragging = false;
+    active = false; locked = ''; dragging = false;
 
     row.style.transition = 'padding-right .2s var(--ease), transform .2s var(--ease)';
     del.style.transition = 'opacity .2s var(--ease)';
@@ -916,7 +920,7 @@ function closeAllSwiped(except) {
       if (r) { r.style.transition = 'transform .2s var(--ease), padding-right .2s var(--ease)'; r.style.transform = ''; r.style.paddingRight = ''; }
       const m = el.querySelector('.t-meta');
       if (m) { m.style.transition = 'opacity .2s var(--ease)'; m.style.opacity = ''; }
-      const d = el.querySelector('.t-swipe-del-btn') || el.querySelector('.t-del-btn');
+      const d = el.querySelector('.t-swipe-del-btn');
       if (d) { d.style.opacity = ''; d.style.pointerEvents = ''; }
       const n = el.querySelector('.t-swipe-note-btn');
       if (n) { n.style.opacity = ''; n.style.pointerEvents = ''; }
@@ -1228,7 +1232,7 @@ function deleteTask(id, li) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
 
-  for (const d of li.querySelectorAll('.t-del-btn, .t-swipe-del-btn, .t-act-del')) d.remove();
+  for (const d of li.querySelectorAll('.t-swipe-del-btn, .t-act-del')) d.remove();
   groupsEl.style.pointerEvents = 'none';
 
   const trackRow = li.querySelector('.track-row');
