@@ -1534,6 +1534,21 @@ function undoDone() {
   doneBatch = null;
   if (b) for (const f of [...b.backs].reverse()) f();
 }
+// De melding staat in de top layer (popover), zodat ze ook boven een open venster zichtbaar en aan te tikken is
+// (audit 08/11/2026: Teruggezet en Ongedaan maken in het Archief vielen achter het venster). Opnieuw tonen zet ze bovenaan.
+// Een modaal venster maakt alles erbuiten onaantikbaar, ook een popover: staat er een venster open, dan gaat de melding
+// tijdelijk in dat venster (zo blijft Ongedaan maken aan te tikken); anders terug in body.
+function raiseToast(toast) {
+  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+  if (toast.parentElement !== host) host.append(toast);
+  if (!toast.showPopover) return;
+  try { if (toast.matches(':popover-open')) toast.hidePopover(); toast.showPopover(); } catch { /* geen popover */ }
+}
+// sluit het venster terwijl de melding er nog in staat: terug naar de pagina, anders verdwijnt ze met het venster
+document.addEventListener('close', e => {
+  const toast = $('toast');
+  if (e.target instanceof HTMLDialogElement && e.target.contains(toast) && !toast.hidden) raiseToast(toast);
+}, true);
 function showToast(text, action = null, label = tx('undo'), kind = '') {
   if (!stageFree()) { whenCalm(() => showToast(text, action, label, kind), 2); return; }
   if (toastOn() && toastAction && !(kind && kind === toastKind)) { toastWaiting.push([text, action, label, kind]); return; }
@@ -1545,6 +1560,7 @@ function showToast(text, action = null, label = tx('undo'), kind = '') {
   const toast = $('toast');
   resetToastDrag();
   toast.hidden = false;
+  raiseToast(toast);
   requestAnimationFrame(() => toast.classList.add('is-on'));
   bumpIdle();
   clearTimeout(toastTimer);
@@ -1558,6 +1574,8 @@ function hideToast() {
   toastTimer = setTimeout(() => {
     if (toastKind === 'done') doneBatch = null;
     toast.hidden = true; toastKind = ''; toastAction = null;
+    try { if (toast.matches(':popover-open')) toast.hidePopover(); } catch { /* geen popover */ }
+    if (toast.parentElement !== document.body) document.body.append(toast);
     resetToastDrag();
     const next = toastWaiting.shift();
     if (next) showToast(...next);
@@ -2499,7 +2517,7 @@ let popBusy = false, popWaiting = false, popId = null, popTimer = 0;
 function showFeatPop() {
   if (popBusy || popWaiting || !featQueue.length) return;
   if (!stageFree()) { popWaiting = true; whenCalm(() => { popWaiting = false; showFeatPop(); }, 1); return; }
-  if (document.querySelector('dialog[open], .fx-reveal')) { popWaiting = true; setTimeout(() => { popWaiting = false; showFeatPop(); }, 400); return; }
+  if (document.querySelector('dialog[open], .fx-reveal, .fidget.is-open')) { popWaiting = true; setTimeout(() => { popWaiting = false; showFeatPop(); }, 400); return; }   // ook niet over het open bakje op gsm
   popBusy = true;
   const x = featQueue.shift(), pop = $('feat-pop');
   popId = x.id;
@@ -2623,7 +2641,7 @@ function noteRank(r, pop) {
 function showRankPop() {
   if (rankBusy || rankWaiting || !rankQueue) return;
   if (!stageFree()) { rankWaiting = true; whenCalm(() => { rankWaiting = false; showRankPop(); }, 1); return; }
-  if (popBusy || featQueue.length || document.querySelector('dialog[open], .fx-reveal')) { rankWaiting = true; setTimeout(() => { rankWaiting = false; showRankPop(); }, 400); return; }
+  if (popBusy || featQueue.length || document.querySelector('dialog[open], .fx-reveal, .fidget.is-open')) { rankWaiting = true; setTimeout(() => { rankWaiting = false; showRankPop(); }, 400); return; }
   rankBusy = true;
   const q = rankShown = rankQueue, pop = $('rank-pop'), cs = getComputedStyle(document.documentElement);
   rankQueue = null;
@@ -2801,7 +2819,7 @@ addEventListener('touchmove', e => {
 
 /* ---- Toetsenbord ---- */
 document.addEventListener('keydown', e => {
-  if (composer.open || archiveDialog.open || syncDialog.open || introDialog.open || featsDialog.open) return;
+  if (composer.open || archiveDialog.open || syncDialog.open || introDialog.open || featsDialog.open || recapDialog.open) return;   // ook achter de maandrecap geen sneltoetsen (audit 08/11/2026: A opende het Archief erbovenop)
   if (e.repeat) return;                 // ingedrukt houden herhaalt niets (anders flitst D tussen licht en donker)
   if (e.target.closest?.('input, textarea, [contenteditable]')) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
