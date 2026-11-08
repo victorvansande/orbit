@@ -1,0 +1,163 @@
+<meta charset="utf-8">
+<title>Orbit fidgets</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Vier snelle mockups op ware grootte van het bakje (326 x 227), raster van twee kolommen, gsm één. */
+:root { --bg:#EBE8DF; --well:#E0DDD3; --ink:#1B1B22; --ink2:#5E5E68; --ink3:#9A9AA3; --core:#E70049; --shade:rgba(27,27,34,.12); --dark:0;
+  --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0F0F12; --well:#0A0A0D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0F0F12; --well:#0A0A0D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; }
+body { background:var(--bg); color:var(--ink); font:400 15px/1.5 var(--sans); }
+.wrap { max-width:1000px; margin:0 auto; padding-block:36px 56px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+.k { font:500 11px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink3); }
+h1 { font:500 28px/1.2 var(--sans); margin:10px 0 0; }
+.lede { color:var(--ink2); max-width:60ch; margin:8px 0 0; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:36px; margin-top:32px; }
+.card { min-width:0; display:flex; flex-direction:column; gap:10px; }
+.card h2 { font:500 18px/1.2 var(--sans); margin:0; } .card h2 span { font:500 11px var(--mono); color:var(--ink3); margin-right:8px; letter-spacing:.14em; }
+.well { width:100%; max-width:326px; aspect-ratio:326/227; border-radius:14px; background:var(--well); position:relative; overflow:hidden; box-shadow:inset 0 1.5px 3px var(--shade); }
+canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+.card p { margin:0; color:var(--ink2); font-size:14px; max-width:46ch; }
+@media (max-width:740px) { .grid { grid-template-columns:1fr; } }
+</style>
+<div class="wrap">
+  <div class="k">Orbit · fidgets · snelle mockups</div>
+  <h1>Vier nieuwe fidgets</h1>
+  <p class="lede">Ruwe schetsen op de maat van het bakje, om de richting te kiezen. Alles speelbaar of aan te raken.</p>
+  <div class="grid">
+    <section class="card"><h2><span>F1</span>Slang in stippen</h2><div class="well"><canvas id="snake" tabindex="0"></canvas></div>
+      <p>Snake in het raster van de matrixklok. Veeg of pijltjes om te sturen; zonder input speelt hij vanzelf. Eten is een rode Nu-stip.</p></section>
+    <section class="card"><h2><span>F2</span>Slinger</h2><div class="well"><canvas id="harmo"></canvas></div>
+      <p>Een harmonograaf: twee slingers trekken met een inktpen een figuur die traag uitdempt. Een tik zet een nieuwe figuur in gang.</p></section>
+    <section class="card"><h2><span>F3</span>Zandtafel</h2><div class="well"><canvas id="sand"></canvas></div>
+      <p>Een kogel trekt een spoor door fijn zand van stippen en volgt een rozet. Sleep om de kogel zelf te leiden; het zand vlakt traag weer uit.</p></section>
+    <section class="card"><h2><span>F4</span>Inktdruppel</h2><div class="well"><canvas id="ink"></canvas></div>
+      <p>Een druppel inkt valt in water en waaiert uit in slierten met risokorrel. Tik om een druppel te laten vallen; slepen roert.</p></section>
+  </div>
+</div>
+<script>
+(() => {
+const W = 326, H = 227, cs = () => getComputedStyle(document.documentElement);
+let T = {}; const theme = () => { const s = cs(); T = { well: s.getPropertyValue('--well').trim(), ink: s.getPropertyValue('--ink').trim(), core: s.getPropertyValue('--core').trim(), dark: s.getPropertyValue('--dark').trim() === '1' }; };
+theme(); matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+const rgba = (h, a) => `rgba(${rgb(h).join(',')},${a})`;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function setup(id) {
+  const c = document.getElementById(id), g = c.getContext('2d'), d = Math.min(2, devicePixelRatio || 1);
+  c.width = W * d; c.height = H * d; g.scale(d, d);
+  const p = { x: W / 2, y: H / 2, down: false, t: -9, tap: false };
+  const pos = e => { const r = c.getBoundingClientRect(); p.x = (e.clientX - r.left) * W / r.width; p.y = (e.clientY - r.top) * H / r.height; p.t = performance.now(); };
+  c.addEventListener('pointerdown', e => { pos(e); p.down = true; p.sx = p.x; p.sy = p.y; });
+  c.addEventListener('pointermove', pos);
+  c.addEventListener('pointerup', e => { pos(e); p.down = false; if (Math.hypot(p.x - p.sx, p.y - p.sy) < 8) p.tap = true; else p.swipe = [p.x - p.sx, p.y - p.sy]; });
+  return { c, g, p };
+}
+
+// F1 Slang in stippen
+(() => {
+  const { c, g, p } = setup('snake'), S = 9, CW = 34, CH = 23, ox = (W - CW * S) / 2 + S / 2, oy = (H - CH * S) / 2 + S / 2;
+  let snake, dir, food, acc = 0, auto = true, dead = 0;
+  const reset = () => { snake = [[10, 11], [9, 11], [8, 11], [7, 11]]; dir = [1, 0]; place(); dead = 0; };
+  const place = () => { do food = [Math.random() * CW | 0, Math.random() * CH | 0]; while (snake.some(s => s[0] === food[0] && s[1] === food[1])); };
+  const turn = (x, y) => { if (x !== -dir[0] || y !== -dir[1]) dir = [x, y]; auto = false; p.t = performance.now(); };
+  c.addEventListener('keydown', e => { const m = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]; if (m) { e.preventDefault(); turn(...m); } });
+  reset();
+  return loop(dt => {
+    if (p.swipe) { const [x, y] = p.swipe; Math.abs(x) > Math.abs(y) ? turn(Math.sign(x), 0) : turn(0, Math.sign(y)); p.swipe = null; }
+    if (performance.now() - p.t > 4000) auto = true;
+    acc += dt;
+    while (acc > 0.11) {
+      acc -= 0.11;
+      if (dead) { if (++dead > 12) reset(); continue; }
+      const h = snake[0];
+      if (auto) { const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(d => !(d[0] === -dir[0] && d[1] === -dir[1])).map(d => { const n = [(h[0] + d[0] + CW) % CW, (h[1] + d[1] + CH) % CH]; return { d, bad: snake.some(s => s[0] === n[0] && s[1] === n[1]), dist: Math.abs(n[0] - food[0]) + Math.abs(n[1] - food[1]) }; }).sort((a, b) => a.bad - b.bad || a.dist - b.dist); dir = opts[0].d; }
+      const n = [(h[0] + dir[0] + CW) % CW, (h[1] + dir[1] + CH) % CH];
+      if (snake.some(s => s[0] === n[0] && s[1] === n[1])) { dead = 1; continue; }
+      snake.unshift(n);
+      if (n[0] === food[0] && n[1] === food[1]) place(); else snake.pop();
+    }
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    g.fillStyle = rgba(T.ink, T.dark ? .1 : .08); g.beginPath();
+    for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) { g.moveTo(ox + x * S + 1.1, oy + y * S); g.arc(ox + x * S, oy + y * S, 1.1, 0, 7); }
+    g.fill();
+    snake.forEach((s, i) => { const k = 1 - i / (snake.length + 6); g.fillStyle = rgba(T.ink, dead && dead % 2 ? .25 : .35 + .65 * k); g.beginPath(); g.arc(ox + s[0] * S, oy + s[1] * S, 3.4 * (0.6 + .4 * k), 0, 7); g.fill(); });
+    g.fillStyle = T.core; g.beginPath(); g.arc(ox + food[0] * S, oy + food[1] * S, 3.4, 0, 7); g.fill();
+    g.font = '500 9px "Geist Mono"'; g.fillStyle = rgba(T.ink, .45); g.textAlign = 'right'; g.fillText(String(snake.length - 4).padStart(2, '0') + (auto ? ' · DEMO' : ''), W - 12, 16); g.textAlign = 'left';
+  });
+})();
+
+// F2 Slinger (harmonograaf)
+(() => {
+  const { g, p } = setup('harmo'); let P, t, pts;
+  const fresh = () => { const r = () => 1.9 + Math.round(Math.random() * 3) * .5 + (Math.random() - .5) * .02; P = { f1: r(), f2: r(), f3: r(), f4: r(), p1: Math.random() * 6, p2: Math.random() * 6, p3: Math.random() * 6, p4: Math.random() * 6 }; t = 0; pts = []; };
+  fresh();
+  const at = t => { const d = Math.exp(-t * .045); return [W / 2 + d * (60 * Math.sin(P.f1 * t + P.p1) + 38 * Math.sin(P.f2 * t + P.p2)), H / 2 + d * (44 * Math.sin(P.f3 * t + P.p3) + 30 * Math.sin(P.f4 * t + P.p4))]; };
+  return loop(dt => {
+    if (p.tap) { p.tap = false; fresh(); }
+    for (let i = 0; i < 24; i++) { t += dt / 24 * 1.4; pts.push(at(t)); }
+    if (t > 75) fresh();
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    g.lineWidth = .7; g.strokeStyle = rgba(T.ink, .55); g.beginPath();
+    pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.stroke();
+    const q = pts[pts.length - 1]; g.fillStyle = T.core; g.beginPath(); g.arc(q[0], q[1], 2.2, 0, 7); g.fill();
+  });
+})();
+
+// F3 Zandtafel
+(() => {
+  const { g, p } = setup('sand'), S = 3.4, cols = Math.floor(W / S), rows = Math.floor(H / S), h = new Float32Array(cols * rows).fill(1);
+  let t = 0, bx = W / 2, by = H / 2;
+  return loop(dt => {
+    t += dt;
+    let tx, ty;
+    if (p.down) { tx = p.x; ty = p.y; } else { const r = 82 * Math.cos(5 / 3 * t * .35); tx = W / 2 + r * Math.cos(t * .35) * 1.35; ty = H / 2 + r * Math.sin(t * .35) * .95; }
+    bx += (tx - bx) * Math.min(1, dt * 6); by += (ty - by) * Math.min(1, dt * 6);
+    for (let i = 0; i < h.length; i++) h[i] += (1 - h[i]) * dt * .02;
+    const cx = bx / S, cy = by / S;
+    for (let y = Math.max(0, cy - 4 | 0); y < Math.min(rows, cy + 5); y++) for (let x = Math.max(0, cx - 4 | 0); x < Math.min(cols, cx + 5); x++) {
+      const d = Math.hypot(x - cx, y - cy), k = y * cols + x;
+      if (d < 1.6) h[k] = Math.max(0, h[k] - dt * 6); else if (d < 3.4) h[k] = Math.min(1.7, h[k] + dt * 1.2);
+    }
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    g.fillStyle = rgba(T.ink, T.dark ? .55 : .45); g.beginPath();
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { const r = .55 * h[y * cols + x]; if (r < .1) continue; const px = x * S + S / 2 + (y % 2 ? S / 2 : 0), py = y * S + S / 2; g.moveTo(px + r, py); g.arc(px, py, r, 0, 7); }
+    g.fill();
+    g.fillStyle = T.ink; g.beginPath(); g.arc(bx, by, 4.2, 0, 7); g.fill();
+  });
+})();
+
+// F4 Inktdruppel
+(() => {
+  const { g, p } = setup('ink'); let parts = [], last = 0;
+  const drop = (x, y) => { for (let i = 0; i < 260; i++) { const a = Math.random() * 7, s = Math.random() ** .6 * 26; parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s + 14, life: 1, w: Math.random() * 7, r: .8 + Math.random() * 2 }); } };
+  drop(W / 2, 40);
+  const flow = (x, y, t) => [Math.sin(y * .03 + t * .4) * 10 + Math.cos(x * .02 - t * .3) * 6, Math.cos(x * .025 + t * .35) * 8 + 4];
+  let t = 0;
+  return loop(dt => {
+    t += dt;
+    if (p.tap) { p.tap = false; drop(p.x, p.y); }
+    if (t - last > 9 && performance.now() - p.t > 4000) { last = t; drop(60 + Math.random() * 206, 30 + Math.random() * 40); }
+    for (const q of parts) {
+      const f = flow(q.x, q.y, t + q.w);
+      if (p.down) { const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) + 1; if (d < 50) { q.vx += -dy / d * 60 * dt; q.vy += dx / d * 60 * dt; } }
+      q.vx += (f[0] - q.vx) * dt * .8; q.vy += (f[1] - q.vy) * dt * .8;
+      q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt * .035; q.r += dt * .35;
+    }
+    parts = parts.filter(q => q.life > 0 && q.y < H + 20);
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    for (const q of parts) { g.fillStyle = rgba(T.ink, .1 * q.life); g.beginPath(); g.arc(q.x, q.y, q.r, 0, 7); g.fill(); }
+    g.fillStyle = rgba(T.ink, .05);
+    for (let i = 0; i < 260; i++) g.fillRect(Math.random() * W, Math.random() * H, 1, 1);   // korrel
+  });
+})();
+
+function loop(step) {
+  let last = performance.now();
+  const f = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; step(reduced ? 0 : dt); if (!reduced) requestAnimationFrame(f); };
+  requestAnimationFrame(f);
+}
+})();
+</script>

@@ -831,3 +831,5 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 08/11/2026, Claude Code: fidget Plasma (plasmaplaat met glazen bolletjes, Schijf en Plaat, draden trekken naar de vinger, volgt de kleurkiezer), `src/focus/plasma.js`; pijltje onder het zwevende bakje op gsm gecentreerd. Open: Victor probeert het op pc en gsm.
 - 08/11/2026, Claude Code: voorstellen voor een fidget Breakout (artifact "Orbit breakout": B1 Rasterpunt, B2 Tekens, B3 Baan (advies), B4 Fosfor), `ontwerp/breakout/`. Open: Victor kiest.
 - 08/11/2026, Claude Code: fidget Breakout (B4 Fosfor) gebouwd: CRT-buis, tien levels met lussen, levens, zes powerups, top vijf per toestel, demo die vanzelf speelt, pauze, keuzerij wijkt tijdens het spel. `src/focus/breakout.js`. Open: Victor speelt het op pc en gsm; highscores eventueel delen tussen toestellen als hij dat wil.
+
+- 08/11/2026, Claude Code: snelle mockups voor vier nieuwe fidgets (artifact "Orbit fidgets" (https://claude.ai/artifact/EsaMSw2oYMTvskMbdAGGsC), `ontwerp/fidgets/index.html`: F1 Slang in stippen, F2 Slinger (harmonograaf), F3 Zandtafel, F4 Inktdruppel). Nog niets in de app. Open: Victor kiest.
