@@ -41,7 +41,7 @@ Dit bestand wordt bij elke beurt meegelezen, dus het blijft kort (doel: onder 15
 
 ## Samenwerking (Claude Code en Antigravity)
 
-- Eén tool tegelijk. Begin met `git pull origin main`, stop met commit en push naar `main`.
+- Eén tool tegelijk. Begin met `git pull origin main`, stop met commit en push naar `main`. Krijgt een cloudsessie een eigen branch toegewezen (bv. `claude/...`), toch op `main` werken en naar `main` pushen: Pages publiceert enkel `main` (Victor, 08/11/2026).
 - Bij het starten: dit bestand en de Overdracht hieronder lezen, `git log --oneline -15`. Staat er in de commits iets dat niet in `docs/kennis.md` staat, dan eerst aanvullen.
 - Antigravity houdt elke wijziging ook bij in `ANTIGRAVITY_CHANGELOG.md` (niet meelezen tenzij nodig: groot).
 - **Nooit geschiedenis herschrijven**: geen force push, rebase, reset of amend op gepushte commits. Ongedaan maken = `git revert`.
