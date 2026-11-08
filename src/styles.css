@@ -1618,6 +1618,13 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   body.is-focus .focus-info { padding: 12px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 62px); }   /* knoppenrij 46 px + 16 px lucht */
   body.is-focus .focus-weather { margin-bottom: 12px; }
   body.is-focus .focus-due { margin-top: 16px; }   /* dichter bij de datum, de quote iets lager (Victor, 04/11/2026) */
+  /* in stilte vervaagt de knoppenrij en zakt het blok tot het bijschrift op de basislijn van de zandloper staat
+     (gemeten: 39 px, op elke maat gelijk; minder als een lange regel anders onder de zandloper loopt, fitFocusDrop in
+     app.js); komen de knoppen terug, dan schuift het eerst omhoog en verschijnen ze net
+     daarna (Victor, 08/11/2026). Niet met het bakje open: dan blijven de knoppen staan. */
+  body.is-focus .focus-info { transition: transform .4s var(--ease), opacity .6s var(--ease), visibility .6s; }
+  body.is-focus.is-idle:not(.has-fidget-open) .focus-info { transform: translateY(var(--drop, 39px)); transition: transform .8s var(--ease) .25s, opacity .6s var(--ease), visibility .6s; }
+  body.is-focus:not(.is-idle) .controls > :not(.timer) { transition-delay: .15s; }
   /* zandloper op gsm in de focus (P3, Victor, 02/11/2026; eerst stond hij naast de klok en dat was een drukke rij):
      rechts in de rij Boven / Zijkant / Focus, op dezelfde plek als het kleine glas buiten de focus, met de resterende
      minuten als groot, dun cijfer (T3). Blijft staan als de knoppen vervagen. Een tik toont duur, Start / Pauze en ↺ in

@@ -446,7 +446,7 @@ function renderFocusNow() {
   const box = $('focus-now');
   const urgent = tasks.filter(t => t.level === URGENT_LEVEL).sort((a, b) => a.createdAt - b.createdAt);
   box.replaceChildren();
-  if (!urgent.length) { box.append(quoteNode()); fitQuote(); return; }
+  if (!urgent.length) { box.append(quoteNode()); fitQuote(); fitFocusDrop(); return; }
   box.append(el('p', 'focus-kicker', tx('focus.now')));
   const ul = el('ul');
   const max = desktop.matches ? 4 : 3;   // op gsm minder plaats onder de scène
@@ -464,6 +464,7 @@ function renderFocusNow() {
   if (urgent.length > max) ul.append(el('li', 'focus-more', tx('focus.more', { n: urgent.length - max })));
   box.append(ul);
   fitQuote();
+  fitFocusDrop();
 }
 
 /* ---- Statistiek: teller onder de lijst (met details bij een tik) en de sterrenhemel in de scène ---- */
@@ -2176,7 +2177,25 @@ function setFocus(on) {
 function bumpIdle() {
   document.body.classList.remove('is-idle');
   clearTimeout(idleTimer);
-  if (document.body.classList.contains('is-focus')) idleTimer = setTimeout(() => document.body.classList.add('is-idle'), IDLE_MS);
+  if (document.body.classList.contains('is-focus')) idleTimer = setTimeout(() => { fitFocusDrop(); document.body.classList.add('is-idle'); }, IDLE_MS);
+}
+// Gsm, focus: in stilte zakt het blok met klok en quote tot het bijschrift op de basislijn van de zandloper staat (39 px,
+// Victor 08/11/2026). Loopt een tekstregel tot onder de zandloper (lange laatste regel, lange Nu-taak), dan zakt het
+// blok maar zo ver dat die regel er net boven blijft.
+function fitFocusDrop() {
+  const info = document.querySelector('.focus-info'), timerEl = document.querySelector('.timer.is-compact');
+  if (!info || !timerEl || desktop.matches) return;
+  const zone = [timerEl.querySelector('.timer-glass'), timerEl.querySelector('.timer-min')].map(e => e?.getBoundingClientRect()).filter(r => r?.width);
+  if (!zone.length) return;
+  const left = Math.min(...zone.map(r => r.left)) - 12, top = Math.min(...zone.map(r => r.top)) - 6;
+  const now = new DOMMatrix(getComputedStyle(info).transform).m42 || 0;   // al gezakt: terugrekenen naar de rustplaats
+  let drop = 39;
+  const range = document.createRange();
+  for (const node of info.querySelectorAll('blockquote, figcaption, li, p')) {
+    range.selectNodeContents(node);
+    for (const r of range.getClientRects()) if (r.width && r.right > left) drop = Math.min(drop, top - (r.bottom - now));
+  }
+  info.style.setProperty('--drop', `${Math.max(0, Math.floor(drop))}px`);
 }
 $('focus-btn').addEventListener('click', () => setFocus(!document.body.classList.contains('is-focus')));
 $('focus-exit').addEventListener('click', () => setFocus(false));
