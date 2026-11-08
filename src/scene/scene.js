@@ -1700,6 +1700,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     drawLabels();
   }
 
+  const frameErrors = new Set();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -1707,7 +1708,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       update(dt, now);
       draw(now);
     } catch (err) {
-      console.error('Orbit frame error:', err);
+      // vangnet: de lus blijft draaien, maar een fout mag niet stil verdwijnen; elke soort fout één keer melden, niet 60 keer per seconde
+      const key = String(err && err.message);
+      if (!frameErrors.has(key)) { frameErrors.add(key); console.error('Orbit frame error:', err); }
     }
     requestAnimationFrame(frame);
   }

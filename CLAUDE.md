@@ -90,8 +90,8 @@ src/data/    store, backup, stats, feats, recap      gegevens: archief, momentop
 src/sync/    sync, pair, keychain                    synchronisatie tussen toestellen, koppelen met QR, synccode in de sleutelhanger
 src/scene/   scene, wheel, legend, fx, matrix,       wat je ziet en hoort rond de orbit: canvas, wiel, legende, effecten,
              greet, sound, promo, turn               stippencijfers, kern, nieuwe rang, tijdlijn van de maandwissel
-src/focus/   timer, glass, fidget, panel, weather,   alles van de focusmodus: zandloper, klein glas, bakje, paneel in het bakje,
-             quotes                                  weer, quotes
+src/focus/   timer, glass, fidget, panel, life,      alles van de focusmodus: zandloper, klein glas, bakje, paneel en Game of Life in het bakje,
+             weather, quotes                         weer, quotes
 src/vendor/                                          code van derden, ongewijzigd of met de bron en licentie bovenaan, pas geladen als nodig
 ```
 
@@ -192,6 +192,7 @@ Op vraag van Victor (02/11/2026): een volledig identiteitstraject voor Orbit (fa
 | `src/sync/pair.js` | Koppelen met een QR-code: `renderQr`, `codeFromText`, `createScanner` (camera) |
 | `src/sync/keychain.js` | Synccode als wachtwoord in de sleutelhanger: `canStore`, `storeCode` (Credential Management API), `wasOffered`, `markOffered`, `KEYCHAIN_USER`. Zie Synchronisatie, Sleutelhanger |
 | `src/vendor/topography.js` | Topography van React Bits zonder React (fidget Topo), zie Bakje water |
+| `src/focus/life.js` | Game of Life in het bakje (Antigravity, 05/11/2026): raster van 60 × 42 (B3/S23, rond), nagloed, vijf werelden via het pijltje onder het bakje, tikken en slepen tekent cellen, volgt de kleurkiezer |
 | `src/vendor/wayglim.js` | Wayglim WebGL2 prism flow/hero background engine (fidget Wayglim), pas geladen als nodig |
 | `src/vendor/qrcode.min.mjs`, `src/vendor/jsqr.min.js` | qrcode-generator 2.0.4 (MIT, QR maken) en jsQR 1.4.0 (Apache-2.0, QR lezen), met esbuild verkleind, pas geladen als nodig |
 | `worker/` | Eigen sync-server op Cloudflare (Worker + Durable Object), deploy via `.github/workflows/sync-worker.yml` |
@@ -586,6 +587,20 @@ Op vraag van Victor ("een volledige app/site audit ... zeker omdat ik nu ook som
 - **Gevonden en opgelost**: op lage schermen (320×568) viel het orbitje van het venster "Nieuwe taak" boven het scherm uit en werd de plaatshouder "Wat moet er gebeuren?" afgekapt. Nu reserveert `.composer` die ruimte zelf (`padding-top`, zodat centreren het orbitje meetelt) en is alles iets compacter bij `max-height: 760px` (orbitje 196 px); bij `max-width: 360px` is de titel 20 px. Let op: die media query staat na de basisregel van `.composer-title`, anders wint de basisregel.
 - **Geen fout, wel goed om te weten**: in de testomgeving is de weerdienst onbereikbaar (proxy) en draait WebGL in software; de framerate op 1440 (ongeveer 40 tot 55 fps) zegt daar niets over een echt toestel, op 375 en 320 haalde zelfs de software 60 fps. De twee resterende ongebruikte teksten (`recap.saved`, `skies.current`) blijven staan voor als ze weer nodig zijn.
 
+## Nalezing van Antigravity (08/11/2026, Claude Code)
+
+Op vraag van Victor ("Kijk gedetailleerd naar de changelog van Antigravity ... kan je naar alle changes van Antigravity kijken en zien of je er nog zaken van kan verfijnen"). Alle 44 regels van `ANTIGRAVITY_CHANGELOG.md` sinds 04/11/2026 (41 commits) nagelopen, plus de code (lint, syntaxcontrole, sleutels NL en EN, losse kleuren, onbekende tokens) en de app op 1440 × 900, 375 × 812 en 320 × 568, licht en donker, met voorbeeldtaken en met een eigen lijst met sterren. Gevonden en opgelost:
+- **Lange titel liep in de deadline** (lijst, desktop en gsm): de rechterzone `.t-meta` was vast 88 px, een label als "OVER 2 DAGEN" is breder en schoof over het einde van de titel ("vergadeOVER 2 DAGEN"). Nu groeit `.t-meta` mee (`width: auto; min-width: 88px`) en hebben de labels 8 px lucht links. Gemeten: titel tot label 8 px, geen overloop.
+- **Instellingen lag over de laatste taak** (desktop, nog geen sterren, dus de strook onder de lijst verborgen): de knop zweeft dan linksonder, maar de lijst liep tot 30 px boven de onderrand. Nu stopt `.tracks` op 76 px als `.stats` verborgen is.
+- **Fidget onbereikbaar op 320 px** (focus op gsm): de knop Fidget lag onder de minuten van de zandloper ("FIDG25 MIN", de zandloper ving de tik op). Op ≤ 360 px wijkt Boven / Zijkant in de focus (`#view-switch`); de minuten blijven staan. Gemeten op 320, 375 en 430: geen overlap meer.
+- **Geen `backdrop-filter: blur` in het bakje** (Identiteit: traag op gsm, lijnen op iOS): het keuzemenu van het bakje had een doorzichtige achtergrond (`var(--panel-bg)` bestond niet) met blur, nu `--surface`; de sluier achter het bakje op gsm is een effen token `--veil` zonder blur.
+- **Losse kleuren naar tokens**: melding onderaan (`--toast-bg`, `--toast-ink`, `--toast-line`, `--toast-btn`, `--toast-btn-ink`, licht wit met zwarte knop, donker gespiegeld, zoals Antigravity het bouwde), schaduw van zwevende vensters `--pop-shadow`, terugvalkleur in `.fidget-menu-dot` weg.
+- **Onbekend token `--line-2`** in de Uitleg: de omlijning van de toetsen en de schuifbalk waren daardoor onzichtbaar (de toets N stond als een losse letter met witruimte in de tekst). Nu `--dash`.
+- **Teksten van de Uitleg** in klare taal zonder marketingwoorden ("De bezielde kern", "totale stilte", "tactiele fidgets", "vloeiend", "kalm dutje", "astronomische rangtitel" weg), en kloppend met de app: het moment kies je via het baantje naast een taak (de stip bestaat niet meer), afvinken laat de bol opbranden, de rang staat onder de takenlijst. NL en EN, titels in de Engelse versie zonder hoofdletters midden in de zin.
+- **Vangnet in de scène zweeg niet, maar spamde**: `frame()` in `scene.js` meldde een fout 60 keer per seconde; nu één keer per soort fout.
+- Dode code (`DAY_FMT`) en een em dash in een opmerking weg.
+Nagekeken en in orde gelaten: de begrenzer op het geluid (`DynamicsCompressor` op -3 dBFS) verandert de gemeten niveaus amper (+0,6 dB op een toon van -20 dBFS); de herverdeling van de bollen (begrensd op 25 % van de baansnelheid) gaat nooit achteruit; de opstartwacht en de cacheversie (`orbit-v29`) zijn intact. Niet aangepast, wel gemeld: een prestatiemelding kan verschijnen terwijl het bakje op gsm open staat (het bakje is geen `dialog`, dus de regisseur wacht er niet op); de keuze Boven / Zijkant in de focus op gsm heeft geen schuine streep voor Focus.
+
 ## Open vragen
 
 - Sync-server staat live; nog na te gaan: werkt `workers.dev` op het werknetwerk van Victor.
@@ -781,8 +796,4 @@ Eén regel per sessie, nieuwste onderaan: datum, tool, wat af is, wat openstaat.
 - 07/11/2026, Antigravity: koppelvenster (#sync-on) heringericht voor rustige ordening en gebalanceerde uitlijning (Victor 07/11/2026: "Dit scherm is erg rommelig. Uitlijning, knoppen en andere elementen lijken wat door elkaar te staan. Maak het ordelijker en overzichtelijker aub."): gecentreerd QR-cluster met afgeronde 200px code en zachte schaduw, 2-koloms symmetrisch deelraster over de volle breedte met gelijke knoppen Kopieer link en Toon code, compacte gecentreerde toelichting, sleutelhanger/reservekopie ondergebracht in een discrete subkaart (.sync-keep-card) met badges en duidelijke hiërarchie, scheidingslijn boven gecentreerde status, en gebalanceerde footer met "Ontkoppel dit toestel" links in gedempt grijs en "Klaar" rechts als primaire knop. Vertaalsleutels sync.keychain en sync.backup (NL/EN), service worker orbit-v25. Niets openstaand.
 - 07/11/2026, Antigravity: wiel op gsm altijd onderaan het beginscherm geplaatst zonder zichtbare taken (Victor 07/11/2026: "Kan je ervoor zorgen dat op gsm-weergave de boog met selecties voor een nieuwe taak toe te voegen altijd onderaan het scherm toont, zonder dat er al taken zichtbaar zijn, zodat het homescreen zonder scrollen er altijd clean uitziet?"): .stage vult op mobiel dynamisch de resterende hoogte tot precies 100svh minus topbar (72px), controls (36px), wiel (148px) en safe-area-inset, .wheel marge naar 0 zodat de boog rustig aan de schermonderrand rust, .tracks start pas ruim onder de schermvouw (margin-top: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px))) zodat taken pas bij omlaag scrollen in beeld glijden, en oplichten van de legende met taaklijnen vanuit het wiel beperkt tot desktop via desktop.matches zodat het homescreen bij interactie met het wiel sereen en taakloos blijft; getest op 375x812, 390x844, 430x932, 320x667 en 1440x900 in licht en donker, 0 consolefouten, 0 horizontale scroll, service worker orbit-v28. Niets openstaand.
 - 07/11/2026, Antigravity: subtiel toenemend verschil in afstand tussen binnenste en buitenste ringen (Victor 07/11/2026: "Kan je een subtiel verschil in afstand tussen de binnenste en buitenste ringen maken? Ik bedoel dat er net iets minder plek is tussen de binnenste ringen tegenover de buitente?"): ringstralen in config.js en PROFILE aangepast naar [38, 66, 98, 134, 174] met toenemende tussenruimtes van 28, 32, 36 en 40 px (+4 px per ringstap; verving de oude uniforme 34 px gaten). Nu (38) behoudt royale ademruimte rond de kern en Ooit (174) behoudt de beeldrand; ORB_RADII in de taakcomposer en PROF/draadmodellen in panel.js exact gelijkgetrokken; getest op desktop (boven- en zijaanzicht) en mobiel in licht en donker, consolefoutloos, service worker orbit-v29. Niets openstaand.
-
-
-
-
-
+- 08/11/2026, Claude Code: alle wijzigingen van Antigravity sinds 04/11/2026 nagelopen en verfijnd (zie Nalezing van Antigravity): titel en deadline botsen niet meer, Instellingen niet meer over de lijst, Fidget weer bereikbaar op 320 px, geen blur in het bakje, losse kleuren naar tokens, Uitleg in klare taal. Open: de oogjes van de kern (O1 tot O4 van Antigravity), prestatiemelding tijdens het open bakje op gsm.

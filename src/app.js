@@ -321,7 +321,6 @@ const wheel = createWheel($('wheel'), {
 
 /* ---- Samenvatting en hoeklabels ---- */
 const countBy = level => tasks.reduce((n, t) => n + (t.level === level), 0);
-const DAY_FMT = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
 const TIME_FMT = new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit' });
 
 function isoWeek(d) {
@@ -709,7 +708,7 @@ function trackRow(t) {
     openNote(t, li);
   });
 
-  // Rechter metadata zone (Variant 1: De Stille Kolom — 0 px layout-shift)
+  // Rechter metadata zone (Variant 1: De Stille Kolom, 0 px layout-shift)
   const meta = el('div', 't-meta');
   const labels = el('div', 't-meta-labels');
   const actions = el('div', 't-meta-actions');
