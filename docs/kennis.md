@@ -592,6 +592,20 @@ Op vraag van Victor (29/10/2026: "minder als een site, meer als een app", na een
 - Gsm: `.stage canvas` heeft `touch-action: pan-y` zodat de pagina kan scrollen; verticaal kantelen met de vinger kan daardoor niet, horizontaal draaien wel.
 - Gsm beginscherm: `.stage` vult de hoogte dynamisch (`100svh - env(safe-area-inset-top, 0px) - 256px - max(8px, env(safe-area-inset-bottom, 0px))`, min. 260 px) zodat het wiel (`.wheel`, 148 px) altijd rustig onderaan het scherm rust en de takenlijst (`.tracks`) pas minstens 16 px onder het wiel begint (`margin-top: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px))`). Hierdoor zijn op het initiële scherm zonder scrollen geen taken zichtbaar. Het oplichten van de legende vanuit het wiel is op mobiel uitgeschakeld (`desktop.matches`), zodat interactie met het wiel om een taak toe te voegen het beginscherm niet vult met taakregels. Taken glijden pas vloeiend in beeld zodra de gebruiker omlaag scrollt.
 
+## Testrecepten (kopiëren, niet opnieuw uitzoeken)
+
+Bestanden horen in de kladmap van de sessie, nooit in de repository.
+
+- **ESLint**: er is geen `globals`-pakket, dus de browserglobals zelf meegeven. Config `eslint.config.mjs` in de kladmap:
+  ```js
+  const names = [...Object.getOwnPropertyNames(globalThis), 'window','document','navigator','localStorage','sessionStorage','location','history','matchMedia','requestAnimationFrame','cancelAnimationFrame','devicePixelRatio','indexedDB','getComputedStyle','innerWidth','innerHeight','addEventListener','removeEventListener','HTMLElement','Element','Node','Image','ImageData','Path2D','OffscreenCanvas','DOMMatrix','PasswordCredential','BarcodeDetector','AudioContext','webkitAudioContext','IntersectionObserver','ResizeObserver','MutationObserver','CSS','screen','scrollTo','scrollX','scrollY','alert','confirm','caches','self','FileReader','KeyboardEvent','PointerEvent','CustomEvent','jsQR','visualViewport','DOMParser','HTMLCanvasElement','ClipboardItem','getSelection','requestIdleCallback','WebSocket','FontFace','Audio','Blob','File','URL','crypto','TextEncoder','TextDecoder'];
+  export default [{ files: ['**/*.js'], languageOptions: { ecmaVersion: 'latest', sourceType: 'module', globals: Object.fromEntries(names.map(n => [n, 'readonly'])) }, rules: { 'no-undef': 'error', 'no-unused-vars': 'warn' } }];
+  ```
+  Uitvoeren vanuit de repo: `eslint -c <kladmap>/eslint.config.mjs src/app.js src/...`. Bekend en oké: acht waarschuwingen `no-unused-vars` in `app.js` (destructuring met rest).
+- **Syntaxis**: `for f in <bestanden>; do node --input-type=module --check < $f || echo FOUT $f; done`.
+- **Logica zonder browser**: modules uit `src/data` en `src/sync` laden in Node met een nep-`localStorage` (`globalThis.localStorage = {getItem, setItem, removeItem}` op een object, `globalThis.window = globalThis`) en `await import('/home/user/orbit/src/...')`.
+- **Twee gekoppelde toestellen**: nagebootste Orbit-server in Node (enkel het https-pad; geen WebSocket-handler, dus de client valt na twee mislukte pogingen terug op https om de 4 s). `http.createServer` op poort 8787, CORS `*`, pad `/v1/<32 hex>(/ack|/history)?`: GET geeft `{v, d, acks}`, PUT `{d}` bewaart en geeft `{v}` (v + 1), POST `/ack` voegt `{at, d}` toe aan `acks`, `/history` geeft `[{v, d}]`. In Playwright per toestel een eigen context met `addInitScript` die eenmalig (vlag in `sessionStorage`) zet: `priority-orbit.lang.v1 = 'nl'`, `priority-orbit.intro.v1 = 'gezien'`, `priority-orbit.server = 'http://127.0.0.1:8787'`, `priority-orbit.sync.v1 = <zelfde code>`, plus de taken (`priority-orbit.tasks.v1`). Daarna `localStorage` van beide pagina's pollen tot ze gelijk zijn (max. 20 s). Archief openen op gsm-breedte met toets `A` (de knop zit daar in het menu). Verwachte consolemeldingen: de mislukte WebSocket-handshake en `ERR_TUNNEL_CONNECTION_FAILED` voor externe bronnen (weer, lettertypes).
+
 ## Audit (01/11/2026, Claude Code)
 
 Op vraag van Victor ("een volledige app/site audit ... zeker omdat ik nu ook soms met Antigravity aan hetzelfde project werk"). Hoe het nagelopen werd, zodat een volgende audit (door eender welke tool) hetzelfde kan doen:

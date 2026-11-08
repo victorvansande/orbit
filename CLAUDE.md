@@ -65,7 +65,7 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 ```
 - Eén bestand, één verantwoordelijkheid, in de map van zijn domein. Afhankelijkheden één kant op: `core` niets, `data` core, `sync` core en data, `scene` core, `focus` core en scene; enkel `app.js` importeert alles. Nieuwe functie = module met `createX(...)`, `app.js` verbindt.
 - Bestandsnamen kort, kleine letters, één Engels woord. Verplaatsen met `git mv`, imports en `SHELL` mee, `CACHE` ophogen als paden verdwijnen.
-- Geen dode code. Vóór een push: ESLint (`no-undef`, `no-unused-vars`) in een kladmap, nooit in de repo (zes bekende waarschuwingen in `app.js` zijn oké), en `node --input-type=module --check < bestand.js`.
+- Geen dode code. Vóór een push: ESLint (`no-undef`, `no-unused-vars`) in een kladmap, nooit in de repo (bekende waarschuwingen in `app.js` zijn oké), en `node --input-type=module --check < bestand.js`. Config, nagebootste syncserver en testopzet: `docs/kennis.md`, sectie Testrecepten (kopiëren, niet opnieuw uitzoeken).
 - Een media query staat ná de basisregel van die selector.
 
 ## Technische vaste punten
