@@ -23,10 +23,11 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'panel', 'life'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'panel', 'life'];
 
 import { createPanel } from './panel.js';
 import { createLife } from './life.js';
+import { createPlasma } from './plasma.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -659,6 +660,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
         modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen });
       } else if (modeName === 'life') {
         modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
+      } else if (modeName === 'plasma') {
+        // plasmaplaat (Victor, 08/11/2026): twee vormen via het pijltje, kleur uit de kleurkiezer
+        modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null), names: [label('plasmaDisc'), label('plasmaPlate')], onPreset: showScreen });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -676,7 +680,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
-  const hasPresets = m => ['panel', 'life'].includes(m);
+  const hasPresets = m => ['panel', 'life', 'plasma'].includes(m);
   nextBtn.addEventListener('click', () => { if (hasPresets(modeName)) mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
     if (!hasPresets(modeName) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
@@ -687,10 +691,10 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
   // keuze bovenin het bakje: elegant en compact dropdown-menu (Victor, 05/11/2026)
   const bar = box.querySelector('.fidget-modes');
   // zonder WebGL geen lava of gloed (dan ook niet als keuze); zonder WebGL2 geen topo of wayglim
-  const available = () => MODES.filter(m => (!['lava', 'grain'].includes(m) || getGL()) && (!['topo', 'wayglim'].includes(m) || hasGL2()));
+  const available = () => MODES.filter(m => (!['lava', 'grain', 'plasma'].includes(m) || getGL()) && (!['topo', 'wayglim'].includes(m) || hasGL2()));
 
   const GROUPS = [
-    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim'] },
+    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma'] },
     { key: 'groupPlay', modes: ['panel', 'life'] }
   ];
 
@@ -863,8 +867,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     const m = mode();
     cv.hidden = Boolean(m.gl || m.own); cvGL.hidden = !m.gl; own.hidden = !m.own;
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
-    box.classList.toggle('on-dark', ['grain', 'wayglim'].includes(modeName));
-    box.classList.toggle('is-panel', modeName === 'panel');   // gloed en wayglim vullen het vak met een donker verloop/achtergrond: lichte keuzerij
+    box.classList.toggle('on-dark', ['grain', 'wayglim'].includes(modeName) || Boolean(m.onDark));
+    box.classList.toggle('is-panel', modeName === 'panel');
+    box.classList.toggle('is-disc', modeName === 'plasma' && !m.onDark);   // plasmaschijf: de keuzerij staat naast de schijf, geen vervaging over de bovenkant   // gloed en wayglim vullen het vak met een donker verloop/achtergrond: lichte keuzerij
     if (!m.gl) {
       const ctx = getGL();
       if (ctx) {

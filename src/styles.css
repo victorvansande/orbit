@@ -828,15 +828,15 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   }
 
   /* Zachte verloopbalk bovenaan (bij topo en lava op lichte achtergrond) dooft ook uit wanneer niet gehoverd */
-  .fidget.is-gl:not(.on-dark):not(.is-panel)::before {
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc)::before {
     opacity: 0;
     transition: opacity .22s var(--ease);
   }
-  .fidget.is-gl:not(.on-dark):not(.is-panel):hover::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel):focus-within::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel).has-menu-open::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel).has-color-open::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel):has(.fidget-menu-btn[aria-expanded="true"])::before {
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):hover::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):focus-within::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc).has-menu-open::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc).has-color-open::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):has(.fidget-menu-btn[aria-expanded="true"])::before {
     opacity: 1;
   }
 }
@@ -859,7 +859,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .fpo-text { flex: 1; }
 .fidget-bar-right { display: flex; align-items: center; gap: 6px; }
 /* topo en lava lopen tot bovenaan: een zachte overgang in de kleur van het bakje houdt de keuzerij leesbaar */
-.fidget.is-gl:not(.on-dark):not(.is-panel)::before { content: ''; position: absolute; z-index: 1; inset: 0 0 auto; height: 62px; pointer-events: none; background: linear-gradient(var(--well) 52%, transparent); }
+.fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc)::before { content: ''; position: absolute; z-index: 1; inset: 0 0 auto; height: 62px; pointer-events: none; background: linear-gradient(var(--well) 52%, transparent); }
 .fidget.on-dark .fidget-modes { color: var(--fidget-on-dark); }
 .fidget.on-dark .fidget-menu-btn:hover, .fidget.on-dark .fidget-menu-btn[aria-expanded="true"] { color: var(--fidget-on-dark-strong); }
 /* kleurkiezer rechts in de rij: een rondje in de gekozen kleur, een kleurwieltje zolang elke soort zijn eigen kleuren heeft */
@@ -1707,6 +1707,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   /* Pijltje onder het bakje op mobiel */
   body.has-fidget-open .fidget-next:not([hidden]) {
     display: grid !important;
+    place-items: center;
     position: fixed;
     z-index: var(--z-sheet-btn);
     left: 50%;
