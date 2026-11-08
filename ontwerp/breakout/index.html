@@ -1,0 +1,474 @@
+<meta charset="utf-8">
+<title>Orbit breakout</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=VT323&display=swap">
+<style>
+/* Layout: korte kop, wat er misliep, gedeelde regels, dan vier speelbare bakjes van 326 x 227 in een raster van twee kolommen (gsm: één). */
+:root {
+  --bg: #EBE8DF; --surface: #F8F6F0; --well: #E0DDD3;
+  --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #9A9AA3;
+  --line: rgba(27, 27, 34, .12); --core: #E70049;
+  --well-shade: rgba(27, 27, 34, .10); --well-lip: rgba(255, 255, 255, .7);
+  --is-dark: 0;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F0F12; --surface: #19191D; --well: #0A0A0D;
+  --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78;
+  --line: rgba(236, 236, 241, .12); --core: #F0306A;
+  --well-shade: rgba(0, 0, 0, .5); --well-lip: rgba(255, 255, 255, .05);
+  --is-dark: 1; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0F0F12; --surface: #19191D; --well: #0A0A0D;
+  --ink: #ECECF1; --ink-2: #A9A9B3; --ink-3: #6E6E78;
+  --line: rgba(236, 236, 241, .12); --core: #F0306A;
+  --well-shade: rgba(0, 0, 0, .5); --well-lip: rgba(255, 255, 255, .05);
+  --is-dark: 1; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--sans); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.kicker { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font: 500 30px/1.15 var(--sans); letter-spacing: -.01em; margin: 10px 0 0; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 62ch; margin: 10px 0 0; }
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); background: none; border: 0; padding: 8px 12px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button:focus-visible, .card canvas:focus-visible { outline: 2px solid var(--core); outline-offset: 2px; }
+.notes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 40px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); }
+.notes h2 { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+.notes ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14px; }
+.notes li + li { margin-top: 4px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 40px; margin-top: 40px; }
+.card { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.card-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.code { font: 500 11px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); }
+.card h3 { font: 500 19px/1.2 var(--sans); margin: 0; }
+.tag { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--core); box-shadow: inset 0 0 0 1px var(--core); padding: 4px 7px; border-radius: 999px; }
+.well { width: 100%; max-width: 326px; aspect-ratio: 326 / 227; border-radius: 14px; background: var(--well); position: relative; overflow: hidden;
+  box-shadow: inset 0 1.5px 3px var(--well-shade), 0 1px 0 var(--well-lip); }
+.well canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: none; border-radius: 14px; }
+.card p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 46ch; }
+.card .meta { font-size: 13px; color: var(--ink-3); }
+.card .meta b { font-weight: 500; color: var(--ink-2); }
+.foot { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 14px; max-width: 62ch; }
+@media (max-width: 760px) { .grid, .notes { grid-template-columns: 1fr; } h1 { font-size: 25px; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="kicker">Orbit · fidget · voorstellen</div>
+      <h1>Breakout in het bakje</h1>
+      <p class="lede">Vier richtingen, elk speelbaar op ware grootte (326 × 227 px, zoals het bakje in de focusmodus). Muis of vinger stuurt, een tik lanceert de bal. Doe je niets, dan speelt hij rustig vanzelf.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Thema">
+      <button type="button" id="th-auto" aria-pressed="true">Auto</button>
+      <button type="button" id="th-light" aria-pressed="false">Licht</button>
+      <button type="button" id="th-dark" aria-pressed="false">Donker</button>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div>
+      <h2>Waarom de vorige niet werkte</h2>
+      <ul>
+        <li>Gloeiende bal met een deeltjesstaart: arcade, niet Orbit.</li>
+        <li>Power-ups en bonusstenen: spel-tropen die druk maken.</li>
+        <li>Afgeronde gekleurde blokjes en een piramide: zo ziet elke breakout eruit.</li>
+        <li>Niets uit de eigen beeldtaal: geen rasterpunten, geen tekenset, geen banen.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Voor alle vier hetzelfde</h2>
+      <ul>
+        <li>Geen game over: een gemiste bal legt zich zacht terug op het batje.</li>
+        <li>Alles weg: na een tel een nieuw patroon. Het pijltje onder het bakje kiest het patroon.</li>
+        <li>Stenen in de vijf momentkleuren, de rest volgt de kleurkiezer.</li>
+        <li>Stil (fidgets maken geen geluid), minder beweging: stilstaand beeld.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <div class="card-head"><span class="code">B1</span><h3>Rasterpunt</h3></div>
+      <div class="well"><canvas id="g-raster" tabindex="0" aria-label="Breakout B1 Rasterpunt, speelbaar"></canvas></div>
+      <p>Stenen zijn blokjes drukpuntjes in het zeshoekige raster van de kern en de zandloper. Een geraakte steen krimpt punt voor punt tot niets. Het batje is een strookje stippen, de bal een rode komeet met taps staartje.</p>
+      <div class="meta"><b>Leent</b> raster, komeet, rood als enig accent. <b>Risico</b> rustig, misschien te stil.</div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><span class="code">B2</span><h3>Tekens</h3></div>
+      <div class="well"><canvas id="g-tekens" tabindex="0" aria-label="Breakout B2 Tekens, speelbaar"></canvas></div>
+      <p>Alles in Geist Mono, zoals het water. Een steen telt af langs de tekenset: <code>#</code> → <code>×</code> → <code>+</code> → <code>:</code> → weg. Nu-stenen (boven) hebben vier tikken nodig, Ooit-stenen één. De bal laat puntjes achter.</p>
+      <div class="meta"><b>Leent</b> tekenset <code>·:+×#</code>, mono. <b>Risico</b> leest als terminal, minder als object.</div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><span class="code">B3</span><h3>Baan</h3><span class="tag">Advies</span></div>
+      <div class="well"><canvas id="g-baan" tabindex="0" aria-label="Breakout B3 Baan, speelbaar"></canvas></div>
+      <p>Breakout als een kleine orbit. De stenen zijn bogen op drie ringen rond de rode kern en draaien traag mee, de binnenste het snelst. Het batje glijdt over de buitenste baan. Je stuurt door rond het bakje te bewegen; de kern kaatst de bal terug.</p>
+      <div class="meta"><b>Leent</b> ringen, kern, draaien met de klok mee. <b>Risico</b> rond sturen vraagt even wennen.</div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><span class="code">B4</span><h3>Fosfor</h3></div>
+      <div class="well"><canvas id="g-fosfor" tabindex="0" aria-label="Breakout B4 Fosfor, speelbaar"></canvas></div>
+      <p>De buis van het Paneel: nagloeiend fosfor, scanlijnen, VT323. Stenen omlijnd in de momentkleuren, al de rest in fosfor. Wat geraakt wordt, flitst en gloeit na.</p>
+      <div class="meta"><b>Leent</b> CRT-schermen van je favoriete panelen. <b>Risico</b> dubbelt met het Paneel.</div>
+    </section>
+  </div>
+
+  <p class="foot">Kies een letter, of combineer (bijvoorbeeld B3 met de rasterpunten van B1). Daarna bouw ik hem in het bakje, op pc en in het zwevende venster op gsm.</p>
+</div>
+
+<script>
+(() => {
+  const W = 326, H = 227, SPEED = 175;
+  const LVL = ['#E70049', '#E08600', '#0FAE69', '#1F78B4', '#08415C'];
+  const LVD = ['#F0306A', '#F5A623', '#20E08A', '#38A0F0', '#B3B9D6'];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let TH = null;
+  const readTheme = () => {
+    const s = getComputedStyle(document.documentElement), g = n => s.getPropertyValue(n).trim();
+    const dark = g('--is-dark') === '1';
+    TH = { well: g('--well'), ink: g('--ink'), ink3: g('--ink-3'), core: g('--core'), dark, lv: dark ? LVD : LVL };
+  };
+  readTheme();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTheme);
+  const setTheme = m => {
+    if (m === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = m;
+    ['auto', 'light', 'dark'].forEach(k => document.getElementById('th-' + k).setAttribute('aria-pressed', String(k === m)));
+    readTheme();
+  };
+  ['auto', 'light', 'dark'].forEach(k => document.getElementById('th-' + k).addEventListener('click', () => setTheme(k)));
+
+  const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = u => 1 - Math.pow(1 - clamp(u, 0, 1), 2);
+
+  // Taps staartje langs de recente plekken van de bal (nieuwste eerst).
+  function taper(ctx, pts, r, color) {
+    if (pts.length < 3) return;
+    const L = [], R = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+      let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+      const w = r * 0.95 * (1 - i / (pts.length - 1));
+      L.push([pts[i].x - dy * w, pts[i].y + dx * w]); R.push([pts[i].x + dy * w, pts[i].y - dx * w]);
+    }
+    const g = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length - 1].x, pts[pts.length - 1].y);
+    g.addColorStop(0, rgba(color, .85)); g.addColorStop(1, rgba(color, 0));
+    ctx.beginPath(); ctx.moveTo(L[0][0], L[0][1]);
+    for (const p of L) ctx.lineTo(p[0], p[1]);
+    for (let i = R.length - 1; i >= 0; i--) ctx.lineTo(R[i][0], R[i][1]);
+    ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+  }
+
+  // ---- Rechthoekige breakout (B1, B2, B4) ----
+  const PATTERNS = [
+    () => true,
+    (r, c) => (r + c) % 2 === 0 || r === 0,
+    (r, c) => Math.abs(c - 4.5) + r * 0.9 < 6,
+    (r, c) => c < 3 || c > 6 || r % 2 === 0,
+  ];
+  function gridGame(opt) {
+    const s = { bricks: [], ball: { x: W / 2, y: 0, vx: 0, vy: 0, r: opt.r || 2.8, docked: true, at: 0 }, pad: { x: W / 2, w: opt.padW || 48, y: H - 16 },
+      score: 0, pat: 0, hist: [], clearAt: 0, launch: false, hi: 0 };
+    const build = t => {
+      s.bricks = []; const cols = 10, rows = 5, gx = 4, gy = opt.gy || 4, bw = (W - 32 - gx * (cols - 1)) / cols, bh = opt.bh || 10, top = opt.top || 34;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        if (!PATTERNS[s.pat % PATTERNS.length](r, c)) continue;
+        const hp = opt.hp ? opt.hp(r) : 1;
+        s.bricks.push({ x: 16 + c * (bw + gx), y: top + r * (bh + gy), w: bw, h: bh, lv: r, hp, max: hp, hit: -9, die: 0, born: t });
+      }
+    };
+    const dock = t => { s.ball.docked = true; s.ball.at = t; s.ball.vx = s.ball.vy = 0; s.hist = []; };
+    s.init = t => { build(t); dock(t); };
+    s.step = (dt, t, ptr) => {
+      const auto = t - ptr.t > 3;
+      const target = auto ? (s.ball.docked ? W / 2 + Math.sin(t * .6) * 60 : s.ball.x + Math.sin(t * 1.3) * s.pad.w * .3) : ptr.x;
+      s.pad.x += (target - s.pad.x) * Math.min(1, dt * (auto ? 7 : 16));
+      s.pad.x = clamp(s.pad.x, s.pad.w / 2 + 4, W - s.pad.w / 2 - 4);
+      const b = s.ball;
+      if (b.docked) {
+        b.x = s.pad.x; b.y = s.pad.y - b.r - 2;
+        if (s.launch || (auto && t - b.at > 1.4)) {
+          const a = (Math.random() - .5) * 1; b.vx = Math.sin(a) * SPEED; b.vy = -Math.cos(a) * SPEED; b.docked = false;
+        }
+        s.launch = false;
+      } else {
+        s.launch = false;
+        const n = Math.ceil(SPEED * dt / 2.5), h = dt / n;
+        for (let k = 0; k < n; k++) {
+          const px = b.x, py = b.y; b.x += b.vx * h; b.y += b.vy * h;
+          if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); }
+          if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx); }
+          if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy); }
+          if (b.vy > 0 && b.y + b.r >= s.pad.y && py + b.r <= s.pad.y + 1 && Math.abs(b.x - s.pad.x) <= s.pad.w / 2 + b.r) {
+            const off = clamp((b.x - s.pad.x) / (s.pad.w / 2), -1, 1), a = off * 1.05;
+            b.vx = Math.sin(a) * SPEED; b.vy = -Math.cos(a) * SPEED; b.y = s.pad.y - b.r;
+          }
+          for (const br of s.bricks) {
+            if (br.hp <= 0) continue;
+            const cx = clamp(b.x, br.x, br.x + br.w), cy = clamp(b.y, br.y, br.y + br.h);
+            if ((b.x - cx) ** 2 + (b.y - cy) ** 2 > b.r * b.r) continue;
+            if (py + b.r <= br.y || py - b.r >= br.y + br.h) b.vy = -b.vy; else b.vx = -b.vx;
+            b.x = px; b.y = py; br.hp--; br.hit = t; if (br.hp <= 0) { br.die = t; s.score++; s.hi = Math.max(s.hi, s.score); }
+            break;
+          }
+        }
+        if (b.y > H + 10) dock(t);
+      }
+      s.hist.unshift({ x: b.x, y: b.y, t }); while (s.hist.length && t - s.hist[s.hist.length - 1].t > 0.16) s.hist.pop();
+      if (!s.bricks.some(x => x.hp > 0)) {
+        if (!s.clearAt) s.clearAt = t;
+        else if (t - s.clearAt > 1.1) { s.pat++; s.clearAt = 0; build(t); dock(t); }
+      }
+    };
+    s.tap = () => { s.launch = true; };
+    s.alive = () => s.bricks.filter(x => x.hp > 0).length;
+    return s;
+  }
+
+  // B1 Rasterpunt
+  function drawRaster(ctx, s, t) {
+    ctx.fillStyle = TH.well; ctx.fillRect(0, 0, W, H);
+    const sp = 3.3, rh = sp * .866;
+    for (const b of s.bricks) {
+      let life = b.hp > 0 ? 1 : 1 - ease((t - b.die) / .45);
+      if (life <= 0) continue;
+      life *= ease((t - b.born) / .6);
+      ctx.fillStyle = TH.lv[b.lv]; ctx.beginPath();
+      let row = 0;
+      for (let y = b.y + 1.7; y <= b.y + b.h - 1.2; y += rh, row++) {
+        for (let x = b.x + 1.7 + (row % 2 ? sp / 2 : 0); x <= b.x + b.w - 1.2; x += sp) {
+          const u = Math.abs((x - b.x) / b.w - .5) * 2, v = Math.abs((y - b.y) / b.h - .5) * 2;
+          const r = 1.18 * life * (0.72 + 0.28 * (1 - Math.max(u, v)));
+          if (r < .15) continue; ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 6.2832);
+        }
+      }
+      ctx.fill();
+    }
+    ctx.fillStyle = TH.ink; ctx.beginPath();
+    for (let j = 0; j < 2; j++) for (let x = s.pad.x - s.pad.w / 2 + (j ? sp / 2 : 0); x <= s.pad.x + s.pad.w / 2; x += sp) {
+      const e = 1 - Math.abs(x - s.pad.x) / (s.pad.w / 2), r = 0.75 + 0.5 * Math.min(1, e * 3);
+      const y = s.pad.y + 1 + j * rh; ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 6.2832);
+    }
+    ctx.fill();
+    taper(ctx, s.hist, s.ball.r, TH.core);
+    ctx.fillStyle = TH.core; ctx.beginPath(); ctx.arc(s.ball.x, s.ball.y, s.ball.r, 0, 6.2832); ctx.fill();
+    hud(ctx, s.score, s.alive());
+  }
+  function hud(ctx, a, b, color) {
+    ctx.font = '500 9px "Geist Mono", monospace'; ctx.fillStyle = color || TH.ink3; ctx.textAlign = 'right';
+    ctx.letterSpacing = '1.4px'; ctx.fillText(`${String(a).padStart(2, '0')} · NOG ${String(b).padStart(2, '0')}`, W - 14, 20);
+    ctx.letterSpacing = '0px'; ctx.textAlign = 'left';
+  }
+
+  // B2 Tekens
+  const CH = ['', ':', '+', '×', '#'];
+  function drawTekens(ctx, s, t) {
+    ctx.fillStyle = TH.well; ctx.fillRect(0, 0, W, H);
+    ctx.font = '500 10.5px "Geist Mono", monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    for (const b of s.bricks) {
+      const born = ease((t - b.born) / .5);
+      let ch, a = born;
+      if (b.hp > 0) ch = CH[b.hp];
+      else { const u = (t - b.die) / .5; if (u >= 1) continue; ch = '·'; a *= 1 - u; }
+      const fresh = t - b.hit < .12 && b.hp > 0;
+      ctx.fillStyle = rgba(TH.lv[b.lv], a * (fresh ? .55 : 1));
+      ctx.fillText(ch.repeat(4), b.x + b.w / 2, b.y + b.h / 2 + .5);
+    }
+    ctx.fillStyle = TH.ink3;
+    let last = -1;
+    for (const p of s.hist) {
+      if (last >= 0 && last - p.t < .035) continue; last = p.t;
+      const age = (s.hist[0].t - p.t) / .16; if (age <= .05) continue;
+      ctx.globalAlpha = 1 - age; ctx.fillText('·', p.x, p.y); ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = TH.ink; ctx.fillText('=======', s.pad.x, s.pad.y + 1.5);
+    ctx.beginPath(); ctx.arc(s.ball.x, s.ball.y, s.ball.r, 0, 6.2832); ctx.fill();
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    hud(ctx, s.score, s.alive());
+  }
+
+  // B4 Fosfor
+  const PH = '#FF8A3D', PH_HOT = '#FFD9A6', TUBE = '#060504';
+  function fosfor() {
+    const tube = document.createElement('canvas'); tube.width = W * 2; tube.height = H * 2;
+    const tc = tube.getContext('2d'); tc.scale(2, 2); tc.fillStyle = TUBE; tc.fillRect(0, 0, W, H);
+    const bloom = document.createElement('canvas'); bloom.width = 82; bloom.height = 57; const bc = bloom.getContext('2d');
+    const scan = document.createElement('canvas'); scan.width = 4; scan.height = 3; const sc = scan.getContext('2d');
+    sc.fillStyle = 'rgba(0,0,0,.32)'; sc.fillRect(0, 2, 4, 1);
+    let pat = null;
+    return (ctx, s, t) => {
+      tc.fillStyle = 'rgba(6,5,4,.38)'; tc.fillRect(0, 0, W, H);
+      for (const b of s.bricks) {
+        const born = ease((t - b.born) / .5);
+        if (b.hp <= 0) {
+          const u = (t - b.die) / .25; if (u >= 1) continue;
+          tc.fillStyle = rgba(PH_HOT, (1 - u) * .9); tc.fillRect(b.x, b.y, b.w, b.h); continue;
+        }
+        const c = LVD[b.lv];
+        tc.fillStyle = rgba(c, .16 * born); tc.fillRect(b.x, b.y, b.w, b.h);
+        tc.strokeStyle = rgba(c, .95 * born); tc.lineWidth = 1; tc.strokeRect(b.x + .5, b.y + .5, b.w - 1, b.h - 1);
+      }
+      tc.fillStyle = PH; tc.fillRect(s.pad.x - s.pad.w / 2, s.pad.y, s.pad.w, 3);
+      tc.fillStyle = PH_HOT; tc.fillRect(s.ball.x - 2, s.ball.y - 2, 4, 4);
+      tc.font = '18px VT323, monospace'; tc.fillStyle = PH; tc.textAlign = 'left';
+      tc.fillText(`SCORE ${String(s.score).padStart(4, '0')}`, 14, 21);
+      tc.textAlign = 'right'; tc.fillText(`HI ${String(s.hi).padStart(4, '0')}`, W - 14, 21); tc.textAlign = 'left';
+      bc.clearRect(0, 0, 82, 57); bc.drawImage(tube, 0, 0, 82, 57);
+      ctx.fillStyle = TUBE; ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = .96 + Math.random() * .04; ctx.drawImage(tube, 0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5; ctx.imageSmoothingEnabled = true; ctx.drawImage(bloom, 0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      if (!pat) pat = ctx.createPattern(scan, 'repeat'); ctx.fillStyle = pat; ctx.fillRect(0, 0, W, H);
+      const band = ((t * 26) % (H + 60)) - 30, g = ctx.createLinearGradient(0, band - 24, 0, band + 24);
+      g.addColorStop(0, 'rgba(255,170,90,0)'); g.addColorStop(.5, 'rgba(255,170,90,.04)'); g.addColorStop(1, 'rgba(255,170,90,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, band - 24, W, 48);
+      const v = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, W * .66);
+      v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    };
+  }
+
+  // ---- B3 Baan: breakout in een cirkel ----
+  function orbitGame() {
+    const CX = W / 2, CY = H / 2 + 2, R = 98, CORE = 13, BR = 2.6, HALF = .34, V = 150;
+    const RINGS = [{ r: 38, n: 10, lv: 1, w: .32 }, { r: 55, n: 14, lv: 2, w: .19 }, { r: 72, n: 18, lv: 3, w: .11 }];
+    const s = { ball: { x: 0, y: 0, vx: 0, vy: 0, docked: true, at: 0 }, pa: -Math.PI / 2, segs: [], hist: [], score: 0, clearAt: 0, launch: false, round: 0 };
+    const wrap = a => { a %= 6.2832; return a < 0 ? a + 6.2832 : a; };
+    const sdiff = (a, b) => { let d = (a - b) % 6.2832; if (d > Math.PI) d -= 6.2832; if (d < -Math.PI) d += 6.2832; return d; };
+    const build = t => {
+      s.segs = [];
+      RINGS.forEach((rg, i) => { rg.rot = (s.round * .7 + i) % 6.2832; for (let k = 0; k < rg.n; k++) {
+        if (s.round % 2 && (k + i) % 3 === 0) continue;
+        s.segs.push({ ring: i, k, alive: true, die: 0, born: t + i * .12 });
+      } });
+    };
+    const dock = t => { s.ball.docked = true; s.ball.at = t; s.hist = []; };
+    s.init = t => { build(t); dock(t); };
+    s.step = (dt, t, ptr) => {
+      RINGS.forEach(rg => { rg.rot = wrap(rg.rot + rg.w * dt); });
+      const b = s.ball, auto = t - ptr.t > 3;
+      const target = auto ? (b.docked ? s.pa + dt * .4 : Math.atan2(b.y - CY, b.x - CX)) : Math.atan2(ptr.y - CY, ptr.x - CX);
+      s.pa += sdiff(target, s.pa) * Math.min(1, dt * (auto ? 6 : 14));
+      if (b.docked) {
+        const rr = R - 6; b.x = CX + Math.cos(s.pa) * rr; b.y = CY + Math.sin(s.pa) * rr;
+        if (s.launch || (auto && t - b.at > 1.4)) {
+          const a = s.pa + Math.PI + (Math.random() - .5) * .7; b.vx = Math.cos(a) * V; b.vy = Math.sin(a) * V; b.docked = false;
+        }
+        s.launch = false;
+      } else {
+        s.launch = false;
+        const n = Math.ceil(V * dt / 2.2), h = dt / n;
+        for (let k = 0; k < n; k++) {
+          b.x += b.vx * h; b.y += b.vy * h;
+          const dx = b.x - CX, dy = b.y - CY, r = Math.hypot(dx, dy) || 1, nx = dx / r, ny = dy / r, vr = b.vx * nx + b.vy * ny, a = Math.atan2(dy, dx);
+          const bounce = () => { b.vx -= 2 * vr * nx; b.vy -= 2 * vr * ny; };
+          if (r < CORE + BR && vr < 0) { bounce(); continue; }
+          if (vr > 0 && r >= R - 4 - BR && r < R + 4) {
+            const d = sdiff(a, s.pa);
+            if (Math.abs(d) < HALF + BR / R) {
+              const ang = Math.atan2(-ny, -nx) + clamp(d / HALF, -1, 1) * .85;
+              b.vx = Math.cos(ang) * V; b.vy = Math.sin(ang) * V; continue;
+            }
+          }
+          let hit = false;
+          for (const sg of s.segs) {
+            if (!sg.alive) continue;
+            const rg = RINGS[sg.ring];
+            if (Math.abs(r - rg.r) > 4.2 + BR || vr * (r - rg.r) >= 0) continue;
+            const step = 6.2832 / rg.n, rel = wrap(a - rg.rot), pad = BR / rg.r;
+            if (rel < sg.k * step + .03 - pad || rel > (sg.k + 1) * step - .03 + pad) continue;
+            bounce(); sg.alive = false; sg.die = t; s.score++; hit = true; break;
+          }
+          if (hit) continue;
+        }
+        if (Math.hypot(b.x - CX, b.y - CY) > R + 16) dock(t);
+      }
+      s.hist.unshift({ x: b.x, y: b.y, t }); while (s.hist.length && t - s.hist[s.hist.length - 1].t > 0.16) s.hist.pop();
+      if (!s.segs.some(x => x.alive)) {
+        if (!s.clearAt) s.clearAt = t; else if (t - s.clearAt > 1.1) { s.round++; s.clearAt = 0; build(t); dock(t); }
+      }
+    };
+    s.tap = () => { s.launch = true; };
+    s.draw = (ctx, t) => {
+      ctx.fillStyle = TH.well; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = rgba(TH.ink, TH.dark ? .22 : .16); ctx.beginPath();
+      for (let i = 0; i < 120; i++) { const a = i / 120 * 6.2832, x = CX + Math.cos(a) * R, y = CY + Math.sin(a) * R; ctx.moveTo(x + .8, y); ctx.arc(x, y, .8, 0, 6.2832); }
+      ctx.fill();
+      ctx.lineCap = 'butt';
+      for (const sg of s.segs) {
+        const rg = RINGS[sg.ring], step = 6.2832 / rg.n;
+        let life = sg.alive ? ease((t - sg.born) / .5) : 1 - ease((t - sg.die) / .45);
+        if (life <= 0) continue;
+        ctx.strokeStyle = rgba(TH.lv[rg.lv], life); ctx.lineWidth = 7.5 * (sg.alive ? 1 : life);
+        ctx.beginPath(); ctx.arc(CX, CY, rg.r, rg.rot + sg.k * step + .045, rg.rot + (sg.k + 1) * step - .045); ctx.stroke();
+      }
+      ctx.fillStyle = TH.core; ctx.beginPath();
+      ctx.moveTo(CX + 1.6, CY); ctx.arc(CX, CY, 1.6, 0, 6.2832);
+      for (const [rr, n, d] of [[4.5, 8, 1.3], [8, 14, 1.1], [11.3, 20, .85]]) for (let i = 0; i < n; i++) {
+        const a = i / n * 6.2832 + t * .2, x = CX + Math.cos(a) * rr, y = CY + Math.sin(a) * rr; ctx.moveTo(x + d, y); ctx.arc(x, y, d, 0, 6.2832);
+      }
+      ctx.fill();
+      ctx.strokeStyle = TH.ink; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(CX, CY, R, s.pa - HALF, s.pa + HALF); ctx.stroke(); ctx.lineCap = 'butt';
+      taper(ctx, s.hist, BR, TH.ink);
+      ctx.fillStyle = TH.ink; ctx.beginPath(); ctx.arc(s.ball.x, s.ball.y, BR, 0, 6.2832); ctx.fill();
+      ctx.font = '500 9px "Geist Mono", monospace'; ctx.fillStyle = TH.ink3; ctx.letterSpacing = '1.4px';
+      ctx.fillText(`${String(s.score).padStart(2, '0')} · NOG ${String(s.segs.filter(x => x.alive).length).padStart(2, '0')}`, 14, 20); ctx.letterSpacing = '0px';
+    };
+    return s;
+  }
+
+  // ---- Opstart en lus ----
+  const games = [];
+  const add = (id, game, draw) => {
+    const cv = document.getElementById(id), ctx = cv.getContext('2d');
+    const g = { cv, ctx, game, draw, ptr: { x: W / 2, y: H / 2, t: -99 }, visible: false, active: !reduced, dpr: 0 };
+    const pos = e => { const r = cv.getBoundingClientRect(); g.ptr.x = (e.clientX - r.left) * W / r.width; g.ptr.y = (e.clientY - r.top) * H / r.height; g.ptr.t = performance.now() / 1000; };
+    cv.addEventListener('pointermove', pos);
+    cv.addEventListener('pointerdown', e => { pos(e); g.active = true; game.tap(); });
+    cv.addEventListener('pointerleave', () => { g.ptr.t = -99; });
+    cv.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); g.active = true; game.tap(); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); g.active = true; g.ptr.t = performance.now() / 1000; g.ptr.x = clamp(g.ptr.x + (e.key === 'ArrowLeft' ? -24 : 24), 0, W); }
+    });
+    game.init(performance.now() / 1000);
+    games.push(g);
+    new IntersectionObserver(es => { g.visible = es[0].isIntersecting; }).observe(cv);
+  };
+  const fit = g => {
+    const d = Math.min(2, devicePixelRatio || 1), r = g.cv.getBoundingClientRect();
+    const k = d * r.width / W;
+    if (Math.abs(k - g.dpr) < .01) return;
+    g.dpr = k; g.cv.width = Math.round(W * k); g.cv.height = Math.round(H * k);
+  };
+  const drawOne = (g, t) => { fit(g); g.ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0); g.draw(g.ctx, g.game, t); };
+
+  add('g-raster', gridGame({ padW: 46 }), drawRaster);
+  add('g-tekens', gridGame({ padW: 44, hp: r => [4, 3, 2, 2, 1][r], bh: 10 }), drawTekens);
+  add('g-baan', orbitGame(), (ctx, s, t) => s.draw(ctx, t));
+  add('g-fosfor', gridGame({ padW: 46, hp: r => (r === 0 ? 2 : 1) }), fosfor());
+
+  let last = performance.now() / 1000;
+  const loop = () => {
+    const t = performance.now() / 1000, dt = Math.min(.05, t - last); last = t;
+    for (const g of games) {
+      if (!g.visible) continue;
+      if (g.active) g.game.step(dt, t, g.ptr);
+      drawOne(g, t);
+    }
+    requestAnimationFrame(loop);
+  };
+  document.fonts.ready.then(() => requestAnimationFrame(loop));
+  requestAnimationFrame(loop);
+})();
+</script>
