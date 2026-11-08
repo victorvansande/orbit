@@ -2072,27 +2072,26 @@ if (DEMO_MODE) {
 }
 
 /* ---- Merk v2 interactie: onthul 'O' bij hover (desktop) of tik (mobiel) ---- */
+// Merk: "rbit" schuift uit de komeet bij aanwijzen (blijft zolang je erop staat), tikken (enkele seconden) of focus
 const brandEl = document.querySelector('.brand');
 if (brandEl) {
-  let brandAnimTimer = null;
-  const triggerBrandO = () => {
-    brandEl.classList.remove('is-animating');
-    void brandEl.offsetWidth; // herstart animatie bij herhaalde tik/hover
-    brandEl.classList.add('is-animating');
-    clearTimeout(brandAnimTimer);
-    brandAnimTimer = setTimeout(() => {
-      brandEl.classList.remove('is-animating');
-    }, 2450);
+  let brandTimer = 0, brandHover = false;
+  const keyFocus = () => document.activeElement === brandEl && document.documentElement.dataset.input === 'keyboard';   // een tik geeft ook focus
+  const openBrand = ms => {
+    clearTimeout(brandTimer);
+    brandEl.classList.add('is-open');
+    if (ms) brandTimer = setTimeout(() => { if (!brandHover && !keyFocus()) brandEl.classList.remove('is-open'); }, ms);
   };
-  brandEl.addEventListener('pointerenter', (e) => {
-    if (e.pointerType !== 'touch') triggerBrandO();
-  });
-  brandEl.addEventListener('click', triggerBrandO);
-  brandEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      triggerBrandO();
-    }
+  const closeBrand = ms => { clearTimeout(brandTimer); brandTimer = setTimeout(() => brandEl.classList.remove('is-open'), ms); };
+  brandEl.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { brandHover = true; openBrand(); } });
+  brandEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { brandHover = false; closeBrand(700); } });
+  brandEl.addEventListener('click', e => { if (e.pointerType !== 'mouse') openBrand(3200); });
+  brandEl.addEventListener('focus', () => { if (document.documentElement.dataset.input === 'keyboard') openBrand(); });
+  brandEl.addEventListener('blur', () => { if (!brandHover) closeBrand(300); });
+  brandEl.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    if (brandEl.classList.contains('is-open')) closeBrand(0); else openBrand(3200);
   });
 }
 

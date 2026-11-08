@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: fidget Breakout (B4 Fosfor), `src/focus/breakout.js`.
 - 08/11/2026, Claude Code: fidget Slang (F1), `src/focus/snake.js`. Open: Victor speelt het op pc en gsm.
 - 08/11/2026, Claude Code: F2 Slinger, F3 Zandtafel, F4 Inktdruppel uitgewerkt (artifact "Orbit fidgets" https://claude.ai/artifact/EsaMSw2oYMTvskMbdAGGsC, `ontwerp/fidgets/`). Open: Victor kiest.
 - 08/11/2026, Claude Code: op vraag van Victor (tokens) CLAUDE.md teruggebracht tot deze kern; de volledige vorige inhoud staat letterlijk in `docs/kennis.md`. Open: titel met veel labels (P2-4, eerst voorstellen), oogjes van de kern (O1 tot O4).
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 08/11/2026, Claude Code: taakrij: titel vervaagt pas vlak voor het icoon, vegen enkel met vinger of pen, dode code weg. Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: lege ruimte onder de quote in focus op gsm weg; dubbele punt van de klok: eerste poging werkte niet in Safari, nu zonder gloed op de dubbele punt. Open: Victor kijkt na op iPhone, ook in licht thema (WebKit niet testbaar hier).
 - 08/11/2026, Claude Code: fidgetmenu scrolt (zachte randen, wiel en vegen) en heeft zijn blur terug. Open: Victor kijkt op pc en gsm.
+- 08/11/2026, Claude Code: logo: in rust enkel de komeet, bij aanwijzen of tikken schuift 'rbit' eruit (losse O weg). Open: Victor kijkt of hij in rust liever het hele woord ziet.
