@@ -23,11 +23,12 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'panel', 'life'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'panel', 'life', 'breakout'];
 
 import { createPanel } from './panel.js';
 import { createLife } from './life.js';
 import { createPlasma } from './plasma.js';
+import { createBreakout } from './breakout.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -663,6 +664,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
       } else if (modeName === 'plasma') {
         // plasmaplaat (Victor, 08/11/2026): twee vormen via het pijltje, kleur uit de kleurkiezer
         modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null), names: [label('plasmaDisc'), label('plasmaPlate')], onPreset: showScreen });
+      } else if (modeName === 'breakout') {
+        // breakout B4 Fosfor (Victor, 08/11/2026): levels, levens, powerups, highscores; fosfor uit de kleurkiezer
+        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -695,7 +699,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
 
   const GROUPS = [
     { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma'] },
-    { key: 'groupPlay', modes: ['panel', 'life'] }
+    { key: 'groupPlay', modes: ['panel', 'life', 'breakout'] }
   ];
 
   const menuWrap = document.createElement('div');
@@ -869,6 +873,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
     box.classList.toggle('on-dark', ['grain', 'wayglim'].includes(modeName) || Boolean(m.onDark));
     box.classList.toggle('is-panel', modeName === 'panel');
+    box.classList.toggle('is-breakout', modeName === 'breakout');
+    box.classList.toggle('is-playing', Boolean(m.busy));   // breakout: de keuzerij wijkt tijdens het spel
     box.classList.toggle('is-disc', modeName === 'plasma' && !m.onDark);   // plasmaschijf: de keuzerij staat naast de schijf, geen vervaging over de bovenkant   // gloed en wayglim vullen het vak met een donker verloop/achtergrond: lichte keuzerij
     if (!m.gl) {
       const ctx = getGL();
