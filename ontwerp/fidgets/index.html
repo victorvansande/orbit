@@ -1,163 +1,367 @@
+<!doctype html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orbit fidgets</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
 <style>
-/* Vier snelle mockups op ware grootte van het bakje (326 x 227), raster van twee kolommen, gsm één. */
-:root { --bg:#EBE8DF; --well:#E0DDD3; --ink:#1B1B22; --ink2:#5E5E68; --ink3:#9A9AA3; --core:#E70049; --shade:rgba(27,27,34,.12); --dark:0;
+/* Ronde 2 (08/11/2026): F2 tot F4 in detail, op ware grootte van het bakje (326 x 227). F1 Slang staat al in de app. */
+:root { --bg:#EBE8DF; --well:#E0DDD3; --surface:#F8F6F0; --ink:#1B1B22; --ink2:#5E5E68; --ink3:#9A9AA3; --line:rgba(27,27,34,.12); --core:#E70049; --shade:rgba(27,27,34,.12); --dark:0;
   --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0F0F12; --well:#0A0A0D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; } }
-:root[data-theme="dark"] { --bg:#0F0F12; --well:#0A0A0D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; }
-body { background:var(--bg); color:var(--ink); font:400 15px/1.5 var(--sans); }
-.wrap { max-width:1000px; margin:0 auto; padding-block:36px 56px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:400 15px/1.5 var(--sans); }
+.wrap { max-width:1060px; margin:0 auto; padding-block:36px 64px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
 .k { font:500 11px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink3); }
 h1 { font:500 28px/1.2 var(--sans); margin:10px 0 0; }
-.lede { color:var(--ink2); max-width:60ch; margin:8px 0 0; }
-.grid { display:grid; grid-template-columns:1fr 1fr; gap:36px; margin-top:32px; }
-.card { min-width:0; display:flex; flex-direction:column; gap:10px; }
-.card h2 { font:500 18px/1.2 var(--sans); margin:0; } .card h2 span { font:500 11px var(--mono); color:var(--ink3); margin-right:8px; letter-spacing:.14em; }
+.lede { color:var(--ink2); max-width:64ch; margin:8px 0 0; }
+.top { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; margin-top:20px; }
+.seg { display:inline-flex; border-radius:999px; box-shadow:inset 0 0 0 1px var(--line); padding:2px; }
+.seg button { font:500 10.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); background:none; border:0; border-radius:999px; padding:9px 11px; cursor:pointer; }
+.seg button[aria-pressed="true"] { color:var(--ink); background:var(--surface); box-shadow:0 0 0 1px var(--line); }
+.sw { display:inline-flex; gap:10px; align-items:center; }
+.sw button { width:22px; height:22px; border-radius:50%; border:0; cursor:pointer; box-shadow:inset 0 0 0 1px var(--line); position:relative; }
+.sw button[aria-pressed="true"]::after { content:''; position:absolute; inset:-4px; border-radius:50%; box-shadow:0 0 0 1px var(--ink3); }
+.sw button.std { background:conic-gradient(#E70049,#E08600,#0FAE69,#1F78B4,#E70049); }
+.built { margin:24px 0 0; font-size:14px; color:var(--ink2); }
+.built b { font:500 10.5px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); margin-right:10px; font-weight:500; }
+.row { display:grid; grid-template-columns:326px minmax(0,1fr); gap:20px 40px; margin-top:36px; padding-top:28px; border-top:1px solid var(--line); }
+.side h2 { font:500 20px/1.2 var(--sans); margin:0; } .side h2 span { font:500 11px var(--mono); color:var(--ink3); margin-right:10px; letter-spacing:.14em; }
+.side p { color:var(--ink2); margin:8px 0 0; max-width:58ch; font-size:14px; }
+.side ul { margin:14px 0 0; padding:0; list-style:none; display:grid; gap:8px; max-width:60ch; }
+.side li { font-size:13.5px; color:var(--ink2); display:grid; grid-template-columns:92px minmax(0,1fr); gap:12px; }
+.side li b { font:500 10.5px/1.9 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); font-weight:500; }
+.stage { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
 .well { width:100%; max-width:326px; aspect-ratio:326/227; border-radius:14px; background:var(--well); position:relative; overflow:hidden; box-shadow:inset 0 1.5px 3px var(--shade); }
 canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
-.card p { margin:0; color:var(--ink2); font-size:14px; max-width:46ch; }
-@media (max-width:740px) { .grid { grid-template-columns:1fr; } }
+.next { display:flex; align-items:center; gap:4px; font:500 10px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); }
+.next span { min-width:84px; text-align:center; }
+.next button { width:36px; height:32px; border:0; background:none; cursor:pointer; color:var(--ink3); display:grid; place-items:center; }
+.next button:hover { color:var(--ink); }
+.next svg { width:10px; height:12px; fill:none; stroke:currentColor; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; }
+.next .prev svg { transform:scaleX(-1); }
+@media (max-width:760px) { .row { grid-template-columns:minmax(0,1fr); } .side li { grid-template-columns:80px minmax(0,1fr); } }
 </style>
 <div class="wrap">
-  <div class="k">Orbit · fidgets · snelle mockups</div>
-  <h1>Vier nieuwe fidgets</h1>
-  <p class="lede">Ruwe schetsen op de maat van het bakje, om de richting te kiezen. Alles speelbaar of aan te raken.</p>
-  <div class="grid">
-    <section class="card"><h2><span>F1</span>Slang in stippen</h2><div class="well"><canvas id="snake" tabindex="0"></canvas></div>
-      <p>Snake in het raster van de matrixklok. Veeg of pijltjes om te sturen; zonder input speelt hij vanzelf. Eten is een rode Nu-stip.</p></section>
-    <section class="card"><h2><span>F2</span>Slinger</h2><div class="well"><canvas id="harmo"></canvas></div>
-      <p>Een harmonograaf: twee slingers trekken met een inktpen een figuur die traag uitdempt. Een tik zet een nieuwe figuur in gang.</p></section>
-    <section class="card"><h2><span>F3</span>Zandtafel</h2><div class="well"><canvas id="sand"></canvas></div>
-      <p>Een kogel trekt een spoor door fijn zand van stippen en volgt een rozet. Sleep om de kogel zelf te leiden; het zand vlakt traag weer uit.</p></section>
-    <section class="card"><h2><span>F4</span>Inktdruppel</h2><div class="well"><canvas id="ink"></canvas></div>
-      <p>Een druppel inkt valt in water en waaiert uit in slierten met risokorrel. Tik om een druppel te laten vallen; slepen roert.</p></section>
+  <div class="k">Orbit · fidgets · ronde 2</div>
+  <h1>Slinger, Zandtafel, Inktdruppel</h1>
+  <p class="lede">Uitgewerkt op ware grootte van het bakje, met wat er in de app bij zou komen: vormen via het pijltje onder het bakje, de kleurkiezer en aanraken. Alles is echt aan te raken.</p>
+  <div class="top">
+    <div class="seg" id="theme"><button data-t="auto" aria-pressed="true">Auto</button><button data-t="light" aria-pressed="false">Licht</button><button data-t="dark" aria-pressed="false">Donker</button></div>
+    <div class="sw" id="accent"><span class="k">Kleurkiezer</span><button class="std" data-c="" aria-pressed="true" title="Standaard" aria-label="Standaard"></button><button data-c="#1F78B4" style="background:#1F78B4" aria-pressed="false" aria-label="Blauw"></button><button data-c="#0FAE69" style="background:#0FAE69" aria-pressed="false" aria-label="Groen"></button><button data-c="#E08600" style="background:#E08600" aria-pressed="false" aria-label="Oranje"></button></div>
   </div>
+  <p class="built"><b>F1 Slang</b>staat al in de app: focusmodus, bakje, Slang.</p>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="harmo"></canvas></div>
+      <div class="next"><button class="prev" data-for="harmo" data-d="-1" aria-label="Vorige vorm"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button><span id="harmo-name">Lissajous</span><button data-for="harmo" data-d="1" aria-label="Volgende vorm"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button></div></div>
+    <div class="side"><h2><span>F2</span>Slinger</h2>
+      <p>Een harmonograaf: vier slingers, twee voor links-rechts en twee voor op-neer, trekken met een pen een figuur die traag uitdempt. De lijn gedraagt zich als een echte pen: waar hij traag gaat, zet hij meer inkt, waar hij snel gaat, wordt de lijn ijl en dun.</p>
+      <ul>
+        <li><b>Vormen</b>Lissajous (verhoudingen 2 : 3, 3 : 4, 1 : 2 ...), Rozet (bijna gelijke slingers die een kwartslag verschoven zijn, de figuur draait traag rond), Riso (een tweede pen in rood, een fractie later, zoals een risoprint die net niet registreert).</li>
+        <li><b>Aanraken</b>Slepen geeft de slingers een duw in jouw richting: de figuur tekent verder, maar breder. Een tik legt een nieuw vel: het oude vervaagt in 1,2 s, een nieuwe figuur begint.</li>
+        <li><b>Vanzelf</b>Staat de pen bijna stil, dan blijft de tekening 4 s liggen en komt er een nieuwe. Rechtsonder de verhouding en de tijd, klein.</li>
+        <li><b>Kleur</b>De pen volgt de kleurkiezer, zonder keuze inkt. De tweede pen van Riso blijft rood.</li>
+        <li><b>Rust</b>Minder beweging: één af getekende figuur.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="sand"></canvas></div>
+      <div class="next"><button class="prev" data-for="sand" data-d="-1" aria-label="Vorige vorm"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button><span id="sand-name">Rozet</span><button data-for="sand" data-d="1" aria-label="Volgende vorm"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button></div></div>
+    <div class="side"><h2><span>F3</span>Zandtafel</h2>
+      <p>Een stalen kogel rolt door fijn zand, getrokken door een magneet onder de tafel. Het zand is een zeshoekig raster van rasterpunten, zoals de kern en de zandloper: de grootte van een punt is de hoeveelheid zand. De kogel schuift het zand opzij tot twee richels die een beetje inzakken, en licht van linksboven geeft ze reliëf.</p>
+      <ul>
+        <li><b>Vormen</b>Rozet (rozenkromme), Spiraal (naar binnen en weer naar buiten), Bloem (epitrochoïde), Hark (evenwijdige banen zoals een zentuin).</li>
+        <li><b>Aanraken</b>Slepen: de magneet volgt je vinger, de kogel komt met wat traagheid achter. Loslaten: hij neemt de vorm weer op. Dubbeltik: een wisser schuift van links naar rechts en effent het zand.</li>
+        <li><b>Vanzelf</b>Na een volle figuur effent de wisser het zand en begint de volgende vorm.</li>
+        <li><b>Kleur</b>Het zand blijft inkt. Met een eigen kleur krijgen de kogel en het vers verschoven zand die kleur en vergrijzen ze traag.</li>
+        <li><b>Rust</b>Minder beweging: één af getekende rozet.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="ink"></canvas></div>
+      <div class="next"><button class="prev" data-for="ink" data-d="-1" aria-label="Vorige vorm"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button><span id="ink-name">Inkt</span><button data-for="ink" data-d="1" aria-label="Volgende vorm"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button></div></div>
+    <div class="side"><h2><span>F4</span>Inktdruppel</h2>
+      <p>Een druppel inkt valt in stil water en doet wat echte inkt doet: hij vormt een draaiende ring die zakt, trager en breder wordt, openvalt in twee of drie kleinere ringen en een sliert achterlaat naar waar hij binnenkwam. Getekend als lange belichting op papier met korrel; het water wordt heel traag weer helder.</p>
+      <ul>
+        <li><b>Vormen</b>Inkt (enkel inkt), Riso (om beurten inkt en rood, ze mengen waar ze elkaar raken), Wolk (geen ringen, een zachte wolk die uitwaaiert).</li>
+        <li><b>Aanraken</b>Een tik laat op die plek een druppel vallen. Slepen roert: het water draait mee en trekt de slierten uit.</li>
+        <li><b>Vanzelf</b>Om de 10 s een druppel op een willekeurige plek, zolang je niets doet.</li>
+        <li><b>Kleur</b>De inkt volgt de kleurkiezer; bij Riso blijft de tweede kleur rood.</li>
+        <li><b>Rust</b>Minder beweging: een stilstaand beeld van twee druppels halverwege.</li>
+      </ul></div>
+  </section>
 </div>
 <script>
 (() => {
-const W = 326, H = 227, cs = () => getComputedStyle(document.documentElement);
-let T = {}; const theme = () => { const s = cs(); T = { well: s.getPropertyValue('--well').trim(), ink: s.getPropertyValue('--ink').trim(), core: s.getPropertyValue('--core').trim(), dark: s.getPropertyValue('--dark').trim() === '1' }; };
-theme(); matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+const W = 326, H = 227, root = document.documentElement;
+let T = {}, ACCENT = '';
+const resets = [];
+const theme = () => { const s = getComputedStyle(root); T = { well: s.getPropertyValue('--well').trim(), ink: s.getPropertyValue('--ink').trim(), core: s.getPropertyValue('--core').trim(), dark: s.getPropertyValue('--dark').trim() === '1' }; resets.forEach(f => f()); };
+theme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+document.querySelectorAll('#theme button').forEach(b => b.onclick = () => { document.querySelectorAll('#theme button').forEach(x => x.setAttribute('aria-pressed', x === b)); if (b.dataset.t === 'auto') delete root.dataset.theme; else root.dataset.theme = b.dataset.t; theme(); });
+document.querySelectorAll('#accent button').forEach(b => b.onclick = () => { document.querySelectorAll('#accent button').forEach(x => x.setAttribute('aria-pressed', x === b)); ACCENT = b.dataset.c; });
 const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 const rgba = (h, a) => `rgba(${rgb(h).join(',')},${a})`;
+const pen = () => ACCENT || T.ink;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const presets = {};
+document.querySelectorAll('.next button').forEach(b => b.onclick = () => presets[b.dataset.for]?.(Number(b.dataset.d)));
+const label = (id, text) => { document.getElementById(id).textContent = text; };
+
 function setup(id) {
   const c = document.getElementById(id), g = c.getContext('2d'), d = Math.min(2, devicePixelRatio || 1);
   c.width = W * d; c.height = H * d; g.scale(d, d);
-  const p = { x: W / 2, y: H / 2, down: false, t: -9, tap: false };
-  const pos = e => { const r = c.getBoundingClientRect(); p.x = (e.clientX - r.left) * W / r.width; p.y = (e.clientY - r.top) * H / r.height; p.t = performance.now(); };
-  c.addEventListener('pointerdown', e => { pos(e); p.down = true; p.sx = p.x; p.sy = p.y; });
-  c.addEventListener('pointermove', pos);
-  c.addEventListener('pointerup', e => { pos(e); p.down = false; if (Math.hypot(p.x - p.sx, p.y - p.sy) < 8) p.tap = true; else p.swipe = [p.x - p.sx, p.y - p.sy]; });
-  return { c, g, p };
+  const p = { x: W / 2, y: H / 2, down: false, drag: false, t: -1e9, tap: false, dbl: false, lastTap: -1e9, dx: 0, dy: 0 };
+  const pos = e => { const r = c.getBoundingClientRect(); const x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height; p.dx += x - p.x; p.dy += y - p.y; p.x = x; p.y = y; p.t = performance.now(); };
+  c.addEventListener('pointerdown', e => { pos(e); p.dx = p.dy = 0; p.down = true; p.sx = p.x; p.sy = p.y; c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', e => { if (!p.down && e.pointerType !== 'mouse') return; pos(e); if (p.down && Math.hypot(p.x - p.sx, p.y - p.sy) > 6) p.drag = true; if (!p.down) p.dx = p.dy = 0; });
+  c.addEventListener('pointerup', e => { pos(e); p.down = false; const wasDrag = p.drag; p.drag = false; if (!wasDrag) { const n = performance.now(); if (n - p.lastTap < 320) { p.dbl = true; p.tap = false; } else p.tap = true; p.lastTap = n; } });
+  // vel om op te tekenen: lange belichting, pen op papier
+  const off = document.createElement('canvas'); off.width = c.width; off.height = c.height; const o = off.getContext('2d'); o.scale(d, d);
+  return { g, p, off, o };
 }
-
-// F1 Slang in stippen
-(() => {
-  const { c, g, p } = setup('snake'), S = 9, CW = 34, CH = 23, ox = (W - CW * S) / 2 + S / 2, oy = (H - CH * S) / 2 + S / 2;
-  let snake, dir, food, acc = 0, auto = true, dead = 0;
-  const reset = () => { snake = [[10, 11], [9, 11], [8, 11], [7, 11]]; dir = [1, 0]; place(); dead = 0; };
-  const place = () => { do food = [Math.random() * CW | 0, Math.random() * CH | 0]; while (snake.some(s => s[0] === food[0] && s[1] === food[1])); };
-  const turn = (x, y) => { if (x !== -dir[0] || y !== -dir[1]) dir = [x, y]; auto = false; p.t = performance.now(); };
-  c.addEventListener('keydown', e => { const m = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]; if (m) { e.preventDefault(); turn(...m); } });
-  reset();
-  return loop(dt => {
-    if (p.swipe) { const [x, y] = p.swipe; Math.abs(x) > Math.abs(y) ? turn(Math.sign(x), 0) : turn(0, Math.sign(y)); p.swipe = null; }
-    if (performance.now() - p.t > 4000) auto = true;
-    acc += dt;
-    while (acc > 0.11) {
-      acc -= 0.11;
-      if (dead) { if (++dead > 12) reset(); continue; }
-      const h = snake[0];
-      if (auto) { const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(d => !(d[0] === -dir[0] && d[1] === -dir[1])).map(d => { const n = [(h[0] + d[0] + CW) % CW, (h[1] + d[1] + CH) % CH]; return { d, bad: snake.some(s => s[0] === n[0] && s[1] === n[1]), dist: Math.abs(n[0] - food[0]) + Math.abs(n[1] - food[1]) }; }).sort((a, b) => a.bad - b.bad || a.dist - b.dist); dir = opts[0].d; }
-      const n = [(h[0] + dir[0] + CW) % CW, (h[1] + dir[1] + CH) % CH];
-      if (snake.some(s => s[0] === n[0] && s[1] === n[1])) { dead = 1; continue; }
-      snake.unshift(n);
-      if (n[0] === food[0] && n[1] === food[1]) place(); else snake.pop();
-    }
-    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
-    g.fillStyle = rgba(T.ink, T.dark ? .1 : .08); g.beginPath();
-    for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) { g.moveTo(ox + x * S + 1.1, oy + y * S); g.arc(ox + x * S, oy + y * S, 1.1, 0, 7); }
-    g.fill();
-    snake.forEach((s, i) => { const k = 1 - i / (snake.length + 6); g.fillStyle = rgba(T.ink, dead && dead % 2 ? .25 : .35 + .65 * k); g.beginPath(); g.arc(ox + s[0] * S, oy + s[1] * S, 3.4 * (0.6 + .4 * k), 0, 7); g.fill(); });
-    g.fillStyle = T.core; g.beginPath(); g.arc(ox + food[0] * S, oy + food[1] * S, 3.4, 0, 7); g.fill();
-    g.font = '500 9px "Geist Mono"'; g.fillStyle = rgba(T.ink, .45); g.textAlign = 'right'; g.fillText(String(snake.length - 4).padStart(2, '0') + (auto ? ' · DEMO' : ''), W - 12, 16); g.textAlign = 'left';
-  });
-})();
-
-// F2 Slinger (harmonograaf)
-(() => {
-  const { g, p } = setup('harmo'); let P, t, pts;
-  const fresh = () => { const r = () => 1.9 + Math.round(Math.random() * 3) * .5 + (Math.random() - .5) * .02; P = { f1: r(), f2: r(), f3: r(), f4: r(), p1: Math.random() * 6, p2: Math.random() * 6, p3: Math.random() * 6, p4: Math.random() * 6 }; t = 0; pts = []; };
-  fresh();
-  const at = t => { const d = Math.exp(-t * .045); return [W / 2 + d * (60 * Math.sin(P.f1 * t + P.p1) + 38 * Math.sin(P.f2 * t + P.p2)), H / 2 + d * (44 * Math.sin(P.f3 * t + P.p3) + 30 * Math.sin(P.f4 * t + P.p4))]; };
-  return loop(dt => {
-    if (p.tap) { p.tap = false; fresh(); }
-    for (let i = 0; i < 24; i++) { t += dt / 24 * 1.4; pts.push(at(t)); }
-    if (t > 75) fresh();
-    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
-    g.lineWidth = .7; g.strokeStyle = rgba(T.ink, .55); g.beginPath();
-    pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.stroke();
-    const q = pts[pts.length - 1]; g.fillStyle = T.core; g.beginPath(); g.arc(q[0], q[1], 2.2, 0, 7); g.fill();
-  });
-})();
-
-// F3 Zandtafel
-(() => {
-  const { g, p } = setup('sand'), S = 3.4, cols = Math.floor(W / S), rows = Math.floor(H / S), h = new Float32Array(cols * rows).fill(1);
-  let t = 0, bx = W / 2, by = H / 2;
-  return loop(dt => {
-    t += dt;
-    let tx, ty;
-    if (p.down) { tx = p.x; ty = p.y; } else { const r = 82 * Math.cos(5 / 3 * t * .35); tx = W / 2 + r * Math.cos(t * .35) * 1.35; ty = H / 2 + r * Math.sin(t * .35) * .95; }
-    bx += (tx - bx) * Math.min(1, dt * 6); by += (ty - by) * Math.min(1, dt * 6);
-    for (let i = 0; i < h.length; i++) h[i] += (1 - h[i]) * dt * .02;
-    const cx = bx / S, cy = by / S;
-    for (let y = Math.max(0, cy - 4 | 0); y < Math.min(rows, cy + 5); y++) for (let x = Math.max(0, cx - 4 | 0); x < Math.min(cols, cx + 5); x++) {
-      const d = Math.hypot(x - cx, y - cy), k = y * cols + x;
-      if (d < 1.6) h[k] = Math.max(0, h[k] - dt * 6); else if (d < 3.4) h[k] = Math.min(1.7, h[k] + dt * 1.2);
-    }
-    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
-    g.fillStyle = rgba(T.ink, T.dark ? .55 : .45); g.beginPath();
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { const r = .55 * h[y * cols + x]; if (r < .1) continue; const px = x * S + S / 2 + (y % 2 ? S / 2 : 0), py = y * S + S / 2; g.moveTo(px + r, py); g.arc(px, py, r, 0, 7); }
-    g.fill();
-    g.fillStyle = T.ink; g.beginPath(); g.arc(bx, by, 4.2, 0, 7); g.fill();
-  });
-})();
-
-// F4 Inktdruppel
-(() => {
-  const { g, p } = setup('ink'); let parts = [], last = 0;
-  const drop = (x, y) => { for (let i = 0; i < 260; i++) { const a = Math.random() * 7, s = Math.random() ** .6 * 26; parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s + 14, life: 1, w: Math.random() * 7, r: .8 + Math.random() * 2 }); } };
-  drop(W / 2, 40);
-  const flow = (x, y, t) => [Math.sin(y * .03 + t * .4) * 10 + Math.cos(x * .02 - t * .3) * 6, Math.cos(x * .025 + t * .35) * 8 + 4];
-  let t = 0;
-  return loop(dt => {
-    t += dt;
-    if (p.tap) { p.tap = false; drop(p.x, p.y); }
-    if (t - last > 9 && performance.now() - p.t > 4000) { last = t; drop(60 + Math.random() * 206, 30 + Math.random() * 40); }
-    for (const q of parts) {
-      const f = flow(q.x, q.y, t + q.w);
-      if (p.down) { const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) + 1; if (d < 50) { q.vx += -dy / d * 60 * dt; q.vy += dx / d * 60 * dt; } }
-      q.vx += (f[0] - q.vx) * dt * .8; q.vy += (f[1] - q.vy) * dt * .8;
-      q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt * .035; q.r += dt * .35;
-    }
-    parts = parts.filter(q => q.life > 0 && q.y < H + 20);
-    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
-    for (const q of parts) { g.fillStyle = rgba(T.ink, .1 * q.life); g.beginPath(); g.arc(q.x, q.y, q.r, 0, 7); g.fill(); }
-    g.fillStyle = rgba(T.ink, .05);
-    for (let i = 0; i < 260; i++) g.fillRect(Math.random() * W, Math.random() * H, 1, 1);   // korrel
-  });
-})();
-
-function loop(step) {
+function loop(step, still) {
+  if (reduced) { still(); return; }
   let last = performance.now();
-  const f = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; step(reduced ? 0 : dt); if (!reduced) requestAnimationFrame(f); };
+  const f = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; step(dt); requestAnimationFrame(f); };
   requestAnimationFrame(f);
 }
+
+/* ---------- F2 Slinger ---------- */
+(() => {
+  const { g, p, off, o } = setup('harmo');
+  const FORMS = ['Lissajous', 'Rozet', 'Riso'], RATIOS = [[2, 3], [3, 4], [1, 2], [3, 5], [2, 5]];
+  let form = 0, P, t, last, last2, fade = 0, still = 0, ratio = '';
+  function fresh() {
+    const j = () => (Math.random() - .5) * .012;           // een fractie ernaast: de figuur loopt traag door
+    const ph = () => Math.random() * 6.283;
+    if (form === 1) {
+      const b = 2 + Math.random();
+      P = { f: [b + j(), b * 3 + j(), b + .008 + j(), b * 3 + j()], p: [0, ph(), Math.PI / 2, ph()], A: [58, 12, 58, 12], d: [.03, .06, .03, .06] };
+      ratio = '1 : 1';
+    } else {
+      const [a, b] = RATIOS[Math.random() * RATIOS.length | 0];
+      P = { f: [a + j(), a * 2 + j(), b + j(), b * 2 + j()], p: [ph(), ph(), ph(), ph()], A: [56, 20, 44, 16], d: [.035, .05, .04, .055] };
+      ratio = `${a} : ${b}`;
+    }
+    t = 0; last = last2 = null; still = 0;
+    o.clearRect(0, 0, W, H);
+  }
+  const at = (t, lag = 0) => {
+    const s = i => P.A[i] * Math.exp(-P.d[i] * t) * Math.sin(P.f[i] * (t - lag) + P.p[i]);
+    return [W / 2 + s(0) + s(1), H / 2 + s(2) + s(3)];
+  };
+  function ink(from, to, col, a) {
+    const v = Math.hypot(to[0] - from[0], to[1] - from[1]);   // afstand per stapje = snelheid van de pen
+    o.strokeStyle = rgba(col, Math.min(.85, a / (0.5 + v * 0.8)));
+    o.lineWidth = Math.max(.4, 1.05 - v * .12);
+    o.beginPath(); o.moveTo(from[0], from[1]); o.lineTo(to[0], to[1]); o.stroke();
+  }
+  function advance(dt) {
+    const n = 40;
+    for (let i = 0; i < n; i++) {
+      t += dt / n * 1.6;
+      const q = at(t); if (last) ink(last, q, pen(), .26); last = q;
+      if (form === 2) { const q2 = at(t, .03); q2[0] += .9; q2[1] += .6; if (last2) ink(last2, q2, T.core, .2); last2 = q2; }
+    }
+  }
+  presets.harmo = d => { form = (form + d + FORMS.length) % FORMS.length; label('harmo-name', FORMS[form]); fresh(); };
+  resets.push(() => { if (P) fresh(); });
+  fresh();
+  const draw = () => {
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    g.globalAlpha = 1 - fade; g.drawImage(off, 0, 0, W, H); g.globalAlpha = 1;
+    if (last && fade === 0) { g.fillStyle = rgba(pen(), .9); g.beginPath(); g.arc(last[0], last[1], 1.7, 0, 7); g.fill(); }
+    g.font = '500 9px "Geist Mono"'; g.letterSpacing = '1.3px'; g.fillStyle = rgba(T.ink, .42); g.textAlign = 'right';
+    g.fillText(`${ratio} · ${String(Math.round(t)).padStart(2, '0')} S`, W - 12, H - 11); g.textAlign = 'left'; g.letterSpacing = '0px';
+  };
+  loop(dt => {
+    if (p.tap) { p.tap = false; if (fade === 0) fade = .001; }
+    if (p.drag && fade === 0) {   // een duw: de uitslag groeit in de richting van je beweging
+      const e0 = Math.exp(P.d[0] * t), e2 = Math.exp(P.d[2] * t);
+      P.A[0] = Math.min(72 * e0, P.A[0] + Math.abs(p.dx) * .35 * e0);
+      P.A[2] = Math.min(64 * e2, P.A[2] + Math.abs(p.dy) * .35 * e2);
+      still = 0;
+    }
+    p.dx = p.dy = 0;
+    if (fade > 0) { fade += dt / 1.2; if (fade >= 1) { fade = 0; fresh(); } }
+    else {
+      advance(dt);
+      const amp = P.A[0] * Math.exp(-P.d[0] * t) + P.A[2] * Math.exp(-P.d[2] * t);
+      if (amp < 8) { still += dt; if (still > 4) fade = .001; }
+    }
+    draw();
+  }, () => { for (let i = 0; i < 120; i++) advance(.5); draw(); });
+})();
+
+/* ---------- F3 Zandtafel ---------- */
+(() => {
+  const { g, p } = setup('sand');
+  const S = 3.3, RH = S * .866, cols = Math.floor(W / S) + 2, rows = Math.floor(H / RH) + 2, N = cols * rows;
+  const h = new Float32Array(N).fill(1), fresh = new Float32Array(N), tmp = new Float32Array(N);
+  const FORMS = ['Rozet', 'Spiraal', 'Bloem', 'Hark'], LEN = [6 * Math.PI, 25, 6 * Math.PI, 3.2 * 18];
+  let form = 0, t = 0, bx = W / 2, by = H / 2, vx = 0, vy = 0, wipe = -1;
+  const cx = (x, y) => x * S + (y % 2 ? S / 2 : 0) - S / 2, cy = y => y * RH - RH / 2;
+  const path = t => {
+    if (form === 0) { const r = Math.cos(5 / 3 * t); return [W / 2 + 122 * r * Math.cos(t), H / 2 + 88 * r * Math.sin(t)]; }
+    if (form === 1) { const u = (t / 12.5) % 2, r = .08 + .92 * (u < 1 ? u : 2 - u); return [W / 2 + 126 * r * Math.cos(t * 2.2), H / 2 + 88 * r * Math.sin(t * 2.2)]; }
+    if (form === 2) { const x = 2 * Math.cos(t) + 5 * Math.cos(2 / 3 * t), y = 2 * Math.sin(t) - 5 * Math.sin(2 / 3 * t); return [W / 2 + x * 17.5, H / 2 + y * 12.4]; }
+    const lane = Math.floor(t / 3.2) % 18, u = (t % 3.2) / 3.2, e = u * u * (3 - 2 * u);
+    return [lane % 2 ? W - 18 - e * (W - 36) : 18 + e * (W - 36), 18 + lane * 11.2];
+  };
+  presets.sand = d => { form = (form + d + FORMS.length) % FORMS.length; label('sand-name', FORMS[form]); wipe = 0; };
+  function around(r, fn) {
+    const y0 = Math.max(1, Math.floor((by - r) / RH)), y1 = Math.min(rows - 2, Math.ceil((by + r) / RH) + 1);
+    const x0 = Math.max(1, Math.floor((bx - r) / S)), x1 = Math.min(cols - 2, Math.ceil((bx + r) / S) + 1);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) fn(y * cols + x, Math.hypot(cx(x, y) - bx, cy(y) - by));
+  }
+  function plow(dt) {
+    // de kogel neemt het zand onder zich weg en legt het in een ring errond: twee richels langs zijn spoor
+    const r0 = 3, r1 = 6.4; let moved = 0; const ring = [];
+    around(r1, (k, d) => { if (d < r0 && h[k] > 0) { const m = Math.min(h[k], dt * 40); h[k] -= m; moved += m; fresh[k] = 1; } else if (d >= r0 && d < r1) ring.push(k); });
+    if (moved && ring.length) ring.forEach(k => { h[k] += moved / ring.length; fresh[k] = Math.max(fresh[k], .8); });
+  }
+  function relax(dt) {
+    // zand zakt als de helling te steil wordt, heel traag
+    tmp.set(h);
+    const a = Math.min(1, dt * 12) * .22;
+    for (let y = 1; y < rows - 1; y++) for (let x = 1; x < cols - 1; x++) {
+      const k = y * cols + x;
+      for (const n of [k + 1, k + cols, k + cols - (y % 2 ? 0 : 1) + (y % 2 ? 1 : 0)]) {
+        const diff = h[k] - h[n];
+        if (diff > .6 || diff < -.6) { const m = (diff - Math.sign(diff) * .6) * a; tmp[k] -= m; tmp[n] += m; }
+      }
+    }
+    h.set(tmp);
+    const f = Math.exp(-dt * .2); for (let k = 0; k < N; k++) fresh[k] *= f;
+  }
+  let lap = 0;
+  function step(dt) {
+    if (p.dbl) { p.dbl = false; wipe = 0; }
+    p.tap = false;
+    if (!p.down && wipe < 0) { t += dt * .26; lap += dt * .26; }
+    const [tx, ty] = p.down ? [p.x, p.y] : path(t);
+    // de magneet trekt, de kogel heeft wat traagheid
+    vx += ((tx - bx) * 30 - vx * 10) * dt; vy += ((ty - by) * 30 - vy * 10) * dt;
+    bx += vx * dt; by += vy * dt;
+    if (wipe < 0) plow(dt);
+    else {
+      const wx = wipe * (W + 24) - 12;
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { const k = y * cols + x; if (cx(x, y) < wx) { h[k] += (1 - h[k]) * Math.min(1, dt * 16); fresh[k] *= .85; } }
+      wipe += dt / 1.4; if (wipe >= 1) { wipe = -1; t = 0; lap = 0; }
+    }
+    if (!p.down && wipe < 0 && lap > LEN[form] + 1.5) { form = (form + 1) % FORMS.length; label('sand-name', FORMS[form]); wipe = 0; }
+    relax(dt);
+  }
+  const draw = () => {
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    // twee doorgangen: korrels in inkt, en met een eigen kleur het vers verschoven zand in die kleur
+    for (const pass of ACCENT ? [0, 1] : [0]) {
+      g.fillStyle = pass ? rgba(ACCENT, .8) : rgba(T.ink, T.dark ? .55 : .5); g.beginPath();
+      for (let y = 1; y < rows - 1; y++) for (let x = 1; x < cols - 1; x++) {
+        const k = y * cols + x, fr = ACCENT && fresh[k] > .3;
+        if (pass ? !fr : fr) continue;
+        // licht van linksboven: de kant naar het licht wordt kleiner, de schaduwkant voller
+        const shade = 1 + ((h[k + 1] - h[k - 1]) + (h[k + cols] - h[k - cols])) * .7;
+        const r = Math.min(1.75, .6 * h[k] * Math.max(.3, shade));
+        if (r < .14) continue;
+        const px = cx(x, y), py = cy(y); g.moveTo(px + r, py); g.arc(px, py, r, 0, 7);
+      }
+      g.fill();
+    }
+    // de kogel: volle schijf met een smalle rand in de kleur van het bakje, geen glans
+    g.fillStyle = T.well; g.beginPath(); g.arc(bx, by, 5.6, 0, 7); g.fill();
+    g.fillStyle = ACCENT || T.ink; g.beginPath(); g.arc(bx, by, 4.4, 0, 7); g.fill();
+    if (wipe >= 0) { g.fillStyle = rgba(T.ink, .45); g.fillRect(wipe * (W + 24) - 13, 0, 2, H); }
+  };
+  loop(dt => { step(dt); draw(); }, () => { for (let i = 0; i < 4400; i++) step(1 / 60); draw(); });
+})();
+
+/* ---------- F4 Inktdruppel ---------- */
+(() => {
+  const { g, p, off, o } = setup('ink');
+  const FORMS = ['Inkt', 'Riso', 'Wolk'];
+  let form = 0, drops = [], parts = [], t = 0, lastDrop = -99, flip = 0, swirl = [], fadeN = 0;
+  // korrel van het papier: één keer gemaakt, niet per beeld (anders flikkert het)
+  const grain = document.createElement('canvas'); grain.width = W; grain.height = H;
+  const gg = grain.getContext('2d'), id = gg.createImageData(W, H);
+  for (let i = 0; i < W * H; i++) { const v = Math.random(); id.data[i * 4 + 3] = v > .9 ? 16 : v > .7 ? 6 : 0; }
+  gg.putImageData(id, 0, 0);
+  function drop(x, y) {
+    const col = form === 1 ? (flip++ % 2 ? T.core : pen()) : pen();
+    const d = { x, y, y0: y, vy: 30, R: 5, spin: 1, born: t, col, split: 2 + (Math.random() * 2 | 0), wolk: form === 2, seed: Math.random() * 9 };
+    drops.push(d);
+    for (let i = 0; i < 900; i++) {
+      // elk deeltje zit op de draaiende ring: hoek rond de ring (a) en rond de doorsnede (b); een deel vormt de sliert
+      parts.push({ d, a: Math.random() * 6.283, b: Math.random() * 6.283, rr: Math.random() ** .5, stem: Math.random() < .12, x, y, life: 1, sp: .6 + Math.random() * .8, j: Math.random() });
+    }
+    lastDrop = t;
+  }
+  presets.ink = d => { form = (form + d + FORMS.length) % FORMS.length; label('ink-name', FORMS[form]); };
+  const curl = (x, y, s) => [Math.sin(y * .045 + s) + Math.sin((x + y) * .02 - s * .7) * .6, Math.cos(x * .04 - s * .8)];
+  function step(dt) {
+    t += dt;
+    if (p.tap) { p.tap = false; drop(p.x, p.y); }
+    p.dbl = false;
+    if (p.drag) swirl.push({ x: p.x, y: p.y, vx: p.dx / Math.max(dt, .008) * .5, vy: p.dy / Math.max(dt, .008) * .5, at: t });
+    p.dx = p.dy = 0;
+    swirl = swirl.filter(s => t - s.at < 1.4).slice(-30);
+    if (t - lastDrop > 10 && performance.now() - p.t > 4000) drop(40 + Math.random() * (W - 80), 22 + Math.random() * 40);
+    for (const d of drops) {
+      const age = t - d.born;
+      d.vy *= Math.exp(-dt * .5); d.y += d.vy * dt;   // de ring zakt en wordt trager
+      d.R = 5 + 30 * (1 - Math.exp(-age * .6));       // en breder
+      d.spin = Math.exp(-age * .12);
+    }
+    drops = drops.filter(d => t - d.born < 45);
+    o.globalCompositeOperation = T.dark ? 'source-over' : 'multiply';
+    for (const q of parts) {
+      const d = q.d, age = t - d.born;
+      if (!q.free) {
+        q.b += dt * 3.2 * d.spin * q.sp;
+        // na een paar seconden valt de ring open in kleinere ringen: elk deeltje hoort bij een ervan
+        const k = Math.min(1, Math.max(0, (age - 2.5) / 4)), ke = k * k * (3 - 2 * k);
+        const sub = Math.floor(q.a / 6.283 * d.split), subA = (sub + .5) / d.split * 6.283;
+        const lx = Math.cos(q.a) * d.R * (1 - ke) + (Math.cos(subA) * d.R * 1.3 + Math.cos(q.a * d.split) * d.R * .3) * ke;
+        const cs = d.wolk ? 5 + age * 2.4 : (1.2 + 2.6 * q.rr) * (1 + age * .06);   // doorsnede van de ring
+        const ly = Math.sin(q.a) * d.R * .42 * (1 - ke) + Math.sin(q.a * d.split) * d.R * .12 * ke;   // de ring een beetje van boven gezien: een ellips
+        let x = d.x + lx + Math.cos(q.b) * cs * .5, y = d.y + ly + Math.sin(q.b) * cs + ke * (8 + 6 * Math.sin(subA * 3 + d.seed));
+        if (q.stem) { y = d.y0 + q.j * (d.y - d.y0) + Math.sin(q.b) * 2; x = d.x + Math.sin(q.j * 7 + age * .6) * (1.5 + age * .5) + Math.cos(q.b) * 1.5; }
+        if (d.wolk) { x += Math.cos(q.a) * age * 6 * q.rr; y += Math.sin(q.a) * age * 4 * q.rr; }
+        q.vx = (x - q.x) / dt; q.vy = (y - q.y) / dt; q.x = x; q.y = y;
+        if (age > 9 + q.j * 7) q.free = true;
+      } else {
+        const c = curl(q.x, q.y, t * .2 + d.seed);
+        q.vx += (c[0] * 5 - q.vx) * dt * .6; q.vy += (c[1] * 5 + 1.5 - q.vy) * dt * .6;
+        q.x += q.vx * dt; q.y += q.vy * dt;
+      }
+      for (const s of swirl) {   // roeren: het water draait mee rond je vinger
+        const dx = q.x - s.x, dy = q.y - s.y, dd = dx * dx + dy * dy;
+        if (dd < 1600) { const f = (1 - dd / 1600) * (1 - (t - s.at) / 1.4); q.free = true; q.vx += (s.vx * .5 - dy * 1.4) * f * dt * 3; q.vy += (s.vy * .5 + dx * 1.4) * f * dt * 3; }
+      }
+      q.life -= dt / 36;
+      o.fillStyle = rgba(d.col, (T.dark ? .07 : .09) * q.life * (q.stem ? .6 : 1));
+      o.fillRect(q.x, q.y, 1, 1);
+    }
+    o.globalCompositeOperation = 'source-over';
+    parts = parts.filter(q => q.life > 0 && q.y < H + 10 && q.x > -10 && q.x < W + 10);
+    // het water wordt traag weer helder
+    if (++fadeN % 4 === 0) { o.globalCompositeOperation = 'destination-out'; o.fillStyle = 'rgba(0,0,0,.18)'; o.fillRect(0, 0, W, H); }   // in grotere stappen, anders blijft er een waas hangen o.globalCompositeOperation = 'source-over';
+  }
+  const draw = () => {
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    g.drawImage(off, 0, 0, W, H);
+    g.globalAlpha = T.dark ? .45 : 1; g.drawImage(grain, 0, 0); g.globalAlpha = 1;
+  };
+  resets.push(() => { o.clearRect(0, 0, W, H); parts = []; drops = []; lastDrop = -99; });
+  drop(W * .4, 30);
+  loop(dt => { step(dt); draw(); }, () => { drop(W * .68, 46); for (let i = 0; i < 380; i++) step(1 / 60); draw(); });
+})();
 })();
 </script>
