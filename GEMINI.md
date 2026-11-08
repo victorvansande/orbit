@@ -1,13 +1,13 @@
 # Voor elke AI-agent (Antigravity, Gemini, Codex, ...)
 
-Lees **CLAUDE.md** volledig vóór je iets doet. Dat is de enige bron van waarheid voor dit project (Orbit): werkafspraken, ontwerpkeuzes van Victor, bestanden, valkuilen en de overdracht tussen tools.
+Lees **CLAUDE.md** (kort) vóór je iets doet; details staan in **docs/kennis.md** (groot, zoek er gericht in, lees het niet volledig). Samen de enige bron van waarheid voor dit project (Orbit): werkafspraken, ontwerpkeuzes van Victor, bestanden, valkuilen en de overdracht tussen tools.
 
 Begin bij de sectie **Identiteit**: wat Orbit is, de beeldtaal en de checklist "Klaar is pas klaar".
 
 Kort de harde regels (de volledige staan in CLAUDE.md, sectie Samenwerking, en in `.agent/rules/orbit.md`):
 
 - Eerst `git pull origin main`, daarna de laatste regels onder "Overdracht" in CLAUDE.md lezen.
-- Alles wat je verandert ook in CLAUDE.md zetten, en bij het stoppen een regel onder "Overdracht".
+- Alles wat je verandert in docs/kennis.md zetten (juiste sectie), en bij het stoppen een regel onder "Overdracht" in CLAUDE.md (hooguit 10 regels, oudere naar docs/kennis.md).
 - Na elke afgeronde wijziging committen en pushen naar `main`. Nooit force push, rebase of amend: ongedaan maken = `git revert`.
 - Nooit secrets beheren. Nooit gegevens van gebruikers laten verdwijnen.
 - Geen em dashes, geen marketingtaal, geen emoji. Nederlands.
