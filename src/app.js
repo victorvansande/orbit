@@ -3347,19 +3347,29 @@ function renderSync({ status, lastSync, code } = { status: sync.status, lastSync
   const view = syncView !== 'auto' ? syncView : code ? 'on' : 'off';
   const ids = { off: 'sync-off', confirm: 'sync-confirm', scan: 'sync-scanner', recv: 'sync-recv', on: 'sync-on' };
   for (const [v, id] of Object.entries(ids)) $(id).hidden = v !== view;
-  $('sync-title').textContent = { on: tx('sync.send'), scan: tx('sync.receive'), recv: tx('sync.receive'), confirm: tx('sync.receive') }[view] ?? tx('sync.pair');
-  $('sync-kicker').textContent = view === 'off' ? tx('sync.once') : DEVICE;
+  $('sync-title').textContent = { on: tx('sync.off'), scan: tx('sync.receive'), recv: tx('sync.receive'), confirm: tx('sync.receive') }[view] ?? tx('sync.pair');
+  $('sync-kicker').textContent = view === 'off' ? tx('sync.once') : view === 'on' ? '' : DEVICE;   // gekoppeld: de naam staat in de rij Dit toestel
+  $('sync-device').textContent = DEVICE;
   if (code) {
     renderQr($('sync-qr'), syncLink(code));
-    $('sync-code').textContent = code;
-    $('sync-code').hidden = !showCode;
-    $('sync-show-code').textContent = showCode ? tx('sync.hideCode') : tx('sync.showCode');
-    $('sync-show-code').setAttribute('aria-expanded', String(showCode));
+    // V3 (Victor, 08/11/2026): de code verschijnt in de rij zelf, een tweede tik verbergt ze
+    const codeBtn = $('sync-show-code');
+    codeBtn.textContent = showCode ? code : tx('sync.actShow');
+    codeBtn.classList.toggle('is-code', showCode);
+    codeBtn.setAttribute('aria-expanded', String(showCode));
+    codeBtn.setAttribute('aria-label', tx(showCode ? 'sync.hideCode' : 'sync.showCode'));
     $('sync-keep-code').value = code;
     const offered = wasOffered(code);
-    $('sync-keep-text').textContent = tx(offered ? 'sync.keepDone' : 'sync.keepText');
-    $('sync-keep-btn').textContent = tx(offered ? 'sync.keepAgain' : 'sync.keep');
-    $('sync-meta').textContent = lastSync ? tx('sync.metaAt', { text: text.toLowerCase(), time: TIME_FMT.format(lastSync) }) : tx('sync.meta', { text: text.toLowerCase() });
+    $('sync-keep-text').textContent = tx(offered ? 'sync.keepSubDone' : 'sync.keepSub');
+    $('sync-keep-text').title = tx(offered ? 'sync.keepDone' : 'sync.keepText');   // de volledige uitleg bij aanwijzen
+    $('sync-keep-btn').textContent = tx(offered ? 'sync.actKeepAgain' : 'sync.actKeep');
+    $('sync-keep-btn').setAttribute('aria-label', tx(offered ? 'sync.keepAgain' : 'sync.keep'));
+    // Gedeeld: wat er meegaat, en rechts de toestand (gelijk om ..., verbinden, offline met wat nog wacht)
+    $('sync-shared').textContent = `${tx('sync.sharedTasks', { n: realTasks().length })} · ${tx('sync.sharedStars', { n: totalDone(done) })}`;
+    const meta = $('sync-meta');
+    meta.dataset.state = effectiveStatus;
+    meta.textContent = status === 'online' && lastSync ? tx('sync.sharedAt', { time: TIME_FMT.format(lastSync) })
+      : pending.n > 0 && status !== 'online' ? `${text} · ${tx('sync.waiting', { n: pending.n })}` : text;
   }
 }
 
@@ -3372,7 +3382,6 @@ function openSync(view = 'auto') {
   if (DEMO_MODE) { showToast(tx('demo.noSync')); return; }   // de demo koppelt nooit, anders gaat ze naar je echte lijst
   syncView = view;
   $('sync-error').hidden = true;
-  const more = $('sync-more'); if (more) more.open = false;
   if (view === 'auto' && sync.code) sync.send();
   renderSync();
   if (!syncDialog.open) syncDialog.showModal();

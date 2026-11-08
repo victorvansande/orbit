@@ -113,7 +113,7 @@ html { background: var(--bg); -webkit-text-size-adjust: 100%; }
 html.is-app { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 html.is-app body { overscroll-behavior: none; touch-action: manipulation; }
 html.is-app :is(input, textarea, [contenteditable]) { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
-html.is-app .sync-code { -webkit-user-select: all; user-select: all; }   /* synccode blijft in één tik te kopiëren */
+html.is-app .sync-act.is-code { -webkit-user-select: all; user-select: all; }   /* synccode blijft in één tik te kopiëren */
 html.is-app :is(img, svg, a) { -webkit-user-drag: none; }
 body {
   margin: 0;
@@ -1186,36 +1186,9 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 .sync-input::placeholder { color: var(--placeholder); }
 .sync-error { font-size: var(--fs-text); color: var(--late); }
 .sync-vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* voor de sleutelhanger, niet te zien */
-.sync-share-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.sync-share-grid .btn-ghost { width: 100%; justify-content: center; min-height: 38px; }
-.sync-more { width: 100%; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; }
-.sync-more summary {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  font: 500 var(--fs-caption)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
-  color: var(--ink-3); cursor: pointer; list-style: none; padding: 4px 0;
-  transition: color .2s var(--ease);
-}
-.sync-more summary::-webkit-details-marker { display: none; }
-.sync-more summary::after { content: " ▾"; font-size: var(--fs-micro); opacity: .7; }
-.sync-more[open] summary::after { content: " ▴"; }
-.sync-more summary:hover { color: var(--ink); }
-.sync-more[open] summary { margin-bottom: 10px; color: var(--ink-2); }
-.sync-more .sync-keep-card {
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 12px 14px; background: var(--fill); border: 1px solid var(--line); border-radius: 14px;
-}
-.sync-keep-text { font-size: var(--fs-small); line-height: 1.45; color: var(--ink-2); margin: 0; }
-.sync-more .sync-keep-card .btn-ghost { align-self: flex-start; }
 .sync-key { flex: none; width: 100%; }   /* in de kolom van het formulier, anders werd flex-basis 200px de hoogte */
-.sync-code { font: 500 clamp(16px, 5.2vw, 26px)/1.2 var(--mono); letter-spacing: .08em; white-space: nowrap; text-align: center; padding: 14px 0; border: 1px dashed var(--dash); border-radius: 14px; user-select: all; }
-.sync-meta { font: 500 var(--fs-caption)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); text-align: center; margin: 0; padding-top: 10px; border-top: 1px solid var(--line); }
-.sync-meta:empty { display: none; }
-.sync-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 2px; }
-.sync-foot #sync-stop { color: var(--ink-3); }
-.sync-foot #sync-stop:hover { color: var(--late); border-color: var(--late); }
 /* QR-code: altijd donker op licht, ook in het donkere thema (scant het best) */
-.sync-qr-cluster { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 2px 0 4px; }
-.sync-qr { align-self: center; width: min(156px, 48vw); aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--qr-bg); box-shadow: 0 4px 16px var(--shadow-2); }
+.sync-qr { flex: none; width: 132px; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--qr-bg); box-shadow: 0 4px 16px var(--shadow-2); }
 .sync-qr svg { display: block; width: 100%; height: 100%; }
 .qr-bg { fill: var(--qr-bg); }
 .qr-ink { fill: var(--qr-ink); }
@@ -1232,20 +1205,46 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 }
 .sync-choice:hover { border-color: var(--dash-2); background: var(--fill); }
 .sync-choice-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: var(--on-ink); }
-.sync-choice-icon svg, .sync-dir svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sync-choice-icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .sync-choice-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sync-choice-title { font-size: 15px; font-weight: 500; }
 .sync-choice-sub { font-size: var(--fs-small); line-height: 1.4; color: var(--ink-3); }
 .sync-warn { font-size: var(--fs-text); line-height: 1.45; color: var(--ink-2); padding: 10px 12px; border-radius: 12px; background: var(--fill); }
-/* Richting bij versturen: dit toestel -> toestel dat scant */
-.sync-dir { display: flex; align-items: center; justify-content: center; gap: 10px; font: 500 var(--fs-caption)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
-.sync-dir svg { stroke-width: 1.5; color: var(--ink-3); }
 .sync-status { display: flex; align-items: flex-start; justify-content: center; gap: 8px; font-size: var(--fs-body); line-height: 1.45; text-align: center; color: var(--ink-2); }
 .sync-status .sync-dot { flex: none; margin-top: 6px; }
 .sync-status[data-state="busy"] .sync-dot { animation: sync-blink 1.2s ease-in-out infinite; }
 .sync-status[data-state="ready"] .sync-dot, .sync-status[data-state="done"] .sync-dot { background: currentColor; }
 .sync-status[data-state="done"] { color: var(--ink); }
 .sync-status[data-state="error"] { color: var(--late); }
+/* Gekoppeld toestel: V3 Rijen zoals Instellingen (Victor, 08/11/2026). QR-code met één zin, daaronder rijen met links het label, rechts de toestand of de actie */
+.sync-head { display: flex; align-items: flex-start; gap: 16px; }   /* titel op de bovenrand van de QR-code */
+.sync-head-text { display: grid; gap: 6px; min-width: 0; }
+.sync-head-title { margin: 0; font-size: 15px; font-weight: 500; color: var(--ink); }
+.sync-head-note { margin: 0; font-size: var(--fs-body); line-height: 1.45; color: var(--ink-2); }
+.sync-on .sync-status { justify-content: flex-start; text-align: left; font-size: var(--fs-small); margin: 2px 0 0; }
+.sync-on .sync-status:has(#sync-send-text:empty) { display: none; }
+.sync-rows { display: grid; }
+.sync-r { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 48px; margin: 0; border-top: 1px solid var(--line); }
+.sync-rows > .sync-r:last-child { border-bottom: 1px solid var(--line); }
+.sync-r-lab { display: grid; gap: 4px; min-width: 0; padding: 10px 0; font: 500 var(--fs-caption)/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.sync-r-lab small { font: 400 var(--fs-small)/1.35 var(--font); letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+.sync-r-lab small:empty { display: none; }
+.sync-act { flex: none; min-height: 44px; padding: 0; border: 0; background: none; font: 500 var(--fs-caption)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); cursor: pointer; transition: color .2s var(--ease); }
+.sync-act:hover { color: var(--ink-2); }
+.sync-act.is-warn:hover { color: var(--late); }
+.sync-act.is-code { letter-spacing: .14em; }
+.sync-act.is-done { color: var(--orbit-green); }
+.sync-r-val { flex: none; display: inline-flex; align-items: center; gap: 7px; font: 500 var(--fs-caption)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.sync-r-val::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
+.sync-r-val[data-state="online"]::before { background: var(--orbit-green); }
+.sync-r-val[data-state="connected"]::before { background: var(--orbit-blue); }
+.sync-r-val[data-state="offline"]::before { background: var(--late); }
+.sync-r-val[data-state="connecting"]::before { background: var(--orbit-orange); animation: sync-blink 1.2s ease-in-out infinite; }
+.sync-foot { display: flex; justify-content: flex-end; }
+.sync-on .sync-head { margin-bottom: 8px; }   /* 20 px onder de QR-code (Genoeg lucht: onder een groot vlak) */
+.sync-on .sync-foot { padding-top: 4px; }   /* 16 px tussen de rijen en Klaar */
+@media (max-width: 540px) { .sync-head .sync-qr { width: 112px; } .sync-head { gap: 14px; } }
+@media (max-width: 360px) { .sync-head .sync-qr { width: 92px; } .sync-head-note { font-size: var(--fs-small); } .sync-r { min-height: 44px; } .sync-on .sync-head { margin-bottom: 4px; } }   /* hier staat de tekst onder de QR-code: 16 px tot de rijen */
 /* Stappen bij ontvangen */
 .sync-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: step; }
 .sync-steps li { position: relative; padding-left: 30px; font-size: var(--fs-ui); color: var(--ink-3); counter-increment: step; }
