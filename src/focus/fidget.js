@@ -623,7 +623,8 @@ const hasGL2 = () => {
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
 
-export function createFidget(box, { reducedMotion, label = m => m, getData }) {
+// scores: opslag per spel (src/data/scores.js, createScoreStore), zodat highscores mee synchroniseren
+export function createFidget(box, { reducedMotion, label = m => m, getData, scores }) {
   const cv = box.querySelector('canvas');
   const dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = Math.round(W * dpr); cv.height = Math.round(HH * dpr);
@@ -667,10 +668,10 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
         modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null), names: [label('plasmaDisc'), label('plasmaPlate')], onPreset: showScreen });
       } else if (modeName === 'breakout') {
         // breakout B4 Fosfor (Victor, 08/11/2026): levels, levens, powerups, highscores; fosfor uit de kleurkiezer
-        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT });
+        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, scores: scores?.game('breakout') });
       } else if (modeName === 'snake') {
         // slang in stippen (Victor, 08/11/2026, F1): raster van de matrixklok, kleur uit de kleurkiezer
-        modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT });
+        modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT, scores: scores?.game('snake') });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -1065,6 +1066,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
     stop,
     toggleMobile,
     closeMobile() { toggleMobile(false); },
-    isOpen() { return box.classList.contains('is-open'); }
+    isOpen() { return box.classList.contains('is-open'); },
+    // scores van een ander toestel of tabblad: elk spel dat al draait leest ze opnieuw in
+    reloadScores() { for (const m of Object.values(modes)) m.reload?.(); },
   };
 }

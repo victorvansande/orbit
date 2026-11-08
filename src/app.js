@@ -22,6 +22,7 @@ import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore,
 import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
+import { loadScores, saveScores, mergeScores, scoresSig, createScoreStore, isScoreKey } from './data/scores.js';
 import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
 import { softReveal, whiteBurst, smallNight, coreWave, monthGate, createWall } from './scene/fx.js';
 import { turnStyle, TURN_STYLES } from './scene/turn.js';
@@ -2098,6 +2099,8 @@ const weather = createWeather($('focus-weather'));
 const syncStatus = () => { try { return sync.status; } catch { return 'off'; } };
 const fidget = createFidget($('fidget'), {
   reducedMotion, label: m => tx(`fidget.${m}`),
+  // highscores van de spelletjes: een nieuwe score gaat meteen naar gekoppelde toestellen
+  scores: createScoreStore(() => sync.changed()),
   // toestand voor het paneel (src/focus/panel.js): taken, sterren, archief, voortgang van vandaag, sync
   getData: () => {
     const from = new Date(); from.setHours(0, 0, 0, 0);
@@ -3027,7 +3030,7 @@ $('arch-close').addEventListener('click', () => archiveDialog.close());
 archiveDialog.addEventListener('click', e => { if (e.target === archiveDialog) archiveDialog.close(); });
 
 $('arch-export').addEventListener('click', () => {
-  const data = { app: 'orbit', version: 1, exportedAt: new Date().toISOString(), tasks: realTasks(), archive, done };
+  const data = { app: 'orbit', version: 1, exportedAt: new Date().toISOString(), tasks: realTasks(), archive, done, scores: loadScores() };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   const a = el('a');
   a.href = url;
@@ -3055,6 +3058,7 @@ $('arch-file').addEventListener('change', async e => {
       saveDone(done);
       syncStars(sky, done);
     }
+    if (adoptScores(data.scores)) sync.changed();
     bringBack(list, 'import', { preferNewer: true });
   } catch {
     showToast(tx('toast.badFile'));
@@ -3088,6 +3092,8 @@ window.addEventListener('storage', e => {
     checkFeats(false);
   } else if (e.key === TIMER_KEY) {
     timer.reload();   // zandloper in een ander tabblad gestart of gepauzeerd
+  } else if (isScoreKey(e.key)) {
+    fidget.reloadScores();   // highscore in een ander tabblad
   }
 });
 
@@ -3103,9 +3109,18 @@ function adoptTimer(t) {
   if (!t || (t.at || 0) <= (timerState().at || 0)) return;
   if (saveTimerState(t)) timer.reload();
 }
+// highscores van een ander toestel of uit een reservekopie: samenvoegen (nooit iets kwijt) en de spellen laten herlezen
+function adoptScores(s) {
+  if (!s || typeof s !== 'object') return false;
+  const cur = loadScores(), next = mergeScores(cur, s);
+  if (scoresSig(next) === scoresSig(cur)) return false;
+  saveScores(next);
+  fidget.reloadScores();
+  return true;
+}
 const sync = createSync({
   deviceName: DEVICE,
-  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts, feats, archive, archDel, timer: timerState() }),
+  getState: () => ({ tasks: realTasks(), gone, done, doneReset, skyCuts, feats, archive, archDel, timer: timerState(), scores: loadScores() }),
   applyState(state) {
     gone = { ...state.gone };
     // het gedeelde archief (een oudere versie van Orbit stuurt er geen: dan blijft het eigen archief)
@@ -3134,6 +3149,7 @@ const sync = createSync({
     if (backfill(feats, archive)) saveFeats(feats);   // wat elders afgevinkt werd, telt ook hier mee voor de prestaties
     if (purge(feats, isFiller)) saveFeats(feats);
     adoptTimer(state.timer);
+    adoptScores(state.scores);
     for (const t of lost) if (!done[t.id] && (state.gone?.[t.id] || Date.now()) > doneReset) done[t.id] = state.gone?.[t.id] || Date.now();
     saveDone(done);
     saveReset(doneReset);
@@ -3173,6 +3189,7 @@ const sync = createSync({
     saveCuts(skyCuts);
     feats = mergeFeats(feats, state.feats);
     adoptTimer(state.timer);
+    adoptScores(state.scores);
     for (const [id, t] of Object.entries(state.archDel || {})) archDel[id] = Math.max(archDel[id] || 0, t);
     saveArchDel(archDel);
     const ownArchive = archive.length;
@@ -3184,7 +3201,8 @@ const sync = createSync({
     checkFeats(false);
     // had dit toestel iets wat de verzender niet had (eigen taken of afgevinkte), dan terugsturen
     if (tasks.length !== state.tasks.length || totalDone(done) !== totalDone(cleanDone(state.done)) || doneReset !== (state.doneReset || 0)
-      || skyCuts.length !== cleanCuts(state.skyCuts).length || archive.length !== (state.archive || []).length || ownArchive > (state.archive || []).length) setTimeout(() => sync.changed(), 0);
+      || skyCuts.length !== cleanCuts(state.skyCuts).length || archive.length !== (state.archive || []).length || ownArchive > (state.archive || []).length
+      || scoresSig(loadScores()) !== scoresSig(state.scores)) setTimeout(() => sync.changed(), 0);
     applyDeadlines();
     saveTasks({ notify: false, reason: 'receive' });
     render();

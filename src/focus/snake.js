@@ -4,11 +4,10 @@
 // Af en toe een vierpuntige ster (star4, het teken van afronden) die meer waard is en na een paar seconden uitdooft.
 // Sturen: vegen (ook meerdere bochten in één veeg), een tik stuurt naar die kant, pijltjes of WASD. Randen lopen rond,
 // enkel jezelf raken is fataal. Niet aangeraakt: een demo speelt vanzelf. Muis weg uit het bakje: pauze.
-// Beste score per toestel (`priority-orbit.snake.v1`), niet gesynchroniseerd. Minder beweging: één stilstaand beeld.
+// Beste score (`priority-orbit.snake.v1`), gedeeld tussen gekoppelde toestellen (src/data/scores.js). Minder beweging: één stilstaand beeld.
 
 import { LANG } from '../core/i18n.js';
 
-export const SNAKE_KEY = 'priority-orbit.snake.v1';
 
 const W = 325.6, H = 226.8;
 const S = 9, COLS = 34, ROWS = 20, TOP = 34;     // raster van 34 × 20 stippen, onder de keuzerij
@@ -24,9 +23,6 @@ const key = (x, y) => y * COLS + x;
 const wrap = (v, n) => (v + n) % n;
 const px = x => OX + x * S, py = y => OY + y * S;
 
-function loadBest() { try { const d = JSON.parse(localStorage.getItem(SNAKE_KEY) || '{}'); return Number.isFinite(d.best) ? d.best : 0; } catch { return 0; } }
-function saveBest(best) { try { localStorage.setItem(SNAKE_KEY, JSON.stringify({ best, at: Date.now() })); } catch { /* geen opslag */ } }
-
 // vierpuntige ster met holle zijden, zoals star4 in de scène
 function star(g, x, y, r, rot) {
   g.beginPath();
@@ -39,7 +35,9 @@ function star(g, x, y, r, rot) {
   g.closePath();
 }
 
-export function createSnake({ reducedMotion, accent }) {
+// scores: { load, save } uit src/data/scores.js (via het bakje), gedeeld tussen gekoppelde toestellen
+export function createSnake({ reducedMotion, accent, scores }) {
+  const loadBest = () => scores?.load()?.best || 0;
   const touch = matchMedia('(hover: none)');
   let cv = null, g = null, dpr = 1, lastNow = 0, t = 0;
   let C = {}, colorsAt = -9;
@@ -123,7 +121,7 @@ export function createSnake({ reducedMotion, accent }) {
   function die() {
     deadAt = t;
     if (state === 'demo') { stateAt = t; state = 'demo-dead'; return; }
-    if (score > best) { best = score; newBest = true; saveBest(best); }
+    if (score > best) { best = score; newBest = true; scores?.save({ best, at: Date.now() }); }
     state = 'over'; stateAt = t;
   }
 
@@ -243,6 +241,7 @@ export function createSnake({ reducedMotion, accent }) {
     own: true,
     get busy() { return state === 'play'; },   // de keuzerij wijkt enkel tijdens het spel
     init() { reset('demo'); },
+    reload() { best = Math.max(best, loadBest()); },   // beste score van een ander toestel of tabblad
     mount(el) {
       if (cv) return;
       dpr = Math.min(2, window.devicePixelRatio || 1);

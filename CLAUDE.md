@@ -70,7 +70,7 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 ## Technische vaste punten
 
-- Fidgets in het bakje (`src/focus/fidget.js`, `MODES`): soorten met `own: true` krijgen `init`, `mount(el)`, `unmount`, `frame(now)`, `move`/`drag`/`down`/`up`/`tap(p)`, `leave`, `recolor`, optioneel `onDark`, `busy` (keuzerij wijkt), `next` (pijltje, `hasPresets`). Coördinaten 325,6 × 226,8. Kleurkiezer via `accent()`.
+- Fidgets in het bakje (`src/focus/fidget.js`, `MODES`): soorten met `own: true` krijgen `init`, `mount(el)`, `unmount`, `frame(now)`, `move`/`drag`/`down`/`up`/`tap(p)`, `leave`, `recolor`, optioneel `onDark`, `busy` (keuzerij wijkt), `next` (pijltje, `hasPresets`). Coördinaten 325,6 × 226,8. Kleurkiezer via `accent()`. Houdt een fidget iets bij (scores, records): nooit eigen localStorage, maar `scores.game(naam)` uit `src/data/scores.js` (regel in `GAMES`, vorm `{top}` of `{best, at}`, `reload()`), dan gaat het mee in sync, export en import.
 - Valkuilen (volledig in `docs/kennis.md`, sectie Valkuilen): sticky kop werkt enkel met `body{overflow-x:clip}`; `left:50%` + `translate(-50%)` krijgt halve breedte (gebruik `width: max-content`); canvasstaat (`textAlign`, `font`, `globalAlpha`) altijd terugzetten; elke localStorage-toegang in try/catch; scrollwacht `guardScroll` bij open vensters.
 - Lokaal testen: `python3 -m http.server 3000` (modules werken niet via `file://`). Testbrowser staat op Engels: zet `priority-orbit.lang.v1 = 'nl'` voor Nederlandse tekst; `priority-orbit.intro.v1 = 'gezien'` om de Uitleg over te slaan.
 
@@ -79,7 +79,8 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
 - 08/11/2026, Claude Code: fidget Plasma, `src/focus/plasma.js`. Open: Victor probeert het op pc en gsm.
-- 08/11/2026, Claude Code: fidget Breakout (B4 Fosfor), `src/focus/breakout.js`. Open: highscores eventueel delen tussen toestellen.
+- 08/11/2026, Claude Code: fidget Breakout (B4 Fosfor), `src/focus/breakout.js`.
 - 08/11/2026, Claude Code: fidget Slang (F1), `src/focus/snake.js`. Open: Victor speelt het op pc en gsm.
 - 08/11/2026, Claude Code: F2 Slinger, F3 Zandtafel, F4 Inktdruppel uitgewerkt (artifact "Orbit fidgets" https://claude.ai/artifact/EsaMSw2oYMTvskMbdAGGsC, `ontwerp/fidgets/`). Open: Victor kiest.
 - 08/11/2026, Claude Code: op vraag van Victor (tokens) CLAUDE.md teruggebracht tot deze kern; de volledige vorige inhoud staat letterlijk in `docs/kennis.md`. Open: titel met veel labels (P2-4, eerst voorstellen), oogjes van de kern (O1 tot O4).
+- 08/11/2026, Claude Code: scores van de spelletjes (Slang, Breakout, en elke toekomstige fidget via `GAMES` in `src/data/scores.js`) gaan mee in sync, export en import; samenvoegen verliest nooit een score. Open: Victor speelt op twee toestellen en kijkt of de scores gelijk lopen.

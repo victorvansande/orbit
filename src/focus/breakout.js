@@ -2,14 +2,13 @@
 // Gekozen door Victor (08/11/2026): B4 Fosfor uit ontwerp/breakout/, "werk het ook uit met meerdere levels, highscores,
 // powerups". Een oude beeldbuis zoals het Paneel: nagloeiend fosfor, scanlijnen, een rollende band, VT323. Stenen omlijnd in
 // de momentkleuren (Nu bovenaan, het meest waard), al de rest in fosfor uit de kleurkiezer.
-// Tien levels (daarna een nieuwe lus, iets sneller), drie levens, zes powerups in capsules, top vijf per toestel.
+// Tien levels (daarna een nieuwe lus, iets sneller), drie levens, zes powerups in capsules, top vijf, gedeeld tussen gekoppelde toestellen.
 // Niet aangeraakt: een demo speelt vanzelf (attract-modus) met de highscores ertussen; een tik start.
 // Muis weg uit het bakje of de focus dicht: pauze. Stil, zoals elke fidget. Minder beweging: één stilstaand titelscherm.
 
 import { LEVELS as CONF } from '../core/config.js';
 import { LANG } from '../core/i18n.js';
 
-export const BREAKOUT_KEY = 'priority-orbit.breakout.v1';
 
 const W = 325.6, H = 226.8;
 const COLS = 10, GAP = 3, SIDE = 12, TOP = 30, BH = 8;
@@ -61,12 +60,9 @@ function phosphor(hex) {
   return { hi: mix(c, [255, 248, 232], 0.55), mid: c, lo: mix(c, [0, 0, 0], 0.45), bg: mix([6, 6, 8], c, 0.03) };
 }
 
-function loadTop() {
-  try { const d = JSON.parse(localStorage.getItem(BREAKOUT_KEY) || '{}'); return Array.isArray(d.top) ? d.top.filter(e => Number.isFinite(e?.s)).slice(0, 5) : []; } catch { return []; }
-}
-function saveTop(top) { try { localStorage.setItem(BREAKOUT_KEY, JSON.stringify({ top })); } catch { /* geen opslag */ } }
-
-export function createBreakout({ reducedMotion, accent }) {
+// scores: { load, save } uit src/data/scores.js (via het bakje), gedeeld tussen gekoppelde toestellen
+export function createBreakout({ reducedMotion, accent, scores }) {
+  const loadTop = () => (scores?.load()?.top || []).slice(0, 5);
   const touch = matchMedia('(hover: none)');
   let cv = null, g = null, tube = null, tg = null, bloom = null, bg = null, pat = null, dpr = 1, lastNow = 0, t = 0;
   let P = phosphor(null), lastAccent;
@@ -110,7 +106,7 @@ export function createBreakout({ reducedMotion, accent }) {
       const entry = { s: score, lv: level + 1 + loop * MAPS.length, at: Date.now() };
       const list = [...top, entry].sort((a, b) => b.s - a.s).slice(0, 5);
       newRank = list.indexOf(entry);
-      top = list; saveTop(top);
+      top = list; scores?.save({ top });
     }
     setState('over');
   }
@@ -375,6 +371,12 @@ export function createBreakout({ reducedMotion, accent }) {
     // de keuzerij wijkt zolang er gespeeld wordt (anders ligt ze over de score)
     get busy() { return !demo && state === 'play'; },
     init() { startAttract(); },
+    // scores van een ander toestel of tabblad: opnieuw inlezen, een net behaalde plaats blijft gemarkeerd
+    reload() {
+      const mine = top[newRank];
+      top = loadTop();
+      if (mine) newRank = top.findIndex(e => e.at === mine.at && e.s === mine.s);
+    },
     mount(el) {
       if (cv) return;
       if (!document.querySelector('link[data-vt323]')) {

@@ -6,6 +6,7 @@
 // Alles wordt in de browser versleuteld (AES-GCM); de server ziet enkel ruis.
 import { mergeFeats, featsSig } from '../data/feats.js';
 import { mergeArchive } from '../data/store.js';
+import { mergeScores, scoresSig } from '../data/scores.js';
 
 const SERVER = 'https://orbit-sync.victorvansande.workers.dev';
 const CODE_KEY = 'priority-orbit.sync.v1';
@@ -69,7 +70,9 @@ export function mergeStates(a, b) {
   const archive = a.archive || b.archive ? mergeArchive(a.archive, b.archive, new Set(tasks.map(t => t.id)), archDel) : undefined;
   // zandloper (focustimer): één gedeelde toestand, het recentst gewijzigde toestel wint (`at`); een oudere versie stuurt er geen
   const timer = [a.timer, b.timer].filter(t => t && typeof t === 'object').sort((x, y) => (y.at || 0) - (x.at || 0))[0];
-  return { tasks, gone, done, doneReset, skyCuts, feats, archive, archDel, timer };
+  // scores van de spelletjes: nooit iets kwijt (toplijsten samen, de hoogste beste score); een oudere versie stuurt er geen
+  const scores = a.scores || b.scores ? mergeScores(a.scores, b.scores) : undefined;
+  return { tasks, gone, done, doneReset, skyCuts, feats, archive, archDel, timer, scores };
 }
 
 // Twee toestanden zijn gelijk als dezelfde taken met dezelfde wijzigingstijd bestaan, dezelfde taken afgevinkt zijn
@@ -85,6 +88,7 @@ export function sameState(a, b) {
     (s.archive || []).map(x => `${x.id}:${x.doneAt}`).sort().join(','),
     Object.keys(s.archDel || {}).sort().join(','),
     s.timer ? [s.timer.dur, s.timer.endAt, s.timer.left, s.timer.done ? 1 : 0, s.timer.at || 0].join(':') : '',
+    scoresSig(s.scores),
   ]);
   return sig(a) === sig(b);
 }
