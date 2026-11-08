@@ -733,6 +733,23 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   popover.className = 'fidget-popover';
   popover.setAttribute('role', 'listbox');
   popover.hidden = true;
+  // de lijst scrolt binnen het menu (het bakje knipt af); zachte rand boven of onder zolang er nog iets staat
+  const popScroll = document.createElement('div');
+  popScroll.className = 'fidget-pop-scroll';
+  popover.append(popScroll);
+  const edges = () => {
+    popScroll.classList.toggle('can-up', popScroll.scrollTop > 1);
+    popScroll.classList.toggle('can-down', popScroll.scrollTop + popScroll.clientHeight < popScroll.scrollHeight - 1);
+  };
+  popScroll.addEventListener('scroll', edges, { passive: true });
+  // muiswiel zelf afhandelen: in de balk van het bakje scrolde de browser de lijst niet (gemeten in Chromium)
+  popScroll.addEventListener('wheel', e => {
+    if (popScroll.scrollHeight <= popScroll.clientHeight) return;
+    e.preventDefault();
+    popScroll.scrollTop += e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? popScroll.clientHeight : 1);
+  }, { passive: false });
+  // aanwijzen en tikken in het menu zijn voor het menu, niet voor de fidget eronder
+  for (const t of ['pointerdown', 'pointermove', 'pointerup']) popover.addEventListener(t, e => e.stopPropagation());
 
   menuWrap.append(menuBtn, popover);
 
@@ -746,7 +763,13 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     box.classList.toggle('has-menu-open', show);
     if (show) {
       const activeOpt = popover.querySelector('[aria-selected="true"]');
-      activeOpt?.focus();
+      activeOpt?.focus({ preventScroll: true });
+      // de gekozen soort in beeld, ook onderaan een lange lijst (enkel de lijst scrolt, niet het bakje of de pagina)
+      if (activeOpt) {
+        const bottom = activeOpt.offsetTop + activeOpt.offsetHeight + 8;
+        popScroll.scrollTop = bottom > popScroll.clientHeight ? bottom - popScroll.clientHeight : 0;
+      }
+      edges();
     }
   }
 
@@ -825,7 +848,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     if (!available().includes(modeName)) modeName = 'water';
     menuName.textContent = label(modeName);
 
-    popover.replaceChildren(...GROUPS.map(grp => {
+    popScroll.replaceChildren(...GROUPS.map(grp => {
       const col = document.createElement('div');
       col.className = 'fidget-pop-col';
       const title = document.createElement('div');

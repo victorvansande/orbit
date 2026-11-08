@@ -18,7 +18,7 @@ Dit bestand wordt bij elke beurt meegelezen, dus het blijft kort (doel: onder 15
 - Een object om naar te kijken, geen lijstje met decor. Rustig, verfijnd, smaakvol; Victor schrapt wat te druk, te standaard, te speels, goedkoop, gedateerd, "gevibecode" of te echt is. Liever één subtiele reactie dan zes.
 - Speels in het klein (paaseitjes, fidgets, kern met gezicht), nooit luid. Geloofwaardige beweging, gestileerde vorm.
 - Beeldtaal: poster en risodruk, papier met korrel, inkt, kleur enkel in de bollen. Ringen en raster grafiet met lage dekking. Zeshoekige rasterpunten als motief (grootte = hoeveelheid). Vierpuntige ster met holle zijden (`star4`) = iets afronden. Rood (Nu, kern) enkel als accent. Tekenset `·:+×#`. Geist voor tekst, Geist Mono kapitaaltjes met letterafstand voor labels.
-- Geen glans, geen dikke 3D, geen zware schaduwen, geen `filter: blur` (uitzondering: `backdrop-filter` achter de vensters, Victor 08/11/2026). Dingen verdwijnen zacht.
+- Geen glans, geen dikke 3D, geen zware schaduwen, geen `filter: blur` (uitzondering: `backdrop-filter` achter de vensters en in het fidgetmenu, Victor 08/11/2026). Dingen verdwijnen zacht.
 - Eén ding tegelijk in de aandacht: animaties en meldingen gaan via de regisseur (`takeStage`, `whenCalm`, voorrang prestatie 1, toast 2, muurveeg 3) en stapelen nooit.
 - Exact: wat ergens naar wijst, ligt precies op zijn doel, op elke maat en pixeldichtheid. Geen overlap, niets afgekapt, geen horizontale scroll.
 - **Logisch uitgelijnd**: wat bij elkaar hoort deelt een rand of lijn (zichtbare tekst en randen, niet de trefzone); randloze knoppen krijgen een negatieve marge zodat hun tekst op de rand staat. Niets forceren waar het niets betekent. Nameten met `getBoundingClientRect`.
@@ -87,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 08/11/2026, Claude Code: op gsm staat de rang links onder de teller (plaats van Instellingen), lege ruimte onderaan weg (dubbele veilige zone). Open: Victor kijkt het na op zijn iPhone.
 - 08/11/2026, Claude Code: taakrij: titel vervaagt pas vlak voor het icoon, vegen enkel met vinger of pen, dode code weg. Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: lege ruimte onder de quote in focus op gsm weg; dubbele punt van de klok: eerste poging werkte niet in Safari, nu zonder gloed op de dubbele punt. Open: Victor kijkt na op iPhone, ook in licht thema (WebKit niet testbaar hier).
+- 08/11/2026, Claude Code: fidgetmenu scrolt (zachte randen, wiel en vegen) en heeft zijn blur terug. Open: Victor kijkt op pc en gsm.

@@ -36,7 +36,7 @@
   --orbit-blue: #1F78B4;
   --orbit-gray: var(--ink-3);
   --toast-bg: #FFFFFF; --toast-ink: #1B1B22; --toast-line: rgba(27, 27, 34, .1); --toast-btn: #000000; --toast-btn-ink: #FFFFFF;   /* melding onderaan: wit met zwarte knop, in het donker gespiegeld */
-  --pop-shadow: rgba(0, 0, 0, .18); --veil: rgba(0, 0, 0, .48);   /* schaduw van zwevende vensters, sluier achter het bakje op gsm */
+  --pop-shadow: rgba(0, 0, 0, .18); --veil: rgba(0, 0, 0, .48); --pop-glass: rgba(248, 246, 240, .74);   /* schaduw van zwevende vensters, sluier achter het bakje op gsm */
   /* bakje: verloop van stil naar woelig, in de kleuren van de Grainient dusk (#BE123C, #FB923C, #FDE68A) */
   --water-calm: #5E5E68; --water-mid: #BE123C; --water-hot: #FB923C;   /* kleuren van de Grainient dusk */
   --fidget-on-dark: rgba(255, 255, 255, .6); --fidget-on-dark-strong: #FFFFFF;   /* keuzerij boven het donkere verloop van gloed */
@@ -72,7 +72,7 @@
   --orbit-blue: #38A0F0;
   --orbit-gray: var(--ink-3);
   --toast-bg: #000000; --toast-ink: #FFFFFF; --toast-line: rgba(255, 255, 255, .14); --toast-btn: #FFFFFF; --toast-btn-ink: #000000;
-  --pop-shadow: rgba(0, 0, 0, .5); --veil: rgba(0, 0, 0, .6);
+  --pop-shadow: rgba(0, 0, 0, .5); --veil: rgba(0, 0, 0, .6); --pop-glass: rgba(25, 25, 29, .7);
   --water-calm: #A3A3AD; --water-mid: #BE123C; --water-hot: #FDE68A;
   --tier-bronze: #D8916C; --tier-silver: #B0C0CD; --tier-gold: #EBC57D; --tier-platinum: #5ABFCA;
   --well: #0A0A0D; --well-shade: rgba(0, 0, 0, .7); --well-shade-2: rgba(0, 0, 0, .4); --well-lip: rgba(255, 255, 255, .07);
@@ -847,7 +847,19 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .fidget-menu-btn:hover .fidget-menu-chevron, .fidget-menu-btn[aria-expanded="true"] .fidget-menu-chevron { opacity: 1; }
 .fidget-menu-btn[aria-expanded="true"] .fidget-menu-chevron { transform: rotate(180deg); }
 
-.fidget-popover { position: absolute; top: calc(100% + 5px); left: 0; z-index: 30; display: grid; grid-template-columns: 126px 126px; gap: 10px; padding: 10px 11px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px var(--pop-shadow); animation: popover-appear .16s var(--ease); }
+.fidget-popover { position: absolute; top: calc(100% + 5px); left: 0; z-index: 30; padding: 10px 11px; background: var(--pop-glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px var(--pop-shadow); animation: popover-appear .16s var(--ease); }
+/* blur terug (Victor, 08/11/2026: "de moderne, mooie blur van voordien"). Het bakje knipt af op 226,8 px: de lijst scrolt
+   binnen het menu, met een zachte rand waar er nog meer staat (can-up, can-down via fidget.js) */
+.fidget-pop-scroll {
+  position: relative; display: grid; grid-template-columns: 126px 126px; gap: 10px; align-items: start;
+  max-height: 160px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none;
+  --fade-t: 0px; --fade-b: 0px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
+}
+.fidget-pop-scroll::-webkit-scrollbar { display: none; }
+.fidget-pop-scroll.can-up { --fade-t: 14px; }
+.fidget-pop-scroll.can-down { --fade-b: 18px; }
 @keyframes popover-appear { from { opacity: 0; transform: translateY(-4px) scale(0.97); } to { opacity: 1; transform: none; } }
 .fidget-pop-title { padding: 2px 4px 6px; font: 600 8px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--line); margin-bottom: 5px; }
 .fidget-pop-opt { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 23px; padding: 0 6px; border-radius: 5px; font: 500 9.5px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); cursor: pointer; background: transparent; border: none; text-align: left; transition: all .15s var(--ease); }
