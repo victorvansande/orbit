@@ -86,3 +86,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 08/11/2026, Claude Code: Plasma enkel nog als plaat; reactie op muis en vinger zoals een echte plasmaplaat (overslaan naar de vinger, nooit in het niets eindigen). Open: Victor probeert het op pc en gsm.
 - 08/11/2026, Claude Code: op gsm staat de rang links onder de teller (plaats van Instellingen), lege ruimte onderaan weg (dubbele veilige zone). Open: Victor kijkt het na op zijn iPhone.
 - 08/11/2026, Claude Code: taakrij: titel vervaagt pas vlak voor het icoon, vegen enkel met vinger of pen, dode code weg. Open: Victor kijkt op pc en gsm.
+- 08/11/2026, Claude Code: dubbele punt van de klok terug in Safari (gloed op een groep in de svg), lege ruimte onder de quote in focus op gsm weg. Open: Victor kijkt na op iPhone (WebKit niet testbaar hier).

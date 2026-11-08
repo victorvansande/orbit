@@ -984,9 +984,10 @@ body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
 .clock .dm { display: block; height: 100%; width: auto; overflow: visible; }
 .dm .o { fill: currentColor; animation: dm-in .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d); }
 /* Subtiele gloed voor actieve stippen alsof het een dot matrix van echt licht is (Victor, 06/11/2026) */
-/* één filter per cijfer in plaats van per stip: zelfde beeld, veel minder werk voor gsm (audit 08/11/2026) */
-[data-theme="dark"] .dm,
-.mg-dm .dm {
+/* één filter per cijfer in plaats van per stip: zelfde beeld, veel minder werk voor gsm (audit 08/11/2026); op de groep
+   in de svg, niet op de svg zelf: zo verdween de dubbele punt in Safari op iOS (08/11/2026) */
+[data-theme="dark"] .dm .dm-dots,
+.mg-dm .dm .dm-dots {
   filter: url(#dm-glow);
 }
 .dm .g { fill: currentColor; opacity: var(--dm-ghost); }
@@ -1608,7 +1609,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   /* Focus op gsm: één kolom die precies het scherm vult (kop, scène, klok en Nu, knoppen), niets overlapt */
   .focus-info { display: none; }
   /* vast over het hele scherm: 100dvh viel als webapp op het beginscherm van iOS korter uit dan het scherm */
-  body.is-focus { position: fixed; inset: 0; height: auto; overflow: hidden; }
+  body.is-focus { position: fixed; inset: 0; height: auto; overflow: hidden; padding-bottom: 0; }   /* de veilige zone zit al in .focus-info en .controls; dubbel gaf veel lege ruimte onder de quote (Victor, 08/11/2026) */
   body.is-focus .hud-right, body.is-focus .tracks, body.is-focus .wheel { display: none; }
   body.is-focus .stage { flex: 1 1 auto; min-height: 0; height: auto; }
   body.is-focus .focus-info {
@@ -1629,7 +1630,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   /* de knoppen liggen over de onderrand (ze verdwijnen toch na 2,5 s); de scène krijgt die ruimte, het blok met klok
      en quote zakt naar onder en krijgt lucht */
   body.is-focus .controls { order: 3; position: absolute; left: 0; right: 0; bottom: 0; margin-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); justify-content: flex-start; }   /* links op de rand: rechts staat de zandloper (P3) */
-  body.is-focus .focus-info { padding: 12px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 58px); }
+  body.is-focus .focus-info { padding: 12px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 62px); }   /* knoppenrij 46 px + 16 px lucht */
   body.is-focus .focus-weather { margin-bottom: 12px; }
   body.is-focus .focus-due { margin-top: 16px; }   /* dichter bij de datum, de quote iets lager (Victor, 04/11/2026) */
   /* zandloper op gsm in de focus (P3, Victor, 02/11/2026; eerst stond hij naast de klok en dat was een drukke rij):

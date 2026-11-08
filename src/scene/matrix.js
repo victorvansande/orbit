@@ -18,12 +18,22 @@ const GLYPHS = {
 
 const NS = 'http://www.w3.org/2000/svg';
 
+// De stippen staan in een groep: de gloed (#dm-glow) zit op die groep, één filter per teken. Als CSS-filter op de <svg>
+// zelf tekende Safari op iOS de smalle dubbele punt niet meer (Victor, 08/11/2026: "de dubbele punt is plots weg").
+function dotGroup(svg) {
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('class', 'dm-dots');
+  svg.append(g);
+  return g;
+}
+
 function glyph(ch) {
   const rows = GLYPHS[ch];
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', ch === ':' ? 'dm dm-colon' : 'dm');
   svg.setAttribute('viewBox', `-0.5 -0.5 ${rows[0].length} 7`);
   svg.setAttribute('aria-hidden', 'true');
+  const dots = dotGroup(svg);
   rows.forEach((row, y) => [...row].forEach((v, x) => {
     const c = document.createElementNS(NS, 'circle');
     c.setAttribute('cx', x);
@@ -32,7 +42,7 @@ function glyph(ch) {
     c.setAttribute('class', v === '#' ? 'o' : 'g');
     // elke stip licht op met een eigen kleine vertraging
     if (v === '#') c.style.setProperty('--d', `${(((x * 7 + y * 13) % 17) / 17 * 0.55).toFixed(2)}s`);
-    svg.append(c);
+    dots.append(c);
   }));
   return svg;
 }
@@ -78,12 +88,13 @@ export function morphMatrix(root, text, { still = false, only = false, onSwap } 
     const cw = width(i), keep = only && F[i] === T[i];
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('class', (cw === 1 ? 'dm dm-colon' : 'dm') + (i < grow ? ' is-gone' : '')); svg.setAttribute('viewBox', `-0.5 -0.5 ${cw} 7`); svg.setAttribute('aria-hidden', 'true');
+    const dots = dotGroup(svg);
     for (let y = 0; y < 7; y++) for (let x = 0; x < cw; x++) {
       const c = document.createElementNS(NS, 'circle');
       c.setAttribute('cx', x); c.setAttribute('cy', y);
       const gx = gx0 + x;
       cells.push({ c, x, y, gx, i, keep, go: hash(gx, y + 9) * 0.18, lock: 0.32 + gx / w * 0.4 + hash(gx, y) * 0.2, k: '' });
-      svg.append(c);
+      dots.append(c);
     }
     gx0 += cw + 1;
     return svg;
