@@ -829,15 +829,15 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   }
 
   /* Zachte verloopbalk bovenaan (bij topo en lava op lichte achtergrond) dooft ook uit wanneer niet gehoverd */
-  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc)::before {
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):not(.is-playing)::before {
     opacity: 0;
     transition: opacity .22s var(--ease);
   }
-  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):hover::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):focus-within::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc).has-menu-open::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc).has-color-open::before,
-  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):has(.fidget-menu-btn[aria-expanded="true"])::before {
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):not(.is-playing):hover::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):not(.is-playing):focus-within::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):not(.is-playing).has-menu-open::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):not(.is-playing).has-color-open::before,
+  .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):not(.is-playing):has(.fidget-menu-btn[aria-expanded="true"])::before {
     opacity: 1;
   }
 }
@@ -860,7 +860,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .fpo-text { flex: 1; }
 .fidget-bar-right { display: flex; align-items: center; gap: 6px; }
 /* topo en lava lopen tot bovenaan: een zachte overgang in de kleur van het bakje houdt de keuzerij leesbaar */
-.fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc)::before { content: ''; position: absolute; z-index: 1; inset: 0 0 auto; height: 62px; pointer-events: none; background: linear-gradient(var(--well) 52%, transparent); }
+.fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-disc):not(.is-playing)::before { content: ''; position: absolute; z-index: 1; inset: 0 0 auto; height: 62px; pointer-events: none; background: linear-gradient(var(--well) 52%, transparent); }
 .fidget.on-dark .fidget-modes { color: var(--fidget-on-dark); }
 /* breakout: zolang de keuzerij zichtbaar is, ligt er een donkere band achter, zodat ze de score afdekt in plaats van erover te staan */
 .fidget.is-breakout::before { content: ''; position: absolute; z-index: 9; inset: 0 0 auto; height: 30px; pointer-events: none; border-radius: inherit; background: linear-gradient(var(--tube) 62%, transparent); opacity: 0; transition: opacity .22s var(--ease); }

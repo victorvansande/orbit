@@ -23,12 +23,13 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'panel', 'life', 'breakout'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'panel', 'life', 'breakout', 'snake'];
 
 import { createPanel } from './panel.js';
 import { createLife } from './life.js';
 import { createPlasma } from './plasma.js';
 import { createBreakout } from './breakout.js';
+import { createSnake } from './snake.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -667,6 +668,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
       } else if (modeName === 'breakout') {
         // breakout B4 Fosfor (Victor, 08/11/2026): levels, levens, powerups, highscores; fosfor uit de kleurkiezer
         modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT });
+      } else if (modeName === 'snake') {
+        // slang in stippen (Victor, 08/11/2026, F1): raster van de matrixklok, kleur uit de kleurkiezer
+        modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -699,7 +703,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData }) {
 
   const GROUPS = [
     { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma'] },
-    { key: 'groupPlay', modes: ['panel', 'life', 'breakout'] }
+    { key: 'groupPlay', modes: ['panel', 'life', 'breakout', 'snake'] }
   ];
 
   const menuWrap = document.createElement('div');
