@@ -66,6 +66,20 @@ Houd een takenlijst bij (TaskCreate en TaskUpdate), één taak per domein. Begin
 
 **Glitches in beweging** (per frame vastleggen met `requestAnimationFrame`): afvinken, ongedaan maken, vensters openen en sluiten, focus aan en uit, aanzicht wisselen, maandwissel, nieuwe ster en sterrenbeeld, prestatie en rang, logo, fidget wisselen, bakje vergroten, zandloper starten en klaar, melding. Zoek sprongen (meer dan een paar px in één frame zonder dat de animatie dat wil), flitsen (dekking die kort springt), lay-outverschuiving (`PerformanceObserver` op `layout-shift`), animaties die blijven hangen of verkeerd eindigen, ongelijke snelheid op 60 en 120 Hz, en wat bij minder beweging toch beweegt. Ook: botsingen tussen gelijktijdige animaties en meldingen (regisseur).
 
+### A2b. Beweging, overgangen en geluid
+
+Niet enkel glitches, maar de **kwaliteit** van elke beweging en elk geluid. Maak eerst een lijst van **alle** animaties, overgangen en geluiden (grep op `animation`, `transition`, `@keyframes`, `animate(`, `requestAnimationFrame`, `setTimeout` met visuele gevolgen, en alles in `src/scene/sound.js`), met waar ze afgaan, hoe lang ze duren en welke easing ze hebben. Toets dan elk:
+
+- **Huisstijl**: easing `cubic-bezier(.4,0,.2,1)` of een bewust gekozen variant (veer, zwaartekracht) die in `docs/kennis.md` staat; tijdgebaseerd en gelijk op 60 en 120 Hz; geloofwaardig maar gestileerd; rustig, nooit luid. Duren gelijke soorten overgangen even lang (vensters, menu's, meldingen, staten van knoppen)? Wijken er af zonder reden?
+- **Begin en einde**: start uit de echte huidige toestand (geen sprong naar een beginwaarde), eindigt exact op de rusttoestand (geen restverschuiving van een halve pixel, geen blijvende `transform` of `will-change`), in- en uitgang horen bij elkaar.
+- **Onderbreken en herhalen**: wat gebeurt er als je halverwege opnieuw tikt, wegklikt, het venster sluit, van aanzicht wisselt, het tabblad verbergt, of snel tien keer na elkaar triggert? Geen opstapeling, geen schokken, geen animatie die vastloopt of in een tussentoestand blijft.
+- **Samenspel**: twee bewegingen tegelijk via de regisseur (`takeStage`, `whenCalm`, voorrang prestatie 1, toast 2, muurveeg 3), nooit door elkaar; overgangen tussen grote toestanden (thuis en focus, boven- en zijaanzicht, thema licht en donker, het herladen bij taal en Kleuren, eerste bezoek en Uitleg, de maandwissel) zonder flits, sprong of leeg beeld.
+- **Overgangen die ontbreken**: dingen die hard verschijnen of verdwijnen waar de rest zacht gaat ("dingen verdwijnen zacht"), lay-out die verspringt waar een korte overgang hoort, en omgekeerd overbodige animatie die vertraagt.
+- **Minder beweging en Minimaal**: elke animatie heeft een rustige variant of staat uit; staat elk effect in de lijst van Minimaal; een tik of toets slaat lange animaties over (behalve de maandwissel).
+- **Prestatie tijdens beweging**: frames per seconde en lange taken tijdens elke animatie op een vertraagde gsm (A6), geen hapering bij de eerste keer (shaders compileren, lettertypes laden).
+- **Geluid** (`src/scene/sound.js`): elk geluid gaat af wanneer het hoort en nooit dubbel; volume onderling in balans en niet schel; geen geluiden die over elkaar heen vallen of afknippen; het geluid past bij de beweging die het begeleidt (begint samen, duurt niet langer); de instelling Geluid aan of uit wordt overal gerespecteerd (ook de knop bij een prestatie); niets speelt vóór een eerste aanraking (autoplaybeleid), in een verborgen tabblad of in de demo als dat niet de bedoeling is; gedrag op iOS (stille schakelaar, webapp) als risico voor Victor.
+- **Leg vast** wat je niet zelf kunt beoordelen (gevoel van een beweging, klank) als vraag aan Victor met een korte beschrijving of een opname van de frames, in plaats van te gokken.
+
 ### A3. Inhoud, tekst en UX
 
 - Alle zichtbare tekst in NL en EN (uit `src/core/i18n.js` en `index.html`): spelling, grammatica, toon (rustig, droog, vriendelijk, de kern als goedaardige HAL), consequente termen (bakje, zandloper, kern, moment, schil, Archief, Momentopname), geen em dashes, geen marketing- of AI-taal, hoofdletters en leestekens consequent.
