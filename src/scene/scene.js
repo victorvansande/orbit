@@ -136,7 +136,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
   let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
-  const coreDot = { x: 0, y: 0, R: 0, pitch: 4 };   // midden, straal en puntafstand van de kern op het scherm (voor de Zzz)
   // vortex: stof dat in het zijaanzicht langs de trechter naar de kern spiraalt; meer en sneller bij een volle lijst
   const dust = Array.from({ length: DUST }, (_, i) => ({ r: 20 + Math.random() * 190, a: Math.random() * TAU, s: 0.55 + Math.random() * 0.9, k: i / DUST }));
   let dustAmount = 0;
@@ -990,78 +989,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     ctx.globalAlpha = 1;
   }
-  // Zzz als de kern slaapt (Victor, 09/11/2026: eerst blokletters van 5 × 5 puntjes, "veel te recht en niet schattig genoeg
-  // ... maar af en toe ... afgeronder, rustiger, schattiger"). Nu een kleine z van ronde puntjes langs een zachte lijn: ronde
-  // hoeken, een licht gebogen bovenkant en een krulletje aan het eind. Om de 10 à 18 s drijven er twee of drie op, telkens
-  // iets groter, traag en wiegend, schuin rechtsboven uit de kern, en doven zacht uit. In de kleur van de kern, met haar
-  // puntafstand. Minder beweging en Minimaal: één stilstaand zetje naast de kern.
-  const ZED_PATH = (() => {   // eenheidsvak -0,5..0,5 (y naar beneden), als punten op gelijke afstand langs de lijn
-    const segs = [
-      [[-0.40, -0.34], [0, -0.46], [0.28, -0.39]],     // bovenkant, licht gebogen
-      [[0.28, -0.39], [0.46, -0.40], [0.30, -0.22]],   // ronde hoek
-      [[0.30, -0.22], [0, 0.01], [-0.30, 0.24]],       // schuine lijn
-      [[-0.30, 0.24], [-0.46, 0.40], [-0.22, 0.40]],   // ronde hoek
-      [[-0.22, 0.40], [0.10, 0.46], [0.44, 0.32]],     // onderkant met een krulletje omhoog
-    ];
-    const pts = [];
-    for (const [a, c, b] of segs) for (let i = pts.length ? 1 : 0; i <= 24; i++) {
-      const t = i / 24, m = 1 - t;
-      pts.push([m * m * a[0] + 2 * m * t * c[0] + t * t * b[0], m * m * a[1] + 2 * m * t * c[1] + t * t * b[1]]);
-    }
-    let len = 0;
-    const acc = pts.map((q, i) => (len += i ? Math.hypot(q[0] - pts[i - 1][0], q[1] - pts[i - 1][1]) : 0));
-    return { pts, acc, len };
-  })();
-  function zedDots(n) {   // n puntjes op gelijke afstand langs de z
-    const { pts, acc, len } = ZED_PATH, out = [];
-    for (let k = 0, j = 0; k < n; k++) {
-      const d = len * k / (n - 1);
-      while (j < acc.length - 2 && acc[j + 1] < d) j++;
-      const f = (d - acc[j]) / ((acc[j + 1] - acc[j]) || 1);
-      out.push([pts[j][0] + (pts[j + 1][0] - pts[j][0]) * f, pts[j][1] + (pts[j + 1][1] - pts[j][1]) * f]);
-    }
-    return out;
-  }
-  function drawZed(x, y, size, rot, pitch, alpha) {
-    const n = Math.max(7, Math.round(ZED_PATH.len * size / (pitch * 0.85))), r = pitch * 0.34, c = Math.cos(rot), sn = Math.sin(rot);
-    ctx.globalAlpha = alpha;
-    ctx.beginPath();
-    for (const [u, v] of zedDots(n)) {
-      const px = x + (u * c - v * sn) * size, py = y + (u * sn + v * c) * size;
-      ctx.moveTo(px + r, py); ctx.arc(px, py, r, 0, TAU);
-    }
-    ctx.fill();
-  }
-  let zzz = null, nextZzz = 0;
-  function drawZzz(now) {
-    if (!coreDot.R) return;
-    const still = reducedMotion.matches || minimal;
-    if (sleepK < 0.6 && !zzz) { nextZzz = now + 2500; }   // pas even na het inslapen de eerste
-    if (sleepK < 0.05) { zzz = null; return; }
-    const a0 = sleepK * orbVeil * introAlpha(now, 0.6, 1.2);
-    if (a0 <= 0.01) return;
-    const R = coreDot.R, pitch = Math.max(1.9, coreDot.pitch * 0.5);
-    ctx.fillStyle = rgba(coreColor, 1);
-    if (still) { drawZed(coreDot.x + R * 1.05, coreDot.y - R * 1.0, pitch * 5, -0.18, pitch, a0 * 0.6); ctx.globalAlpha = 1; return; }
-    if (!zzz && now >= nextZzz && sleepK > 0.6) zzz = { t0: now, n: Math.random() < 0.5 ? 2 : 3 };
-    if (!zzz) return;
-    const LIFE = 4200, GAP = 1000;
-    let alive = false;
-    for (let i = 0; i < zzz.n; i++) {
-      const u = (now - zzz.t0 - i * GAP) / LIFE;
-      if (u < 0) { alive = true; continue; }
-      if (u >= 1) continue;
-      alive = true;
-      const e = 1 - Math.pow(1 - u, 2.2);   // drijft op en vertraagt
-      const fade = smoothstep(0, 0.22, u) * (1 - smoothstep(0.55, 1, u));
-      const size = pitch * (4.2 + 1.3 * i) * (0.8 + 0.2 * e);
-      const x = coreDot.x + R * (0.75 + 0.85 * e) + Math.sin(u * TAU * 0.9 + i * 1.7) * R * 0.14;
-      const y = coreDot.y - R * (0.7 + 1.7 * e);
-      drawZed(x, y, size, -0.22 + Math.sin(u * TAU * 0.7 + i) * 0.1, pitch, a0 * 0.7 * fade);
-    }
-    ctx.globalAlpha = 1;
-    if (!alive) { zzz = null; nextZzz = now + (10 + Math.random() * 8) * 1000; }
-  }
   // Maantje en ring om de kern (geschenken): op het scherm rond het midden van de kern, schuin; de achterkant wordt vóór de
   // kern getekend, de voorkant erna. Draait traag; stil bij minder beweging en Minimaal. Wijkt mee tijdens de maandwissel.
   function drawSatellites(now, front) {
@@ -1391,7 +1318,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const eyes = faceState(now, rMax, spacing, z);
     const tw = turnWaves(now);   // maandwissel: een rimpel door de puntjes bij elke ster die aankomt
     coreHit = project(0, 0, z, false) ? { x: pt.x, y: pt.y, r: Math.max(22, (rMax + 4) * cam.s * pt.f) } : null;
-    if (coreHit) { coreDot.x = pt.x; coreDot.y = pt.y; coreDot.R = rMax * cam.s * pt.f; coreDot.pitch = spacing * cam.s * pt.f; }
     // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In negen stappen (O1; was vier)
     // gebundeld, zodat het één pad per tint blijft.
     const paths = Array.from({ length: 9 }, () => []);   // O1: negen tinten van rood naar inkt (was vier), de rand van het oog vloeit
@@ -1873,7 +1799,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       coreHit = { x, y, r: coreHit.r };
     } else drawCore(now);
     drawSatellites(now, true);
-    drawZzz(now);
     drawSonar(now);
     drawSparks(now);
     drawLabels();
