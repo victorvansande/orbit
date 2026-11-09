@@ -1,0 +1,29 @@
+# Auditregister Orbit
+
+Volgt `docs/nalezing.md`. Gestart 09/11/2026 door Claude Code op `main` (`810a873`). Eén regel per bevinding; ernst: Kritiek, Hoog, Middel, Laag, Suggestie. Soort: Obj (regel of norm gebroken) of Smaak (voorstel aan Victor). Status: Open, Opgelost (commit), Aanvaard (reden), Vraag aan Victor.
+
+## Nulmeting (A0, 09/11/2026)
+
+- Code: 19 216 regels in `src/`, `index.html`, `sw.js`, `worker/` (zonder `jsqr.min.js`). Grootste: `app.js` 3821 regels / 187 KB, `styles.css` 2054 / 132 KB, `scene.js` 1974 / 100 KB, `vendor/topography.js` 1507, `fidget.js` 1207, `vendor/wayglim.js` 998, `panel.js` 846. Daarnaast `index.html` 575 regels / 50 KB.
+- Documentatie: `CLAUDE.md` 11,8 KB, `docs/kennis.md` 374 KB (42 secties), `ANTIGRAVITY_CHANGELOG.md` 143 KB; `brand/` ongeveer 13 MB aan afbeeldingen.
+- Importgraaf: klopt met `CLAUDE.md` (core niets buiten core, data enkel core, sync core en data, scene core, focus core en scene, vendor dynamisch via `import()` of `<script>`).
+- ESLint: 1 fout (Cloudflare-global in de Worker, geen echte fout), 13 waarschuwingen (8 bekende in `app.js`, zie A10). `node --check`: alles in orde.
+- Open punten uit de Overdracht: bijna alles is "Victor kijkt na op pc en gsm"; geen open technische taak. Inhoudelijk open: titel met veel labels (P2-4, voorstel), oogjes van de kern (O1 tot O4), F2 tot F4 (fidgets, Victor kiest), werkt `workers.dev` op het werknetwerk.
+
+## Bevindingen
+
+| ID | Titel | Ernst | Soort | Waar | Bewijs | Gevolg | Voorstel | Status |
+|---|---|---|---|---|---|---|---|---|
+| A0-001 | Overdracht in `CLAUDE.md` niet in volgorde | Laag | Obj | `CLAUDE.md`, Overdracht | Regels van 09/11 staan tussen die van 08/11 ("nieuwste onderaan") | Een sessie leest de stand verkeerd | Chronologisch zetten bij de herstructurering (klein) | Open |
+| A0-002 | De nalezing zelf staat niet in `docs/kennis.md` | Laag | Obj | `docs/kennis.md` | `grep nalezing.md` geeft 0 | Volgende sessie vindt de audit niet | Sectie Audit 09/11 met verwijzing naar het register (klein) | Open |
+| A7-001 | Geen Content Security Policy | Suggestie | Obj | `index.html` kop | Geen `<meta http-equiv="Content-Security-Policy">`; GitHub Pages zet geen CSP-header | Een toekomstig XSS-lek heeft geen tweede verdedigingslinie | CSP-meta met `default-src 'self'`, fonts, weer, sync, `blob:`/`data:` voor beelden; de inline opstartwacht met een hash (middel) | Open |
+| A7-002 | Geen misbruikgrens op de sync-server | Laag | Obj | `worker/src/index.js` | Geen limiet op aantal verzoeken per kanaal of IP; enkel `MAX_BYTES` 512 KB per bericht | Wie een kanaal kent (hash van de code) kan het volschrijven of de 20 versies wegduwen; zonder code onmogelijk te raden (32 hex) | Melden; aanpassen vraagt een deploy (niet in deze opdracht). Eventueel Cloudflare-regel op IP (Victor) | Vraag aan Victor |
+| A7-003 | Elke push in `worker/` deployt meteen | Laag | Obj | `.github/workflows/sync-worker.yml` | `on: push` op `main` met pad `worker/**` | Een auditwijziging in `worker/` zou ongevraagd deployen | In deze opdracht niets in `worker/` committen; regel opnemen in de Valkuilen (klein) | Open |
+| A7-004 | Lichte vertekening in de synccode | Suggestie | Obj | `src/sync/sync.js:24` | `b % 31` op een byte: tekens 2 tot A komen 9/256 in plaats van 8/256 voor | Entropie ongeveer 79 in plaats van 79,3 bits; praktisch geen risico | Aanvaarden (bestaande codes moeten geldig blijven) | Aanvaard (verwaarloosbaar, compatibiliteit) |
+| A7-005 | Wat het toestel verlaat staat nergens voor de gebruiker | Suggestie | Obj | `src/focus/weather.js`, `index.html` | Locatie (3 decimalen, ongeveer 100 m) naar Open-Meteo en BigDataCloud als de locatie al toegestaan is; IP naar Google Fonts; versleutelde lijst naar Cloudflare. Niet in de Uitleg | Gebruiker weet niet wat gedeeld wordt | Eén zin in de Uitleg of in Instellingen onder Koppelen (tekst: Smaak) | Vraag aan Victor |
+| A10-001 | Overgang van de zandlopertijden negeert minder beweging | Laag | Obj | `src/styles.css:943` en `:951` | `@media (prefers-reduced-motion) { .timer-row { transition: none } }` staat vóór de basisregel `.timer-row { transition: opacity .25s, transform .25s }`, die wint | Bij minder beweging schuift de rij toch | Media query na de basisregel (klein) | Open |
+| A10-002 | Twee media queries vóór de basisregel van het bakje | Laag | Obj | `src/styles.css:742` (`.fidget`) en `:807` (`::before`), basis op `:754` en `:850` | Geen eigenschap botst nu, wel tegen de regel in `CLAUDE.md` | Valkuil bij een volgende wijziging | Basisregels vóór de media queries zetten (klein) | Open |
+| A10-003 | Dode exports | Laag | Obj | `recap.js:216 RECAP_DAY`, `deadline.js:52 REPEATS`, `mark.js:8 INTEGRATED` | Nergens gebruikt, ook niet in hun eigen bestand | Ruis | Weghalen (klein) | Open |
+| A10-004 | Ongebruikte variabelen | Laag | Obj | `life.js:80 reducedMotion`, `panel.js:460,466 w,h`, `app.js:68 demo` | ESLint `no-unused-vars` | Ruis; `life.js` vangt `reducedMotion` maar doet er niets mee | Weghalen; nagaan of Leven bij minder beweging stil hoort te staan (klein) | Open |
+| A10-005 | Gelijke hulpjes in vier of meer modules | Laag | Obj | `clamp` (fidget, breakout, scene, turn), `smoothstep` (glass, timer, fx, scene), `rgba` (breakout, panel, recap, snake; `config.js` exporteert er al een), `hexRgb` (breakout, panel, fidget) | grep | Dubbele code | `rgba` uit `config.js` hergebruiken, `clamp`, `smoothstep`, `hexRgb` naar `src/core/` (middel) | Open |
+| A10-006 | `app.js` te groot | Middel | Obj | `src/app.js` 3821 regels | `CLAUDE.md`: nieuwe functies niet in `app.js`; een sessie leest er telkens grote stukken van | Tokens, overzicht | Opsplitsen per domein (toestemming in de opdracht; groot) | Open |
