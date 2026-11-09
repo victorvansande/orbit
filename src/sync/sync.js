@@ -48,7 +48,9 @@ export function mergeStates(a, b) {
   for (const t of [...(a.tasks || []), ...(b.tasks || [])]) {
     if (!t || typeof t.id !== 'string') continue;   // beschadigd bericht: overslaan in plaats van de sync te laten vastlopen
     const cur = byId.get(t.id);
-    if (!cur || (t.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(t.id, t);
+    // gelijk tijdstip: op beide toestellen dezelfde keuze, anders blijven ze verschillen (audit A5-005)
+    const tu = t.updatedAt || 0, cu = cur ? cur.updatedAt || 0 : 0;
+    if (!cur || tu > cu || (tu === cu && JSON.stringify(t) > JSON.stringify(cur))) byId.set(t.id, t);
   }
   const done = {};
   for (const src of [a.done, b.done]) for (const [id, t] of Object.entries(src || {})) if (Number.isFinite(t) && !id.startsWith('handmatig-')) done[id] = Math.max(done[id] || 0, t);
