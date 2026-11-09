@@ -177,6 +177,20 @@ try {
   savedAtStart = Number(localStorage.getItem(SAVED_KEY) || 0);
   lsEmptyAtStart = localStorage.getItem(STORAGE_KEY) === null;
 } catch { /* opslag geblokkeerd (bv. privévenster): de app werkt verder met de reservekopie */ }
+// Wat loadTasks niet kan lezen, verdwijnt niet zonder spoor (audit 09/11/2026, A5-002 en A5-003): een onleesbare lijst
+// telt als leeg, zodat de reservekopie in IndexedDB haar terugbrengt; losse taken die niet kloppen (bv. van een nieuwere
+// versie of beschadigd) gaan eerst met de hele lijst in een momentopname.
+const lsBrokenAtStart = (() => {
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch { return false; }
+  if (raw === null) return false;
+  let data;
+  try { data = JSON.parse(raw); } catch { return true; }
+  if (!Array.isArray(data)) return true;
+  const objs = data.filter(t => t && typeof t === 'object');
+  if (objs.some(t => !isTask(t))) snapshot(objs, 'invalid');
+  return false;
+})();
 
 let gone = loadGone();
 let tasks = loadTasks();
@@ -201,7 +215,7 @@ let feats = loadFeats();                          // prestaties: logboek, ontgre
 if (backfill(feats, archive)) saveFeats(feats);   // wat al in het archief zat, telt mee
 if (purge(feats, isFiller)) saveFeats(feats);      // opgeruimde voorbeeldtaken en testblokken van de zandloper tellen niet (03/11/2026)
 applyDeadlines();
-saveTasks({ notify: false });
+if (!lsBrokenAtStart) saveTasks({ notify: false });   // onleesbaar: niets overschrijven voor de reservekopie gelezen is
 // Vraag de browser om de opslag niet op te ruimen als er plaats tekort is
 navigator.storage?.persist?.().catch(() => {});
 
@@ -209,7 +223,7 @@ navigator.storage?.persist?.().catch(() => {});
 // kopie taken heeft, dan worden de taken samengevoegd. Er verdwijnt niets: samenvoegen voegt enkel toe.
 mirrorAtStart.then(m => {
   if (!m || !Array.isArray(m.tasks) || !m.tasks.length) return;
-  if (!lsEmptyAtStart && (m.savedAt || 0) <= savedAtStart) return;
+  if (!lsEmptyAtStart && !lsBrokenAtStart && (m.savedAt || 0) <= savedAtStart) return;
   const local = { tasks: realTasks(), gone };
   const merged = mergeStates(local, { tasks: m.tasks.filter(isTask), gone: m.gone || {} });
   if (sameState(merged, local)) return;

@@ -45,7 +45,8 @@ export function mergeStates(a, b) {
   const gone = { ...a.gone };
   for (const [id, t] of Object.entries(b.gone || {})) gone[id] = Math.max(gone[id] || 0, t);
   const byId = new Map();
-  for (const t of [...a.tasks, ...(b.tasks || [])]) {
+  for (const t of [...(a.tasks || []), ...(b.tasks || [])]) {
+    if (!t || typeof t.id !== 'string') continue;   // beschadigd bericht: overslaan in plaats van de sync te laten vastlopen
     const cur = byId.get(t.id);
     if (!cur || (t.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(t.id, t);
   }
@@ -79,7 +80,7 @@ export function mergeStates(a, b) {
 // en het logboek gelijk is
 export function sameState(a, b) {
   const sig = s => JSON.stringify([
-    s.tasks.map(t => `${t.id}:${t.updatedAt || 0}`).sort(),
+    (s.tasks || []).filter(Boolean).map(t => `${t.id}:${t.updatedAt || 0}`).sort(),
     Object.keys(s.gone || {}).sort(),
     Object.entries(s.done || {}).map(([id, t]) => `${id}:${t}`).sort(),
     s.doneReset || 0,
