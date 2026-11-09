@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: scores van de spelletjes (Slang, Breakout, en elke toekomstige fidget via `GAMES` in `src/data/scores.js`) gaan mee in sync, export en import; samenvoegen verliest nooit een score. Open: Victor speelt op twee toestellen en kijkt of de scores gelijk lopen.
 - 08/11/2026, Claude Code: Plasma enkel nog als plaat; reactie op muis en vinger zoals een echte plasmaplaat (overslaan naar de vinger, nooit in het niets eindigen). Open: Victor probeert het op pc en gsm.
 - 08/11/2026, Claude Code: op gsm staat de rang links onder de teller (plaats van Instellingen), lege ruimte onderaan weg (dubbele veilige zone). Open: Victor kijkt het na op zijn iPhone.
 - 08/11/2026, Claude Code: taakrij: titel vervaagt pas vlak voor het icoon, vegen enkel met vinger of pen, dode code weg. Open: Victor kijkt op pc en gsm.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 08/11/2026, Claude Code: focus op gsm: in stilte zakt de quote tot de basislijn van de zandloper, terug omhoog als de knoppen terugkomen. Dubbele punt bevestigd terug op iPhone. Open: Victor kijkt op gsm.
 - 09/11/2026, Claude Code: bakje schaalbaar op desktop (greepje linksboven, verhouding vast, meer inhoud; Breakout en Paneel zoomen); water blijft rustig op elke maat, lava gevuld (shader had maar 16 plaatsen). Open: Victor kijkt of de grens (niet over de ring Maand, op 1440 × 900 tot 1,25) goed voelt.
 - 09/11/2026, Claude Code: logo op kleine maat (topbar, Uitleg, maandwissel) gebruikt de kleine tekening uit het merk (A, gekozen door Victor): staart niet meer rafelig. Open: Victor kijkt op pc en gsm.
+- 09/11/2026, Claude Code: zandloper: het gevallen zand ligt op de zichtbare bodem (niet meer in de vervaagde onderste rijen). Open: Victor kijkt.

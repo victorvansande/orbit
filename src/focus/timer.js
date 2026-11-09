@@ -167,6 +167,9 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
     // onder: eerst een smal hoopje in het midden dat breder wordt tot het de wanden raakt, pas daarna stijgt het
     // (eerst vulde de onderste rij meteen over de hele breedte); hoogte van het zand in px boven de bodem, per afstand dx
     const A = (1 - q) * vol, Rb = halfAt(1), Ch = Math.min(Rb * 0.7, bulb * 0.4), slope = Ch / Rb;
+    // de zichtbare bodem: de punten vervagen over rimW puntafstanden naar de onderkant, dus ligt de bodem die je ziet
+    // halverwege die zone; het zand ligt daarop (Victor, 09/11/2026: het hoopje animeerde onder de onderste rand)
+    const floor = sp * rimW * 0.5;
     let sandAt;
     if (A < Rb * Ch) { const r = Math.sqrt(A / slope); sandAt = dx => slope * (r - dx); }
     else { const L = (1 - levelFor(area[STEPS] - (A - Rb * Ch))) * bulb; sandAt = dx => Math.min(bulb, L + Ch * (1 - dx / Rb)); }
@@ -195,7 +198,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
         // hoeveel zand er op deze plek is (0..1), met een zacht verloop aan het oppervlak, en hoe diep onder het oppervlak
         let f, depth;
         if (up) { const d = (uTop - dip * k * k - u) * bulb; f = smooth(-soft, soft, d); depth = d / bulb; }
-        else { const d = sandAt(dx) - (bot - y); f = smooth(-soft, soft, d); depth = d / bulb; }
+        else { const d = sandAt(dx) - (bot - floor - y); f = smooth(-soft, soft, d); depth = d / bulb; }
         let r = sp * (dot0 + 0.39 * f) * (0.5 + 0.5 * edge);
         // volume, zoals de kern: grotere punten in het midden, kleiner naar de wand en naar het oppervlak
         if (f > 0.05) r *= (0.74 + 0.26 * Math.sqrt(k)) * (0.82 + 0.18 * smooth(0, 0.25, depth));
@@ -206,7 +209,7 @@ export function createTimer(box, { reducedMotion, tx, onDone = () => {}, onChang
     }
     // geen aparte puntjes meer in de hals: de twee helften raken elkaar (dat kolommetje oogde vreemd)
     if (flowing) {
-      const end = bot - Math.max(0, sandAt(0)), drop = Math.max(4, end - neckTop);
+      const end = bot - floor - Math.max(0, sandAt(0)), drop = Math.max(4, end - neckTop);
       const fall = Math.sqrt(2 * drop / GRAV) * 1000, t = still ? 0 : now, last = Math.floor(t / EVERY);
       for (let i = last; i > last - (fall + LAND) / EVERY - 1; i--) {
         if (rnd(i, 9) > KEEP) continue;
