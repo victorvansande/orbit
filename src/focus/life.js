@@ -1,14 +1,16 @@
 /* ---- Conway's Game of Life in het bakje van de focusmodus ---- */
-// 100% werkend cellulair automaat op een toroïdaal raster (60 × 42 cellen).
+// 100% werkend cellulair automaat op een toroïdaal raster (60 × 42 cellen, meer in een groter bakje).
 // B3/S23 regels: sterft bij onder-/overpopulatie, leeft bij 2 of 3 buren, ontstaat bij exact 3.
 // Zachte bioluminescente nagloed, anti-stagnatiemotor zodat het scherm nooit vastloopt,
 // en volledige interactie: tekenen met de muis/vinger, tikken om patronen (gliders, pulsars, acorns)
 // te planten, en een knopje onder het bakje om door iconische werelden te wisselen.
 
-const COLS = 60, ROWS = 42;
-const W = 325.6, H = 226.8;
-const CW = W / COLS, CH = H / ROWS;
-const CELLS = COLS * ROWS;
+// 60 × 42 cellen in het basisbakje (325,6 × 226,8); een groter bakje krijgt meer cellen van dezelfde maat
+let COLS = 60, ROWS = 42, W = 325.6, H = 226.8, CW = W / COLS, CH = H / ROWS, CELLS = COLS * ROWS;
+function setField(w, h) {
+  COLS = Math.round(w / (325.6 / 60)); ROWS = Math.round(h / (226.8 / 42));
+  W = w; H = h; CW = W / COLS; CH = H / ROWS; CELLS = COLS * ROWS;
+}
 const STEP_MS = 110;   // 9 generaties per seconde, rustig en boeiend
 
 // Beroemde patronen (coördinaten relatief t.o.v. middelpunt)
@@ -75,7 +77,8 @@ function place(grid, coords, cx, cy) {
   }
 }
 
-export function createLife({ reducedMotion, accent, onPreset }) {
+export function createLife({ reducedMotion, accent, onPreset, size }) {
+  if (size) setField(size.w, size.h);
   let cv = null, g = null;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
 

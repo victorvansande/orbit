@@ -61,7 +61,8 @@ function phosphor(hex) {
 }
 
 // scores: { load, save } uit src/data/scores.js (via het bakje), gedeeld tussen gekoppelde toestellen
-export function createBreakout({ reducedMotion, accent, scores }) {
+// zoom: groter bakje = zelfde levels, groter getekend (de opbouw is op één maat ontworpen)
+export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
   const loadTop = () => (scores?.load()?.top || []).slice(0, 5);
   const touch = matchMedia('(hover: none)');
   let cv = null, g = null, tube = null, tg = null, bloom = null, bg = null, pat = null, dpr = 1, lastNow = 0, t = 0;
@@ -383,11 +384,11 @@ export function createBreakout({ reducedMotion, accent, scores }) {
         const l = Object.assign(document.createElement('link'), { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=VT323&display=swap' });
         l.dataset.vt323 = ''; document.head.append(l);
       }
-      dpr = Math.min(2, window.devicePixelRatio || 1);
+      dpr = Math.min(2, window.devicePixelRatio || 1) * zoom;
       cv = document.createElement('canvas');
       cv.className = 'panel-canvas'; cv.setAttribute('aria-hidden', 'true');
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-      cv.style.width = `${W}px`; cv.style.height = `${H}px`;
+      cv.style.width = `${W * zoom}px`; cv.style.height = `${H * zoom}px`;
       el.append(cv);
       g = cv.getContext('2d');
       tube = document.createElement('canvas'); tube.width = cv.width; tube.height = cv.height; tg = tube.getContext('2d');

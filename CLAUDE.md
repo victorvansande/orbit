@@ -70,7 +70,7 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 ## Technische vaste punten
 
-- Fidgets in het bakje (`src/focus/fidget.js`, `MODES`): soorten met `own: true` krijgen `init`, `mount(el)`, `unmount`, `frame(now)`, `move`/`drag`/`down`/`up`/`tap(p)`, `leave`, `recolor`, optioneel `onDark`, `busy` (keuzerij wijkt), `next` (pijltje, `hasPresets`). Coördinaten 325,6 × 226,8. Kleurkiezer via `accent()`. Houdt een fidget iets bij (scores, records): nooit eigen localStorage, maar `scores.game(naam)` uit `src/data/scores.js` (regel in `GAMES`, vorm `{top}` of `{best, at}`, `reload()`), dan gaat het mee in sync, export en import.
+- Fidgets in het bakje (`src/focus/fidget.js`, `MODES`): soorten met `own: true` krijgen `init`, `mount(el)`, `unmount`, `frame(now)`, `move`/`drag`/`down`/`up`/`tap(p)`, `leave`, `recolor`, optioneel `onDark`, `busy` (keuzerij wijkt), `next` (pijltje, `hasPresets`). Basismaat 325,6 × 226,8, maar het bakje is schaalbaar (desktop): een soort krijgt `size {w, h}` en toont meer inhoud met elementen van dezelfde maat, of `zoom` als de opbouw vast is (Breakout, Paneel); nooit een vaste maat aannemen. Kleurkiezer via `accent()`. Houdt een fidget iets bij (scores, records): nooit eigen localStorage, maar `scores.game(naam)` uit `src/data/scores.js` (regel in `GAMES`, vorm `{top}` of `{best, at}`, `reload()`), dan gaat het mee in sync, export en import.
 - Valkuilen (volledig in `docs/kennis.md`, sectie Valkuilen): sticky kop werkt enkel met `body{overflow-x:clip}`; `left:50%` + `translate(-50%)` krijgt halve breedte (gebruik `width: max-content`); canvasstaat (`textAlign`, `font`, `globalAlpha`) altijd terugzetten; elke localStorage-toegang in try/catch; scrollwacht `guardScroll` bij open vensters.
 - Lokaal testen: `python3 -m http.server 3000` (modules werken niet via `file://`). Testbrowser staat op Engels: zet `priority-orbit.lang.v1 = 'nl'` voor Nederlandse tekst; `priority-orbit.intro.v1 = 'gezien'` om de Uitleg over te slaan.
 
@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: F2 Slinger, F3 Zandtafel, F4 Inktdruppel uitgewerkt (artifact "Orbit fidgets" https://claude.ai/artifact/EsaMSw2oYMTvskMbdAGGsC, `ontwerp/fidgets/`). Open: Victor kiest.
 - 08/11/2026, Claude Code: op vraag van Victor (tokens) CLAUDE.md teruggebracht tot deze kern; de volledige vorige inhoud staat letterlijk in `docs/kennis.md`. Open: titel met veel labels (P2-4, eerst voorstellen), oogjes van de kern (O1 tot O4).
 - 08/11/2026, Claude Code: scores van de spelletjes (Slang, Breakout, en elke toekomstige fidget via `GAMES` in `src/data/scores.js`) gaan mee in sync, export en import; samenvoegen verliest nooit een score. Open: Victor speelt op twee toestellen en kijkt of de scores gelijk lopen.
 - 08/11/2026, Claude Code: Plasma enkel nog als plaat; reactie op muis en vinger zoals een echte plasmaplaat (overslaan naar de vinger, nooit in het niets eindigen). Open: Victor probeert het op pc en gsm.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 08/11/2026, Claude Code: fidgetmenu scrolt (zachte randen, wiel en vegen) en heeft zijn blur terug. Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: logo: in rust enkel de komeet, bij aanwijzen of tikken schuift 'rbit' eruit (losse O weg). Open: Victor kijkt of hij in rust liever het hele woord ziet.
 - 08/11/2026, Claude Code: focus op gsm: in stilte zakt de quote tot de basislijn van de zandloper, terug omhoog als de knoppen terugkomen. Dubbele punt bevestigd terug op iPhone. Open: Victor kijkt op gsm.
+- 09/11/2026, Claude Code: bakje schaalbaar op desktop (greepje linksboven, verhouding vast, meer inhoud; Breakout en Paneel zoomen). Open: Victor kijkt of de grens (niet over de ring Maand, op 1440 × 900 tot 1,25) goed voelt.

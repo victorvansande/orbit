@@ -11,8 +11,9 @@
 // Loslaten: ze slaat terug naar de rand. Kleur uit de kleurkiezer, anders rood naar amber.
 // Tekenen: de ontladingen als grijswaarden op een klein 2D-canvas (energie), daarna in WebGL per bolletje gekleurd.
 
-const W = 325.6, H = 226.8;
-const EW = 326, EH = 227;            // energie op schermresolutie (CSS-pixels); de bolletjes lezen per bolletje één waarde
+// maat van het bakje (groeit mee, de bolletjes houden hun maat: een groter bakje heeft er meer); basis 325,6 × 226,8
+let W = 325.6, H = 226.8;
+let EW = 326, EH = 227;              // energie op schermresolutie (CSS-pixels); de bolletjes lezen per bolletje één waarde
 const BEAD = 2.4;                    // afstand tussen bolletjes in CSS-pixels
 const SEG = 44;                      // punten per ontlading
 const DEFAULT = [[0.07, 0.024, 0.04], [0.29, 0.04, 0.063], [0.85, 0.14, 0.1], [1, 0.58, 0.25], [1, 0.95, 0.85]];   // bijna zwart, donkerrood, rood, amber, warm wit
@@ -70,7 +71,9 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
 }`;
 
-export function createPlasma({ reducedMotion, ramp }) {
+export function createPlasma({ reducedMotion, ramp, size }) {
+  if (size) { W = size.w; H = size.h; EW = Math.ceil(W); EH = Math.ceil(H); }
+  const grow = W / 325.6;   // meer ontladingen en draadjes in een groter bakje
   let cv = null, gl = null, prog = null, tex = null, loc = {};
   const ec = document.createElement('canvas'); ec.width = EW; ec.height = EH;
   const eg = ec.getContext('2d');
@@ -93,7 +96,7 @@ export function createPlasma({ reducedMotion, ramp }) {
     return { s: rnd(lo, hi), len: rnd(0.1, 0.32), ang: rnd(0.35, 0.95) * (Math.random() < 0.5 ? -1 : 1), born: t - rnd(0, 2), life: rnd(0.9, 2.6), seed: rnd(0, 999) };
   }
   function setup() {
-    const n = 11;
+    const n = Math.round(11 * grow);
     fil = Array.from({ length: n }, (_, i) => ({
       base: (i / n) * Math.PI * 2 + rnd(-0.25, 0.25),
       ph1: rnd(0, 99), ph2: rnd(0, 99), k1: rnd(0.6, 1.2), k2: rnd(0.8, 1.6),
@@ -101,7 +104,7 @@ export function createPlasma({ reducedMotion, ramp }) {
       br: Array.from({ length: 3 }, () => branch()),
     }));
     // fijne draadjes: zwak en dun, zoals het web op de derde foto; ze volgen niet de vinger
-    hair = Array.from({ length: 12 }, () => ({ base: rnd(0, Math.PI * 2), ph: rnd(0, 99), k: rnd(0.5, 1.3), seed: rnd(0, 999), len: rnd(0.55, 1) }));
+    hair = Array.from({ length: Math.round(12 * grow) }, () => ({ base: rnd(0, Math.PI * 2), ph: rnd(0, 99), k: rnd(0.5, 1.3), seed: rnd(0, 999), len: rnd(0.55, 1) }));
   }
 
   // pad van a naar b, kronkelend langs de ruis (amp = deel van de lengte), terug als lijst punten.

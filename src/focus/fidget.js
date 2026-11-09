@@ -4,15 +4,25 @@
 // regels: sleep het bakje en het volgt je, kantelt mee en veert terug, en de inhoud voelt die schok; de kleur volgt hoe hard er iets beweegt, van grijze inkt
 // naar het rode korrelverloop van de Bierfeesten. Loopt alleen zolang de focusmodus aan staat en het tabblad zichtbaar is.
 
-const COLS = 44, ROWS = 18;      // het hele afgeronde vak, ook onder de keuzerij (Victor: geen kader in het kader)
+// Schaalbaar met vaste verhouding (Victor, 09/11/2026: "niet gewoon inzoomen, als het vergroot komt er bv. ook meer lava"):
+// de tekens houden hun maat, een groter bakje heeft er meer. Basis 44 × 18 tekens = 325,6 × 226,8 px.
+const BASE_COLS = 44, BASE_ROWS = 18;
 const CW = 7.4, CH = 12.6;        // maat van één teken (px), Geist Mono 11 px
-const W = COLS * CW, HH = ROWS * CH;
-const CELLS = COLS * ROWS;
+const BASE_W = BASE_COLS * CW;    // 325,6: de maat waarop Breakout en Paneel ontworpen zijn (die zoomen mee)
+const MAX_SCALE = 2;
+let COLS = BASE_COLS, ROWS = BASE_ROWS, W = COLS * CW, HH = ROWS * CH, CELLS = COLS * ROWS;
+// het hele afgeronde vak, ook onder de keuzerij (Victor: geen kader in het kader)
+function setGrid(k) {
+  ROWS = Math.round(BASE_ROWS * k); COLS = Math.round(ROWS * BASE_COLS / BASE_ROWS);
+  W = COLS * CW; HH = ROWS * CH; CELLS = COLS * ROWS;
+}
+const area = () => CELLS / (BASE_COLS * BASE_ROWS);   // hoeveel keer de oppervlakte van het basisbakje
 const TOP = 34, TOP_ROWS = 3;     // de keuzerij ligt bovenop: tekens beginnen eronder, lava hangt eronder
 const STEP_MS = 1000 / 60;
 const LEVELS = 14;                // kleurstappen in het verloop
 const GRAVITY = 0.16;             // px per stap² (water)
 const MODE_KEY = 'priority-orbit.fidget.v1';
+const SIZE_KEY = 'priority-orbit.fidgetsize.v1';   // vergroting per toestel (1 tot 2), enkel op desktop
 const COLOR_KEY = 'priority-orbit.fidgetcolor.v1';
 // Eigen kleur voor alle soorten (kleurkiezer in het bakje), of null: dan heeft elke soort zijn eigen standaardkleuren.
 // Elke soort maakt er zijn eigen verloop uit (zie accentRamp).
@@ -36,7 +46,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 /* ---- Water: deeltjesvloeistof (dubbele dichtheidsrelaxatie, Clavet e.a. 2005) ---- */
 // Het oppervlak blijft waterpas als het bakje kantelt; bewegen erover roert, een tik geeft een plons.
 function water() {
-  const N = 840, H = 13;
+  const N = Math.round(840 * area()), H = 13;   // meer water in een groter bakje
   const REST = 2.2, K = 0.06, K_NEAR = 0.15;   // rustdichtheid en stijfheid (dimensieloos, schaalt met H)
   const SIGMA = 0.035, BETA = 0.01;            // viscositeit: laag, zodat het water vloeit en nadeint zonder te spatten
   const x = new Float32Array(N), y = new Float32Array(N), px = new Float32Array(N), py = new Float32Array(N);
@@ -243,7 +253,7 @@ const hexRgb = v => {
 // en stijgt traag op, koelt bovenaan af en zakt terug. Bollen die elkaar raken, kleven even samen (veld Σ r²/d²) en
 // scheuren weer los. Kantelen of slepen doet alles meeklotsen; de aanwijzer is een warmtebron, een tik blaast uiteen.
 function lava() {
-  const COUNT = 13, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
+  const COUNT = Math.round(13 * area()), WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
   const balls = [];
   const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, vx: 0, vy: 0, r: 0, on: false };
   let t = 0, intro = 1, prog = null, color = [1, 1, 1], colorAt = -1e9;
@@ -622,11 +632,17 @@ const hasGL2 = () => {
 };
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
+const ZOOMED = ['breakout', 'panel'];   // vaste opbouw: zoomen mee in plaats van meer inhoud
 
 // scores: opslag per spel (src/data/scores.js, createScoreStore), zodat highscores mee synchroniseren
-export function createFidget(box, { reducedMotion, label = m => m, getData, scores }) {
+// fits(w, h): past een bakje van die maat op het scherm (niet over de scène, ruimte voor de zandloper erboven); van app.js
+export function createFidget(box, { reducedMotion, label = m => m, getData, scores, fits = () => true }) {
   const cv = box.querySelector('canvas');
   const dpr = Math.min(2, devicePixelRatio || 1);
+  const desktopMQ = matchMedia('(min-width: 1000px)');
+  let scale = 1;
+  try { const v = parseFloat(localStorage.getItem(SIZE_KEY)); if (v >= 1 && v <= MAX_SCALE) scale = v; } catch { /* geen opslag */ }
+  if (desktopMQ.matches) setGrid(scale);
   cv.width = Math.round(W * dpr); cv.height = Math.round(HH * dpr);
   cv.style.width = `${W}px`; cv.style.height = `${HH}px`;
   const g = cv.getContext('2d');
@@ -648,7 +664,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     }
     return gl;
   };
-  const chr = new Array(CELLS).fill(''), want = new Float32Array(CELLS), agit = new Float32Array(CELLS), pos = new Float32Array(CELLS * 2);
+  let chr = new Array(CELLS).fill(''), want = new Float32Array(CELLS), agit = new Float32Array(CELLS), pos = new Float32Array(CELLS * 2);
   let palette = null, paletteAt = 0;
   let raf = 0, running = false, acc = 0, last = 0;
   let press = null;   // het bakje staat vast (Victor), en sinds 03/11/2026 ook geen duwtje meer op de inhoud
@@ -660,18 +676,18 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     if (!modes[modeName]) {
       // paneel: dertien schermen, krijgt de toestand van Orbit en de kleur van de kleurkiezer (fosfor)
       if (modeName === 'panel') {
-        modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen });
+        modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen, zoom: W / BASE_W });
       } else if (modeName === 'life') {
-        modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen });
+        modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen, size: { w: W, h: HH } });
       } else if (modeName === 'plasma') {
         // plasmaplaat (Victor, 08/11/2026): enkel de plaat over het hele vak, kleur uit de kleurkiezer
-        modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null) });
+        modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null), size: { w: W, h: HH } });
       } else if (modeName === 'breakout') {
         // breakout B4 Fosfor (Victor, 08/11/2026): levels, levens, powerups, highscores; fosfor uit de kleurkiezer
-        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, scores: scores?.game('breakout') });
+        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, scores: scores?.game('breakout'), zoom: W / BASE_W });
       } else if (modeName === 'snake') {
         // slang in stippen (Victor, 08/11/2026, F1): raster van de matrixklok, kleur uit de kleurkiezer
-        modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT, scores: scores?.game('snake') });
+        modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT, scores: scores?.game('snake'), size: { w: W, h: HH } });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -975,7 +991,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   const local = e => {
     const el = [cv, cvGL, own].find(node => !node.hidden) || cv;
     const r = el.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / (r.width || 1) * W, y: (e.clientY - r.top) / (r.height || 1) * HH };
+    const z = ZOOMED.includes(modeName) ? W / BASE_W : 1;   // breakout en paneel rekenen in hun basismaat
+    return { x: (e.clientX - r.left) / (r.width || 1) * W / z, y: (e.clientY - r.top) / (r.height || 1) * HH / z };
   };
   // een tik is indrukken en loslaten zonder veel te bewegen; bewegen (ook ingedrukt) roert in de inhoud
   box.addEventListener('pointerdown', e => {
@@ -1071,7 +1088,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     if (box.classList.contains('is-open')) updateMobileScale();
   });
 
-  matchMedia('(min-width: 1000px)').addEventListener('change', e => {
+  desktopMQ.addEventListener('change', e => {
+    applySize(e.matches ? Math.min(scale, maxScale()) : 1);   // op gsm altijd de basismaat (het venster schaalt zelf)
     if (e.matches) {
       box.classList.remove('is-open');
       if (backdrop) backdrop.hidden = true;
@@ -1081,6 +1099,96 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     } else {
       stop();
     }
+  });
+
+  /* ---- Grootte (enkel desktop) ---- */
+  // Een greepje linksboven: slepen toont een omlijning van de nieuwe maat (verhouding vast), loslaten bouwt de inhoud
+  // opnieuw op met meer (of minder) tekens, lava, cellen. Het bakje blijft rechtsonder verankerd.
+  function applySize(k) {
+    const was = mode();
+    if (was.own) was.unmount?.();
+    setGrid(k);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(HH * dpr);
+    cv.style.width = `${W}px`; cv.style.height = `${HH}px`;
+    cvGL.width = cv.width; cvGL.height = cv.height; cvGL.style.width = cv.style.width; cvGL.style.height = cv.style.height;
+    own.style.width = cv.style.width; own.style.height = cv.style.height;
+    chr = new Array(CELLS).fill(''); want = new Float32Array(CELLS); agit = new Float32Array(CELLS); pos = new Float32Array(CELLS * 2);
+    for (const m of Object.keys(modes)) delete modes[m];   // elke soort opnieuw op de nieuwe maat
+    sizeVars();
+    if (running) render(performance.now());
+  }
+  const sizeVars = () => {
+    document.documentElement.style.setProperty('--fidget-w', `${W}px`);
+    document.documentElement.style.setProperty('--fidget-h', `${HH}px`);
+  };
+  sizeVars();
+  // grootste maat die past (het bakje groeit niet over de scène, de zandloper heeft erboven ruimte)
+  const maxScale = () => {
+    let k = MAX_SCALE;
+    while (k > 1 && !fits(BASE_W * k, BASE_ROWS * CH * k)) k -= 0.05;
+    return Math.max(1, k);
+  };
+  const grip = document.createElement('button');
+  grip.type = 'button'; grip.className = 'fidget-grip';
+  grip.setAttribute('aria-label', label('resize')); grip.title = label('resize');
+  grip.innerHTML = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1 7.5 7.5 1M1 4 4 1"/></svg>';
+  const ghost = document.createElement('div');
+  ghost.className = 'fidget-ghost'; ghost.hidden = true;
+  box.after(grip); document.body.append(ghost);   // buiten het vak: binnenin staat linksboven het keuzemenu
+  let resizing = null;
+  const scaleAt = e => {
+    const r = box.getBoundingClientRect();
+    const k = Math.max((r.right - e.clientX) / BASE_W, (r.bottom - e.clientY) / (BASE_ROWS * CH));
+    return Math.min(resizing.max, Math.max(1, k));
+  };
+  const showGhost = k => {
+    const r = box.getBoundingClientRect(), w = BASE_W * k, h = BASE_ROWS * CH * k;
+    Object.assign(ghost.style, { left: `${r.right - w}px`, top: `${r.bottom - h}px`, width: `${w}px`, height: `${h}px` });
+  };
+  grip.addEventListener('pointerdown', e => {
+    if (!desktopMQ.matches) return;
+    e.preventDefault(); e.stopPropagation();
+    grip.setPointerCapture(e.pointerId);
+    resizing = { max: maxScale(), k: scale };
+    showGhost(scale); ghost.hidden = false; box.classList.add('is-resizing');
+  });
+  grip.addEventListener('pointermove', e => {
+    if (!resizing) return;
+    e.stopPropagation();
+    resizing.k = scaleAt(e); showGhost(resizing.k);
+  });
+  const endResize = e => {
+    if (!resizing) return;
+    e.stopPropagation();
+    const k = Math.round(resizing.k * 20) / 20;   // stappen van 5 %
+    resizing = null; ghost.hidden = true; box.classList.remove('is-resizing');
+    if (Math.abs(k - scale) < 0.01) return;
+    scale = k;
+    try { localStorage.setItem(SIZE_KEY, String(k)); } catch { /* geen opslag */ }
+    applySize(k);
+  };
+  grip.addEventListener('pointerup', endResize);
+  grip.addEventListener('pointercancel', endResize);
+  // toetsenbord: pijltjes maken het bakje groter of kleiner
+  grip.addEventListener('keydown', e => {
+    const d = { ArrowUp: 1, ArrowLeft: 1, ArrowDown: -1, ArrowRight: -1 }[e.key];
+    if (!d || !desktopMQ.matches) return;
+    e.preventDefault(); e.stopPropagation();
+    const k = Math.min(maxScale(), Math.max(1, Math.round((scale + d * 0.1) * 20) / 20));
+    if (k === scale) return;
+    scale = k;
+    try { localStorage.setItem(SIZE_KEY, String(k)); } catch { /* geen opslag */ }
+    applySize(k);
+  });
+  // past het niet meer (venster kleiner gemaakt), dan krimpt het bakje mee; nooit groter dan gekozen
+  let fitTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(() => {
+      if (!desktopMQ.matches) return;
+      const k = Math.min(scale, maxScale());
+      if (Math.abs(k * BASE_ROWS - ROWS) >= 1) applySize(k);
+    }, 250);
   });
 
   return {

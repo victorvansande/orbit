@@ -731,11 +731,12 @@ function phosphor(hex) {
   return { hi: mixRgb(col, [255, 248, 232], 0.55), mid: col, lo: mixRgb(col, [0, 0, 0], 0.3), bg: mixRgb([10, 10, 13], col, 0.05) };
 }
 
-export function createPanel({ reducedMotion, accent, getData, onScreen }) {
+// zoom: groter bakje = zelfde schermen, groter getekend
+export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1 }) {
   let idx = 0;
   try { const v = Number(localStorage.getItem(PANEL_KEY)); if (Number.isInteger(v) && v >= 0 && v < SCREENS.length) idx = v; } catch { /* geen opslag */ }
   let lastNow = 0, cv = null, g = null, off = null, og = null, small = null, sg = null, pat = null, maker = null, sig = '', dataAt = 0, lastAccent;
-  const dpr = Math.min(2, devicePixelRatio || 1);
+  const dpr = Math.min(2, devicePixelRatio || 1) * zoom;
 
   function refresh(force) {
     const now = performance.now();

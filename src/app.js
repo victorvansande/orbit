@@ -2105,6 +2105,18 @@ const fidget = createFidget($('fidget'), {
   reducedMotion, label: m => tx(`fidget.${m}`),
   // highscores van de spelletjes: een nieuwe score gaat meteen naar gekoppelde toestellen
   scores: createScoreStore(() => sync.changed()),
+  // past een bakje van w × h rechtsonder: de zandloper erboven houdt minstens 260 px, en het bakje mag over de buitenste
+  // ring (Ooit) schuiven maar niet over Maand en wat daarbinnen ligt (Victor, 09/11/2026: groter bakje; dringende taken
+  // blijven zichtbaar)
+  fits: (w, h) => {
+    const pad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pad')) || 24;
+    const bottom = innerHeight - 92, top = bottom - h, right = innerWidth - pad, left = right - w;
+    if (top - 14 - 260 < 24) return false;
+    const ring = scene.ring();
+    if (!ring) return true;
+    const nx = Math.min(Math.max(ring.cx, left), right), ny = Math.min(Math.max(ring.cy, top), bottom);
+    return Math.hypot(nx - ring.cx, ny - ring.cy) >= ring.r * LEVELS[3].ring / LEVELS[4].ring + 16;
+  },
   // toestand voor het paneel (src/focus/panel.js): taken, sterren, archief, voortgang van vandaag, sync
   getData: () => {
     const from = new Date(); from.setHours(0, 0, 0, 0);

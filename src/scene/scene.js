@@ -1911,6 +1911,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const r = cam.cx - pt.x, dy = y - cam.cy;
       return Math.abs(dy) >= r ? null : cam.cx - Math.sqrt(r * r - dy * dy);
     },
+    // middelpunt en straal van de buitenste ring op het scherm (het bakje in de focus groeit niet over de binnenste ringen)
+    ring() {
+      if (!project(-EDGE, 0, 0, false)) return null;
+      return { cx: cam.cx, cy: cam.cy, r: cam.cx - pt.x };
+    },
     setSky(list, { quiet = false } = {}) {
       // wat er na de eerste keer bijkomt, is een nieuwe ster (bij het opstarten niet: dan staat de hemel er al)
       const now = performance.now();

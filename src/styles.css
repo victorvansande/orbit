@@ -757,7 +757,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* pijltje onder het bakje: volgend scherm van het paneel, heel subtiel, gecentreerd onder het vak (325,6 px breed) */
 @media (min-width: 1000px) {
   .fidget-next {
-    position: fixed; z-index: 2; right: calc(var(--pad) + 162.8px); bottom: 64px; width: 40px; height: 24px;
+    position: fixed; z-index: 2; right: calc(var(--pad) + var(--fidget-w, 325.6px) / 2); bottom: 64px; width: 40px; height: 24px;
     display: grid; place-items: center; color: var(--ink-3); cursor: pointer;
     opacity: 0; visibility: hidden; transform: translate(50%, 10px); pointer-events: none;
     transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s, color .2s var(--ease);
@@ -824,7 +824,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
    binnen het menu, met een zachte rand waar er nog meer staat (can-up, can-down via fidget.js) */
 .fidget-pop-scroll {
   position: relative; display: grid; grid-template-columns: 126px 126px; gap: 10px; align-items: start;
-  max-height: 160px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none;
+  max-height: calc(var(--fidget-h, 226.8px) - 67px); overflow-y: auto;   /* 160 px in het basisbakje, meer in een groter */ overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none;
   --fade-t: 0px; --fade-b: 0px;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
@@ -875,11 +875,28 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transition: all .15s var(--ease);
 }
 .fidget-close:hover { background: var(--line); color: var(--ink); }
+/* Grootte (Victor, 09/11/2026): greepje net buiten de hoek linksboven (binnenin staat het keuzemenu), enkel desktop en in
+   de focus; slepen toont een omlijning van de nieuwe maat, loslaten bouwt de inhoud opnieuw op (fidget.js) */
+.fidget-grip { display: none; }
+@media (min-width: 1000px) {
+  .fidget-grip {
+    display: grid; place-items: center; position: fixed; z-index: 3; width: 22px; height: 22px; padding: 0;
+    right: calc(var(--pad) + var(--fidget-w, 325.6px) - 9px); bottom: calc(92px + var(--fidget-h, 226.8px) - 9px);
+    border: 0; background: none; color: var(--ink-3); cursor: nwse-resize; opacity: 0;   /* geen visibility: zo blijft het aan te wijzen */
+    transition: opacity .25s var(--ease), color .2s var(--ease);
+  }
+  body:not(.is-focus) .fidget-grip { display: none; }
+  .fidget:hover ~ .fidget-grip, .fidget-grip:hover, .fidget-grip:focus-visible, .fidget-grip:active { opacity: 1; }
+  .fidget-grip:hover, .fidget-grip:active { color: var(--ink); }
+  .fidget-grip svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; }
+}
+.fidget-ghost { position: fixed; z-index: 3; border: 1px dashed var(--ink-3); border-radius: 16px; pointer-events: none; }
+.fidget.is-resizing { opacity: .55; }
 /* Zandloper: focustimer boven het bakje als vrije hint zonder kaart (Victor, 04/11/2026, Voorstel 1).
    Ingeklapt: klein glas (36 × 60 px) en het dunne minutencijfer (T3), exact zoals het glas buiten de focus; aanwijzen toont de bediening.
    Uitgeklapt: de zandloper groeit vrij in de ruimte boven het bakje met de stippencijfers eronder, zonder kaart erachter. */
 .timer {
-  --timer-bottom: calc(92px + 227px + 14px);
+  --timer-bottom: calc(92px + var(--fidget-h, 226.8px) + 14px);   /* het bakje kan groter (fidget.js zet --fidget-w en --fidget-h) */
   position: fixed; z-index: 2; right: var(--pad); bottom: var(--timer-bottom);
   display: flex; flex-direction: row-reverse; align-items: flex-end; gap: 10px;
   opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none;
@@ -887,7 +904,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 }
 body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 .timer.is-open:not(.is-compact) {
-  width: 326px; height: max(260px, calc(100dvh - var(--timer-bottom) - 40px));   /* tot op de hoogte van ORBIT TASKS */
+  width: var(--fidget-w, 326px); height: max(260px, calc(100dvh - var(--timer-bottom) - 40px));   /* tot op de hoogte van ORBIT TASKS */
   display: grid; grid-template-columns: 100%; grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 18px;
 }
 .timer-glass { position: relative; width: 36px; height: 60px; flex: none; min-height: 0; cursor: pointer; }

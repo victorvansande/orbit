@@ -9,9 +9,15 @@
 import { LANG } from '../core/i18n.js';
 
 
-const W = 325.6, H = 226.8;
-const S = 9, COLS = 34, ROWS = 20, TOP = 34;     // raster van 34 × 20 stippen, onder de keuzerij
-const OX = (W - (COLS - 1) * S) / 2, OY = TOP + (H - TOP - 8 - (ROWS - 1) * S) / 2;
+// raster van stippen onder de keuzerij; 34 × 20 in het basisbakje (325,6 × 226,8), een groter bakje krijgt meer stippen
+const S = 9, TOP = 34;
+let W = 325.6, H = 226.8, COLS = 34, ROWS = 20, OX = 0, OY = 0;
+function setField(w, h) {
+  W = w; H = h;
+  COLS = Math.floor((W - 28.6) / S) + 1; ROWS = Math.floor((H - TOP - 21.8) / S) + 1;
+  OX = (W - (COLS - 1) * S) / 2; OY = TOP + (H - TOP - 8 - (ROWS - 1) * S) / 2;
+}
+setField(W, H);
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', z: 'up', q: 'left' };
 const en = LANG === 'en';
@@ -36,7 +42,8 @@ function star(g, x, y, r, rot) {
 }
 
 // scores: { load, save } uit src/data/scores.js (via het bakje), gedeeld tussen gekoppelde toestellen
-export function createSnake({ reducedMotion, accent, scores }) {
+export function createSnake({ reducedMotion, accent, scores, size }) {
+  if (size) setField(size.w, size.h);
   const loadBest = () => scores?.load()?.best || 0;
   const touch = matchMedia('(hover: none)');
   let cv = null, g = null, dpr = 1, lastNow = 0, t = 0;
