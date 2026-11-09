@@ -8,6 +8,21 @@ export const LEVELS = [
   { id: 4, name: 'Maand',   ring: 134, orbit: 134, period: 16,  color: '#1F78B4', dark: '#38A0F0', size: 5,   tail: 1 },
   { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#08415C', dark: '#B3B9D6', size: 5,   tail: 1 },
 ];
+// Kleuren van de momenten (Instellingen → Kleuren, per toestel; Victor, 09/11/2026: "bolletjes geen verschillende kleuren,
+// maar gewoon verschillende tinten van het rood, NU = volledig gesatureerd rood, OOIT = minst gesatureerd"). Rood: de tint
+// van de kern, elk moment minder verzadigd en iets lichter. Wordt hier gezet, vóór elke module de kleuren leest; wisselen
+// herlaadt de pagina (zoals de taal), zodat ook scène, wiel, spelletjes en maandrecap de nieuwe tinten nemen.
+export const PALETTE_KEY = 'priority-orbit.palette.v1';
+const PALETTES = {
+  red: { color: ['#E70049', '#D0255B', '#BD4269', '#A96077', '#9B7883'], dark: ['#F0306A', '#DB517B', '#CB6C88', '#BF8295', '#B497A0'] },
+};
+export const PALETTE = (() => { try { return PALETTES[localStorage.getItem(PALETTE_KEY)] ? localStorage.getItem(PALETTE_KEY) : 'moments'; } catch { return 'moments'; } })();
+if (PALETTES[PALETTE]) LEVELS.forEach((l, i) => { l.color = PALETTES[PALETTE].color[i]; l.dark = PALETTES[PALETTE].dark[i]; });
+export function setPalette(name) {
+  if (name === PALETTE || (name !== 'moments' && !PALETTES[name])) return;
+  try { localStorage.setItem(PALETTE_KEY, name); } catch { /* geen opslag */ }
+  location.reload();
+}
 export const LEVEL_BY_ID = new Map(LEVELS.map(l => [l.id, l]));
 
 // Geeft een element beide tinten; CSS kiest via [data-tone] de juiste voor het thema

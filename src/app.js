@@ -1,5 +1,5 @@
 import { DEMO_MODE } from './core/demo.js';   // als eerste: vult in de demo de tijdelijke opslag
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode } from './core/config.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode, PALETTE, setPalette } from './core/config.js';
 import { createScene } from './scene/scene.js';
 import { createWheel } from './scene/wheel.js';
 import { createLegend } from './scene/legend.js';
@@ -2029,6 +2029,11 @@ applyTheme();
 for (const b of document.querySelectorAll('[data-lang]')) {
   b.setAttribute('aria-checked', String(b.dataset.lang === LANG));
   b.addEventListener('click', () => setLang(b.dataset.lang));
+}
+// kleuren van de momenten: vijf kleuren of tinten van het rood (wisselen herlaadt, zoals de taal)
+for (const b of document.querySelectorAll('[data-palette]')) {
+  b.setAttribute('aria-checked', String(b.dataset.palette === PALETTE));
+  b.addEventListener('click', () => setPalette(b.dataset.palette));
 }
 
 /* ---- Geluid bij afvinken (standaard uit) ---- */
