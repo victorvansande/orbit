@@ -3079,7 +3079,9 @@ $('arch-close').addEventListener('click', () => archiveDialog.close());
 archiveDialog.addEventListener('click', e => { if (e.target === archiveDialog) archiveDialog.close(); });
 
 $('arch-export').addEventListener('click', () => {
-  const data = { app: 'orbit', version: 1, exportedAt: new Date().toISOString(), tasks: realTasks(), archive, done, scores: loadScores() };
+  // alles wat de sync ook doorgeeft, behalve de zandloper (audit 09/11/2026, A5-001: prestaties en hemels ontbraken);
+  // een oudere versie leest enkel wat ze kent
+  const data = { app: 'orbit', version: 1, exportedAt: new Date().toISOString(), tasks: realTasks(), archive, done, scores: loadScores(), feats, skyCuts, archDel };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   const a = el('a');
   a.href = url;
@@ -3108,7 +3110,19 @@ $('arch-file').addEventListener('change', async e => {
       syncStars(sky, done);
     }
     if (adoptScores(data.scores)) sync.changed();
+    if (data.feats && typeof data.feats === 'object') {
+      feats = mergeFeats(feats, data.feats);
+      backfill(feats, archive); purge(feats, isFiller);
+      saveFeats(feats);
+    }
+    if (Array.isArray(data.skyCuts)) { skyCuts = cleanCuts([...skyCuts, ...data.skyCuts]); saveCuts(skyCuts); }
+    if (data.archDel && typeof data.archDel === 'object') {
+      for (const [id, t] of Object.entries(data.archDel)) if (Number.isFinite(t)) archDel[id] = Math.max(archDel[id] || 0, t);
+      saveArchDel(archDel);
+      archive = saveArchive(archive.filter(a => !archDel[a.id]));
+    }
     bringBack(list, 'import', { preferNewer: true });
+    checkFeats(false);
   } catch {
     showToast(tx('toast.badFile'));
   }
