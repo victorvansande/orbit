@@ -45,7 +45,10 @@ const ORB_SCALE = 0.85;                 // straal t.o.v. LEVELS[].size / 2
 const BURN_LIFE = 0.95;     // afvinken: duur van het opbranden van de bol (s)
 // Fijner raster (K2, Victor, 02/11/2026): 2,35 in plaats van 3,1 eenheden tussen de puntjes, puntjes 0,78 keer zo groot (CORE_DOT);
 // op gsm blijft het grove raster via CORE_MIN_PX, daar is het effect gelijk aan vroeger.
-const CORE_RMIN = 15, CORE_RMAX = 25, CORE_SPACING = 2.35, CORE_DOT = 0.78, CORE_MIN_PX = 3.6;   // C1: concentrische cirkelringen (altijd zuiver rond)
+const CORE_RMAX = 25, CORE_SPACING = 2.35, CORE_DOT = 0.78, CORE_MIN_PX = 3.6;   // C1: concentrische cirkelringen (altijd zuiver rond)
+// Vaste maat (Victor, 09/11/2026: "Maak orb niet kleiner bij weinig of minder taken"): vroeger 15 in rust tot 29 bij veel
+// dringends; nu altijd de volle maat. Dringendheid zit nog in de hartslag en de golf door de puntjes.
+const CORE_R = CORE_RMAX + 4;
 // O1 Spiegelraster (Victor, 09/11/2026, uit O1 tot O3 in ontwerp/kern/): op scherpe schermen (DPR 2) mogen de puntjes dichter
 // (2,5 px in plaats van 3,6) en tot 0,9 keer de gewone afstand, zodat een oog 2 à 3 puntjes breed wordt in plaats van 1 à 2
 const CORE_MIN_PX_SHARP = 2.5, CORE_FINE = 0.9;
@@ -141,7 +144,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let dustAmount = 0;
   // De trechter mondt uit op de rand van de kern, niet in een punt (Victor, 03/11/2026): tussen de ring Nu en de kern
   // loopt de wand naar de bodem op de straal van de kern; `coreR` volgt de kern (groter als het dringend is).
-  let coreR = CORE_RMIN;
+  let coreR = CORE_R;
   const NU_RING = LEVELS[0].ring, NU_Z = depthAt(NU_RING);
   function funnelZ(r) {
     if (r >= NU_RING) return depthAt(r);
@@ -1306,7 +1309,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const strength = Math.min(1, urgency / 2) * 0.6 + Math.min(1, urgency) * 0.4;   // 0..1
     const still = reducedMotion.matches;
     const live = Math.min(1, urgency / 0.3);                // 0 = rustig, 1 = Vandaag of Nu
-    const rMax = CORE_RMIN + (CORE_RMAX - CORE_RMIN) * strength * live + 4 * live;
+    const rMax = CORE_R;
     coreR = rMax;
     const p = ((beat % 1) + 1) % 1;
     const front = p * (rMax + 8);   // golf rolt van het midden tot net buiten het raster
