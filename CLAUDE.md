@@ -87,4 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 08/11/2026, Claude Code: fidgetmenu scrolt (zachte randen, wiel en vegen) en heeft zijn blur terug. Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: logo: in rust enkel de komeet, bij aanwijzen of tikken schuift 'rbit' eruit (losse O weg). Open: Victor kijkt of hij in rust liever het hele woord ziet.
 - 08/11/2026, Claude Code: focus op gsm: in stilte zakt de quote tot de basislijn van de zandloper, terug omhoog als de knoppen terugkomen. Dubbele punt bevestigd terug op iPhone. Open: Victor kijkt op gsm.
-- 09/11/2026, Claude Code: bakje schaalbaar op desktop (greepje linksboven, verhouding vast, meer inhoud; Breakout en Paneel zoomen). Open: Victor kijkt of de grens (niet over de ring Maand, op 1440 × 900 tot 1,25) goed voelt.
+- 09/11/2026, Claude Code: bakje schaalbaar op desktop (greepje linksboven, verhouding vast, meer inhoud; Breakout en Paneel zoomen); water blijft rustig op elke maat, lava gevuld (shader had maar 16 plaatsen). Open: Victor kijkt of de grens (niet over de ring Maand, op 1440 × 900 tot 1,25) goed voelt.

@@ -46,7 +46,8 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 /* ---- Water: deeltjesvloeistof (dubbele dichtheidsrelaxatie, Clavet e.a. 2005) ---- */
 // Het oppervlak blijft waterpas als het bakje kantelt; bewegen erover roert, een tik geeft een plons.
 function water() {
-  const N = Math.round(840 * area()), H = 13;   // meer water in een groter bakje
+  // meer water in een breder bakje, maar even diep: een diepere kolom gaf meer druk en het water bleef trillen (Victor, 09/11/2026)
+  const N = Math.round(840 * W / BASE_W), H = 13;
   const REST = 2.2, K = 0.06, K_NEAR = 0.15;   // rustdichtheid en stijfheid (dimensieloos, schaalt met H)
   const SIGMA = 0.035, BETA = 0.01;            // viscositeit: laag, zodat het water vloeit en nadeint zonder te spatten
   const x = new Float32Array(N), y = new Float32Array(N), px = new Float32Array(N), py = new Float32Array(N);
@@ -140,7 +141,7 @@ function water() {
       const c = clamp(Math.floor(x[i] / CW), 0, COLS - 1), r = clamp(Math.floor(y[i] / CH), 0, ROWS - 1);
       d[r * COLS + c]++; sp[r * COLS + c] += Math.hypot(vx[i], vy[i]);
     }
-    const full = N / CELLS * 1.9;
+    const full = 840 / (BASE_COLS * BASE_ROWS) * 1.9;   // dichtheid van vol water, op elke maat gelijk
     for (let k = 0; k < CELLS; k++) {
       const v = d[k] / full, above = k >= COLS ? d[k - COLS] / full : 0, speed = d[k] ? sp[k] / d[k] : 0;
       chr[k] = v > 0.45 && above < 0.3 ? '~' : v > 0.45 ? (speed > 0.8 ? '≈' : '=') : v > 0.2 ? '-' : v > 0 ? (above > 0.45 ? '-' : '·') : '';
@@ -155,7 +156,8 @@ function water() {
         const c = i % cols, r = Math.floor(i / cols);
         x[i] = 2 + (c + 0.5 + (r % 2) * 0.5) * s; y[i] = HH - 2 - (r + 0.5) * s * 0.87; vx[i] = vy[i] = 0;
       }
-      for (let k = 0; k < 240; k++) step({ gx: 0, gy: 1 });   // vooraf laten zakken
+      // vooraf laten zakken, gedempt: in een breder bakje deinde de golf van het neerzetten anders tientallen seconden na
+      for (let k = 0; k < 240; k++) { step({ gx: 0, gy: 1 }); for (let i = 0; i < N; i++) { vx[i] *= 0.85; vy[i] *= 0.85; } }
     },
     step, draw,
     move(p) { stir = stir ? { x: p.x, y: p.y, vx: (p.x - stir.x) * 0.6 + stir.vx, vy: (p.y - stir.y) * 0.6 + stir.vy } : { ...p, vx: 0, vy: 0 }; },
@@ -253,7 +255,9 @@ const hexRgb = v => {
 // en stijgt traag op, koelt bovenaan af en zakt terug. Bollen die elkaar raken, kleven even samen (veld Σ r²/d²) en
 // scheuren weer los. Kantelen of slepen doet alles meeklotsen; de aanwijzer is een warmtebron, een tik blaast uiteen.
 function lava() {
-  const COUNT = Math.round(13 * area()), WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
+  // groter bakje: meer en grotere klonten en een diepere plas, een gevulde lamp op elke maat (Victor, 09/11/2026)
+  const GROW = Math.sqrt(W / BASE_W);
+  const COUNT = Math.min(40, Math.round(13 * area())), SLOTS = COUNT + 1, WOBBLE = 0.5, STRETCH = 0.5, STICKY = 0.5, SMOOTH = 0.1, GOO = 0.5, CURSOR = 3;
   const balls = [];
   const cur = { x: W / 2, y: HH / 2, tx: W / 2, ty: HH / 2, vx: 0, vy: 0, r: 0, on: false };
   let t = 0, intro = 1, prog = null, color = [1, 1, 1], colorAt = -1e9;
@@ -261,7 +265,7 @@ function lava() {
     const T = Math.random();
     balls.push({
       x: 30 + Math.random() * (W - 60), y: HH * (0.25 + Math.random() * 0.7), vx: 0, vy: 0, dx: 0, dy: 0,
-      s: 8 + Math.random() * 6.5,                 // straal (px); iets voller op vraag van Victor ("meer lava")
+      s: (8 + Math.random() * 6.5) * GROW,        // straal (px); iets voller op vraag van Victor ("meer lava")
       T,                                          // temperatuur 0 (koud, zinkt) tot 1 (warm, stijgt)
       ph: Math.random() * 10,
       heat: 0.7 + Math.random() * 0.6,            // elke klont warmt in zijn eigen tempo op
@@ -269,11 +273,11 @@ function lava() {
   }
   // de plas op de bodem: één doorlopende laag vloeibare was met een traag deinend oppervlak (Victor: "alsof er echt een
   // laag liquid lava ligt, geen aparte blobs"); eerst vijf overlappende bollen, die bleven als bultjes zichtbaar
-  const POOL_DEPTH = 12;
-  const data = new Float32Array(16 * 4);
+  const POOL_DEPTH = 12 * W / BASE_W;
+  const data = new Float32Array(SLOTS * 4);   // de klonten, de laatste plaats is de muis
   const FRAG = `#extension GL_OES_standard_derivatives : enable
 precision highp float;
-uniform vec2 uRes; uniform vec4 uBalls[16]; uniform vec3 uColor; uniform float uGoo; uniform float uTime; uniform float uPool;
+uniform vec2 uRes; uniform vec4 uBalls[${SLOTS}]; uniform vec3 uColor; uniform float uGoo; uniform float uTime; uniform float uPool;
 const vec3 DEEP = vec3(0.62, 0.12, 0.04);              // diep oranjerood: licht dat door dikke was valt
 const vec3 HOT = vec3(1.0, 0.62, 0.22);                // warm oranje aan de belichte rand
 const vec2 LAMP = vec2(${(W / 2).toFixed(1)}, ${(HH + 26).toFixed(1)});   // de gloeilamp, net onder de bodem
@@ -281,7 +285,7 @@ void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes * vec2(${W.toFixed(1)}, ${HH.toFixed(1)});
   float f = 0.0;
   vec2 grad = vec2(0.0);
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < ${SLOTS}; i++) {
     vec4 b = uBalls[i];
     if (b.z <= 0.0) continue;
     vec2 d = p - b.xy;
@@ -396,7 +400,7 @@ void main() {
       const wob = 1 + WOBBLE * 0.08 * Math.sin(t * 1.1 + b.ph);
       data[i * 4] = b.x + b.dx * k * 3; data[i * 4 + 1] = b.y + b.dy * k * 3; data[i * 4 + 2] = b.s * wob * grow; data[i * 4 + 3] = 0;
     });
-    data[15 * 4] = cur.x; data[15 * 4 + 1] = cur.y; data[15 * 4 + 2] = cur.r;
+    data[COUNT * 4] = cur.x; data[COUNT * 4 + 1] = cur.y; data[COUNT * 4 + 2] = cur.r;
     gl.useProgram(prog.prog);
     gl.uniform2f(prog.loc('uRes'), gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.uniform4fv(prog.loc('uBalls'), data);
