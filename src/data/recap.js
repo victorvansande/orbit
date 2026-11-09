@@ -52,7 +52,7 @@ export function monthStats(start, { done, feats, archive }) {
 /* ---- Tekenen ---- */
 const INK = { light: [27, 27, 34], dark: [236, 236, 241] };
 const PAPER = { light: '#EBE8DF', dark: '#0F0F12' };
-const INK3 = { light: '#9A9AA3', dark: '#6E6E78' };
+const INK3 = { light: '#7A7A83', dark: '#6E6E78' };   // zelfde als --ink-3
 const INK2 = { light: '#5E5E68', dark: '#A3A3AD' };
 const CORE = { light: '#E70049', dark: '#F0306A' };
 const MONO = '"Geist Mono", ui-monospace, Menlo, monospace', SANS = '"Geist", system-ui, -apple-system, sans-serif';

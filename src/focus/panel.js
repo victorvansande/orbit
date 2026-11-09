@@ -535,7 +535,7 @@ return { makers: { scope3, mainframe, plotter, cmd, console: console_, chartroom
 /* ---- Vlakke schermen in de inkt van Orbit ---- */
 const FLAT = (() => {
 const TH = {
-  light: { ink: [27, 27, 34], ink2: [94, 94, 104], ink3: [154, 154, 163], well: '#E0DDD3', screen: 'rgba(27,27,34,.05)', core: '#E70049', lv: ['#E70049', '#E08600', '#0FAE69', '#1F78B4', '#08415C'], glow: 0 },
+  light: { ink: [27, 27, 34], ink2: [94, 94, 104], ink3: [122, 122, 131], well: '#E0DDD3', screen: 'rgba(27,27,34,.05)', core: '#E70049', lv: ['#E70049', '#E08600', '#0FAE69', '#1F78B4', '#08415C'], glow: 0 },
   dark:  { ink: [236, 236, 241], ink2: [169, 169, 179], ink3: [110, 110, 120], well: '#0A0A0D', screen: 'rgba(255,255,255,.035)', core: '#F0306A', lv: ['#F0306A', '#F5A623', '#20E08A', '#38A0F0', '#B3B9D6'], glow: 1 },
 };
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;

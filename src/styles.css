@@ -9,7 +9,7 @@
   --surface: #F8F6F0;
   --ink: #1B1B22;
   --ink-2: #5E5E68;
-  --ink-3: #9A9AA3;
+  --ink-3: #7A7A83;   /* was #9A9AA3 (2,3 op papier); nu 3,5 voor kleine labels (audit A4-001, Victor 09/11/2026) */
   --line: rgba(27, 27, 34, .1);
   --line-soft: rgba(27, 27, 34, .06);
   --fill: rgba(27, 27, 34, .045);
@@ -1192,7 +1192,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 .sync[open] .sync-card { animation: pop-in .36s var(--pop); }
 .sync-view { display: flex; flex-direction: column; gap: 12px; }
 .sync-text { font-size: var(--fs-ui); line-height: 1.5; color: var(--ink-2); }
-.sync-note { font-size: var(--fs-small); color: var(--ink-3); }
+.sync-note { font-size: var(--fs-small); color: var(--ink-2); }
 .sync-label { font: 500 var(--fs-caption)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
 .sync-join { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 16px; border-top: 1px solid var(--line); }
 .sync-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -1227,7 +1227,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 .sync-choice-icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .sync-choice-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sync-choice-title { font-size: 15px; font-weight: 500; }
-.sync-choice-sub { font-size: var(--fs-small); line-height: 1.4; color: var(--ink-3); }
+.sync-choice-sub { font-size: var(--fs-small); line-height: 1.4; color: var(--ink-2); }
 .sync-warn { font-size: var(--fs-text); line-height: 1.45; color: var(--ink-2); padding: 10px 12px; border-radius: 12px; background: var(--fill); }
 .sync-status { display: flex; align-items: flex-start; justify-content: center; gap: 8px; font-size: var(--fs-body); line-height: 1.45; text-align: center; color: var(--ink-2); }
 .sync-status .sync-dot { flex: none; margin-top: 6px; }
@@ -1304,7 +1304,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 .arch-remove { flex: none; min-height: 36px; padding: 0 8px; font-size: var(--fs-small); color: var(--ink-3); border-radius: var(--r-pill); transition: color .2s var(--ease), background .2s var(--ease); }
 .arch-remove:hover { color: var(--late); }
 .arch-remove.is-armed { color: var(--on-late); background: var(--late); padding: 0 12px; }
-.arch-empty { padding: 16px 0; color: var(--ink-3); font-size: var(--fs-body); }
+.arch-empty { padding: 16px 0; color: var(--ink-2); font-size: var(--fs-body); }
 .arch-foot #arch-close { margin-left: auto; }
 
 /* ---- Venster: uitleg (eerste bezoek, knop Uitleg, toets ?) ---- */
@@ -1930,9 +1930,9 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, 
 .feat:not(.is-got) .feat-name { color: var(--ink-2); }
 .feat-pts { font: 500 var(--fs-micro)/1.5 var(--mono); letter-spacing: .06em; color: var(--tier); white-space: nowrap; }
 .feat:not(.is-got) .feat-pts { color: var(--ink-3); }
-.feat-desc { margin: 2px 0 0; font-size: var(--fs-small); line-height: 1.35; color: var(--ink-3); }
+.feat-desc { margin: 2px 0 0; font-size: var(--fs-small); line-height: 1.35; color: var(--ink-2); }
 .feat .feat-bar { margin-top: 8px; }
-.feat-meta { margin: 5px 0 0; font: 400 var(--fs-micro)/1 var(--mono); letter-spacing: .06em; color: var(--ink-3); }
+.feat-meta { margin: 5px 0 0; font: 400 var(--fs-micro)/1 var(--mono); letter-spacing: .06em; color: var(--ink-2); }
 .feat-meta:empty { display: none; }
 /* melding bovenaan bij een nieuwe prestatie: Komeet zonder kader (Victor, 02/11/2026, voorstel C uit vijf; de ingelaten pil
    was niet logisch boven een pagina die eronder doorscrolt). Ontstaat zacht ter plaatse (Victor, 02/11/2026: geen veeg of
