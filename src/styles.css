@@ -1814,6 +1814,15 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .stat-mini::after { inset: -10px -6px; }
   .glass-open::after { inset: -6px -8px; }
   .topbar .menu-btn::after { inset: -6px 0; }
+  /* audit 09/11/2026 (A4-003): keuzes en knoppen in Instellingen, Nieuwe taak, Archief, Koppelen en de maandrecap tot 36 px */
+  .hud-menu [role=radio], .hud-menu #feats-badge, .hud-menu #intro-btn, .hud-menu #archive-btn, .hud-menu #sync-btn,
+  #due-toggle, #repeat-toggle, #note-toggle, #arch-tab-done, #arch-tab-snaps, .recap-seg button, #sync summary { position: relative; }
+  .hud-menu [role=radio]::after, .hud-menu #feats-badge::after, .hud-menu #intro-btn::after, .hud-menu #archive-btn::after, .hud-menu #sync-btn::after,
+  #due-toggle::after, #repeat-toggle::after, #note-toggle::after, #arch-tab-done::after, #arch-tab-snaps::after, .recap-seg button::after, #sync summary::after { content: ''; position: absolute; }
+  .hud-menu [role=radio]::after { inset: 0 -6px; }
+  .hud-menu #feats-badge::after, .hud-menu #intro-btn::after, .hud-menu #archive-btn::after, .hud-menu #sync-btn::after, #arch-tab-done::after, #arch-tab-snaps::after, #sync summary::after { inset: -2px 0; }
+  #due-toggle::after, #repeat-toggle::after, #note-toggle::after { inset: -1px 0; }
+  .recap-seg button::after { inset: -3px 0; }
 }
 @media (hover: none) { .hud-menu .menu-keys, .controls kbd, .menu-label kbd, .hud-menu kbd { display: none; } }
 
