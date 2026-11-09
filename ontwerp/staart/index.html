@@ -1,0 +1,87 @@
+<title>Orbit staart</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: drie platen naast elkaar; per plaat het logo op ware grootte en uitvergroot per beeldpunt */
+:root { --paper: #EBE8DF; --card: #F3F1EA; --ink: #1B1B22; --ink-2: #5B5A63; --ink-3: #8C8A92; --line: rgba(27,27,34,.12); --core: #E70049;
+  --font: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper: #0F0F12; --card: #17171B; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.1); --core: #F0306A; color-scheme: dark; } }
+:root[data-theme="dark"] { --paper: #0F0F12; --card: #17171B; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.1); --core: #F0306A; color-scheme: dark; }
+body { background: var(--paper); color: var(--ink); font: 400 15px/1.5 var(--font); }
+main { max-width: 1120px; margin: 0 auto; padding-block: 40px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+.kicker { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+h1 { margin: 10px 0 8px; font-weight: 500; font-size: 26px; text-wrap: balance; }
+.lead { margin: 0; max-width: 64ch; color: var(--ink-2); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.plate { min-width: 0; display: grid; gap: 12px; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; align-content: start; }
+.plate h2 { margin: 0; font-size: 16px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+.plate h2 span { font: 500 11px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); }
+.plate p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.sizes { display: flex; gap: 22px; align-items: flex-end; padding: 16px; background: var(--paper); border-radius: 10px; flex-wrap: wrap; }
+.sizes figure { margin: 0; display: grid; gap: 6px; }
+.sizes svg { display: block; width: auto; overflow: visible; }
+figcaption, .cap { font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+canvas.px { width: 100%; height: auto; image-rendering: pixelated; border-radius: 8px; background: var(--paper); display: block; }
+.ink { fill: var(--ink); } .head { fill: var(--core); }
+.C .ring { stroke: var(--ink); stroke-width: .6px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.foot { color: var(--ink-3); font-size: 13px; margin: 0; }
+</style>
+<main>
+  <header>
+    <div class="kicker">Orbit · merk</div>
+    <h1>De staart op kleine maat</h1>
+    <p class="lead">Linksboven staat het logo op 22 px hoog (op gsm 20 px). Daar wordt het uiteinde van de staart smaller dan een beeldpunt (0,14 px) en tekent het scherm het als een rafelig grijs spoor. Per voorstel: het logo op ware grootte, en eronder uitvergroot zoals een gewoon scherm het per beeldpunt tekent.</p>
+  </header>
+  <section class="grid" id="grid"></section>
+  <p class="foot">Groot (Uitleg, maandrecap, merkgids) blijft het logo zoals het is; het gaat enkel om de kleine maten.</p>
+</main>
+<script>
+const MASTER = "m877.72 489.95-3.77-1.33c13.85-40.11 17.88-79.87 10.77-115.96-6.86-34.84-23.73-66.26-49.32-91.91-26.51-26.56-62.36-46.91-104.66-59.34-40.83-12.01-87.63-16.63-136.78-13.48-50.91 3.26-104.31 14.87-155.73 33.87-49.66 18.34-97.44 43.56-139.59 73.65-43.65 31.16-81.21 67.53-109.47 105.78S142 499.57 133.69 537.48c-8.02 36.59-6.22 70.96 4.12 100.6 10.71 30.7 30.41 56.55 57.92 76.65 26.55 19.41 60.57 33.4 99.94 40.59 40.77 7.43 87.22 7.47 135.25-.28 46.37-7.49 94.17-22.24 139.25-43.1a549 549 0 0 0 42.11-21.75 120 120 0 0 0 53.76 85.28 674 674 0 0 1-60.66 24.52c-54.65 19.03-111.16 30.78-165.73 34.4-56.52 3.75-110.96-1.25-159.22-14.97-46.59-13.25-87.42-34.69-118.95-63.04-32.66-29.36-55.06-66.17-64.99-106.25-9.59-38.69-7.72-80.16 4.34-121.16 12.49-42.46 35.86-84.57 67.88-123.68 32.03-39.11 72.75-75.22 119.02-105.75a635 635 0 0 1 145.79-71.08c53.15-17.93 107.9-28.39 159.91-30.54 50.22-2.07 97.86 3.61 139.39 16.65 43.01 13.5 79.43 34.91 106.3 62.52 25.94 26.65 42.95 59.07 49.78 94.76 7.08 36.96 2.87 77.42-11.18 118.1", SMALL = "M872.66 487.2c9.2-37.75 8.9-74.48-.87-107.63-9.47-32.1-27.54-61.07-53.44-85.41-26.82-25.21-62.18-45.38-103.72-58.43-40.09-12.6-85.87-18.51-133.74-16.93-49.58 1.64-101.35 11.32-150.84 28.31-47.78 16.41-93.39 39.62-133.16 67.62-41.18 29-76.03 63.13-101.71 98.9-25.69 35.77-42.14 73.05-49.05 108-6.66 33.75-4.63 65.16 4.63 92.96 9.6 28.8 26.89 54.11 51.75 75.38 24.01 20.54 55.29 37.18 92.33 47.94 38.35 11.14 82.78 15.85 129.38 13 44.98-2.74 91.91-12.52 136.68-28.66a509 509 0 0 0 127.94-68.23l85.12 123.51a664 664 0 0 1-169.99 77.89c-58.01 17.1-117.98 26.03-176.21 26.09-60.3.05-118.74-9.41-171.17-28.41-50.62-18.34-95.68-45.65-131.14-80.71-36.72-36.31-62.86-81.05-75.13-129.29-11.85-46.57-10.82-95.99 1.67-143.63 12.93-49.34 37.97-96.89 72.16-139.86s77.58-81.42 126.87-113.18c47.59-30.67 100.68-55.08 155.73-71.75 57.01-17.28 116.12-26.24 173.11-26.17 55.02.07 108.07 8.56 155.5 25.22 49.13 17.26 92.24 43.33 125.58 76.68 32.18 32.19 55.11 71.19 66.53 113.53 11.76 43.62 10.89 90.49-.44 136.69a28 28 0 1 1-54.37-13.43";
+const LETTERS = [
+  "M654 0v-510h99v127h5V0Zm104-266-13-121q18-65 62-99t105-34q23 0 32 4v98q-5-2-14-2.5t-22-.5q-75 0-112.5 39T758-266",
+  "M1283 9q-72 0-120-34.5t-63-96.5l10-2V0h-99v-720h104v327l-11-3q17-58 66.5-91t119.5-33q69 0 119.5 33t78 92 27.5 138q0 80-29 140t-81 93-122 33m-22-86q68 0 108-48t40-132q0-83-40-129.5T1260-433q-68 0-108.5 47.5T1111-254q0 82 40.5 129.5T1261-77",
+  "M1614 0v-510h104V0ZM1726-668a60 60 0 1 1-120 0 60 60 0 0 1 120 0",
+  "M2061 10q-89 0-130.5-41.5T1889-154v-473l103-39v513q0 40 21 59t68 19q18 0 32-3t24-7v84q-11 5-31 8t-45 3M1787-427v-83h350v83Z"
+];
+// uiteinde van de staart in de coördinaten van het symbool (begin van het masterpad)
+const TIP = [876, 489];
+function logo(kind, h) {
+  const ring = kind === 'A' ? SMALL : MASTER;
+  const head = kind === 'A' ? '<circle class="head" cx="731.4" cy="715.78" r="128"/>' : '<circle class="head" cx="731.3" cy="674.75" r="100"/>';
+  // de kleine tekening heeft een groter kader: geschaald naar de breedte van de master (0,897), links en boven gelijk
+  const fit = kind === 'A' ? ' transform="translate(52.7 64.3) scale(0.897)"' : '';
+  const fade = kind === 'B' ? `<defs><radialGradient id="g${kind}${h}" gradientUnits="userSpaceOnUse" cx="${TIP[0]}" cy="${TIP[1]}" r="230"><stop offset=".25" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></radialGradient><mask id="k${kind}${h}" maskUnits="userSpaceOnUse" x="0" y="0" width="1100" height="1100"><rect width="1100" height="1100" fill="url(#g${kind}${h})"/></mask></defs>` : '';
+  return `<svg class="${kind}" viewBox="0 -730 2480.49 742" style="height:${h}px" role="img" aria-label="Orbit"><g transform="translate(-105.086, -959.662) scale(1.16285)">${fade}<g${fit}><path class="ink ring" d="${ring}" ${kind === 'B' ? `mask="url(#k${kind}${h})"` : ''}/>${head}</g></g><g transform="translate(343.486, 0)">${LETTERS.map(d => `<path class="ink" d="${d}"/>`).join('')}</g></svg>`;
+}
+// uitvergroot: tekenen op 1 beeldpunt per px, dan elke pixel als blokje tonen (zoals een gewoon scherm het ziet)
+function pixels(kind, h, canvas) {
+  const st = getComputedStyle(document.documentElement), ink = st.getPropertyValue('--ink').trim(), core = st.getPropertyValue('--core').trim(), paper = st.getPropertyValue('--paper').trim();
+  let svg = logo(kind, h).replace(/class="ink ring"/g, `fill="${ink}"`).replace(/class="ink"/g, `fill="${ink}"`).replace(/class="head"/g, `fill="${core}"`);
+  if (kind === 'C') svg = svg.replace(`fill="${ink}" d="${MASTER}"`, `fill="${ink}" stroke="${ink}" stroke-width="0.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" d="${MASTER}"`);
+  svg = svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/style="height:\d+px"/, `height="${h}" width="${Math.round(h * 2480.49 / 742)}"`);
+  const img = new Image();
+  img.onload = () => {
+    const w = Math.round(h * 2480.49 / 742) + 6, H = h + 6, z = 10;
+    const c = document.createElement('canvas'); c.width = w; c.height = H; const g = c.getContext('2d');
+    g.fillStyle = paper; g.fillRect(0, 0, w, H); g.drawImage(img, 3, 3);
+    // enkel het stuk rond de komeet en de r
+    const sx = 0, sw = Math.round(w * 0.55);
+    canvas.width = sw * z; canvas.height = H * z; const cg = canvas.getContext('2d'); cg.imageSmoothingEnabled = false;
+    cg.drawImage(c, sx, 0, sw, H, 0, 0, sw * z, H * z);
+  };
+  img.src = 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+const PLATES = [
+  ['A', 'Kleine tekening', 'De versie uit het merk (orbit-symbol-small) die voor 16 tot 47 px getekend is: vollere staart die niet zo dun uitloopt. Wel een andere kop: groter en lager (hij zakt iets onder de basislijn), dus de komeet in het woordmerk verandert van verhouding.'],
+  ['B', 'Vervagende staart', 'De master, maar het uiterste stuk van de staart loopt zacht uit in plaats van te versmallen tot onder een beeldpunt. Zelfde vorm en verhoudingen; het rafelige spoor wordt een rustige verloop naar het papier.'],
+  ['C', 'Minimumdikte', 'De master met een haarlijn van 0,6 beeldpunt rondom, die op elke maat even dik blijft. Op 22 px zakt de staart nooit meer onder een tekenbare dikte en oogt de ring iets steviger; groot zie je het verschil niet.'],
+];
+const grid = document.getElementById('grid');
+for (const [k, title, text] of PLATES) {
+  const plate = document.createElement('article'); plate.className = 'plate';
+  plate.innerHTML = `<h2><span>${k}</span>${title}</h2><p>${text}</p><div class="sizes"><figure>${logo(k, 22)}<figcaption>22 px</figcaption></figure><figure>${logo(k, 20)}<figcaption>20 px</figcaption></figure><figure>${logo(k, 38)}<figcaption>38 px</figcaption></figure></div><span class="cap">22 px, per beeldpunt</span>`;
+  const cv = document.createElement('canvas'); cv.className = 'px'; plate.append(cv);
+  grid.append(plate);
+  pixels(k, 22, cv);
+}
+</script>

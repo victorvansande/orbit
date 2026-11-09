@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: op vraag van Victor (tokens) CLAUDE.md teruggebracht tot deze kern; de volledige vorige inhoud staat letterlijk in `docs/kennis.md`. Open: titel met veel labels (P2-4, eerst voorstellen), oogjes van de kern (O1 tot O4).
 - 08/11/2026, Claude Code: scores van de spelletjes (Slang, Breakout, en elke toekomstige fidget via `GAMES` in `src/data/scores.js`) gaan mee in sync, export en import; samenvoegen verliest nooit een score. Open: Victor speelt op twee toestellen en kijkt of de scores gelijk lopen.
 - 08/11/2026, Claude Code: Plasma enkel nog als plaat; reactie op muis en vinger zoals een echte plasmaplaat (overslaan naar de vinger, nooit in het niets eindigen). Open: Victor probeert het op pc en gsm.
 - 08/11/2026, Claude Code: op gsm staat de rang links onder de teller (plaats van Instellingen), lege ruimte onderaan weg (dubbele veilige zone). Open: Victor kijkt het na op zijn iPhone.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 09/11/2026, Claude Code: logo in rust altijd volledig; bij aanwijzen of tikken Aantrekking (C, gekozen door Victor uit drie, verfijnd: letters buigen als gedempte veer naar de komeet, kop ademt). Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: focus op gsm: in stilte zakt de quote tot de basislijn van de zandloper, terug omhoog als de knoppen terugkomen. Dubbele punt bevestigd terug op iPhone. Open: Victor kijkt op gsm.
 - 09/11/2026, Claude Code: bakje schaalbaar op desktop (greepje linksboven, verhouding vast, meer inhoud; Breakout en Paneel zoomen); water blijft rustig op elke maat, lava gevuld (shader had maar 16 plaatsen). Open: Victor kijkt of de grens (niet over de ring Maand, op 1440 × 900 tot 1,25) goed voelt.
+- 09/11/2026, Claude Code: te dunne staart van het logo op kleine maat: voorstellen A Kleine tekening, B Vervagende staart, C Minimumdikte (artifact "Orbit staart" https://claude.ai/artifact/9eUv9EfWc37aVV6892gS9a, `ontwerp/staart/`). Open: Victor kiest.
