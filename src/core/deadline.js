@@ -49,7 +49,6 @@ export const isOverdue = (due, now = new Date()) => daysUntil(due, now) < 0;
 
 // Herhalen: de volgende datum na vandaag, in stappen van een dag, week of maand vanaf de vorige datum.
 // Een maand later op de 31e wordt de laatste dag van die maand.
-export const REPEATS = ['day', 'week', 'month'];
 export function nextDue(due, repeat, now = new Date()) {
   const start = parseDue(due), today = midnight(now);
   let n = 0, next;

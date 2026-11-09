@@ -8,7 +8,6 @@ import { LEVELS } from '../core/config.js';
 import { LOCKUP_SMALL } from '../core/mark.js';
 
 const KEY = 'priority-orbit.recap.v1';            // per toestel: {said: 'JJJJ-MM-DD', seen: {'JJJJ-MM': ts}, theme, fmt}
-const DAY = 86400000;
 
 export function loadRecap() {
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === 'object') return { seen: {}, ...s }; } catch { /* geen opslag */ }
@@ -213,4 +212,3 @@ export function drawPoster(cv, s, { theme = 'dark', fmt = 'post', tx, locale }) 
 
 export const posterName = (s) => `orbit-${monthKey(s.start)}.png`;
 export function posterBlob(cv) { return new Promise(res => cv.toBlob(res, 'image/png')); }
-export const RECAP_DAY = DAY;

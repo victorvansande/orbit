@@ -77,7 +77,7 @@ function place(grid, coords, cx, cy) {
   }
 }
 
-export function createLife({ reducedMotion, accent, onPreset, size }) {
+export function createLife({ accent, onPreset, size }) {
   if (size) setField(size.w, size.h);
   let cv = null, g = null;
   const dpr = Math.min(2, window.devicePixelRatio || 1);

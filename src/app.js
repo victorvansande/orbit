@@ -2029,7 +2029,8 @@ function inkRgb() { return resolvedTheme() === 'dark' ? '236, 236, 241' : '27, 2
 function applyTheme() {
   const name = resolvedTheme();
   document.documentElement.dataset.theme = name;
-  document.querySelector('meta[name="theme-color"]').setAttribute('content', name === 'dark' ? '#0F0F12' : '#EBE8DF');
+  // statusbalk in de kleur van het papier, uit het token (audit A8-002: stond hier vast)
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || (name === 'dark' ? '#0F0F12' : '#EBE8DF'));
   scene.setTheme(name);
   try { renderStats(); } catch { /* bij het opstarten nog niet klaar */ }
   for (const b of themeButtons) b.setAttribute('aria-checked', String(b.dataset.themePref === themePref));

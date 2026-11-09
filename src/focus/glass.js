@@ -31,7 +31,7 @@ export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => 
   tools.append(pause, reset);
   root.append(tools, open);
   const g = cv.getContext('2d');
-  let raf = 0, running = false, shown = null, endAt = 0, ink = '27,27,34', colAt = 0, lastRead = 0, st = null, W = 28, H = 46;
+  let raf = 0, idle = 0, running = false, shown = null, endAt = 0, ink = '27,27,34', colAt = 0, lastRead = 0, st = null, W = 28, H = 46;
 
   function colors(now) {
     if (now - colAt < 1000) return;
@@ -120,7 +120,9 @@ export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => 
         if (p < 1) star(p); else { setShown(false); endAt = 0; }
       } else setShown(false);
     }
-    raf = requestAnimationFrame(frame);
+    // zonder lopende zandloper volstaat twee keer per seconde kijken (audit A6-001: elk frame was onnodig werk op gsm)
+    if (active || shown) raf = requestAnimationFrame(frame);
+    else idle = setTimeout(() => { if (running) raf = requestAnimationFrame(frame); }, 500);
   }
 
   open.addEventListener('click', () => { if (shown) onOpen(); });
@@ -129,6 +131,6 @@ export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => 
   setShown(false);
   return {
     start() { if (running) return; running = true; lastRead = 0; raf = requestAnimationFrame(frame); },
-    stop() { running = false; cancelAnimationFrame(raf); setShown(false); },
+    stop() { running = false; cancelAnimationFrame(raf); clearTimeout(idle); setShown(false); },
   };
 }
