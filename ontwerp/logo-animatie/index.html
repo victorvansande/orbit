@@ -1,0 +1,132 @@
+<title>Orbit logo-animatie</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Layout: drie voorstellen als platen op papier, elk met het logo groot en op ware grootte */
+:root {
+  --paper: #EBE8DF; --card: #F3F1EA; --ink: #1B1B22; --ink-2: #5B5A63; --ink-3: #8C8A92; --line: rgba(27,27,34,.12); --core: #E70049;
+  --font: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper: #0F0F12; --card: #17171B; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.1); --core: #F0306A; color-scheme: dark; } }
+:root[data-theme="dark"] { --paper: #0F0F12; --card: #17171B; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(236,236,241,.1); --core: #F0306A; color-scheme: dark; }
+body { background: var(--paper); color: var(--ink); font: 400 15px/1.5 var(--font); }
+main { max-width: 1120px; margin: 0 auto; padding-block: 40px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+.kicker { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+h1 { margin: 10px 0 8px; font-weight: 500; font-size: 26px; letter-spacing: -.01em; text-wrap: balance; }
+.lead { margin: 0; max-width: 62ch; color: var(--ink-2); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.plate { min-width: 0; display: grid; gap: 14px; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.plate h2 { margin: 0; font-size: 16px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+.plate h2 span { font: 500 11px/1 var(--mono); letter-spacing: .14em; color: var(--ink-3); }
+.plate p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.stage { display: grid; place-items: center; min-height: 128px; border-radius: 10px; background: var(--paper); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.stage svg { height: 46px; width: auto; overflow: visible; }
+.true { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.true .mini { cursor: pointer; } .true svg { height: 22px; width: auto; overflow: visible; display: block; }
+.true small { font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+button.play { justify-self: start; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+button.play:hover { color: var(--ink); } button.play:focus-visible, .stage:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.foot { color: var(--ink-3); font-size: 13px; }
+.ink { fill: var(--ink); } .head { fill: var(--core); }
+/* A: woord schuift bij openen eenmaal uit de komeet; aanwijzen = terug in de komeet en weer uit */
+.A .l { transform: translateX(0); }
+.A.out .l { transform: translateX(-1620px); transition: transform .55s var(--ease) calc(var(--i) * 40ms); }
+.A.hide .l { transform: translateX(-1620px); transition: none; }
+.A.in .l { transform: none; transition: transform .95s var(--ease) calc((3 - var(--i)) * 60ms); }
+/* C: de letters buigen even naar de komeet toe, als door zwaartekracht, en veren terug; de kop klopt één keer */
+.C .l { transform-box: fill-box; }
+.C.pull .l { animation: pull 1.05s var(--ease) calc(var(--i) * 70ms) both; }
+.C.pull .head { transform-box: fill-box; transform-origin: center; animation: beat .9s var(--ease) both; }
+@keyframes pull { 0% { transform: none; } 35% { transform: translateX(calc(-1 * (70px + var(--i) * 34px))); } 70% { transform: translateX(16px); } 100% { transform: none; } }   /* eenheden van het logo (742 hoog), geen schermpixels */
+@keyframes beat { 0%, 100% { transform: none; } 30% { transform: scale(1.22); } }
+@media (prefers-reduced-motion: reduce) { .A .l, .C .l, .C .head { transition: none !important; animation: none !important; } }
+@media (max-width: 420px) { h1 { font-size: 22px; } .stage svg { height: 38px; } }
+</style>
+<main>
+  <header>
+    <div class="kicker">Orbit · merk</div>
+    <h1>Altijd het volledige logo, met een animatie</h1>
+    <p class="lead">In rust staat overal "Orbit". De animatie speelt bij aanwijzen of een tik, zoals in de app. Wijs het grote logo aan, tik erop, of gebruik de knop. Onderaan elke plaat het logo op ware grootte (22 px, zoals linksboven).</p>
+  </header>
+  <section class="grid" id="grid"></section>
+  <p class="foot">Alle drie: minder beweging = geen animatie. Het logo verschuift nooit en houdt zijn plaats in de hoek.</p>
+</main>
+<script>
+const RING = "m877.72 489.95-3.77-1.33c13.85-40.11 17.88-79.87 10.77-115.96-6.86-34.84-23.73-66.26-49.32-91.91-26.51-26.56-62.36-46.91-104.66-59.34-40.83-12.01-87.63-16.63-136.78-13.48-50.91 3.26-104.31 14.87-155.73 33.87-49.66 18.34-97.44 43.56-139.59 73.65-43.65 31.16-81.21 67.53-109.47 105.78S142 499.57 133.69 537.48c-8.02 36.59-6.22 70.96 4.12 100.6 10.71 30.7 30.41 56.55 57.92 76.65 26.55 19.41 60.57 33.4 99.94 40.59 40.77 7.43 87.22 7.47 135.25-.28 46.37-7.49 94.17-22.24 139.25-43.1a549 549 0 0 0 42.11-21.75 120 120 0 0 0 53.76 85.28 674 674 0 0 1-60.66 24.52c-54.65 19.03-111.16 30.78-165.73 34.4-56.52 3.75-110.96-1.25-159.22-14.97-46.59-13.25-87.42-34.69-118.95-63.04-32.66-29.36-55.06-66.17-64.99-106.25-9.59-38.69-7.72-80.16 4.34-121.16 12.49-42.46 35.86-84.57 67.88-123.68 32.03-39.11 72.75-75.22 119.02-105.75a635 635 0 0 1 145.79-71.08c53.15-17.93 107.9-28.39 159.91-30.54 50.22-2.07 97.86 3.61 139.39 16.65 43.01 13.5 79.43 34.91 106.3 62.52 25.94 26.65 42.95 59.07 49.78 94.76 7.08 36.96 2.87 77.42-11.18 118.1";
+const LETTERS = [
+  "M654 0v-510h99v127h5V0Zm104-266-13-121q18-65 62-99t105-34q23 0 32 4v98q-5-2-14-2.5t-22-.5q-75 0-112.5 39T758-266",
+  "M1283 9q-72 0-120-34.5t-63-96.5l10-2V0h-99v-720h104v327l-11-3q17-58 66.5-91t119.5-33q69 0 119.5 33t78 92 27.5 138q0 80-29 140t-81 93-122 33m-22-86q68 0 108-48t40-132q0-83-40-129.5T1260-433q-68 0-108.5 47.5T1111-254q0 82 40.5 129.5T1261-77",
+  "M1614 0v-510h104V0ZM1726-668a60 60 0 1 1-120 0 60 60 0 0 1 120 0",
+  "M2061 10q-89 0-130.5-41.5T1889-154v-473l103-39v513q0 40 21 59t68 19q18 0 32-3t24-7v84q-11 5-31 8t-45 3M1787-427v-83h350v83Z"
+];
+const NS = 'http://www.w3.org/2000/svg';
+// middellijn van de baan in de coördinaten van het symbool (gemeten): middelpunt, assen, kanteling; kop op hoek -18,3°
+const E = { x: 497.21, y: 505.0, a: 276.74, b: 402.93, rot: 61.56 * Math.PI / 180, phi0: -18.3 * Math.PI / 180 };
+const at = phi => { const c = Math.cos(E.rot), s = Math.sin(E.rot), u = E.a * Math.cos(phi), v = E.b * Math.sin(phi); return [E.x + u * c - v * s, E.y + u * s + v * c]; };
+function logo(kind) {
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 -730 2480.49 742'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Orbit');
+  svg.classList.add(kind);
+  svg.innerHTML = `<defs><linearGradient id="f${kind}" gradientUnits="userSpaceOnUse" x1="880" x2="1000" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient><mask id="m${kind}" maskUnits="userSpaceOnUse" x="0" y="-800" width="2600" height="900"><rect x="0" y="-800" width="2600" height="900" fill="url(#f${kind})"/></mask></defs>
+    <g transform="translate(-105.086, -959.662) scale(1.16285)"><path class="ink" d="${RING}"/><g class="trail"></g><circle class="head" cx="731.3" cy="674.75" r="100"/></g>
+    <g ${kind === 'A' ? `mask="url(#m${kind})"` : ''}><g transform="translate(343.486, 0)">${LETTERS.map((d, i) => `<path class="ink l" style="--i:${i}" d="${d}"/>`).join('')}</g></g>`;
+  return svg;
+}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+const PLAYERS = {
+  // A: bij openen eenmaal uit de komeet; daarna altijd volledig; aanwijzen: terug in de komeet en meteen weer uit
+  A(svg, first) {
+    if (reduce.matches) return;
+    if (first) { svg.classList.remove('in', 'out'); svg.classList.add('hide'); svg.getBoundingClientRect(); svg.classList.remove('hide'); svg.classList.add('in'); return; }
+    svg.classList.remove('in'); svg.classList.add('out');
+    clearTimeout(svg._t); svg._t = setTimeout(() => { svg.classList.remove('out'); svg.classList.add('in'); }, 640);
+  },
+  // B: de kop draait één rondje over de baan en landt terug op zijn plaats, met een kort spoor van stippen
+  B(svg) {
+    if (reduce.matches || svg._run) return;
+    const head = svg.querySelector('.head'), trail = svg.querySelector('.trail'), T = 1600, t0 = performance.now();
+    const dots = Array.from({ length: 6 }, (_, i) => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', String(64 - i * 9)); c.setAttribute('class', 'head'); c.style.opacity = '0'; trail.append(c); return c; });
+    const pos = []; svg._run = true;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / T), e = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;   // traag weg, snel rond, zacht landen
+      const [x, y] = at(E.phi0 - e * Math.PI * 2);   // met de klok mee, in de richting van de staart
+      head.setAttribute('cx', x); head.setAttribute('cy', y);
+      pos.unshift([x, y]); pos.length = Math.min(pos.length, 40);
+      dots.forEach((d, i) => { const q = pos[(i + 1) * 4]; if (!q) return; d.setAttribute('cx', q[0]); d.setAttribute('cy', q[1]); d.style.opacity = String((p < 1 ? .55 : 0) * (1 - i / 6)); });
+      if (p < 1) requestAnimationFrame(step); else { head.setAttribute('cx', 731.3); head.setAttribute('cy', 674.75); trail.replaceChildren(); svg._run = false; }
+    };
+    requestAnimationFrame(step);
+  },
+  // C: de letters buigen naar de komeet en veren terug, de kop klopt één keer
+  C(svg) {
+    if (reduce.matches) return;
+    svg.classList.remove('pull'); svg.getBoundingClientRect(); svg.classList.add('pull');
+  },
+};
+const PLATES = [
+  ['A', 'Opening en herhaling', 'Bij het openen van Orbit schuift het woord één keer uit de komeet, daarna staat het logo altijd volledig. Aanwijzen of tikken laat het woord kort terug in de komeet glijden en meteen weer uitschuiven.'],
+  ['B', 'Een rondje van de kop', 'Het woord staat altijd. Bij aanwijzen draait de rode kop één rondje over zijn baan, met een kort spoor, en landt terug op zijn plaats. Het kleinste gebaar, en het zegt letterlijk wat de naam zegt.'],
+  ['C', 'Aantrekking', 'Het woord staat altijd. Bij aanwijzen buigen de letters even naar de komeet toe, de verste het meest, en veren terug; de kop klopt één keer. Speels, zonder dat er iets verdwijnt.'],
+];
+const grid = document.getElementById('grid');
+for (const [k, title, text] of PLATES) {
+  const plate = document.createElement('article'); plate.className = 'plate';
+  plate.innerHTML = `<h2><span>${k}</span>${title}</h2><p>${text}</p>`;
+  const stage = document.createElement('div'); stage.className = 'stage'; stage.tabIndex = 0; stage.setAttribute('role', 'button'); stage.setAttribute('aria-label', `Speel voorstel ${k}`);
+  const big = logo(k); stage.append(big);
+  const row = document.createElement('div'); row.className = 'true';
+  const mini = document.createElement('div'); mini.className = 'mini'; const small = logo(k); mini.append(small);
+  row.append(mini, Object.assign(document.createElement('small'), { textContent: 'ware grootte' }));
+  const btn = Object.assign(document.createElement('button'), { className: 'play', type: 'button', textContent: k === 'A' ? 'Speel opening' : 'Speel af' });
+  const play = (svg, first) => PLAYERS[k](svg, first);
+  stage.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') play(big); });
+  stage.addEventListener('click', e => { if (e.pointerType !== 'mouse') play(big); });
+  stage.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); play(big); } });
+  mini.addEventListener('pointerenter', () => play(small)); mini.addEventListener('click', () => play(small));
+  btn.addEventListener('click', () => { if (k === 'A') { play(big, true); play(small, true); } else { play(big); play(small); } });
+  plate.append(stage, row, btn); grid.append(plate);
+  if (k === 'A') requestAnimationFrame(() => { play(big, true); play(small, true); });   // de opening, zoals bij het laden van Orbit
+}
+</script>
