@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: op gsm staat de rang links onder de teller (plaats van Instellingen), lege ruimte onderaan weg (dubbele veilige zone). Open: Victor kijkt het na op zijn iPhone.
 - 08/11/2026, Claude Code: taakrij: titel vervaagt pas vlak voor het icoon, vegen enkel met vinger of pen, dode code weg. Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: lege ruimte onder de quote in focus op gsm weg; dubbele punt van de klok: eerste poging werkte niet in Safari, nu zonder gloed op de dubbele punt. Open: Victor kijkt na op iPhone, ook in licht thema (WebKit niet testbaar hier).
 - 08/11/2026, Claude Code: fidgetmenu scrolt (zachte randen, wiel en vegen) en heeft zijn blur terug. Open: Victor kijkt op pc en gsm.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 09/11/2026, Claude Code: logo op kleine maat (topbar, Uitleg, maandwissel) gebruikt de kleine tekening uit het merk (A, gekozen door Victor): staart niet meer rafelig. Open: Victor kijkt op pc en gsm.
 - 09/11/2026, Claude Code: zandloper: het gevallen zand ligt op de zichtbare bodem (niet meer in de vervaagde onderste rijen). Open: Victor kijkt.
 - 09/11/2026, Claude Code: Instellingen → Kleuren: Momenten (vijf kleuren) of Rood (tinten van het kernrood, Nu vol, Ooit het minst verzadigd); `PALETTE` in `config.js`, wisselen herlaadt. Open: Victor kijkt.
+- 09/11/2026, Claude Code: opdracht voor een grote nalezing van heel Orbit (correctheid, opruimen, structuur, prestaties, tokens) staat in `docs/nalezing.md`; starten met "Voer `docs/nalezing.md` uit". Open: Victor start ze in een nieuwe sessie.
