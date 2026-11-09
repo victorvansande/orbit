@@ -2073,26 +2073,22 @@ if (DEMO_MODE) {
 }
 
 /* ---- Merk v2 interactie: onthul 'O' bij hover (desktop) of tik (mobiel) ---- */
-// Merk: "rbit" schuift uit de komeet bij aanwijzen (blijft zolang je erop staat), tikken (enkele seconden) of focus
+// Merk: aantrekking bij aanwijzen, tikken of Enter (styles.css, .brand.is-pulling); loopt ze, dan start ze niet opnieuw
 const brandEl = document.querySelector('.brand');
 if (brandEl) {
-  let brandTimer = 0, brandHover = false;
-  const keyFocus = () => document.activeElement === brandEl && document.documentElement.dataset.input === 'keyboard';   // een tik geeft ook focus
-  const openBrand = ms => {
-    clearTimeout(brandTimer);
-    brandEl.classList.add('is-open');
-    if (ms) brandTimer = setTimeout(() => { if (!brandHover && !keyFocus()) brandEl.classList.remove('is-open'); }, ms);
+  let pulling = false;
+  const pull = () => {
+    if (pulling || reducedMotion.matches) return;
+    pulling = true;
+    brandEl.classList.add('is-pulling');
+    setTimeout(() => { brandEl.classList.remove('is-pulling'); pulling = false; }, 1350);   // 1,15 s + 3 × 55 ms
   };
-  const closeBrand = ms => { clearTimeout(brandTimer); brandTimer = setTimeout(() => brandEl.classList.remove('is-open'), ms); };
-  brandEl.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { brandHover = true; openBrand(); } });
-  brandEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { brandHover = false; closeBrand(700); } });
-  brandEl.addEventListener('click', e => { if (e.pointerType !== 'mouse') openBrand(3200); });
-  brandEl.addEventListener('focus', () => { if (document.documentElement.dataset.input === 'keyboard') openBrand(); });
-  brandEl.addEventListener('blur', () => { if (!brandHover) closeBrand(300); });
+  brandEl.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') pull(); });
+  brandEl.addEventListener('click', e => { if (e.pointerType !== 'mouse') pull(); });
   brandEl.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
-    if (brandEl.classList.contains('is-open')) closeBrand(0); else openBrand(3200);
+    pull();
   });
 }
 

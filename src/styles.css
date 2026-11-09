@@ -212,22 +212,27 @@ body.is-focus .greeting { z-index: 4; }
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-/* merk v2 (06/11/2026): geïntegreerd woordmerk met Orbit als 'O'. In rust enkel de komeet; bij aanwijzen, tikken of
-   focus schuift "rbit" vloeiend uit de komeet (Victor, 08/11/2026: "dat het volledige woord fluide, mooi en geanimeerd uit
-   de komeet schuift"). De letters vertrekken kort na elkaar en vervagen in waar ze de ring passeren (#bm-mask). Het vak houdt zijn breedte: niets verschuift. */
+/* merk v2 (06/11/2026): geïntegreerd woordmerk met Orbit als 'O', in rust altijd volledig. Aanwijzen, tikken of Enter:
+   Aantrekking (C, Victor 09/11/2026, uit A Opening en herhaling, B Rondje van de kop, C Aantrekking; vroeger schoof 'rbit'
+   uit een lege komeet, maar dan zag je het logo nooit volledig). De letters buigen naar de komeet als een gedempte veer
+   (naar binnen, klein voorbij, nog eens terug, stil), de r eerst en het minst, de t als laatste en het meest; de kop ademt
+   één keer mee. Afstanden in eenheden van het logo (742 hoog): 34 tot 112, op 22 px hoog 1 tot 3,3 px. */
 .brand-mark { display: block; flex: none; height: 22px; width: auto; overflow: visible; }
 .bm-ink { fill: var(--ink); }
-.bm-head { fill: var(--core); }
-.bm-l {
-  opacity: 0; transform: translateX(-1620px);   /* elke letter vertrekt volledig achter de komeet (links van het masker) */
-  transition: transform .6s var(--ease) calc(var(--i) * 40ms), opacity .2s linear calc(.42s + var(--i) * 40ms);   /* terug: de r voorop */
+.bm-head { fill: var(--core); transform-box: fill-box; transform-origin: center; }
+.bm-l { --pull: calc(34px + var(--i) * 26px); }
+.brand.is-pulling .bm-l { animation: bm-pull 1.15s linear calc(var(--i) * 55ms) both; }
+.brand.is-pulling .bm-head { animation: bm-breathe 1s var(--ease) both; }
+@keyframes bm-pull {
+  0% { transform: none; animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
+  30% { transform: translateX(calc(-1 * var(--pull))); animation-timing-function: cubic-bezier(.4, 0, .4, 1); }
+  58% { transform: translateX(calc(.22 * var(--pull))); animation-timing-function: cubic-bezier(.4, 0, .4, 1); }
+  80% { transform: translateX(calc(-.06 * var(--pull))); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  100% { transform: none; }
 }
-.brand.is-open .bm-l {
-  opacity: 1; transform: none;
-  transition: transform .95s var(--ease) calc((3 - var(--i)) * 60ms), opacity .1s linear calc((3 - var(--i)) * 60ms);   /* de t komt eerst naar buiten, de letters trekken even uiteen en sluiten aan */
-}
+@keyframes bm-breathe { 0%, 100% { transform: none; } 32% { transform: scale(1.16); } 62% { transform: scale(.97); } }
 @media (prefers-reduced-motion: reduce) {
-  .bm-l, .brand.is-open .bm-l { transition: none; }
+  .brand.is-pulling .bm-l, .brand.is-pulling .bm-head { animation: none; }
 }
 .demo-badge { display: inline-block; margin-left: 0; padding: 2px 7px 1px; border: 1px dashed var(--dash-2); border-radius: var(--r-pill); font: 500 9.5px/1.3 var(--mono); letter-spacing: .14em; color: var(--ink-2); vertical-align: 2px; }
 .summary { margin-top: 9px; color: var(--ink-2); font-size: var(--fs-text); font-variant-numeric: tabular-nums; }
