@@ -701,6 +701,9 @@ function trackRow(t) {
   title.addEventListener('click', () => runMarquee(title));   // touch: een tik laat een lange titel één keer doorschuiven
   title.title = t.title + ' · ' + tx('task.dbl');
   title.addEventListener('dblclick', () => editTitle(t.id, title));
+  // ook met het toetsenbord (audit 09/11/2026, A4-004): Tab naar de titel, Enter of F2 om te bewerken
+  title.tabIndex = 0;
+  title.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); editTitle(t.id, title, true); } });
 
   // Mobiele swipe knoppen (op li achter de rij, zichtbaar bij vegen)
   const swipeDel = el('button', 't-swipe-del-btn');
@@ -1147,7 +1150,7 @@ function markHot() {
   for (const g of groupsEl.querySelectorAll('.group')) g.classList.toggle('is-hot', !hotTask && Number(g.dataset.level) === hotLevel);
 }
 
-function editTitle(id, span) {
+function editTitle(id, span, byKey = false) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
   const input = el('input', 't-edit');
@@ -1164,6 +1167,7 @@ function editTitle(id, span) {
     const value = input.value.trim();
     if (save && value && value !== task.title) { task.title = value; touch(task); saveTasks(); }
     render();
+    if (byKey) groupsEl.querySelector(`.track[data-id="${CSS.escape(id)}"] .t-title`)?.focus();
   };
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') finish(true);
