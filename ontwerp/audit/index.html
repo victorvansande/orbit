@@ -1,0 +1,140 @@
+<title>Orbit Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Opbouw: één smalle kolom zoals de vensters van Orbit, kapitaaltjes als labels, rood enkel als accent */
+:root {
+  --bg: #EBE8DF; --surface: #F4F2EC; --ink: #1B1B22; --ink-2: #5E5E68; --line: rgba(27,27,34,.12);
+  --core: #E70049; --ok: #1F8A5B; --ask: #C2410C; --open: #2563EB;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --line: rgba(236,236,241,.12); --ok: #4ADE80; --ask: #FB923C; --open: #60A5FA; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --line: rgba(236,236,241,.12); --ok: #4ADE80; --ask: #FB923C; --open: #60A5FA; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.6 var(--sans); }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+.lab { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 10px; }
+h1 { font: 600 34px/1.15 var(--sans); margin: 0; text-wrap: balance; }
+h1 i { font-style: normal; color: var(--core); }
+h2 { font: 500 12px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+p { margin: 0; max-width: 65ch; }
+.lead { color: var(--ink-2); margin-top: 12px; }
+.nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.num { background: var(--surface); border-radius: 12px; padding: 14px 16px; }
+.num b { display: block; font: 600 28px/1.1 var(--sans); font-variant-numeric: tabular-nums; }
+.num span { font: 500 10.5px/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 10.5px/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+td.n { text-align: right; padding-right: 0; }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 65ch; }
+.pill { display: inline-block; font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 4px 7px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+.ok { color: var(--ok); } .ask { color: var(--ask); } .open { color: var(--open); }
+.q { display: grid; gap: 14px; }
+.q > div { display: grid; grid-template-columns: 74px 1fr; gap: 4px 14px; }
+.q code, td code, li code { font: 400 12.5px var(--mono); }
+.sw { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sw > div { border-radius: 12px; padding: 16px; display: grid; gap: 6px; }
+.sw .lt { background: #EBE8DF; color: #1B1B22; }
+.sw .lt .t3 { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.sw small { font: 400 12px var(--mono); color: #5E5E68; }
+@media (max-width: 480px) { h1 { font-size: 28px; } .q > div { grid-template-columns: 1fr; } .sw { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="lab">Volledige audit · 09/11/2026 · volgens docs/nalezing.md</p>
+    <h1>Orbit is gezond: <i>geen</i> kritieke of hoge bevindingen</h1>
+    <p class="lead">44 bevindingen over twaalf domeinen. Alle objectieve fouten met een kleine of middelgrote ingreep zijn opgelost en nagemeten; wat aan smaak of aan een keuze van Victor raakt, staat hieronder als vraag. Het volledige register met bewijs per bevinding staat in <code>docs/audit/register.md</code>.</p>
+  </header>
+
+  <section class="nums" aria-label="Kerncijfers">
+    <div class="num"><b>44</b><span>bevindingen</span></div>
+    <div class="num"><b>21</b><span>opgelost</span></div>
+    <div class="num"><b>7</b><span>aanvaard</span></div>
+    <div class="num"><b>9</b><span>vraag aan Victor</span></div>
+    <div class="num"><b>7</b><span>open, volgende sessie</span></div>
+  </section>
+
+  <section>
+    <h2>Per ernst, voor en na</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Ernst</th><th class="n">Gevonden</th><th class="n">Opgelost</th><th class="n">Nog open of vraag</th></tr></thead>
+      <tbody>
+        <tr><td>Kritiek</td><td class="n">0</td><td class="n">0</td><td class="n">0</td></tr>
+        <tr><td>Hoog</td><td class="n">0</td><td class="n">0</td><td class="n">0</td></tr>
+        <tr><td>Middel</td><td class="n">9</td><td class="n">5</td><td class="n">4 (contrast ×2, app.js, kennis.md)</td></tr>
+        <tr><td>Laag</td><td class="n">18</td><td class="n">14</td><td class="n">4</td></tr>
+        <tr><td>Suggestie</td><td class="n">17</td><td class="n">2</td><td class="n">15 (waarvan 7 aanvaard)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Wat er nu beter is</h2>
+    <ul>
+      <li><b>Gegevens.</b> Export en import nemen nu ook prestaties (focusminuten, gebeurtenissen), hemels en verwijdermarkeringen mee. Een beschadigde takenlijst haalt de reservekopie terug in plaats van de voorbeeldtaken te tonen. Een taak die de app niet kan lezen (bv. van een nieuwere versie) gaat eerst in een momentopname. De sync slaat beschadigde taken over en twee toestellen kiezen bij een gelijk tijdstip hetzelfde.</li>
+      <li><b>Toegankelijkheid.</b> Titels zijn met Tab en Enter of F2 te bewerken. Trefzones op gsm zijn 36 px in Instellingen, Nieuwe taak, Archief, Koppelen en de maandrecap, zonder dat er iets zichtbaar verandert.</li>
+      <li><b>Rust.</b> De polsslag van het tandwiel en de zandlopertijden bewegen niet meer bij minder beweging. Het glaasje vraagt zonder lopende zandloper 2 in plaats van 57 frames per seconde.</li>
+      <li><b>Opkuis.</b> Media queries na hun basisregel, dode exports weg, overal "zandloper", manifest en statusbalk in de kleur van het papier, <code>.gitignore</code>.</li>
+      <li><b>Breakout</b> (tussendoor gevraagd): zachte geluidjes, pauze pas 200 px buiten het bakje of als de muis het venster verlaat, spelen met de pijltjes.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Metingen</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Wat</th><th>Uitkomst</th></tr></thead>
+      <tbody>
+        <tr><td>Lay-out (6 maten × licht en donker, NL; EN, Minimaal, minder beweging, Rood)</td><td>Geen horizontale scroll, geen consolefouten, geen mislukte verzoeken, niets afgekapt of uit beeld, geen onbedoelde overlap</td></tr>
+        <tr><td>Visuele regressie, oud tegen nieuw (1440 en 375, licht en donker, 6 toestanden)</td><td>Enige verschil: de gestopte polsslag bij minder beweging (bedoeld)</td></tr>
+        <tr><td>Samenvoegen (unit-tests)</td><td>25 van 25 groen (vooraf 2 crashes op beschadigde invoer)</td></tr>
+        <tr><td>Twee gekoppelde toestellen</td><td>Samenvoegen, offline bewerken, verwijderen: gelijk binnen 2,5 tot 8,5 s, momentopname op beide</td></tr>
+        <tr><td>Randgevallen bij opstarten</td><td>Kapotte JSON in 44 sleutels, geblokkeerde of volle opslag, geen IndexedDB, 30 taken, titel van 198 tekens, Arabisch: geen fouten</td></tr>
+        <tr><td>Prestaties op gsm met 4× tragere CPU</td><td>Laden 1,0 s, thuis en focus 60 fps, heap 10 MB</td></tr>
+        <tr><td>Offline na één bezoek</td><td>Lijst, scène en focus werken</td></tr>
+        <tr><td>Code</td><td><code>app.js</code> 3843 regels, <code>styles.css</code> 2067, <code>CLAUDE.md</code> 12,1 KB, <code>kennis.md</code> 380 KB</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Te beslissen door Victor</h2>
+    <div class="q">
+      <div><span class="pill ask">A4-001</span><p><b>Contrast van labels.</b> De tertiaire inkt (#9A9AA3) haalt in licht thema 2,3 op papier; de norm voor kapitaaltjes-labels is 3. Voorstel: #7A7A83 (3,5). Donker haalt het al.</p></div>
+      <div><span class="pill ask">A4-002</span><p><b>Kleine uitlegtekst</b> in Prestaties, Archief en Koppelen (12,5 tot 13,5 px) staat ook in die inkt: 2,4. Voorstel: secundaire inkt #5E5E68 (5,2).</p></div>
+      <div class="sw" style="grid-column: 1 / -1">
+        <div class="lt"><span class="t3" style="color:#9A9AA3">Prestaties · Uitleg · Archief</span><span style="color:#9A9AA3;font-size:13px">Vink 10 taken af.</span><small>Nu: 2,3 en 2,4</small></div>
+        <div class="lt"><span class="t3" style="color:#7A7A83">Prestaties · Uitleg · Archief</span><span style="color:#5E5E68;font-size:13px">Vink 10 taken af.</span><small>Voorstel: 3,5 en 5,2</small></div>
+      </div>
+      <div><span class="pill ask">A3-002</span><p>De knop heet <b>Fidget</b>, de Uitleg zegt <b>bakje</b>. Eén woord kiezen.</p></div>
+      <div><span class="pill ask">A3-004</span><p>Breakout zegt "TIK OM TE STARTEN", ook op desktop. Daar "KLIK OF SPATIE"?</p></div>
+      <div><span class="pill ask">A7-002</span><p>De sync-server heeft geen limiet op het aantal verzoeken. Zonder code onmogelijk te misbruiken; een aanpassing vraagt een deploy.</p></div>
+      <div><span class="pill ask">A7-005</span><p>Locatie (op ongeveer 100 m) naar de weerdienst, IP naar Google Fonts: nergens beschreven. Eén zin in de Uitleg?</p></div>
+      <div><span class="pill ask">A4-008</span><p>In de webapp kan niemand zoomen (jouw keuze van 29/10). Enkel ter info.</p></div>
+      <div><span class="pill ask">A2b-003</span><p>Klank en gevoel van de nieuwe Breakout-geluiden: luister ze na.</p></div>
+      <div><span class="pill ask">A9-001</span><p>Tien punten na te kijken op iPhone (waas achter vensters, melding boven een venster, veilige zones, QR scannen, sleutelhanger, geluid met de stille schakelaar, delen van de recap). Lijst in het register.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bewust niet veranderd</h2>
+    <ul>
+      <li>Het vinkje van een Nu-taak in de focus blijft 30 × 30 px: de rijen liggen 24 px uit elkaar en het haalt de WCAG-norm van 24 px.</li>
+      <li><code>INTEGRATED</code> in <code>mark.js</code> blijft: de merkgids noemt dat bestand de bron van alle vormen.</li>
+      <li>De Engelse tellerlabels in de Nederlandse versie ("stars all time"): jouw keuze van 03/11.</li>
+      <li>Niets in <code>worker/</code>: elke push daar deployt meteen.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Open voor een volgende sessie</h2>
+    <ul>
+      <li><span class="pill open">A10-006</span> <code>app.js</code> opsplitsen per domein (lijst, vensters, archief, koppelen, focus, toetsenbord, instellingen, prestaties).</li>
+      <li><span class="pill open">A11-002</span> <code>docs/kennis.md</code> herstructureren: index, actuele toestand vooraan, geschiedenis en oude Overdracht in eigen bestanden.</li>
+      <li><span class="pill open">A10-005</span> Gedeelde hulpjes (<code>clamp</code>, <code>smoothstep</code>, <code>rgba</code>, <code>hexRgb</code>) naar <code>src/core/</code>.</li>
+      <li><span class="pill open">A7-001</span> Content Security Policy. <span class="pill open">A4-005</span> logo als kop. <span class="pill open">A4-007</span> geforceerde kleuren. <span class="pill open">A6-002</span> scène stil laten bij stilstand.</li>
+    </ul>
+  </section>
+</div>

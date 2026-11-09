@@ -2,6 +2,8 @@
 
 Volgt `docs/nalezing.md`. Gestart 09/11/2026 door Claude Code op `main` (`810a873`). Eén regel per bevinding; ernst: Kritiek, Hoog, Middel, Laag, Suggestie. Soort: Obj (regel of norm gebroken) of Smaak (voorstel aan Victor). Status: Open, Opgelost (commit), Aanvaard (reden), Vraag aan Victor.
 
+Eindrapport: https://claude.ai/artifact/D4wW9Wn1S5LXBp6ji38Wmy (bron `ontwerp/audit/index.html`). Stand 09/11/2026: 44 bevindingen, 21 opgelost, 7 aanvaard, 9 vraag aan Victor, 7 open voor een volgende sessie.
+
 ## Nulmeting (A0, 09/11/2026)
 
 - Code: 19 216 regels in `src/`, `index.html`, `sw.js`, `worker/` (zonder `jsqr.min.js`). Grootste: `app.js` 3821 regels / 187 KB, `styles.css` 2054 / 132 KB, `scene.js` 1974 / 100 KB, `vendor/topography.js` 1507, `fidget.js` 1207, `vendor/wayglim.js` 998, `panel.js` 846. Daarnaast `index.html` 575 regels / 50 KB.
