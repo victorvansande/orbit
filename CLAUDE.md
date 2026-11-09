@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: fidgetmenu scrolt (zachte randen, wiel en vegen) en heeft zijn blur terug. Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: focus op gsm: in stilte zakt de quote tot de basislijn van de zandloper, terug omhoog als de knoppen terugkomen. Dubbele punt bevestigd terug op iPhone. Open: Victor kijkt op gsm.
 - 09/11/2026, Claude Code: logo in rust altijd volledig; bij aanwijzen of tikken Aantrekking (C, gekozen door Victor uit drie, verfijnd: letters buigen als gedempte veer naar de komeet, kop ademt). Open: Victor kijkt op pc en gsm.
 - 09/11/2026, Claude Code: bakje schaalbaar op desktop (greepje linksboven, verhouding vast, meer inhoud; Breakout en Paneel zoomen); water blijft rustig op elke maat, lava gevuld (shader had maar 16 plaatsen). Open: Victor kijkt of de grens (niet over de ring Maand, op 1440 × 900 tot 1,25) goed voelt.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 09/11/2026, Claude Code: opdracht voor een volledige audit van Orbit (Deel A: alles vinden en oplijsten in `docs/audit/register.md`, Deel B: aanpakken) staat in `docs/nalezing.md`; starten met "Voer `docs/nalezing.md` uit". Open: Victor start ze in een nieuwe sessie.
 - 09/11/2026, Claude Code: Breakout heeft zachte geluidjes, pauzeert pas ver buiten het bakje (200 px) of als de muis het venster verlaat, en is met de pijltjes te spelen (spatie of pijl omhoog lanceert). Open: Victor speelt op pc en luistert de geluiden na.
 - 09/11/2026, Claude Code: audit volgens `docs/nalezing.md`: register `docs/audit/register.md` (44 bevindingen, geen kritieke), objectieve opgelost (export met prestaties en hemels, reservekopie bij onleesbare lijst, titel met toetsenbord, trefzones, opkuis), sectie in `docs/kennis.md`. Open: Victor beslist de vragen in het register (contrast, Fidget of bakje, server); volgende sessie: `app.js` opsplitsen (A10-006), `docs/kennis.md` herstructureren (A11-002), hulpjes naar `core` (A10-005).
+- 09/11/2026, Claude Code: geschenken bij elke nieuwe rang (negen, puur cosmetisch, aan of uit in Prestaties, verrassing tot de rang gehaald is; `src/core/gifts.js`). Victor (rang 3) heeft er nu twee. Open: Victor ontdekt de rest bij een promotie; elk effect is getest maar door hem nog niet gezien.

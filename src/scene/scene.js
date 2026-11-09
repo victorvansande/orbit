@@ -127,6 +127,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   // sterrenbeeld bij elke 25e ster
   const bend = { k: 0, x: 0, y: 0 };
   let meteor = null, nextMeteor = performance.now() + (90 + Math.random() * 150) * 1000, forceMeteor = false;
+  let gifts = new Set();                     // geschenken bij een rang (src/core/gifts.js): enkel uiterlijk, zie setGifts
+  const starTint = new Map();                // geschenk Sterrenstof: moment per ster, vast uit het id
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
   let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
@@ -941,7 +943,87 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         else { const k = 1 - ease(p / 2.4); R *= 1 + 1.6 * k; alpha = Math.min(1, alpha + 0.6 * k); }
       }
       ctx.globalAlpha = a * alpha;
+      if (gifts.has('stardust')) ctx.fillStyle = rgba(mixInk(colors.get(starLevel(st.id)), 0.62), 1);   // gedempt: een volle hemel mag geen confetti worden
       star4(x, y, R, 0);
+    }
+    ctx.globalAlpha = 1;
+  }
+  // Sterrenstof: elke ster een vast moment (1 tot 5), uit een hash van haar id, zodat ze haar kleur houdt
+  function starLevel(id) {
+    let lv = starTint.get(id);
+    if (lv === undefined) {
+      let h = 2166136261;
+      for (const ch of String(id)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+      lv = 1 + ((h >>> 0) % 5);
+      starTint.set(id, lv);
+    }
+    return lv;
+  }
+  // Melkweg (geschenk): een vage band van fijne puntjes schuin door de kern, achter alles; vaste puntjes, beweegt niet
+  let milky = null;
+  function drawMilky(now) {
+    if (!gifts.has('milky')) return;
+    const a = introAlpha(now, 0.3, 1.2) * orbVeil;
+    if (a <= 0) return;
+    if (!milky) {
+      let sd = 20261109;
+      const rand = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+      milky = Array.from({ length: 560 }, () => {
+        const u = rand() * 2 - 1, g = (rand() + rand() + rand() - 1.5) / 1.5;
+        return [u, g * (0.55 + 0.45 * (1 - Math.abs(u))), 0.5 + rand() * 0.9, rand()];
+      });
+    }
+    const c0 = project(0, 0, TIP_Z * cam.depth, false) ? [pt.x, pt.y] : [W / 2, H / 2];
+    const L = Math.hypot(W, H) * 0.55, wd = Math.min(W, H) * 0.075, ca = Math.cos(-0.42), sa = Math.sin(-0.42);
+    const k = Math.min(W, H) < 500 ? 0.9 : 1.1;
+    ctx.fillStyle = rgba(INK, 1);
+    for (const [u, v, r, b] of milky) {
+      ctx.globalAlpha = a * (0.12 + 0.26 * b) * (1 - 0.55 * Math.abs(u));
+      ctx.beginPath();
+      ctx.arc(c0[0] + u * L * ca - v * wd * sa, c0[1] + u * L * sa + v * wd * ca, r * k, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  // Maantje en ring om de kern (geschenken): op het scherm rond het midden van de kern, schuin; de achterkant wordt vóór de
+  // kern getekend, de voorkant erna. Draait traag; stil bij minder beweging en Minimaal. Wijkt mee tijdens de maandwissel.
+  function drawSatellites(now, front) {
+    const moon = gifts.has('moon'), ring = gifts.has('saturn');
+    if (!moon && !ring) return;
+    const a0 = introAlpha(now, 0.4, 1.2) * orbVeil * (1 - 0.55 * sleepK);
+    if (a0 <= 0.01 || !project(0, 0, TIP_Z * cam.depth, false)) return;
+    const cx = pt.x, cy = pt.y, R = Math.max(10, (coreR + 4) * cam.s * pt.f);
+    const t = reducedMotion.matches || minimal ? 0 : now / 1000;
+    const ct = Math.cos(-0.32), st = Math.sin(-0.32);
+    const at = (ang, rad, flat) => {
+      const ex = Math.cos(ang) * rad, ey = Math.sin(ang) * rad * flat;
+      return [cx + ex * ct - ey * st, cy + ex * st + ey * ct];
+    };
+    ctx.fillStyle = rgba(INK, 1);
+    if (ring) {
+      const rad = R * 1.5, dot = Math.max(0.7, R * 0.05);
+      ctx.globalAlpha = a0 * (front ? 0.7 : 0.3);
+      ctx.beginPath();
+      for (let i = 0; i < 48; i++) {
+        const ang = i / 48 * TAU + t * 0.1;
+        if ((Math.sin(ang) > 0) !== front) continue;
+        const [x, y] = at(ang, rad, 0.3);
+        ctx.moveTo(x + dot, y); ctx.arc(x, y, dot, 0, TAU);
+      }
+      ctx.fill();
+    }
+    if (moon) {
+      const ang = 1.1 + t * TAU / 14;
+      if ((Math.sin(ang) > 0) === front) {
+        const [x, y] = at(ang, R * 1.9, 0.45), r = Math.max(3, R * 0.17);
+        ctx.globalAlpha = a0 * (front ? 0.85 : 0.4);
+        ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+        // sikkeltje: een schijfje papier schuift er half over
+        ctx.globalAlpha = a0 * (front ? 0.85 : 0.4);
+        ctx.fillStyle = rgba(PAPER, 1);
+        ctx.beginPath(); ctx.arc(x + r * 0.45, y - r * 0.3, r * 0.85, 0, TAU); ctx.fill();
+        ctx.fillStyle = rgba(INK, 1);
+      }
     }
     ctx.globalAlpha = 1;
   }
@@ -979,7 +1061,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const free = Math.max(200, W - insets.left - insets.right);
       meteor = { t0: now, x: insets.left + free * (0.15 + Math.random() * 0.7), y: H * (0.08 + Math.random() * 0.35), dx: dir[0], dy: dir[1], dist: Math.min(W, H) * (0.38 + Math.random() * 0.2), forced: forceMeteor };
       forceMeteor = false;
-      nextMeteor = now + (360 + Math.random() * 480) * 1000;
+      nextMeteor = now + (gifts.has('meteors') ? 70 + Math.random() * 110 : 360 + Math.random() * 480) * 1000;   // Meteorenregen: om de 1 tot 3 min
     }
     if (!meteor) return;
     const ms = now - meteor.t0;
@@ -1144,7 +1226,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot + 0.18 * pulseEased, 0, 1) * intro * orbVeil;   // tijdens de maandwissel wijken ook de ringen: enkel de kern en de sterren
       const z = ring.z * cam.depth;
       // stippen
-      const blend = Math.max(hot, 0.45 * pulseEased);
+      const blend = Math.max(hot, 0.45 * pulseEased, gifts.has('tinted') ? 0.55 : 0);   // Gekleurde banen: altijd een zachte tint
       ctx.fillStyle = rgba(blend > 0.02 ? mixInk(colors.get(lv.id), blend) : INK, 1);
       // In het zijaanzicht worden de ringen platte ellipsen die elkaar kruisen. Twee ingrepen houden het rustig:
       // elke tweede stip vervaagt, en de achterkant van elke ring (van je af) krijgt minder dekking dan de voorkant.
@@ -1235,6 +1317,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In vier stappen
     // gebundeld, zodat het één pad per tint blijft.
     const paths = [[], [], [], []];
+    const blush = gifts.has('blush'), blushDots = [];
     for (const d of coreGrid(spacing, rMax)) {
       if (d.r > rMax + 0.05) continue;
       const uR = Math.min(1, d.r / rMax);
@@ -1246,7 +1329,20 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (tw) for (const age of tw) gulp += 0.9 * (1 - age / 0.4) * Math.exp(-(((d.r - age / 0.32 * (rMax + 8)) / (3.2 * grow)) ** 2));
       const size = base + bump + breathe + gulp;
       if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
-      paths[Math.round(eyes.ink(d.x, d.y) * 3)].push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
+      const ink = eyes.ink(d.x, d.y);
+      if (blush && ink < 0.25 && Math.min(Math.hypot(d.x - eyes.cheek.x, d.y - eyes.cheek.y), Math.hypot(d.x + eyes.cheek.x, d.y - eyes.cheek.y)) < eyes.cheek.r) {
+        blushDots.push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
+        continue;
+      }
+      paths[Math.round(ink * 3)].push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
+    }
+    if (blushDots.length) {   // Blosjes (geschenk): zachtroze puntjes onder de ogen
+      // lichter dan de kern zelf (die is meestal rood): zachtroze vlekjes lezen dan als blos, niet als extra ogen
+      const k = theme === THEMES.dark ? 0.5 : 0.55, rose = [255, 226, 234];
+      ctx.fillStyle = rgba(coreColor.map((c, i) => c + (rose[i] - c) * k), intro);
+      ctx.beginPath();
+      for (let k = 0; k < blushDots.length; k += 3) { ctx.moveTo(blushDots[k] + blushDots[k + 2], blushDots[k + 1]); ctx.arc(blushDots[k], blushDots[k + 1], blushDots[k + 2], 0, TAU); }
+      ctx.fill();
     }
     paths.forEach((list, i) => {
       if (!list.length) return;
@@ -1298,6 +1394,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     });
     const cover = (v, w) => Math.max(0, Math.min(1, (w - v) / soft + 0.5));
     return {
+      cheek: { x: gap * 1.12, y: ey + h * 1.05, r: Math.max(h * 0.72, spacing * 1.45) },   // voor het geschenk Blosjes
       ink(x, y) {
         let c = 0;
         for (const e of eyes) {
@@ -1671,6 +1768,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.clearRect(0, 0, W, H);
     updateCamera();
     drawGrid(now);
+    drawMilky(now);
     drawSky(now);
     drawConstellation(now);
     drawMeteor(now);
@@ -1687,6 +1785,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       console.error('nightDraw error:', err);
       nightDraw = null;
     }
+    drawSatellites(now, false);
     const swell = turnCore(now);
     if (swell !== 1 && coreHit) {   // maandwissel: de kern zwelt rond haar eigen middelpunt
       const { x, y } = coreHit;
@@ -1695,6 +1794,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       ctx.restore();
       coreHit = { x, y, r: coreHit.r };
     } else drawCore(now);
+    drawSatellites(now, true);
     drawSonar(now);
     drawSparks(now);
     drawLabels();
@@ -1962,6 +2062,12 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       );
     },
     setNightDraw(fn) { nightDraw = fn; },
+    // geschenken die nu werken (Set van id's); Meteorenregen haalt een verre volgende meteoor meteen dichterbij
+    setGifts(list) {
+      const had = gifts.has('meteors');
+      gifts = new Set(list);
+      if (gifts.has('meteors') && !had) nextMeteor = Math.min(nextMeteor, performance.now() + (40 + Math.random() * 60) * 1000);
+    },
     setTempo(name) { if (TEMPO[name]) tempo = TEMPO[name]; },
     setTheme(name) {
       theme = THEMES[name] || THEMES.light;

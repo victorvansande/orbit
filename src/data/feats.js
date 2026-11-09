@@ -97,6 +97,7 @@ const DEFS = [
 ];
 
 const en = LANG === 'en';
+export const RANK_NAMES = RANKS.map(r => r[en ? 2 : 1]);   // ook de namen van rangen die nog niet gehaald zijn (geschenken)
 export const FEATS = DEFS.map(([id, group, tier, metric, goal, nl, enName, nlDesc, enDesc, secret = false]) => ({
   id, group, tier, metric, goal, secret, points: TIERS[tier], name: en ? enName : nl, desc: en ? enDesc : nlDesc,
 }));

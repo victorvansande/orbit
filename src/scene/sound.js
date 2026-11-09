@@ -433,11 +433,6 @@ export function playMonth(pl, at = performance.now()) {
 // level: 1..5 (toonhoogte en, bij sonar, de echo), n: hoeveelste ster (stemverschil, voor 'melodie')
 export function playDone({ level = 3, n = 0, style = SOUND_STYLE, force = false } = {}) {
   if (style === 'sonar') { cue((a, o, t) => SOUNDS.sonar(a, o, t, 0, n, level), force); return; }
-  if (!force && !soundOn()) return;
-  const a = audio();
-  if (!a) return;
-  const out = a.createGain();
-  out.gain.value = 0.9;
-  out.connect(masterLimiter || a.destination);
-  (SOUNDS[style] || SOUNDS.glas)(a, out, a.currentTime + 0.01, NOTES[level] || NOTES[3], n);
+  // andere klank (bv. het geschenk Zilverglas): ook via cue, zodat het stilknopje telt en een stille audioklok niets uitstelt
+  cue((a, o, t) => (SOUNDS[style] || SOUNDS.glas)(a, o, t, NOTES[level] || NOTES[3], n), force, 0.6);   // 0,6: even luid als de sonarping (piek rond 0,1)
 }

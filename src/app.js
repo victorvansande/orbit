@@ -15,7 +15,8 @@ import { renderQr, codeFromText, createScanner, deviceName } from './sync/pair.j
 import { canStore, storeCode, wasOffered, markOffered } from './sync/keychain.js';
 import { loadArchive, saveArchive, loadArchDel, saveArchDel, mergeArchive, loadSnapshots, snapshot, lastSnapshotAt, STORE_KEYS } from './data/store.js';
 import { tx, LANG, LOCALE, setLang, applyStatic, reasonText, DEMO_TITLES } from './core/i18n.js';
-import { badgeSvg, rankSvg, rankMetal, RANK_BOX } from './core/badge.js';
+import { badgeSvg, rankSvg, rankMetal, RANK_BOX, starPath } from './core/badge.js';
+import { GIFTS, loadGiftPrefs, saveGiftPrefs, giftsAt, activeGifts } from './core/gifts.js';
 import { createPromo, PROMO_MS, landAt } from './scene/promo.js';
 import { greeting, coreLine } from './scene/greet.js';
 import { playDone, playFeat, playRank, playTimer, playMonth, playTick, playCore, unlockAudio, soundBurst, soundOn, setSound, audioLead } from './scene/sound.js';
@@ -23,7 +24,7 @@ import { createFidget } from './focus/fidget.js';
 import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/timer.js';
 import { createGlass } from './focus/glass.js';
 import { loadScores, saveScores, mergeScores, scoresSig, createScoreStore, isScoreKey } from './data/scores.js';
-import { FEATS, FEATS_KEY, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
+import { FEATS, FEATS_KEY, RANK_NAMES, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
 import { softReveal, whiteBurst, smallNight, coreWave, monthGate, createWall } from './scene/fx.js';
 import { turnStyle, TURN_STYLES } from './scene/turn.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
@@ -649,7 +650,8 @@ $('stat-mini').addEventListener('click', () => {
 // `twinkleDot` blijft voor wat er echt gebeurt: een nieuwe ster buiten beeld (`noteStar`) en een afgelopen zandloper.
 
 /* ---- Takenlijst ---- */
-const CHECK_SVG = '<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// tweede pad: de ster van het geschenk Sterrenstempel (html.gift-stamp), anders onzichtbaar
+const CHECK_SVG = `<svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M2.6 7.3l2.9 2.9 5.9-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="ck-star" d="${starPath(6.2, 7, 7, 0.24)}"/></svg>`;
 const TRASH_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12.5 4.5l-.7 9a1.5 1.5 0 0 1-1.5 1.5H5.7a1.5 1.5 0 0 1-1.5-1.5l-.7-9M6.5 7.5v4M9.5 7.5v4"/></svg>';
 const ORBIT_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>';
 const CALENDAR_SVG = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5 1.5v2.5M11 1.5v2.5"/></svg>';
@@ -1378,7 +1380,7 @@ function complete(id, row) {
       if (motion && !minimalFx) takeStage(wait + (night ? 5000 : 3600));
     }
   }
-  const sound = () => { lastTick = performance.now(); playDone({ level: task.level, n: totalDone(done) - 1 }); };
+  const sound = () => { lastTick = performance.now(); playDone({ level: task.level, n: totalDone(done) - 1, style: doneStyle() }); };
   saveTasks();
   renderSummary();
   if (!document.body.classList.contains('is-focus')) renderFocusNow();
@@ -2062,7 +2064,7 @@ for (const b of soundButtons) b.addEventListener('click', () => {
   const on = b.dataset.sound === 'on';
   setSound(on);
   renderSound();
-  if (on) playDone({ level: wheel.level, force: true });   // meteen laten horen hoe het klinkt
+  if (on) playDone({ level: wheel.level, force: true, style: doneStyle() });   // meteen laten horen hoe het klinkt
 });
 renderSound();
 
@@ -2463,6 +2465,72 @@ const featQueue = [];
 const FEATS_SINCE = DEMO_MODE ? Date.now() : 0;
 // de automatische snede van de maandwissel telt niet als zelf een nieuwe hemel beginnen
 const featsNow = () => evaluate(feats, done, { skies: skyCuts.filter(t => t >= FEATS_SINCE || turnCuts.has(t)).length, since: FEATS_SINCE });
+
+/* ---- Geschenken bij een nieuwe rang (src/core/gifts.js) ---- */
+// Enkel uiterlijk en klank. Ontgrendeld = de rang gehaald (komt uit de punten, dus ook met de sync); aan of uit per toestel.
+// Een nog niet gehaald geschenk blijft een verrassing: geen naam, geen uitleg (Victor, 09/11/2026).
+let giftPrefs = loadGiftPrefs(), giftLevel = 1, giftLive = new Set(), giftsReady = false;
+const doneStyle = () => (giftLive.has('glass') ? 'glas' : undefined);
+function applyGifts(level) {
+  giftLevel = level;
+  giftLive = activeGifts(level, giftPrefs);
+  for (const g of GIFTS) document.documentElement.classList.toggle(`gift-${g.id}`, giftLive.has(g.id));
+  scene.setGifts(giftLive);
+}
+// Nieuw ontgrendeld (ook bij het eerste bezoek na deze versie, of via de sync): één melding met een knop naar de lijst.
+// Komt na de promotie (hideRankPop roept dit opnieuw aan); de demo begint op rang 1 en meldt niets.
+function offerGifts() {
+  if (DEMO_MODE || rankBusy || rankQueue) return;
+  const fresh = giftsAt(giftLevel).filter(g => g.rank > giftPrefs.seen);
+  if (giftLevel > giftPrefs.seen) { giftPrefs.seen = giftLevel; saveGiftPrefs(giftPrefs); }
+  if (!fresh.length) return;
+  const text = fresh.length === 1 ? tx('toast.gift1', { name: tx(`gift.${fresh[0].id}`) }) : tx('toast.gifts', { n: fresh.length });
+  showToast(text, openGifts, tx('toast.giftShow'), 'gift');
+}
+function openGifts() {
+  openFeats();
+  const sec = $('feats-list').querySelector('.is-gifts');
+  if (sec) sec.scrollIntoView({ block: 'start', behavior: 'auto' });
+}
+function giftSection() {
+  const sec = el('section', 'feats-group is-gifts');
+  const h = el('h3', 'feats-group-title', tx('gifts.title'));
+  h.append(el('span', '', `${giftsAt(giftLevel).length}/${GIFTS.length}`));
+  const note = el('p', 'gifts-note', tx('gifts.note'));
+  const ul = el('ul', 'feats-grid');
+  ul.append(...GIFTS.map(giftTile));
+  sec.append(h, note, ul);
+  return sec;
+}
+function giftTile(g) {
+  const got = g.rank <= giftLevel, on = got && !giftPrefs.off[g.id];
+  const li = el('li', `feat gift${got ? ' is-got' : ''}`);
+  li.style.setProperty('--tier', `var(--tier-${rankMetal(g.rank)})`);
+  li.style.setProperty('--rank-cut', 'var(--fill)');
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', RANK_BOX); icon.setAttribute('class', 'feat-badge gift-badge'); icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = rankSvg(g.rank);
+  const body = el('div', 'feat-body');
+  const name = el('p', 'feat-name', got ? tx(`gift.${g.id}`) : tx('gift.locked'));
+  if (got) {
+    const btn = el('button', 'gift-toggle', tx(on ? 'gift.on' : 'gift.off'));
+    btn.type = 'button';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.setAttribute('aria-label', tx('gift.aria', { name: tx(`gift.${g.id}`), state: tx(on ? 'gift.on' : 'gift.off') }));
+    btn.addEventListener('click', () => {
+      if (giftPrefs.off[g.id]) delete giftPrefs.off[g.id]; else giftPrefs.off[g.id] = 1;
+      saveGiftPrefs(giftPrefs);
+      applyGifts(giftLevel);
+      li.replaceWith(giftTile(g));
+      featsDialog.querySelector(`.gift-toggle[data-gift="${g.id}"]`)?.focus();
+    });
+    btn.dataset.gift = g.id;
+    name.append(btn);
+  }
+  body.append(name, el('p', 'feat-desc', got ? tx(`gift.${g.id}.desc`) : tx('gift.lockedDesc', { n: g.rank, name: RANK_NAMES[g.rank - 1] })));
+  li.append(icon, body);
+  return li;
+}
 function checkFeats(pop) {
   const r = featsNow();
   if (r.fresh.length) {
@@ -2476,6 +2544,8 @@ function checkFeats(pop) {
   if (featsDialog.open) renderFeats();
   if (featQueue.length) showFeatPop();
   noteRank(r, pop);
+  if (r.rank.level !== giftLevel || !giftsReady) { giftsReady = true; applyGifts(r.rank.level); if (featsDialog.open) renderFeats(); }
+  offerGifts();
 }
 function renderFeatsBadge(r = featsNow()) {
   const b = $('feats-badge'), hint = $('stats-rank-hint');
@@ -2517,7 +2587,7 @@ function renderFeats() {
     const got = items.filter(x => x.at || x.value >= x.goal).length;
     return featSection(groupName(g), `${got}/${items.length}`, items);
   });
-  list.replaceChildren(...(recent.length ? [featSection(tx('feats.recent'), '', recent, true)] : []), ...groups);
+  list.replaceChildren(giftSection(), ...(recent.length ? [featSection(tx('feats.recent'), '', recent, true)] : []), ...groups);
 }
 const RECENT_FEATS = 4;   // vier past zonder gat in het raster van twee kolommen
 function gotLabel(at) {   // vandaag, gisteren of de datum
@@ -2734,6 +2804,7 @@ function hideRankPop() {
     rankShown = null;
     if (rankGive) { rankGive(); rankGive = null; }
     showRankPop();
+    offerGifts();
   }, 450);
 }
 $('rank-pop').addEventListener('pointerenter', () => { if (rankBusy && $('rank-pop').classList.contains('is-on')) clearTimeout(rankTimer); });

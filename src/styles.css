@@ -546,6 +546,12 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* vinkje precies in het midden van het rondje (rondje 4 + 10 = 14 px, vinkje 11 px breed) */
 .t-check svg { position: absolute; left: 8.5px; top: 50%; margin-top: -5.5px; color: var(--bg); }
 .t-check svg path, .fn-check svg path { stroke-dasharray: 14; stroke-dashoffset: 14; }
+/* Geschenk Sterrenstempel: een vierpuntige ster in plaats van het vinkje; groeit uit het midden zoals het vinkje zich tekent */
+.ck-star { fill: currentColor; stroke: none; opacity: 0; transform: scale(.2); transform-box: fill-box; transform-origin: center; }
+html:not(.gift-stamp) .ck-star { display: none; }
+html.gift-stamp .t-check svg path:not(.ck-star), html.gift-stamp .fn-check svg path:not(.ck-star) { display: none; }
+html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .ck-star { opacity: 1; transform: none; transition: opacity .2s var(--ease) .07s, transform .28s var(--ease) .07s; }
+@media (prefers-reduced-motion: reduce) { html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .ck-star { transition: none; } }
 @media (hover: hover) { .track:hover .t-check::before { border-color: var(--c); } }
 .t-check:focus-visible::before { border-color: var(--c); }
 .track.is-done .t-check::before {
@@ -1934,6 +1940,16 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, 
 .feat .feat-bar { margin-top: 8px; }
 .feat-meta { margin: 5px 0 0; font: 400 var(--fs-micro)/1 var(--mono); letter-spacing: .06em; color: var(--ink-2); }
 .feat-meta:empty { display: none; }
+/* Geschenken bij een nieuwe rang (src/core/gifts.js): tegels zoals de prestaties, met het rangteken van die rang en een
+   knopje Aan / Uit in kapitaaltjes waar bij een prestatie de punten staan */
+.gifts-note { margin: -2px 0 10px; font-size: var(--fs-small); line-height: 1.4; color: var(--ink-2); }
+.gift-badge { width: 30px; height: 30px; }
+.is-gifts .feats-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }   /* negen tegels: de laatste (rang 10) over de volle breedte, geen losse tegel */
+.gift-toggle { flex: none; margin: -2px -2px 0 0; padding: 2px; font: 500 var(--fs-micro)/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); border-radius: 4px; transition: color .2s var(--ease); }
+.gift-toggle[aria-pressed="true"] { color: var(--tier); }
+@media (hover: hover) { .gift-toggle:hover { color: var(--ink); } }
+@media (hover: none) { .gift-toggle { position: relative; } .gift-toggle::after { content: ''; position: absolute; inset: -12px -10px; } }
+@media (prefers-reduced-motion: reduce) { .gift-toggle { transition: none; } }
 /* melding bovenaan bij een nieuwe prestatie: Komeet zonder kader (Victor, 02/11/2026, voorstel C uit vijf; de ingelaten pil
    was niet logisch boven een pagina die eronder doorscrolt). Ontstaat zacht ter plaatse (Victor, 02/11/2026: geen veeg of
    inglijden): de vlek papier bloeit open, de ring van de badge tekent zich, de ster draait open, dan de tekst. Verdwijnt zacht. */
