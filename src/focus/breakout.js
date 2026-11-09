@@ -4,10 +4,14 @@
 // de momentkleuren (Nu bovenaan, het meest waard), al de rest in fosfor uit de kleurkiezer.
 // Tien levels (daarna een nieuwe lus, iets sneller), drie levens, zes powerups in capsules, top vijf, gedeeld tussen gekoppelde toestellen.
 // Niet aangeraakt: een demo speelt vanzelf (attract-modus) met de highscores ertussen; een tik start.
-// Muis weg uit het bakje of de focus dicht: pauze. Stil, zoals elke fidget. Minder beweging: één stilstaand titelscherm.
+// Pauze pas als de muis echt ver buiten het bakje gaat (FAR), het venster verlaat of de focus dicht gaat; een paar cm
+// ernaast stuurt het batje gewoon verder (Victor, 09/11/2026). Ook met de pijltjes te spelen: links en rechts sturen,
+// spatie, Enter of pijl omhoog lanceert. Zachte blipjes (playBreak in sound.js), enkel tijdens het spel, niet in de demo.
+// Minder beweging: één stilstaand titelscherm.
 
 import { LEVELS as CONF } from '../core/config.js';
 import { LANG } from '../core/i18n.js';
+import { playBreak } from '../scene/sound.js';
 
 
 const W = 325.6, H = 226.8;
@@ -16,6 +20,8 @@ const BW = (W - SIDE * 2 - GAP * (COLS - 1)) / COLS;
 const PAD_Y = H - 18, PAD_W = 46, PAD_WIDE = 72, BALL = 2.2;
 const LV = CONF.map(l => l.dark);                 // donkere momentkleuren: de buis is altijd donker
 const POINTS = [50, 40, 30, 20, 10];              // Nu is het meest waard
+const FAR = 200;                                  // zo ver (css-px) mag de muis buiten het bakje voor het spel pauzeert
+const KEY_SPEED = 300;                            // batje met de pijltjes, in eenheden van het bakje per seconde
 const en = LANG === 'en';
 const T = en
   ? { start: 'TAP TO START', launch: 'TAP TO LAUNCH', clear: 'LEVEL CLEAR', over: 'GAME OVER', newHi: 'NEW HIGH SCORE', pause: 'PAUSED', resume: 'TAP TO RESUME', top: 'HIGH SCORES', loop: 'LOOP', empty: 'NO SCORES YET', again: 'TAP TO PLAY AGAIN', bonus: 'BONUS' }
@@ -64,7 +70,6 @@ function phosphor(hex) {
 // zoom: groter bakje = zelfde levels, groter getekend (de opbouw is op één maat ontworpen)
 export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
   const loadTop = () => (scores?.load()?.top || []).slice(0, 5);
-  const touch = matchMedia('(hover: none)');
   let cv = null, g = null, tube = null, tg = null, bloom = null, bg = null, pat = null, dpr = 1, lastNow = 0, t = 0;
   let P = phosphor(null), lastAccent;
   let top = loadTop();
@@ -75,6 +80,10 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
   let padX = W / 2, padW = PAD_W, target = W / 2, lastInput = -99, rallyBoost = 0, laserAt = 0;
   const power = { wide: 0, slow: 0, laser: 0, catch: 0 };       // tot wanneer (t) actief
   let newRank = -1, attractLevel = 0;
+
+  const keys = { left: false, right: false };
+  const sx = x => x / W * 2 - 1;                 // plaats in het bakje naar links-rechts voor het geluid
+  const sound = (kind, o) => { if (!demo) playBreak(kind, o); };
 
   const speed = () => (165 + 8 * Math.min(level, 9) + 25 * loop + rallyBoost) * (power.slow > t ? 0.7 : 1);
 
@@ -110,6 +119,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
       top = list; scores?.save({ top });
     }
     setState('over');
+    sound('over');
   }
 
   function launch() {
@@ -122,6 +132,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
 
   function grant(p) {
     if (demo === false) score += 25;
+    sound('power', { x: sx(padX) });
     if (p.id === 'life') { lives = Math.min(5, lives + 1); return; }
     if (p.id === 'multi') {
       const src = balls.find(b => !b.stuck && (b.vx || b.vy)) || balls[0];
@@ -135,9 +146,11 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
 
   function hitBrick(br) {
     br.hit = t;
-    if (br.steel) return;
+    const x = sx(br.x + BW / 2);
+    if (br.steel) { sound('steel', { x }); return; }
     br.hp--;
-    if (br.hp > 0) return;
+    if (br.hp > 0) { sound('hard', { x }); return; }
+    sound('brick', { lv: 5 - Math.round((br.y - TOP) / (BH + GAP)), x });
     flashes.push({ x: br.x, y: br.y, w: BW, h: BH, at: t });
     if (!demo) score += POINTS[br.lv] * (1 + loop) + (br.max > 1 ? 10 : 0);
     if (Math.random() < 0.14 && caps.length < 3) {
@@ -171,6 +184,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
       target = live ? live.x + Math.sin(t * 0.9) * padW * 0.28 : W / 2;
       if (cap && (!live || live.y < H * 0.5)) target = cap.x;
     }
+    if (!demo && keys.left !== keys.right) { target = clamp(target + (keys.right ? 1 : -1) * KEY_SPEED * dt, padW / 2 + 3, W - padW / 2 - 3); lastInput = t; }
     padW += ((power.wide > t ? PAD_WIDE : PAD_W) - padW) * Math.min(1, dt * 8);
     padX += (target - padX) * Math.min(1, dt * (demo ? 9 : 22));
     padX = clamp(padX, padW / 2 + 3, W - padW / 2 - 3);
@@ -194,6 +208,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
           const off = clamp((b.x - padX) / (padW / 2), -1, 1), a = off * 1.05;
           b.y = PAD_Y - BALL;
           rallyBoost = Math.min(40, rallyBoost + 1.5);
+          sound('paddle', { x: sx(b.x) });
           if (power.catch > t) { b.stuck = (b.x - padX) || 0.01; b.stuckAt = t; b.vx = 0.001; b.vy = -0.001; break; }
           b.vx = Math.sin(a) * v; b.vy = -Math.cos(a) * v;
         }
@@ -233,13 +248,14 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
       else {
         lives--; resetPowers(); rallyBoost = 0; caps = []; beams = [];
         if (lives <= 0) { endGame(); return; }
+        sound('life', { x: 0 });
         serveBall(); setState('serve');
       }
     }
     // level leeg
     if (!bricks.some(b => b.hp > 0 && !b.steel)) {
       if (demo) { attractLevel++; level = attractLevel % MAPS.length; build(level); serveBall(); stateAt = t; resetPowers(); }
-      else { score += 250 * (level + 1) * (1 + loop); setState('clear'); }
+      else { score += 250 * (level + 1) * (1 + loop); setState('clear'); sound('clear'); }
     }
     // lang niets gedaan met een bal op het batje: terug naar de demo
     if (!demo && (state === 'serve' || state === 'intro') && t - lastInput > 45 && t - stateAt > 45) { endGame(); }
@@ -366,6 +382,52 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
   }
 
   function input(p) { lastInput = t; target = p.x; }
+  // een tik, klik of spatie: starten, lanceren, verder spelen
+  function act(x = target) {
+    if (state === 'attract') { startGame(); padX = target = x; lastInput = t; return; }
+    input({ x });
+    if (state === 'pause') { setState('play'); return; }
+    if (state === 'over') { if (t - stateAt > 1.2) startGame(); return; }
+    if (state === 'serve' || state === 'intro') { if (state !== 'intro' || t - stateAt > 0.6) launch(); return; }
+    if (state === 'play') for (const b of balls) if (b.stuck) launchStuck(b);
+  }
+  const pauseNow = () => { if (!demo && state === 'play') setState('pause'); };
+  // muis buiten het bakje: dichtbij stuurt ze het batje verder, ver weg (of het venster uit) pauzeert het spel
+  function onWinMove(e) {
+    if (demo || !cv || e.pointerType === 'touch') return;
+    const r = cv.getBoundingClientRect();
+    const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right), dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+    if (!dx && !dy) return;   // binnen: het bakje geeft de beweging zelf door
+    if (Math.hypot(dx, dy) > FAR) { pauseNow(); return; }
+    if (state !== 'pause') input({ x: (e.clientX - r.left) / (r.width || 1) * W });
+  }
+  const shown = () => cv && cv.getClientRects().length && getComputedStyle(cv).visibility !== 'hidden';
+  const skipKey = e => e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')
+    || e.target.closest?.('input, textarea, select, [contenteditable], [role=listbox], [role=menu], .fidget-grip, .fidget-menu');
+  function onKey(e) {
+    if (!shown() || skipKey(e)) return;
+    const down = e.type === 'keydown';
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      keys[e.key === 'ArrowLeft' ? 'left' : 'right'] = down;
+      if (down && (state === 'attract' || state === 'pause')) act(target);
+      e.preventDefault();
+      return;
+    }
+    // spatie en Enter enkel als er geen knop de focus heeft (die doen dan hun eigen werk); pijl omhoog altijd
+    const onButton = e.target.closest?.('button, a[href]');
+    if (down && !e.repeat && (e.key === 'ArrowUp' || ((e.key === ' ' || e.key === 'Enter') && !onButton))) { act(target); e.preventDefault(); }
+  }
+  const clearKeys = () => { keys.left = keys.right = false; };
+  const onBlur = () => { clearKeys(); pauseNow(); };
+  const onDocLeave = e => { if (!e.relatedTarget) pauseNow(); };
+  function listen(on) {
+    const f = on ? 'addEventListener' : 'removeEventListener';
+    window[f]('pointermove', onWinMove, { passive: true });
+    document[f]('keydown', onKey);
+    document[f]('keyup', onKey);
+    window[f]('blur', onBlur);
+    document.documentElement[f]('mouseleave', onDocLeave);
+  }
   return {
     own: true,
     onDark: true,
@@ -398,6 +460,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
       const sc = scan.getContext('2d'); sc.fillStyle = 'rgba(0,0,0,.32)'; sc.fillRect(0, 2, 4, 1);
       pat = g.createPattern(scan, 'repeat');
       lastNow = 0;
+      listen(true);
       // terug in de focus midden in een spel: pauze
       if (!demo && state === 'play') setState('pause');
       if (reducedMotion.matches) {
@@ -407,6 +470,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
       document.fonts?.load('16px VT323').then(() => { if (cv && reducedMotion.matches) for (let i = 0; i < 3; i++) draw(); }).catch(() => {});
     },
     unmount() {
+      listen(false); clearKeys();
       if (!demo && state === 'play') setState('pause');
       cv?.remove(); cv = null; g = null; tube = null; tg = null;
     },
@@ -423,16 +487,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
     move(p) { if (!demo) input(p); },
     drag(p) { if (!demo) input(p); },
     down(p) { if (!demo) input(p); },
-    tap(p) {
-      if (state === 'attract') { startGame(); padX = target = p.x; lastInput = t; return; }
-      input(p);
-      if (state === 'pause') { setState('play'); return; }
-      if (state === 'over') { if (t - stateAt > 1.2) startGame(); return; }
-      if (state === 'serve' || state === 'intro') { if (state !== 'intro' || t - stateAt > 0.6) launch(); return; }
-      if (state === 'play') for (const b of balls) if (b.stuck) launchStuck(b);
-    },
-    // muis uit het bakje tijdens het spel: pauze, zodat de bal niet zomaar valt (op touch tilt de vinger, dan niet)
-    leave() { if (!demo && state === 'play' && !touch.matches) setState('pause'); },
+    tap(p) { act(p.x); },
     recolor() {},
   };
 }

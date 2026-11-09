@@ -297,6 +297,44 @@ export function playTimer() {
    vallen, worden er één (een iets voller tikje), zodat een volle hemel niet zoemt; elk tikje komt links of rechts uit,
    waar de ster aankomt; en de vertraging van het toestel (Bluetooth) wordt opgevangen door het beeld iets later te laten
    beginnen (`audioLead`), niet door het geluid te laat te laten komen. */
+// Breakout (Victor, 09/11/2026: "geluidjes toevoegen aan breakout"): kleine, droge blipjes zoals een oude buis, maar zacht
+// en rond (sinus en driehoek door een laagdoorlaat, geen schelle blokgolf), zodat ze naast de rest van Orbit passen.
+// kind: 'paddle', 'brick' (lv: rij 0 tot 5, hogere rij hoger), 'hard' (harde steen, eerste tik), 'steel', 'power',
+// 'life' (bal kwijt), 'clear' (level voltooid), 'over'. x: -1 links tot 1 rechts. Per soort nooit sneller dan om de 40 ms,
+// zodat een regen van stenen geen ratel wordt; enkel als het tabblad zichtbaar is.
+const BREAK_GAIN = 0.42;
+const BREAK_NOTES = [P.E5, P.G5, P.A5, P.C6, P.D6, P.E6];
+const breakLast = {};
+function blip(a, out, t, f, { type = 'triangle', g = 1, dur = 0.07, glide = 1, lp = 3200 } = {}) {
+  const o = a.createOscillator(), e = a.createGain(), f2 = a.createBiquadFilter();
+  o.type = type;
+  o.frequency.setValueAtTime(f, t);
+  if (glide !== 1) o.frequency.exponentialRampToValueAtTime(f * glide, t + dur);
+  f2.type = 'lowpass'; f2.frequency.value = lp; f2.Q.value = 0.5;
+  soft(e, t, 0.11 * g, 0.002, dur);
+  o.connect(f2).connect(e).connect(out);
+  o.start(t); o.stop(t + dur * 1.6 + 0.05);
+}
+export function playBreak(kind, { lv = 0, x = 0 } = {}) {
+  if (document.hidden) return;
+  const now = performance.now();
+  if (now - (breakLast[kind] || 0) < 40) return;
+  breakLast[kind] = now;
+  cue((a, o, t) => {
+    const out = panned(a, o, Math.max(-0.6, Math.min(0.6, x * 0.6)));
+    switch (kind) {
+      case 'paddle': blip(a, out, t, P.C5, { g: 0.9, dur: 0.06, glide: 0.94, lp: 2200 }); break;
+      case 'brick': blip(a, out, t, BREAK_NOTES[Math.max(0, Math.min(5, lv))] || P.A5, { type: 'sine', g: 0.85, dur: 0.08 }); break;
+      case 'hard': blip(a, out, t, P.B4, { g: 0.7, dur: 0.05, lp: 1800 }); break;
+      case 'steel': blip(a, out, t, 1760, { type: 'sine', g: 0.35, dur: 0.04 }); blip(a, out, t, 2637, { type: 'sine', g: 0.18, dur: 0.05 }); break;
+      case 'power': [P.C5, P.E5, P.G5, P.C6].forEach((f, i) => blip(a, out, t + i * 0.055, f, { type: 'sine', g: 0.7, dur: 0.09 })); break;
+      case 'life': [P.E5, P.C5, P.A4].forEach((f, i) => blip(a, out, t + i * 0.11, f, { g: 0.75, dur: 0.14, glide: 0.97, lp: 1600 })); break;
+      case 'clear': [P.C5, P.E5, P.G5, P.C6, P.E6].forEach((f, i) => blip(a, out, t + i * 0.07, f, { type: 'sine', g: 0.75, dur: i === 4 ? 0.4 : 0.1 })); break;
+      case 'over': [P.G4, P.E4, P.C5 / 2].forEach((f, i) => blip(a, out, t + i * 0.22, f, { g: 0.8, dur: i === 2 ? 0.6 : 0.2, lp: 1400 })); break;
+    }
+  }, false, BREAK_GAIN);
+}
+
 // hoeveel ms het beeld moet wachten zodat geluid en beeld samen uit het toestel komen (luidspreker of Bluetooth)
 export function audioLead() {
   if (!soundOn() || !ctx) return 60;

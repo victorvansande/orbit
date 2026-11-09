@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 08/11/2026, Claude Code: taakrij: titel vervaagt pas vlak voor het icoon, vegen enkel met vinger of pen, dode code weg. Open: Victor kijkt op pc en gsm.
 - 08/11/2026, Claude Code: lege ruimte onder de quote in focus op gsm weg; dubbele punt van de klok: eerste poging werkte niet in Safari, nu zonder gloed op de dubbele punt. Open: Victor kijkt na op iPhone, ook in licht thema (WebKit niet testbaar hier).
 - 08/11/2026, Claude Code: fidgetmenu scrolt (zachte randen, wiel en vegen) en heeft zijn blur terug. Open: Victor kijkt op pc en gsm.
 - 09/11/2026, Claude Code: logo in rust altijd volledig; bij aanwijzen of tikken Aantrekking (C, gekozen door Victor uit drie, verfijnd: letters buigen als gedempte veer naar de komeet, kop ademt). Open: Victor kijkt op pc en gsm.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 09/11/2026, Claude Code: zandloper: het gevallen zand ligt op de zichtbare bodem (niet meer in de vervaagde onderste rijen). Open: Victor kijkt.
 - 09/11/2026, Claude Code: Instellingen → Kleuren: Momenten (vijf kleuren) of Rood (tinten van het kernrood, Nu vol, Ooit het minst verzadigd); `PALETTE` in `config.js`, wisselen herlaadt. Open: Victor kijkt.
 - 09/11/2026, Claude Code: opdracht voor een volledige audit van Orbit (Deel A: alles vinden en oplijsten in `docs/audit/register.md`, Deel B: aanpakken) staat in `docs/nalezing.md`; starten met "Voer `docs/nalezing.md` uit". Open: Victor start ze in een nieuwe sessie.
+- 09/11/2026, Claude Code: Breakout heeft zachte geluidjes, pauzeert pas ver buiten het bakje (200 px) of als de muis het venster verlaat, en is met de pijltjes te spelen (spatie of pijl omhoog lanceert). Open: Victor speelt op pc. Audit loopt (zie vorige regel en `docs/audit/register.md`).
