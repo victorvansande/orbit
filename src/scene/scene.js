@@ -46,6 +46,9 @@ const BURN_LIFE = 0.95;     // afvinken: duur van het opbranden van de bol (s)
 // Fijner raster (K2, Victor, 02/11/2026): 2,35 in plaats van 3,1 eenheden tussen de puntjes, puntjes 0,78 keer zo groot (CORE_DOT);
 // op gsm blijft het grove raster via CORE_MIN_PX, daar is het effect gelijk aan vroeger.
 const CORE_RMIN = 15, CORE_RMAX = 25, CORE_SPACING = 2.35, CORE_DOT = 0.78, CORE_MIN_PX = 3.6;   // C1: concentrische cirkelringen (altijd zuiver rond)
+// O1 Spiegelraster (Victor, 09/11/2026, uit O1 tot O3 in ontwerp/kern/): op scherpe schermen (DPR 2) mogen de puntjes dichter
+// (2,5 px in plaats van 3,6) en tot 0,9 keer de gewone afstand, zodat een oog 2 à 3 puntjes breed wordt in plaats van 1 à 2
+const CORE_MIN_PX_SHARP = 2.5, CORE_FINE = 0.9;
 const coreGrids = new Map();
 function coreGrid(spacing, rMax = CORE_RMAX) {
   const rings = Math.max(4, Math.round(rMax / spacing));
@@ -55,7 +58,8 @@ function coreGrid(spacing, rMax = CORE_RMAX) {
     const dr = rMax / rings;
     for (let k = 1; k <= rings; k++) {
       const rk = k * dr;
-      const count = Math.max(6, Math.round((TAU * rk) / dr));
+      let count = Math.max(6, Math.round((TAU * rk) / dr));
+      if (count % 2) count++;   // even: elke ring is zijn eigen spiegelbeeld, dus het linkeroog is exact het rechter (O1)
       const twist = (k & 1) ? Math.PI / count : 0;
       for (let i = 0; i < count; i++) {
         const a = (TAU * i) / count + twist;
@@ -132,6 +136,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
   let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
+  const coreDot = { x: 0, y: 0, R: 0, pitch: 4 };   // midden, straal en puntafstand van de kern op het scherm (voor de Zzz)
   // vortex: stof dat in het zijaanzicht langs de trechter naar de kern spiraalt; meer en sneller bij een volle lijst
   const dust = Array.from({ length: DUST }, (_, i) => ({ r: 20 + Math.random() * 190, a: Math.random() * TAU, s: 0.55 + Math.random() * 0.9, k: i / DUST }));
   let dustAmount = 0;
@@ -985,6 +990,34 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     ctx.globalAlpha = 1;
   }
+  // Zzz als de kern slaapt (Victor, 09/11/2026: "kan je er ook kleine Zzz... bij tekenen, in dezelfde dot matrix style als
+  // Orb zelf"): drie Z'tjes van 5 × 5 puntjes in de kleur van de kern, met dezelfde puntafstand, die schuin rechtsboven uit
+  // de kern opstijgen, groeien en uitdoven, telkens 1,3 s na elkaar. Minder beweging en Minimaal: drie stilstaande Z'tjes.
+  const ZED = ['#####', '...#.', '..#..', '.#...', '#####'];
+  function drawZzz(now) {
+    if (sleepK < 0.05 || !coreDot.R) return;
+    const still = reducedMotion.matches || minimal, a0 = sleepK * orbVeil * introAlpha(now, 0.6, 1.2);
+    if (a0 <= 0.01) return;
+    const R = coreDot.R, pitch = Math.max(2.2, coreDot.pitch * 0.62), CYCLE = 3.9;
+    ctx.fillStyle = rgba(coreColor, 1);
+    for (let i = 0; i < 3; i++) {
+      // u: 0..1 levensloop van dit Z'tje; stil: vaste trap van klein naar groot
+      const u = still ? 0.25 + i * 0.27 : ((now / 1000 / CYCLE + i / 3) % 1);
+      const fade = still ? 0.75 : Math.min(1, u / 0.18) * (1 - smoothstep(0.62, 1, u));
+      if (fade <= 0.01) continue;
+      const k = 0.5 + 0.65 * u, p = pitch * k, r = p * 0.36;
+      const x0 = coreDot.x + R * (0.7 + 1.7 * u) + (still ? 0 : Math.sin(u * 5 + i) * p * 0.6), y0 = coreDot.y - R * (0.8 + 2.5 * u);
+      ctx.globalAlpha = a0 * fade * 0.85;
+      ctx.beginPath();
+      for (let row = 0; row < 5; row++) for (let col = 0; col < 5; col++) {
+        if (ZED[row][col] !== '#') continue;
+        const x = x0 + (col - 2) * p, y = y0 + (row - 2) * p;
+        ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, TAU);
+      }
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
   // Maantje en ring om de kern (geschenken): op het scherm rond het midden van de kern, schuin; de achterkant wordt vóór de
   // kern getekend, de voorkant erna. Draait traag; stil bij minder beweging en Minimaal. Wijkt mee tijdens de maandwissel.
   function drawSatellites(now, front) {
@@ -1309,14 +1342,15 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const rippleAmp = still ? 0 : (0.5 + 0.9 * strength) * (1 - p * 0.6) * live * waveVis * beatScale;
     const breatheAmp = still ? 0 : (0.12 + 0.1 * sleepK) * (1 - live) * waveVis;
     const t = now / 1000;
-    const spacing = Math.min(rMax / 4.2, Math.max(CORE_SPACING, CORE_MIN_PX / cam.s));
+    const spacing = Math.min(rMax / (DPR >= 2 ? 5.2 : 4.2), Math.max(CORE_SPACING * (DPR >= 2 ? CORE_FINE : 1), (DPR >= 2 ? CORE_MIN_PX_SHARP : CORE_MIN_PX) / cam.s));
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
     const eyes = faceState(now, rMax, spacing, z);
     const tw = turnWaves(now);   // maandwissel: een rimpel door de puntjes bij elke ster die aankomt
     coreHit = project(0, 0, z, false) ? { x: pt.x, y: pt.y, r: Math.max(22, (rMax + 4) * cam.s * pt.f) } : null;
-    // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In vier stappen
+    if (coreHit) { coreDot.x = pt.x; coreDot.y = pt.y; coreDot.R = rMax * cam.s * pt.f; coreDot.pitch = spacing * cam.s * pt.f; }
+    // Ogen "Inktpil" (P1): puntjes in twee rechtopstaande pillen kleuren van rood naar inkt. In negen stappen (O1; was vier)
     // gebundeld, zodat het één pad per tint blijft.
-    const paths = [[], [], [], []];
+    const paths = Array.from({ length: 9 }, () => []);   // O1: negen tinten van rood naar inkt (was vier), de rand van het oog vloeit
     const blush = gifts.has('blush'), blushDots = [];
     for (const d of coreGrid(spacing, rMax)) {
       if (d.r > rMax + 0.05) continue;
@@ -1334,11 +1368,11 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         blushDots.push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
         continue;
       }
-      paths[Math.round(ink * 3)].push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
+      paths[Math.round(ink * 8)].push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f * (1 + 0.25 * ink));   // inkt iets groter: de pil leest voller
     }
     if (blushDots.length) {   // Blosjes (geschenk): zachtroze puntjes onder de ogen
       // lichter dan de kern zelf (die is meestal rood): zachtroze vlekjes lezen dan als blos, niet als extra ogen
-      const k = theme === THEMES.dark ? 0.5 : 0.55, rose = [255, 226, 234];
+      const k = theme === THEMES.dark ? 0.55 : 0.62, rose = [255, 226, 234];
       ctx.fillStyle = rgba(coreColor.map((c, i) => c + (rose[i] - c) * k), intro);
       ctx.beginPath();
       for (let k = 0; k < blushDots.length; k += 3) { ctx.moveTo(blushDots[k] + blushDots[k + 2], blushDots[k + 1]); ctx.arc(blushDots[k], blushDots[k + 1], blushDots[k + 2], 0, TAU); }
@@ -1346,7 +1380,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     }
     paths.forEach((list, i) => {
       if (!list.length) return;
-      ctx.fillStyle = rgba(mixInk(coreColor, 1 - i / 3), intro);
+      ctx.fillStyle = rgba(mixInk(coreColor, 1 - i / 8), intro);
       ctx.beginPath();
       for (let k = 0; k < list.length; k += 3) {
         ctx.moveTo(list[k] + list[k + 2], list[k + 1]);
@@ -1381,9 +1415,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (sleepy) open *= 0.42;
     open *= 1 - 0.95 * sleepK;                                    // slapend: ogen dicht
     const happy = performance.now() < face.happyUntil;
-    const h = Math.max(rMax * 0.25, spacing * 0.95);
+    const h = Math.max(rMax * 0.25, spacing * 2.2);   // O1: nooit kleiner dan 2,2 puntafstanden, ook op een grof raster
     const gap = Math.max(rMax * 0.36, h * 1.3), ey = -rMax * 0.12;
-    const soft = spacing * 0.55, o = Math.max(0.12, open);
+    const soft = spacing * 0.7, o = Math.max(0.12, open);
     const [lx, ly] = face.look;
     const rw = h * 0.4;
     const wink = performance.now() < face.winkUntil;   // knipoog: het rechteroog dicht
@@ -1394,7 +1428,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     });
     const cover = (v, w) => Math.max(0, Math.min(1, (w - v) / soft + 0.5));
     return {
-      cheek: { x: gap * 1.12, y: ey + h * 1.05, r: Math.max(h * 0.72, spacing * 1.45) },   // voor het geschenk Blosjes
+      cheek: { x: gap + rw * 0.5, y: ey + h * 0.62 + spacing * 1.5, r: spacing * 1.85 },   // geschenk Blosjes: een rond vlekje schuin onder elk oog (na O1, grotere ogen)
       ink(x, y) {
         let c = 0;
         for (const e of eyes) {
@@ -1795,6 +1829,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       coreHit = { x, y, r: coreHit.r };
     } else drawCore(now);
     drawSatellites(now, true);
+    drawZzz(now);
     drawSonar(now);
     drawSparks(now);
     drawLabels();
