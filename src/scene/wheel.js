@@ -1,4 +1,4 @@
-import { LEVELS, iconSvg, toneNode } from '../core/config.js';
+import { LEVELS, iconSvg, toneNode, MOBILE_MQ } from '../core/config.js';
 
 /* ---- Wiel: gebogen keuze tussen de vijf momenten ---- */
 // Verticaal (desktop): boog langs de rechterrand, middelpunt van de cirkel rechts buiten beeld.
@@ -13,7 +13,7 @@ const PILLS = {
 };
 
 export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHover = () => {}, reducedMotion }) {
-  const narrow = matchMedia('(max-width: 999px)');
+  const narrow = matchMedia(MOBILE_MQ);
   const list = root.querySelector('.wheel-list');
   const arcPath = root.querySelector('.wheel-arc path');
   const arcGrad = root.querySelector('#wheel-arc-grad');
@@ -44,8 +44,15 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
 
   function layout() {
     const o = orientation();
-    const g = GEOM[o], PILL = PILLS[o];
     const box = root.getBoundingClientRect();
+    let g = GEOM[o], PILL = PILLS[o];
+    // liggende gsm (desktopindeling op weinig hoogte): de vijf momenten krijgen een kleinere stap en kleinere pillen,
+    // zodat ze binnen de hoogte van het wiel passen (anders liepen Nu en Ooit buiten beeld)
+    if (o === 'vertical' && box.height < 560) {
+      const k = Math.max(0.6, Math.min(1, (box.height - 30) / (4.8 * g.spacing)));
+      g = { ...g, spacing: g.spacing * k, out: g.out * (0.6 + 0.4 * k), arc: g.arc * (0.75 + 0.25 * k) };
+      PILL = { w: PILL.w * (0.7 + 0.3 * k), h: PILL.h * (0.7 + 0.3 * k), selW: PILL.selW * (0.7 + 0.3 * k), selH: PILL.selH * (0.7 + 0.3 * k) };
+    }
     const Ri = g.R + g.out;
     const step = g.spacing / Ri;
     let cx, cy;

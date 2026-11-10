@@ -35,6 +35,7 @@ function accentRamp(hex) {
 }
 export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'panel', 'life', 'breakout', 'snake'];
 
+import { DESKTOP_MQ } from '../core/config.js';
 import { createPanel } from './panel.js';
 import { createLife } from './life.js';
 import { createPlasma } from './plasma.js';
@@ -643,7 +644,7 @@ const ZOOMED = ['breakout', 'panel'];   // vaste opbouw: zoomen mee in plaats va
 export function createFidget(box, { reducedMotion, label = m => m, getData, scores, fits = () => true }) {
   const cv = box.querySelector('canvas');
   const dpr = Math.min(2, devicePixelRatio || 1);
-  const desktopMQ = matchMedia('(min-width: 1000px)');
+  const desktopMQ = matchMedia(DESKTOP_MQ);
   let scale = 1;
   try { const v = parseFloat(localStorage.getItem(SIZE_KEY)); if (v >= 1 && v <= MAX_SCALE) scale = v; } catch { /* geen opslag */ }
   if (desktopMQ.matches) setGrid(scale);
@@ -1040,7 +1041,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   const backdrop = document.getElementById('fidget-backdrop');
 
   function updateMobileScale() {
-    if (matchMedia('(min-width: 1000px)').matches) return;
+    if (matchMedia(DESKTOP_MQ).matches) return;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const scale = Math.min(1, (vw - 32) / 325.6, (vh - 140) / 226.8);
@@ -1049,7 +1050,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   }
 
   function toggleMobile(open) {
-    const isMobile = !matchMedia('(min-width: 1000px)').matches;
+    const isMobile = !matchMedia(DESKTOP_MQ).matches;
     if (!isMobile) return;
     const show = open ?? !box.classList.contains('is-open');
     if (show) updateMobileScale();

@@ -1,5 +1,5 @@
 import { DEMO_MODE } from './core/demo.js';   // als eerste: vult in de demo de tijdelijke opslag
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode, PALETTE, setPalette } from './core/config.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode, PALETTE, setPalette, DESKTOP_MQ } from './core/config.js';
 import { createScene } from './scene/scene.js';
 import { createWheel } from './scene/wheel.js';
 import { createLegend } from './scene/legend.js';
@@ -41,7 +41,7 @@ const TOAST_MS = 5000;
 const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stilstand
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const desktop = matchMedia('(min-width: 1000px)');
+const desktop = matchMedia(DESKTOP_MQ);
 const $ = id => document.getElementById(id);
 
 function el(tag, cls, text) {
@@ -2206,6 +2206,7 @@ function setFocus(on) {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   }
   updateInsets();
+  if (on && lowLandscape.matches) setTimeout(updateInsets, 700);   // de klok en het bakje schuiven nog in
   if (on) setTimeout(fitQuote, 1000);     // de scène schuift eerst naar het midden
 }
 function bumpIdle() {
@@ -2971,7 +2972,14 @@ document.addEventListener('keydown', e => {
 // 91 px tot Boven / Zijkant / Focus; Victor, 29/10/2026). Met 26 px zakken ze 18 px en past de begroeting (twee regels)
 // er nog tussen.
 const GREET_INSET = 26;
+const lowLandscape = matchMedia('(orientation: landscape) and (max-height: 500px)');
 function updateInsets() {
+  // liggende gsm in de focus: de ringen tussen klok en bakje, anders liggen ze erachter (Victor, 09/11/2026)
+  if (desktop.matches && lowLandscape.matches && document.body.classList.contains('is-focus')) {
+    const left = document.querySelector('.focus-info')?.getBoundingClientRect().right ?? 0, fid = $('fidget')?.getBoundingClientRect();
+    scene.setInsets({ left: Math.max(0, left + 8), right: fid && fid.width ? Math.max(0, innerWidth - fid.left + 8) : 0 });
+    return;
+  }
   if (!desktop.matches || document.body.classList.contains('is-focus')) {
     // gsm: onder de ringen een eigen strook voor de begroeting, zodat ze niet tegen de ringen of de knoppen botst
     scene.setInsets({ left: 0, right: 0, bottom: !desktop.matches && !document.body.classList.contains('is-focus') ? GREET_INSET : 0 });

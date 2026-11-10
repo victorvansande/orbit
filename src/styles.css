@@ -320,7 +320,7 @@ body.is-focus .greeting { z-index: 4; }
 @keyframes menu-in { from { opacity: 0; transform: translateY(4px); } }
 /* desktop: zo breed als de langste regel, niets breekt af */
 .controls .hud-menu { left: 0; bottom: calc(100% + 10px); width: max-content; min-width: 400px; white-space: nowrap; }
-@media (min-width: 1000px) {
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) {
   .controls:not(:has(#menu-btn)) { display: none; }
   body.is-focus .controls { display: flex; }
 }
@@ -383,7 +383,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
 .stats { position: relative; display: flex; flex-direction: column; margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
 .tracks:has(.hud-menu.is-open) { z-index: var(--z-menu); }
-@media (min-width: 1000px) { body:not(.is-focus) .tracks:has(.stats[hidden]) { bottom: 76px; } }   /* nog geen sterren: Instellingen zweeft onder de lijst, niet erover */
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) { body:not(.is-focus) .tracks:has(.stats[hidden]) { bottom: 76px; } }   /* nog geen sterren: Instellingen zweeft onder de lijst, niet erover */
 .stats .hud-menu { left: 0; bottom: calc(100% + 8px); width: max-content; min-width: 400px; white-space: nowrap; }
 .stats-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; width: 100%; min-height: auto; }
 .stats-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 12px; padding-top: 0; border-top: none; }
@@ -750,7 +750,7 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
 /* ---- Focusmodus ---- */
 /* Bakje water: rustig fidget-venster rechtsonder in de focusmodus (alleen desktop) */
 .fidget { touch-action: none; user-select: none; -webkit-user-select: none; }   /* staat vast: niet meer te slepen */
-@media (min-width: 1000px) {
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) {
   .fidget {
     position: fixed; z-index: 2; right: var(--pad); bottom: 92px;
     border-radius: 16px; overflow: hidden; background: var(--well);
@@ -770,7 +770,7 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
 .fidget-own .topography-canvas { display: block; width: 100%; height: 100%; }
 .fidget-own .panel-canvas { display: block; width: 100%; height: 100%; }   /* paneel (src/focus/panel.js) */
 /* pijltje onder het bakje: volgend scherm van het paneel, heel subtiel, gecentreerd onder het vak (325,6 px breed) */
-@media (min-width: 1000px) {
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) {
   .fidget-next {
     position: fixed; z-index: 2; right: calc(var(--pad) + var(--fidget-w, 325.6px) / 2); bottom: 64px; width: 40px; height: 24px;
     display: grid; place-items: center; color: var(--ink-3); cursor: pointer;
@@ -787,7 +787,7 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
 
 .fidget.is-gl:not(.on-dark):not(.is-panel):not(.is-playing)::before { content: ''; position: absolute; z-index: 1; inset: 0 0 auto; height: 62px; pointer-events: none; background: linear-gradient(var(--well) 52%, transparent); }
 /* Desktop: menu en knoppen bovenin verbergen zolang er niet over het bakje gehoverd wordt */
-@media (min-width: 1000px) {
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) {
   .fidget-modes {
     opacity: 0;
     visibility: hidden;
@@ -862,7 +862,7 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
 /* breakout: zolang de keuzerij zichtbaar is, ligt er een donkere band achter, zodat ze de score afdekt in plaats van erover te staan */
 .fidget.is-breakout::before { content: ''; position: absolute; z-index: 9; inset: 0 0 auto; height: 30px; pointer-events: none; border-radius: inherit; background: linear-gradient(var(--tube) 62%, transparent); opacity: 0; transition: opacity .22s var(--ease); }
 .fidget.is-breakout:not(.is-playing):is(:hover, :focus-within, .has-menu-open, .has-color-open)::before { opacity: 1; }
-@media (max-width: 999px) { .fidget.is-breakout:not(.is-playing):not(.is-interacting)::before { opacity: 1; } }
+@media (max-width: 999px) and (orientation: portrait), (max-width: 999px) and (min-height: 501px) { .fidget.is-breakout:not(.is-playing):not(.is-interacting)::before { opacity: 1; } }
 /* breakout: tijdens het spel wijkt de keuzerij (ze lag over de score); bal op het batje of pauze: ze komt terug */
 .fidget.is-playing:not(.has-menu-open) .fidget-modes { opacity: 0; transition: opacity .2s var(--ease); }
 .fidget.is-playing:not(.has-menu-open) .fidget-modes > * { pointer-events: none; }
@@ -893,7 +893,7 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
 /* Grootte (Victor, 09/11/2026): greepje net buiten de hoek linksboven (binnenin staat het keuzemenu), enkel desktop en in
    de focus; slepen toont een omlijning van de nieuwe maat, loslaten bouwt de inhoud opnieuw op (fidget.js) */
 .fidget-grip { display: none; }
-@media (min-width: 1000px) {
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) {
   .fidget-grip {
     display: grid; place-items: center; position: fixed; z-index: 3; width: 22px; height: 22px; padding: 0;
     right: calc(var(--pad) + var(--fidget-w, 325.6px) - 9px); bottom: calc(92px + var(--fidget-h, 226.8px) - 9px);
@@ -941,7 +941,7 @@ body.is-focus .timer { opacity: 1; visibility: visible; transform: none; pointer
 .glass-tools .glass-reset { font-size: var(--fs-text); letter-spacing: 0; }
 .glass.is-on:hover .glass-tools, .glass.is-on:focus-within .glass-tools { opacity: 1; transform: none; pointer-events: auto; }
 body.is-focus .glass { display: none; }
-@media (max-width: 999px) {
+@media (max-width: 999px) and (orientation: portrait), (max-width: 999px) and (min-height: 501px) {
   /* gsm: in de rij Boven / Zijkant / Focus, op de rechterrand van de inhoud, klein glaasje met de tijd in Geist Mono (geen hover op touch) */
   .glass { position: absolute; right: var(--pad); bottom: auto; top: 50%; transform: translateY(-50%); align-items: center; }
   .glass-open { align-items: center; gap: 8px; }
@@ -988,7 +988,7 @@ body.is-focus .timer:not(.is-open):not(.is-compact):focus-within .timer-row,
 .timer.is-open:not(.is-compact) .timer-min { display: none; }
 .timer-num { font: 300 30px/.8 var(--font); letter-spacing: -.02em; text-transform: none; font-variant-numeric: tabular-nums; }
 .timer-min small { font: 500 var(--fs-micro)/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-@media (max-width: 999px) { .fidget:not(.is-open), .timer:not(.is-compact), .fidget-next:not(.is-open) { display: none; } }
+@media (max-width: 999px) and (orientation: portrait), (max-width: 999px) and (min-height: 501px) { .fidget:not(.is-open), .timer:not(.is-compact), .fidget-next:not(.is-open) { display: none; } }
 .focus-info {
   position: fixed; z-index: 2;
   left: var(--pad); bottom: 92px;
@@ -1531,7 +1531,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 .arch-server .arch-list { min-height: 0; max-height: 30dvh; }
 
 /* ---- Smaller dan 1000 px: alles onder elkaar ---- */
-@media (max-width: 999px) {
+@media (max-width: 999px) and (orientation: portrait), (max-width: 999px) and (min-height: 501px) {
   :root { --pad: max(16px, env(safe-area-inset-left, 0px)); }
   body { height: auto; overflow-x: clip; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom, 0px); display: flex; flex-direction: column; }
   .topbar { order: 0; }
@@ -2082,3 +2082,37 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
 .recap-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
 .recap-open { display: block; margin: 4px 0 6px; }
 .recap-open:hover { color: var(--ink); }
+
+/* ---- Liggende gsm ---- */
+/* Victor, 09/11/2026: "Verbeter de layout in landscape mode op mobiel. Taken links, lint rechts, eigenlijk zoals op desktop
+   maar dan met de aanpassingen voor mobiel". Een gsm op zijn kant (hoogte tot 500 px) krijgt de desktopindeling (zie
+   DESKTOP_MQ in config.js); hier enkel wat de lage hoogte, de inkeping opzij en touch vragen. Staat achteraan, na alle
+   basisregels. */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root { --pad: max(20px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)); }
+  .topbar { padding-top: max(14px, env(safe-area-inset-top, 0px)); }
+  .brand-mark { height: 20px; }
+  .hud-right #week, .hud-right #date { display: none; }
+  .tracks { top: 80px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: min(280px, 34vw); }
+  .wheel { top: 56px; bottom: 16px; height: auto; width: 230px; transform: none; }
+  .wheel-hint { display: none; }
+  .greeting { bottom: 12px; font-size: 16px; max-width: min(420px, 40vw); }
+  .greeting small { display: none; }
+  .controls { bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+  /* focus: klok en Nu links, bakje op ware grootte rechtsonder, zandloper erboven; alles iets lager dan op desktop */
+  .focus-info { bottom: 56px; }
+  .focus-quote { display: none; }
+  .fidget { bottom: 52px; }
+  .timer { --timer-bottom: calc(52px + var(--fidget-h, 226.8px) + 10px); }
+  body.is-focus .fidget-grip { display: none; }
+  /* Instellingen opent naar boven en is hoger dan het scherm: scrolt zelf (guardScroll laat dat toe) */
+  .hud-menu { max-height: calc(100dvh - 64px - env(safe-area-inset-top, 0px)); overflow-y: auto; overscroll-behavior: contain; }
+}
+/* liggende gsm met touch: de knoppen van de desktopindeling krijgen dezelfde onzichtbare trefzones als op gsm (36 px) */
+@media (orientation: landscape) and (max-height: 500px) and (hover: none) {
+  .hud-actions button, .menu-btn, .focus-exit, .timer-min, .t-check { position: relative; }
+  .hud-actions button::after, .menu-btn::after, .focus-exit::after, .timer-min::after { content: ''; position: absolute; inset: -4px -2px; }
+  .timer-min::after { inset: -7px -2px; }
+  .t-check::after { content: ''; position: absolute; inset: 0 -4px; }
+  .t-meta-level::after { inset: -6px -6px; }
+}

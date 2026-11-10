@@ -23,6 +23,11 @@ export function setPalette(name) {
   try { localStorage.setItem(PALETTE_KEY, name); } catch { /* geen opslag */ }
   location.reload();
 }
+// Indeling: desktop (lijst links, scène, wiel rechts) ook op een liggende gsm (Victor, 09/11/2026); dezelfde lijsten staan
+// in styles.css. Hoogte tot 500 px liggend = gsm op zijn kant; een liggende tablet blijft zoals vroeger.
+export const DESKTOP_MQ = '(min-width: 1000px), (orientation: landscape) and (max-height: 500px)';
+export const MOBILE_MQ = '(max-width: 999px) and (orientation: portrait), (max-width: 999px) and (min-height: 501px)';
+
 export const LEVEL_BY_ID = new Map(LEVELS.map(l => [l.id, l]));
 
 // Geeft een element beide tinten; CSS kiest via [data-tone] de juiste voor het thema
