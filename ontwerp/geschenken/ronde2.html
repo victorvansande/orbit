@@ -1,0 +1,162 @@
+<title>Orbit geschenken 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Tweede ronde Geschenken: aan of uit zonder schakelaar. De hele tegel is de knop; drie manieren om de stand te tonen.
+   Tokens en tegels uit src/styles.css; rang 4, drie geschenken gehaald. */
+:root {
+  --bg: #EBE8DF; --surface: #F8F6F0; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #7A7A83;
+  --line: rgba(27,27,34,.1); --fill: rgba(27,27,34,.045); --fill-2: rgba(27,27,34,.07);
+  --tier-bronze: #A95C3E; --tier-silver: #798994; --tier-gold: #BF934A; --tier-platinum: #2C8494;
+  --wash: 13%; --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78;
+  --line: rgba(255,255,255,.1); --fill: rgba(255,255,255,.06); --fill-2: rgba(255,255,255,.1);
+  --tier-bronze: #D8916C; --tier-silver: #B0C0CD; --tier-gold: #EBC57D; --tier-platinum: #5ABFCA; --wash: 16%; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78;
+  --line: rgba(255,255,255,.1); --fill: rgba(255,255,255,.06); --fill-2: rgba(255,255,255,.1);
+  --tier-bronze: #D8916C; --tier-silver: #B0C0CD; --tier-gold: #EBC57D; --tier-platinum: #5ABFCA; --wash: 16%; color-scheme: dark }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14.5px/1.55 var(--sans); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 32px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 26px; }
+.lab { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+h1 { font: 600 28px/1.2 var(--sans); margin: 6px 0 0; text-wrap: balance; }
+.lead { color: var(--ink-2); margin: 10px 0 0; max-width: 72ch; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 99px; background: none; color: var(--ink-2); font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 10px; min-width: 0; }
+.col h3 { font: 500 12px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; margin: 0; }
+.col > p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
+.dlg { background: var(--surface); border-radius: 16px; padding: 18px 20px 20px; box-shadow: inset 0 0 0 1px var(--line); display: grid; gap: 10px; }
+.meta { display: flex; justify-content: space-between; font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); }
+.meta span + span { color: var(--ink-3); }
+.note { margin: 0 0 2px; font-size: 12.5px; line-height: 1.4; color: var(--ink-2); }
+.fgrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+
+/* tegel = knop */
+.gift { position: relative; display: flex; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--fill); text-align: left; cursor: pointer; overflow: hidden; isolation: isolate; }
+.gift.locked { cursor: default; }
+.gift > svg.badge { width: 30px; height: 30px; flex: none; align-self: flex-start; margin-top: 1px; }
+.fbody { min-width: 0; flex: 1; }
+.fname { margin: 0; font-size: 14px; font-weight: 500; }
+.fdesc { margin: 2px 0 0; font-size: 12.5px; line-height: 1.35; color: var(--ink-2); }
+.locked .fname { color: var(--ink-2); }
+.locked svg.badge { opacity: .32; } .locked .fb-ring { stroke-dasharray: 2 2.6; }
+.fb-ring { fill: none; stroke: var(--tier); stroke-width: 1.3; } .fb-orbit { stroke-width: .9; }
+.fb-star { fill: var(--tier); }
+.fb-moon { fill: var(--tier); stroke: var(--cut, var(--surface)); stroke-width: 1.2; }
+.badge * { transition: fill .35s var(--ease), stroke .35s var(--ease); }
+/* uit = het teken in grafiet, overal */
+.gift[aria-checked="false"] { --tier: var(--ink-3) !important; }
+
+/* G1 Inkt: de hele tegel krijgt een zweem van het metaal met een fijn zeshoekig raster, de inkt vloeit uit vanaf de tik */
+.g1 .gift::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
+    radial-gradient(circle, color-mix(in srgb, var(--tint) 30%, transparent) .75px, transparent 1.15px) 0 0 / 8px 6.93px,
+    radial-gradient(circle, color-mix(in srgb, var(--tint) 30%, transparent) .75px, transparent 1.15px) 4px 3.46px / 8px 6.93px,
+    color-mix(in srgb, var(--tint) var(--wash), var(--surface));
+  clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path .55s var(--ease); }
+.g1 .gift[aria-checked="true"]::before { clip-path: circle(150% at var(--x, 50%) var(--y, 50%)); }
+
+/* G2 Matrix: rechts een teken van 7 x 7 stippen; uit één grafieten punt (·), aan een vierpuntige ster in het metaal;
+   bij het omschakelen ruisen de stippen even, zoals de matrixklok */
+.mx { flex: none; width: 23px; height: 23px; }
+.mx circle { fill: var(--ink-3); opacity: .14; transition: opacity .12s linear, fill .2s var(--ease); }
+.mx circle.on { opacity: 1; }
+.gift[aria-checked="true"] .mx circle.on { fill: var(--tint); }
+
+/* G3 Levend teken: uit staat het rangteken stil in grafiet; aan kleurt het en draaien zijn maantjes langzaam rond */
+.g3 .gift .moons { transform-origin: 0 0; }
+.g3 .gift[aria-checked="true"] .moons { animation: orbit 14s linear infinite; }
+.g3 .gift[aria-checked="true"] .fb-star { animation: turn .6s var(--ease); transform-origin: 0 0; }
+.g3 .gift > svg.badge { width: 34px; height: 34px; margin: -2px; }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@keyframes turn { from { transform: rotate(-90deg) scale(.6); } }
+@media (prefers-reduced-motion: reduce) { *, *::before { transition: none !important; animation: none !important; } }
+.combo { display: grid; gap: 10px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="lab">Orbit · Geschenken · ronde 2</p>
+    <h1>Aan of uit zonder schakelaar</h1>
+    <p class="lead">Bij alle drie is de hele tegel de knop. Uit betekent overal hetzelfde: het rangteken wordt grafiet. Wat verschilt, is hoe aan eruitziet. Tik op de tegels.</p>
+  </header>
+  <div class="seg" id="theme"><button data-v="light" aria-pressed="true">Licht</button><button data-v="dark" aria-pressed="false">Donker</button></div>
+  <div class="grid">
+    <div class="col">
+      <h3>G1 Inkt</h3>
+      <p>Aan kleurt de hele tegel met een zweem van het metaal en een fijn zeshoekig raster, zoals een risodruk. De inkt vloeit open vanaf de plek waar je tikt en trekt zich daar ook weer terug.</p>
+      <div class="dlg g1" data-g="1"></div>
+    </div>
+    <div class="col">
+      <h3>G2 Matrix</h3>
+      <p>Rechts een teken van 7 × 7 stippen. Uit staat er één grafieten punt, aan een vierpuntige ster in het metaal. Bij het omschakelen ruisen de stippen even, zoals de matrixklok in de focus.</p>
+      <div class="dlg g2" data-g="2"></div>
+    </div>
+    <div class="col">
+      <h3>G3 Levend teken</h3>
+      <p>Geen extra vorm. Uit staat het rangteken stil in grafiet. Aan kleurt het, de ster draait open en de maantjes beginnen traag rond te draaien. Het geschenk leeft, of het slaapt.</p>
+      <div class="dlg g3" data-g="3"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const starPath = (R, w = .2) => { const p = a => `${(Math.cos(a) * R).toFixed(2)} ${(Math.sin(a) * R).toFixed(2)}`; let d = `M${p(-Math.PI / 2)}`; for (let i = 0; i < 4; i++) { const a = -Math.PI / 2 + i * Math.PI / 2; d += ` Q${(Math.cos(a + Math.PI / 4) * R * w).toFixed(2)} ${(Math.sin(a + Math.PI / 4) * R * w).toFixed(2)} ${p(a + Math.PI / 2)}`; } return d + 'Z'; };
+const at = (deg, r) => [Math.cos(deg * Math.PI / 180) * r, Math.sin(deg * Math.PI / 180) * r];
+const METAL = ['bronze','bronze','bronze','silver','silver','silver','gold','gold','platinum','platinum'], STEP = [1,2,3,1,2,3,1,2,1,2];
+function rankSvg(level) {
+  const i = level - 1, t = ['bronze','silver','gold','platinum'].indexOf(METAL[i]), k = STEP[i];
+  const rings = [10.6]; if (t >= 1) rings.push(8.4); if (t >= 2) rings.push(6.4);
+  let s = rings.map((r, j) => `<circle class="fb-ring${j ? ' fb-orbit' : ''}" r="${r}"/>`).join('') + `<path class="fb-star" d="${starPath([6.6,5.4,4.2,4.2][t])}"/><g class="moons">`;
+  for (let j = 0; j < k; j++) { const [x, y] = at(-90 + (j - (k - 1) / 2) * 34, 10.6); s += `<circle class="fb-moon" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.75"/>`; }
+  return s + '</g>';
+}
+const NAMES = ['Sterrenkijker','Verkenner','Navigator','Piloot','Kapitein','Astronaut','Commandant','Sterrenbouwer','Melkwegreiziger','Kosmos'];
+const GIFTS = [[2,'Sterrenstempel','Afvinken zet een vierpuntige ster in het rondje in plaats van een vinkje.', true],[3,'Blosjes','De kern bloost een beetje.', false],[4,'Sterrenstof','De sterren aan de hemel krijgen de kleuren van de momenten.', true],[5]];
+// 7 x 7: ster en punt
+const STAR = ['...#...','...#...','..###..','#######','..###..','...#...','...#...'], DOT = ['.......','.......','.......','...#...','.......','.......','.......'];
+const mx = () => { let s = '<svg class="mx" viewBox="0 0 23 23" aria-hidden="true">'; for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) s += `<circle cx="${2 + c * 3.17}" cy="${2 + r * 3.17}" r="1.15" data-r="${r}" data-c="${c}"/>`; return s + '</svg>'; };
+function paint(svg, on) { const g = on ? STAR : DOT; svg.querySelectorAll('circle').forEach(d => d.classList.toggle('on', g[d.dataset.r][d.dataset.c] === '#')); }
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function morph(svg, on) {
+  if (still()) return paint(svg, on);
+  const dots = [...svg.querySelectorAll('circle')], t0 = performance.now(), MS = 420;
+  (function f(now) { const k = (now - t0) / MS; if (k >= 1) return paint(svg, on);
+    const g = on ? STAR : DOT; dots.forEach(d => d.classList.toggle('on', Math.random() < (g[d.dataset.r][d.dataset.c] === '#' ? .35 + k * .6 : .3 * (1 - k)))); requestAnimationFrame(f); })(t0);
+}
+function tile([r, n, d, on], g) {
+  const got = !!n, tier = `var(--tier-${METAL[r - 1]})`;
+  const tag = got ? 'button' : 'div';
+  return `<li><${tag} class="gift${got ? '' : ' locked'}" ${got ? `role="switch" aria-checked="${on}" aria-label="${n}"` : ''} style="--tier:${tier};--tint:${tier}">
+    <svg class="badge" viewBox="-13.5 -13.5 27 27" aria-hidden="true">${rankSvg(r)}</svg>
+    <span class="fbody"><span class="fname" style="display:block">${got ? n : 'Verrassing'}</span><span class="fdesc" style="display:block">${got ? d : `Bij rang ${r}: ${NAMES[r - 1]}`}</span></span>
+    ${got && g === 2 ? mx() : ''}</${tag}></li>`;
+}
+document.querySelectorAll('.dlg').forEach(dlg => {
+  const g = +dlg.dataset.g;
+  dlg.innerHTML = `<div class="meta"><span>Geschenken</span><span>3 van 9 behaald</span></div><p class="note">Bij elke nieuwe rang een kleinigheid om Orbit mee aan te kleden. Tik om aan of uit te zetten.</p><ul class="fgrid">${GIFTS.map(x => tile(x, g)).join('')}</ul>`;
+  dlg.querySelectorAll('.mx').forEach(s => paint(s, s.closest('.gift').getAttribute('aria-checked') === 'true'));
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('button.gift'); if (!b) return;
+  const on = b.getAttribute('aria-checked') !== 'true', r = b.getBoundingClientRect();
+  b.style.setProperty('--x', `${e.clientX ? e.clientX - r.left : r.width / 2}px`); b.style.setProperty('--y', `${e.clientY ? e.clientY - r.top : r.height / 2}px`);
+  b.setAttribute('aria-checked', String(on));
+  const m = b.querySelector('.mx'); if (m) morph(m, on);
+  const star = b.querySelector('.fb-star'); if (star && on) { star.style.animation = 'none'; star.getBBox(); star.style.animation = ''; }
+});
+document.getElementById('theme').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); document.documentElement.dataset.theme = b.dataset.v; });
+try { if (matchMedia('(prefers-color-scheme: dark)').matches) document.querySelector('#theme [data-v="dark"]').click(); } catch (e) {}
+</script>
