@@ -68,7 +68,7 @@ function phosphor(hex) {
 
 // scores: { load, save } uit src/data/scores.js (via het bakje), gedeeld tussen gekoppelde toestellen
 // zoom: groter bakje = zelfde levels, groter getekend (de opbouw is op één maat ontworpen)
-export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
+export function createBreakout({ reducedMotion, accent, scores, run, zoom = 1 }) {
   const loadTop = () => (scores?.load()?.top || []).slice(0, 5);
   let cv = null, g = null, tube = null, tg = null, bloom = null, bg = null, pat = null, dpr = 1, lastNow = 0, t = 0;
   let P = phosphor(null), lastAccent;
@@ -109,6 +109,32 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
   function startGame() {
     demo = false; level = 0; loop = 0; score = 0; lives = 3; rallyBoost = 0; newRank = -1;
     resetPowers(); build(0); serveBall(); setState('intro');
+    saveRun();
+  }
+
+  // Voortgang van een lopend spel (Victor, 10/11/2026: "Ik zat aan level 3 van breakout en ik draaide even mijn gsm en mijn
+  // voortgang was al gereset"). Bewaard via run (src/data/scores.js, breakoutRun): bij elk nieuw level, elk verloren leven,
+  // pauze, wegleggen en een verborgen tabblad; gewist bij game over. Een nieuw opgebouwd bakje (draaien, andere maat,
+  // herladen) zet het spel gepauzeerd terug, met de stenen zoals ze waren; een tik speelt verder.
+  const RUN_STATES = new Set(['intro', 'serve', 'play', 'pause', 'clear']);
+  function saveRun() {
+    if (!run || demo || !RUN_STATES.has(state)) return;
+    run.save({ run: { v: 1, level, loop, score, lives, hp: bricks.map(b => (b.steel ? -1 : b.hp)) }, at: Date.now() });
+  }
+  function clearRun() { run?.save({ run: null, at: Date.now() }); }
+  function restoreRun() {
+    let r = null;
+    try { r = run?.load()?.run; } catch { r = null; }
+    if (!r || r.v !== 1 || !Number.isInteger(r.level) || !Array.isArray(r.hp)) return false;
+    const lv = clamp(r.level, 0, MAPS.length - 1);
+    build(lv);
+    if (r.hp.length !== bricks.length) return false;
+    bricks.forEach((b, i) => { if (!b.steel) b.hp = clamp(Number(r.hp[i]) || 0, 0, b.max); b.born = -9; });
+    if (!bricks.some(b => b.hp > 0 && !b.steel)) return false;
+    demo = false; level = lv; loop = Math.max(0, Number(r.loop) | 0); score = Math.max(0, Number(r.score) || 0);
+    lives = clamp(Number(r.lives) | 0, 1, 5); rallyBoost = 0; newRank = -1;
+    resetPowers(); serveBall(); setState('pause');
+    return true;
   }
   function endGame() {
     newRank = -1;
@@ -119,6 +145,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
       top = list; scores?.save({ top });
     }
     setState('over');
+    clearRun();
     sound('over');
   }
 
@@ -250,6 +277,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
         if (lives <= 0) { endGame(); return; }
         sound('life', { x: 0 });
         serveBall(); setState('serve');
+        saveRun();
       }
     }
     // level leeg
@@ -269,6 +297,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
     // na 'level voltooid' het volgende level
     level++; if (level >= MAPS.length) { level = 0; loop++; }
     resetPowers(); rallyBoost = 0; build(level); serveBall(); setState('intro');
+    saveRun();
   }
 
   // ---- tekenen ----
@@ -386,12 +415,12 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
   function act(x = target) {
     if (state === 'attract') { startGame(); padX = target = x; lastInput = t; return; }
     input({ x });
-    if (state === 'pause') { setState('play'); return; }
+    if (state === 'pause') { setState(balls.every(b => !b.vx && !b.vy) ? 'serve' : 'play'); return; }   // teruggezet spel: bal ligt nog op het batje
     if (state === 'over') { if (t - stateAt > 1.2) startGame(); return; }
     if (state === 'serve' || state === 'intro') { if (state !== 'intro' || t - stateAt > 0.6) launch(); return; }
     if (state === 'play') for (const b of balls) if (b.stuck) launchStuck(b);
   }
-  const pauseNow = () => { if (!demo && state === 'play') setState('pause'); };
+  const pauseNow = () => { if (!demo && state === 'play') setState('pause'); saveRun(); };
   // muis buiten het bakje: dichtbij stuurt ze het batje verder, ver weg (of het venster uit) pauzeert het spel
   function onWinMove(e) {
     if (demo || !cv || e.pointerType === 'touch') return;
@@ -420,6 +449,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
   const clearKeys = () => { keys.left = keys.right = false; };
   const onBlur = () => { clearKeys(); pauseNow(); };
   const onDocLeave = e => { if (!e.relatedTarget) pauseNow(); };
+  const onHidden = () => { if (document.hidden) pauseNow(); };
   function listen(on) {
     const f = on ? 'addEventListener' : 'removeEventListener';
     window[f]('pointermove', onWinMove, { passive: true });
@@ -427,13 +457,14 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
     document[f]('keyup', onKey);
     window[f]('blur', onBlur);
     document.documentElement[f]('mouseleave', onDocLeave);
+    document[f]('visibilitychange', onHidden);
   }
   return {
     own: true,
     onDark: true,
     // de keuzerij wijkt zolang er gespeeld wordt (anders ligt ze over de score)
     get busy() { return !demo && state === 'play'; },
-    init() { startAttract(); },
+    init() { if (!restoreRun()) startAttract(); },
     // scores van een ander toestel of tabblad: opnieuw inlezen, een net behaalde plaats blijft gemarkeerd
     reload() {
       const mine = top[newRank];
@@ -472,6 +503,7 @@ export function createBreakout({ reducedMotion, accent, scores, zoom = 1 }) {
     unmount() {
       listen(false); clearKeys();
       if (!demo && state === 'play') setState('pause');
+      saveRun();
       cv?.remove(); cv = null; g = null; tube = null; tg = null;
     },
     frame(now) {

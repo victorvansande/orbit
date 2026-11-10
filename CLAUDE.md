@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 09/11/2026, Claude Code: bakje schaalbaar op desktop (greepje linksboven, verhouding vast, meer inhoud; Breakout en Paneel zoomen); water blijft rustig op elke maat, lava gevuld (shader had maar 16 plaatsen). Open: Victor kijkt of de grens (niet over de ring Maand, op 1440 × 900 tot 1,25) goed voelt.
 - 09/11/2026, Claude Code: logo op kleine maat (topbar, Uitleg, maandwissel) gebruikt de kleine tekening uit het merk (A, gekozen door Victor): staart niet meer rafelig. Open: Victor kijkt op pc en gsm.
 - 09/11/2026, Claude Code: zandloper: het gevallen zand ligt op de zichtbare bodem (niet meer in de vervaagde onderste rijen). Open: Victor kijkt.
 - 09/11/2026, Claude Code: Instellingen → Kleuren: Momenten (vijf kleuren) of Rood (tinten van het kernrood, Nu vol, Ooit het minst verzadigd); `PALETTE` in `config.js`, wisselen herlaadt. Open: Victor kijkt.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 09/11/2026, Claude Code: geschenken bij elke nieuwe rang (negen, puur cosmetisch, aan of uit in Prestaties, verrassing tot de rang gehaald is; `src/core/gifts.js`). Victor (rang 3) heeft er nu twee. Open: Victor ontdekt de rest bij een promotie; elk effect is getest maar door hem nog niet gezien.
 - 09/11/2026, Claude Code: oogjes van Orb volgens O1 Spiegelraster (gekozen door Victor): symmetrisch, fijner raster op scherpe schermen, vloeiende rand; blosjes verplaatst; Zzz geprobeerd en weer weggehaald; de kern is altijd even groot (niet meer kleiner bij weinig dringends). Open: Victor kijkt op pc en gsm.
 - 10/11/2026, Claude Code: liggende gsm krijgt de desktopindeling (lijst links, scène, wiel rechts; focus met klok links en bakje rechts), compact voor de lage hoogte, met inkeping en touch; `DESKTOP_MQ` / `MOBILE_MQ` in `config.js`. Open: Victor kijkt op zijn gsm liggend.
+- 10/11/2026, Claude Code: Breakout en Slang bewaren een lopend spel (via `scores.js`, soort `run`): draaien, een andere maat of herladen zet het gepauzeerd terug. Open: Victor speelt op zijn gsm en draait.

@@ -6,11 +6,15 @@
 // juist samenvoegt en doorgeeft (bewaard onder EXTRA_KEY):
 //   { top: [{ s, at, ... }] }  toplijst: alle regels van beide kanten (uniek op tijdstip en score), de beste n
 //   { best, at }               beste score: de hoogste
+//   { run, at }                een lopend spel (voortgang), of run = null als het gedaan is: het recentste wint
 // Samenvoegen verliest dus nooit een score. Een nieuwe vorm: een soort in KINDS erbij.
 
 export const GAMES = {
   breakout: { key: 'priority-orbit.breakout.v1', n: 5 },
   snake: { key: 'priority-orbit.snake.v1' },
+  // lopend spel, zodat draaien, een andere maat van het bakje of herladen het niet wist (Victor, 10/11/2026)
+  breakoutRun: { key: 'priority-orbit.breakoutrun.v1' },
+  snakeRun: { key: 'priority-orbit.snakerun.v1' },
 };
 const EXTRA_KEY = 'priority-orbit.games.v1';   // spellen die enkel een nieuwere versie kent: bewaren en doorgeven
 const TOP_N = 5;
@@ -35,6 +39,12 @@ const KINDS = {
     clean: v => ({ ...v, best: Math.max(0, v.best), at: num(v.at) }),
     merge: (a, b) => (b.best > a.best ? b : a),
     sig: v => String(v.best),
+  },
+  run: {
+    is: v => v && typeof v === 'object' && 'run' in v && Number.isFinite(v.at),
+    clean: v => ({ run: v.run && typeof v.run === 'object' ? v.run : null, at: num(v.at) }),
+    merge: (a, b) => (b.at > a.at ? b : a),
+    sig: v => String(v.at),
   },
 };
 const kindOf = v => Object.values(KINDS).find(k => k.is(v));

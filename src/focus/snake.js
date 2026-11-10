@@ -42,7 +42,7 @@ function star(g, x, y, r, rot) {
 }
 
 // scores: { load, save } uit src/data/scores.js (via het bakje), gedeeld tussen gekoppelde toestellen
-export function createSnake({ reducedMotion, accent, scores, size }) {
+export function createSnake({ reducedMotion, accent, scores, run, size }) {
   if (size) setField(size.w, size.h);
   const loadBest = () => scores?.load()?.best || 0;
   const touch = matchMedia('(hover: none)');
@@ -78,7 +78,30 @@ export function createSnake({ reducedMotion, accent, scores, size }) {
     if (name === last) return;
     if (queue.length < 2) queue.push(name);
   }
-  function begin() { if (state === 'demo' || state === 'over') reset('play'); else if (state === 'pause') setPlay(); lastInput = t; }
+  function begin() { if (state === 'demo' || state === 'over') { reset('play'); saveRun(); } else if (state === 'pause') setPlay(); lastInput = t; }
+
+  // Voortgang van een lopend spel (Victor, 10/11/2026, zoals bij Breakout): bewaard via run (src/data/scores.js, snakeRun)
+  // bij het starten, bij pauze, wegleggen en een verborgen tabblad; gewist bij game over. Een nieuw opgebouwd bakje zet het
+  // spel gepauzeerd terug; op een ander raster (andere maat) lopen de stippen rond tot ze erin passen.
+  function saveRun() {
+    if (!run || (state !== 'play' && state !== 'pause')) return;
+    run.save({ run: { v: 1, snake: snake.map(c => c.slice()), dir, score, grow, food }, at: Date.now() });
+  }
+  function clearRun() { run?.save({ run: null, at: Date.now() }); }
+  function restoreRun() {
+    let r = null;
+    try { r = run?.load()?.run; } catch { r = null; }
+    const ok = c => Array.isArray(c) && c.length === 2 && c.every(Number.isInteger);
+    if (!r || r.v !== 1 || !Array.isArray(r.snake) || r.snake.length < 2 || !r.snake.every(ok) || !DIRS[r.dir]) return false;
+    snake = r.snake.map(([x, y]) => [wrap(x % COLS, COLS), wrap(y % ROWS, ROWS)]); prev = snake.map(c => c.slice());
+    dir = r.dir; queue = []; acc = 0; grow = Math.max(0, Number(r.grow) | 0); score = Math.max(0, Number(r.score) | 0); newBest = false;
+    bonus = null; ripples = []; food = ok(r.food) ? [wrap(r.food[0] % COLS, COLS), wrap(r.food[1] % ROWS, ROWS)] : null;
+    if (!food || occupied(food[0], food[1])) food = free();
+    state = 'pause'; stateAt = t;
+    return true;
+  }
+  function pauseNow() { if (state === 'play') { state = 'pause'; stateAt = t; } saveRun(); }
+  const onHidden = () => { if (document.hidden) pauseNow(); };
   function setPlay() { state = 'play'; stateAt = t; }
 
   // demo: naar het eten, maar nooit een zet die hem opsluit (telt hoeveel vakjes hij daarna nog kan bereiken)
@@ -130,6 +153,7 @@ export function createSnake({ reducedMotion, accent, scores, size }) {
     if (state === 'demo') { stateAt = t; state = 'demo-dead'; return; }
     if (score > best) { best = score; newBest = true; scores?.save({ best, at: Date.now() }); }
     state = 'over'; stateAt = t;
+    clearRun();
   }
 
   function step(dt) {
@@ -247,7 +271,7 @@ export function createSnake({ reducedMotion, accent, scores, size }) {
   return {
     own: true,
     get busy() { return state === 'play'; },   // de keuzerij wijkt enkel tijdens het spel
-    init() { reset('demo'); },
+    init() { if (!restoreRun()) reset('demo'); },
     reload() { best = Math.max(best, loadBest()); },   // beste score van een ander toestel of tabblad
     mount(el) {
       if (cv) return;
@@ -259,13 +283,15 @@ export function createSnake({ reducedMotion, accent, scores, size }) {
       el.append(cv);
       g = cv.getContext('2d');
       document.addEventListener('keydown', onKey, true);
+      document.addEventListener('visibilitychange', onHidden);
       lastNow = 0;
       if (state === 'play') { state = 'pause'; stateAt = t; }
       if (reducedMotion.matches) { reset('demo'); for (let i = 0; i < 14; i++) tick(); prev = snake.map(s => s.slice()); ripples = []; draw(); }
     },
     unmount() {
-      if (state === 'play') { state = 'pause'; stateAt = t; }
+      pauseNow();
       document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('visibilitychange', onHidden);
       cv?.remove(); cv = null; g = null;
     },
     frame(now) {
@@ -296,7 +322,7 @@ export function createSnake({ reducedMotion, accent, scores, size }) {
       turn(a !== 0 ? (dy > 0 ? 'down' : 'up') : (dx > 0 ? 'right' : 'left'));
       lastInput = t;
     },
-    leave() { swipe = null; if (state === 'play' && !touch.matches) { state = 'pause'; stateAt = t; } },
+    leave() { swipe = null; if (state === 'play' && !touch.matches) pauseNow(); },
     recolor() { colorsAt = -9; },
   };
 }

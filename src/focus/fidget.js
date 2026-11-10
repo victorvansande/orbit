@@ -689,10 +689,10 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
         modes[modeName] = createPlasma({ reducedMotion, ramp: () => (ACCENT ? accentRamp(ACCENT) : null), size: { w: W, h: HH } });
       } else if (modeName === 'breakout') {
         // breakout B4 Fosfor (Victor, 08/11/2026): levels, levens, powerups, highscores; fosfor uit de kleurkiezer
-        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, scores: scores?.game('breakout'), zoom: W / BASE_W });
+        modes[modeName] = createBreakout({ reducedMotion, accent: () => ACCENT, scores: scores?.game('breakout'), run: scores?.game('breakoutRun'), zoom: W / BASE_W });
       } else if (modeName === 'snake') {
         // slang in stippen (Victor, 08/11/2026, F1): raster van de matrixklok, kleur uit de kleurkiezer
-        modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT, scores: scores?.game('snake'), size: { w: W, h: HH } });
+        modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT, scores: scores?.game('snake'), run: scores?.game('snakeRun'), size: { w: W, h: HH } });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
