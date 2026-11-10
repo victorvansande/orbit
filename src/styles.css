@@ -2100,7 +2100,7 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
   .tracks { top: 80px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: min(280px, 34vw); }
   .wheel { top: 56px; bottom: 16px; height: auto; width: 230px; transform: none; }
   .wheel-hint { display: none; }
-  .greeting { bottom: 12px; font-size: 16px; max-width: min(420px, 40vw); }
+  .greeting { bottom: 12px; font-size: 14px; }   /* breedte en plek: tussen lijst en wiel (placeGreeting); enkel na een tik op de kern */
   .greeting small { display: none; }
   .controls { bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
   /* focus: klok en Nu links, bakje op ware grootte rechtsonder, zandloper erboven; alles iets lager dan op desktop */

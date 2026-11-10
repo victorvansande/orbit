@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 09/11/2026, Claude Code: geschenken bij elke nieuwe rang (negen, puur cosmetisch, aan of uit in Prestaties, verrassing tot de rang gehaald is; `src/core/gifts.js`). Victor (rang 3) heeft er nu twee. Open: Victor ontdekt de rest bij een promotie; elk effect is getest maar door hem nog niet gezien.
 - 09/11/2026, Claude Code: oogjes van Orb volgens O1 Spiegelraster (gekozen door Victor): symmetrisch, fijner raster op scherpe schermen, vloeiende rand; blosjes verplaatst; Zzz geprobeerd en weer weggehaald; de kern is altijd even groot (niet meer kleiner bij weinig dringends). Open: Victor kijkt op pc en gsm.
 - 10/11/2026, Claude Code: liggende gsm krijgt de desktopindeling (lijst links, scène, wiel rechts; focus met klok links en bakje rechts), compact voor de lage hoogte, met inkeping en touch; `DESKTOP_MQ` / `MOBILE_MQ` in `config.js`. Open: Victor kijkt op zijn gsm liggend.
 - 10/11/2026, Claude Code: Breakout en Slang bewaren een lopend spel (via `scores.js`, soort `run`): draaien, een andere maat of herladen zet het gepauzeerd terug. Open: Victor speelt op zijn gsm en draait.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 10/11/2026, Claude Code: orbitje boven Nieuwe taak vervangen door B Horizon (gekozen door Victor): halve stippelringen op de bovenrand van de kaart, kern met oogjes als opkomende zon, komeet die bij Voeg toe de kaart in duikt (`src/scene/horizon.js`). Open: Victor kijkt op pc en gsm.
 - 10/11/2026, Claude Code: Fosfor en Inkt wisselen om de 20 s vanzelf van scherm (Fosfor klapt in tot een lichtstreep, Inkt ververst met een lijn van boven naar onder). Open: Victor kijkt of 20 s goed voelt.
 - 10/11/2026, Claude Code: in licht iets meer contrast voor de rasterstippen (x 1,3) en de banen (x 1,22), donker ongewijzigd (`dots`, `ring` in `THEMES`). Open: Victor kijkt of het genoeg is.
+- 10/11/2026, Claude Code: liggende gsm: de kern spreekt enkel nog na een tik, en dan in de strook tussen lijst en wiel (keuze 3 van Victor; `LYING_MQ`, `sayLine(..., asked)`). Open: Victor kijkt liggend.

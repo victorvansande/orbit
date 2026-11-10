@@ -1,5 +1,5 @@
 import { DEMO_MODE } from './core/demo.js';   // als eerste: vult in de demo de tijdelijke opslag
-import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode, PALETTE, setPalette, DESKTOP_MQ } from './core/config.js';
+import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode, PALETTE, setPalette, DESKTOP_MQ, LYING_MQ } from './core/config.js';
 import { createScene } from './scene/scene.js';
 import { createWheel } from './scene/wheel.js';
 import { createLegend } from './scene/legend.js';
@@ -43,6 +43,7 @@ const IDLE_MS = 2500;         // focusmodus: cursor en knoppen verbergen na stil
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const desktop = matchMedia(DESKTOP_MQ);
+const lying = matchMedia(LYING_MQ);   // gsm op zijn kant: lijst links, wiel rechts, weinig plek onder de kern
 const $ = id => document.getElementById(id);
 
 function el(tag, cls, text) {
@@ -3611,8 +3612,16 @@ placeMenu();
 // Een grote zin onder de scène, zes seconden; de kern kijkt er even naar. Een tik of klik ergens laat hem verdwijnen.
 let greetTimer = 0;
 function placeGreeting() {
-  if (desktop.matches) $('greeting').style.left = `${scene.centerX}px`;
-  else $('greeting').style.left = '';
+  const node = $('greeting');
+  node.style.maxWidth = '';
+  if (lying.matches) {
+    // liggend: enkel in de strook tussen lijst en wiel, met 16 px lucht aan elke kant
+    const box = node.offsetParent?.getBoundingClientRect() || { left: 0 };
+    const a = $('tracks').getBoundingClientRect().right, b = $('wheel').getBoundingClientRect().left;
+    node.style.left = `${(a + b) / 2 - box.left}px`;
+    node.style.maxWidth = `${Math.max(120, b - a - 32)}px`;
+  } else if (desktop.matches) node.style.left = `${scene.centerX}px`;
+  else node.style.left = '';
 }
 function hideGreeting() {
   clearTimeout(greetTimer);
@@ -3627,9 +3636,12 @@ function fitGreeting() {
   const base = parseFloat(getComputedStyle($('greeting')).fontSize);
   for (let size = base; text.getClientRects().length > 2 && size > base - 3; size -= 0.5) text.style.fontSize = `${size - 0.5}px`;
 }
-function sayLine(line, tries = 0) {
+// Liggend op gsm spreekt de kern enkel als je op hem tikt (Victor, 10/11/2026, keuze 3 van drie): onder de scène is daar
+// te weinig plek tussen lijst en wiel voor een begroeting die vanzelf komt. asked: de zin komt van een tik op de kern.
+function sayLine(line, tries = 0, asked = false) {
+  if (lying.matches && !asked) return;
   // staat er een melding onderaan, dan eerst die laten gaan (hooguit 12 s wachten), anders liggen ze over elkaar
-  if (toastOn() && tries < 20) { clearTimeout(greetTimer); greetTimer = setTimeout(() => sayLine(line, tries + 1), 600); return; }
+  if (toastOn() && tries < 20) { clearTimeout(greetTimer); greetTimer = setTimeout(() => sayLine(line, tries + 1, asked), 600); return; }
   clearTimeout(greetTimer);
   legend.hide(); document.body.classList.remove('has-legend');   // de kern spreekt op dezelfde plek
   $('greeting-text').textContent = line;
@@ -3664,7 +3676,7 @@ function longest(list) {
 }
 
 function greet() {
-  if (document.body.classList.contains('is-focus') || document.querySelector('dialog[open]')) return;
+  if (lying.matches || document.body.classList.contains('is-focus') || document.querySelector('dialog[open]')) return;   // liggend: enkel na een tik (sayLine)
   const real = realTasks();
   const today = toDue(new Date());
   const overdueList = real.filter(t => t.due && isOverdue(t.due));
@@ -3715,9 +3727,10 @@ function tapCore() {
     today: dueToday && { title: dueToday.title },
     stuck: stuck && { title: stuck.title, days: daysOn(stuck), level: levelName(stuck.level) },
     next: next && { title: next.title },
-  }));
+  }), 0, true);
 }
 window.addEventListener('resize', () => { if (!$('greeting').hidden) { placeGreeting(); fitGreeting(); } placeLegend(); });
+lying.addEventListener('change', () => { if (lying.matches && !$('greeting').hidden) hideGreeting(); });
 
 /* ---- Offline (sw.js) ---- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

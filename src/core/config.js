@@ -25,7 +25,8 @@ export function setPalette(name) {
 }
 // Indeling: desktop (lijst links, scène, wiel rechts) ook op een liggende gsm (Victor, 09/11/2026); dezelfde lijsten staan
 // in styles.css. Hoogte tot 500 px liggend = gsm op zijn kant; een liggende tablet blijft zoals vroeger.
-export const DESKTOP_MQ = '(min-width: 1000px), (orientation: landscape) and (max-height: 500px)';
+export const LYING_MQ = '(orientation: landscape) and (max-height: 500px)';   // gsm op zijn kant
+export const DESKTOP_MQ = `(min-width: 1000px), ${LYING_MQ}`;
 export const MOBILE_MQ = '(max-width: 999px) and (orientation: portrait), (max-width: 999px) and (min-height: 501px)';
 
 export const LEVEL_BY_ID = new Map(LEVELS.map(l => [l.id, l]));
