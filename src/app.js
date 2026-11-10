@@ -693,6 +693,7 @@ function showStatsDetail(open) {
   else stopWallSweep();
 }
 $('stats-toggle').addEventListener('click', () => showStatsDetail($('stats-detail').hidden));
+$('stats-close').addEventListener('click', () => { showStatsDetail(false); $('stats-toggle').focus({ preventScroll: true }); });
 // gsm: het tellertje bovenaan brengt je naar de details onderaan
 $('stat-mini').addEventListener('click', () => {
   showStatsDetail(true);

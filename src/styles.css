@@ -14,6 +14,7 @@
   --line-soft: rgba(27, 27, 34, .06);
   --fill: rgba(27, 27, 34, .045);
   --fill-2: rgba(27, 27, 34, .07);
+  --fill-solid: #E2DFD6;   /* --fill dekkend op --bg, voor vlakken boven de hemel */
   --gift-wash: 13%;   /* geschenk aan: zweem van het metaal in de tegel (G1 Inkt) */
   --chip: #fff;
   --on-ink: #fff;
@@ -86,6 +87,7 @@
   --line-soft: rgba(255, 255, 255, .06);
   --fill: rgba(255, 255, 255, .06);
   --fill-2: rgba(255, 255, 255, .1);
+  --fill-solid: #1D1D20;
   --gift-wash: 16%;
   --chip: #26262C;
   --on-ink: #0F0F12;
@@ -384,7 +386,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .tracks-demo { margin: 8px 0 4px; color: var(--ink-3); font-size: var(--fs-small); line-height: 1.45; max-width: 30ch; }
 .tracks-empty { margin-top: 18px; color: var(--ink-2); font-size: var(--fs-body); max-width: 26ch; }
 /* Statistiek onder de lijst: het totaal in matrixstippen; een tik toont de details */
-.stats { position: relative; display: flex; flex-direction: column; margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
+.stats { position: relative; display: flex; flex-direction: column; min-height: 0; margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
 .tracks:has(.hud-menu.is-open) { z-index: var(--z-menu); }
 @media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) { body:not(.is-focus) .tracks:has(.stats[hidden]) { bottom: 76px; } }   /* nog geen sterren: Instellingen zweeft onder de lijst, niet erover */
 .stats .hud-menu { left: 0; bottom: calc(100% + 8px); width: max-content; min-width: 400px; white-space: nowrap; }
@@ -407,7 +409,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .stats-rank-name { display: inline; }
 .stats-bar .menu-btn { min-height: auto; padding: 0; border: 0; border-radius: 0; font: 500 var(--fs-label)/1 var(--mono); letter-spacing: .12em; color: var(--ink-3); }
 .stats-bar .menu-btn:hover, .stats-bar .menu-btn[aria-expanded="true"] { color: var(--ink); }
-.stats .stats-detail { width: 100%; margin-top: 12px; }
+.stats .stats-detail { width: 100%; margin-top: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }   /* vaste kolom (desktop, liggend): te hoog = zelf scrollen, zodat Sluit en Nieuwe hemel bereikbaar blijven */
 /* knopje: muur van afgevinkte taken achter de sterrenhemel (icoon en tekst perfect gecentreerd, op de basislijn van stars collected) */
 .wall-toggle {
   position: relative;
@@ -456,7 +458,7 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 /* wissel maand / alles (V5 Ruis): stippen springen aan en uit zonder de oplicht-animatie van een gewoon cijfer */
 .dm .o.n { animation: none; }
 #stat-stars-label.is-swap { opacity: 0; }
-.stats-detail { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--fill); }
+.stats-detail { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--fill-solid); }   /* dekkend: de hemel (stippen, muur) loopt achter de lijst door en scheen door --fill heen (Victor, 10/11/2026) */
 .stats-detail[hidden] { display: none; }
 .stats-detail dl {
   display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0;
@@ -500,6 +502,10 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .sky-new:hover { color: var(--ink); }
 .stats-reset-btn { min-height: 30px; font: 500 var(--fs-label)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); transition: color .2s var(--ease); }
 .stats-reset-btn:hover { color: var(--late); }
+.stats-end { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.stats-close { margin: 0 0 0 auto; }   /* rechts, ook als Nieuwe hemel wijkt voor de bevestiging */
+.stats-close:hover { color: var(--ink); }
+@media (hover: none) { .stats-close { position: relative; } .stats-close::after { content: ''; position: absolute; inset: -3px -8px; } }   /* trefzone 36 px op touch */
 .stats-confirm p { margin: 0 0 10px; font-size: var(--fs-text); line-height: 1.45; color: var(--ink-2); }
 .stats-confirm .btn-solid, .stats-confirm .btn-ghost { min-height: 36px; padding: 0 14px; font-size: var(--fs-text); }
 .stat-dm .o, .clock .o { transition: fill-opacity .4s var(--ease); }
