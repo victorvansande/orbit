@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 10/11/2026, Claude Code: liggende gsm krijgt de desktopindeling (lijst links, scène, wiel rechts; focus met klok links en bakje rechts), compact voor de lage hoogte, met inkeping en touch; `DESKTOP_MQ` / `MOBILE_MQ` in `config.js`. Open: Victor kijkt op zijn gsm liggend.
 - 10/11/2026, Claude Code: Breakout en Slang bewaren een lopend spel (via `scores.js`, soort `run`): draaien, een andere maat of herladen zet het gepauzeerd terug. Open: Victor speelt op zijn gsm en draait.
 - 10/11/2026, Claude Code: Paneel gesplitst in twee soorten, Fosfor (tien CRT-schermen) en Inkt (drie vlakke, stijl van Orbit), in een eigen groep Paneel in het keuzemenu; een oude keuze op een inktscherm komt bij Inkt uit. Open: Victor kijkt, en zegt of de naam Inkt goed is (alternatief: Orbit).
 - 10/11/2026, Claude Code: venster van de maandwissel toont de laatste dag van de vorige maand (31 oktober) en slaat na de tik traag om naar 01 november, daarna de zwaartekracht zoals voorheen (`monthGate` met `from`/`to`, `morphMatrix` optie `ms`). Open: Victor kijkt in de demo (elk openen toont het venster); zegt of 01 of 1.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 10/11/2026, Claude Code: in licht iets meer contrast voor de rasterstippen (x 1,3) en de banen (x 1,22), donker ongewijzigd (`dots`, `ring` in `THEMES`). Open: Victor kijkt of het genoeg is.
 - 10/11/2026, Claude Code: liggende gsm: de kern spreekt enkel nog na een tik, en dan in de strook tussen lijst en wiel (keuze 3 van Victor; `LYING_MQ`, `sayLine(..., asked)`). Open: Victor kijkt liggend.
 - 10/11/2026, Claude Code: dagen op rij volgens R4 Matrixwissel (gekozen door Victor): derde stand in de stippenteller met een vlammetje (grafiet, rood na de eerste ster van de dag), ontsteekanimatie bij de eerste ster van de dag (of de kern zegt het op gsm), details met regels en een maandkalender in zeshoekjes (`streakInfo`, `src/scene/streak.js`); het vlammetje flakkert (rood) of smeult (grafiet) in zijn vakje (`liveFlame`). Open: Victor kijkt en vinkt morgen iets af.
+- 10/11/2026, Claude Code: Geschenken in een eigen tabblad naast Prestaties (P3) met een schakelaar in plaats van Aan / Uit (S1 Baan, metaal van de rang), gekozen door Victor uit `ontwerp/geschenken/`. Open: Victor kijkt op pc en gsm.

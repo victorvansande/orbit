@@ -2428,23 +2428,19 @@ function offerGifts() {
   const text = fresh.length === 1 ? tx('toast.gift1', { name: tx(`gift.${fresh[0].id}`) }) : tx('toast.gifts', { n: fresh.length });
   showToast(text, openGifts, tx('toast.giftShow'), 'gift');
 }
-function openGifts() {
-  openFeats();
-  const sec = $('feats-list').querySelector('.is-gifts');
-  if (sec) sec.scrollIntoView({ block: 'start', behavior: 'auto' });
-}
+function openGifts() { openFeats('gifts'); }
+// Geschenken staan in een eigen tabblad naast Prestaties (P3 met schakelaar S1, Victor 10/11/2026): niet vooraan bij het
+// openen, wel één tik ver. De knop Bekijk in de geschenkmelding opent meteen dit tabblad.
+let featsTab = 'feats';
 function giftSection() {
   const sec = el('section', 'feats-group is-gifts');
-  const h = el('h3', 'feats-group-title', tx('gifts.title'));
-  h.append(el('span', '', `${giftsAt(giftLevel).length}/${GIFTS.length}`));
-  const note = el('p', 'gifts-note', tx('gifts.note'));
   const ul = el('ul', 'feats-grid');
   ul.append(...GIFTS.map(giftTile));
-  sec.append(h, note, ul);
+  sec.append(el('p', 'gifts-note', tx('gifts.note')), ul);
   return sec;
 }
 function giftTile(g) {
-  const got = g.rank <= giftLevel, on = got && !giftPrefs.off[g.id];
+  const got = g.rank <= giftLevel;
   const li = el('li', `feat gift${got ? ' is-got' : ''}`);
   li.style.setProperty('--tier', `var(--tier-${rankMetal(g.rank)})`);
   li.style.setProperty('--rank-cut', 'var(--fill)');
@@ -2453,20 +2449,20 @@ function giftTile(g) {
   icon.innerHTML = rankSvg(g.rank);
   const body = el('div', 'feat-body');
   const name = el('p', 'feat-name', got ? tx(`gift.${g.id}`) : tx('gift.locked'));
-  if (got) {
-    const btn = el('button', 'gift-toggle', tx(on ? 'gift.on' : 'gift.off'));
-    btn.type = 'button';
-    btn.setAttribute('aria-pressed', String(on));
-    btn.setAttribute('aria-label', tx('gift.aria', { name: tx(`gift.${g.id}`), state: tx(on ? 'gift.on' : 'gift.off') }));
-    btn.addEventListener('click', () => {
+  if (got) {   // schakelaar S1 Baan: dunne capsule met een holle stip, aan = de stip schuift en vult zich in het metaal van de rang
+    const sw = el('button', 'gift-switch');
+    sw.type = 'button';
+    sw.setAttribute('role', 'switch');
+    sw.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));
+    sw.setAttribute('aria-label', tx(`gift.${g.id}`));
+    sw.append(el('i'));
+    sw.addEventListener('click', () => {
       if (giftPrefs.off[g.id]) delete giftPrefs.off[g.id]; else giftPrefs.off[g.id] = 1;
       saveGiftPrefs(giftPrefs);
       applyGifts(giftLevel);
-      li.replaceWith(giftTile(g));
-      featsDialog.querySelector(`.gift-toggle[data-gift="${g.id}"]`)?.focus();
+      sw.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));   // ter plaatse, zodat de stip zichtbaar schuift
     });
-    btn.dataset.gift = g.id;
-    name.append(btn);
+    name.append(sw);
   }
   body.append(name, el('p', 'feat-desc', got ? tx(`gift.${g.id}.desc`) : tx('gift.lockedDesc', { n: g.rank, name: RANK_NAMES[g.rank - 1] })));
   li.append(icon, body);
@@ -2528,7 +2524,12 @@ function renderFeats() {
     const got = items.filter(x => x.at || x.value >= x.goal).length;
     return featSection(groupName(g), `${got}/${items.length}`, items);
   });
-  list.replaceChildren(giftSection(), ...(recent.length ? [featSection(tx('feats.recent'), '', recent, true)] : []), ...groups);
+  $('feats-tab-feats-n').textContent = `${r.earned}/${FEATS.length}`;
+  $('feats-tab-gifts-n').textContent = `${giftsAt(giftLevel).length}/${GIFTS.length}`;
+  for (const t of ['feats', 'gifts']) $(`feats-tab-${t}`).setAttribute('aria-selected', String(featsTab === t));
+  list.setAttribute('aria-labelledby', `feats-tab-${featsTab}`);
+  if (featsTab === 'gifts') { list.replaceChildren(giftSection()); return; }
+  list.replaceChildren(...(recent.length ? [featSection(tx('feats.recent'), '', recent, true)] : []), ...groups);
 }
 const RECENT_FEATS = 4;   // vier past zonder gat in het raster van twee kolommen
 function gotLabel(at) {   // vandaag, gisteren of de datum
@@ -2565,7 +2566,8 @@ function featTile(x, isRecent) {
   li.append(icon, body);
   return li;
 }
-function openFeats() {
+function openFeats(tab) {
+  featsTab = tab === 'gifts' ? 'gifts' : 'feats';   // ook als klik-handler: dan is tab een event, dus Prestaties
   renderFeats();
   if (!featsDialog.open) featsDialog.showModal();
   featsDialog.querySelector('.feats-card').scrollTop = 0;
@@ -2575,6 +2577,7 @@ $('feats-badge')?.addEventListener('click', () => { setMenu(false); openFeats();
 document.querySelector('.menu-feats-row')?.addEventListener('click', () => { setMenu(false); openFeats(); });
 $('stats-rank-hint')?.addEventListener('click', openFeats);
 $('feats-close').addEventListener('click', () => featsDialog.close());
+for (const t of ['feats', 'gifts']) $(`feats-tab-${t}`).addEventListener('click', () => { featsTab = t; renderFeats(); featsDialog.querySelector('.feats-card').scrollTop = 0; });
 featsDialog.addEventListener('click', e => { if (e.target === featsDialog) featsDialog.close(); });
 
 // melding bovenaan: één prestatie tegelijk, pas als de nacht na het afvinken voorbij is
