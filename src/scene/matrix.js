@@ -68,11 +68,13 @@ export function setMatrix(root, text) {
 // voor elke stippenmatrix (Victor: "overal waar er een dot matrix is ... dezelfde animatie"): ook met een dubbelpunt
 // (klok, zandloper) en vanuit het niets (een lege matrix, zoals het venster van de maandwissel). only: enkel de tekens
 // die veranderen vallen in ruis, de rest blijft staan (klok, zandloper). Zonder animatie gewoon setMatrix. onSwap loopt
-// halverwege (label wisselen); zonder onSwap zet morphMatrix zelf het aria-label.
-const NOISE_MS = 1250, NOISE_TICKS = 26;
+// halverwege (label wisselen); zonder onSwap zet morphMatrix zelf het aria-label. ms: duur van de wissel; een tragere
+// wissel (de datum in het venster van de maandwissel) flikkert ook rustiger (het aantal tikken groeit met de wortel).
+export const NOISE_MS = 1250;
+const NOISE_TICKS = 26;
 const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
 const lit = (ch, x, y) => { const g = GLYPHS[ch]; return !!g && x < g[0].length && g[y][x] === '#'; };
-export function morphMatrix(root, text, { still = false, only = false, onSwap } = {}) {
+export function morphMatrix(root, text, { still = false, only = false, onSwap, ms = NOISE_MS } = {}) {
   cancelAnimationFrame(root._morphT); root._morphT = 0;
   const from = root._chars || [], to = [...text].filter(ch => GLYPHS[ch]);
   if (!onSwap) root.setAttribute('aria-label', text);
@@ -112,9 +114,9 @@ export function morphMatrix(root, text, { still = false, only = false, onSwap } 
   let shrunk = false;
   root._pending = text;
   let swapped = false;
-  const t0 = performance.now();
+  const t0 = performance.now(), ticks = Math.round(NOISE_TICKS * Math.sqrt(ms / NOISE_MS));
   const step = now => {
-    const p = Math.min(1, (now - t0) / NOISE_MS), tick = Math.floor(p * NOISE_TICKS);
+    const p = Math.min(1, (now - t0) / ms), tick = Math.floor(p * ticks);
     for (const cell of cells) {
       if (cell.keep) continue;
       const on = p < cell.go ? lit(F[cell.i], cell.x, cell.y) : p >= cell.lock ? lit(T[cell.i], cell.x, cell.y) : hash(cell.gx * 7 + tick, cell.y * 3 + tick) < 0.42;

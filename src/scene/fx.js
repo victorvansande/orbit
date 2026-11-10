@@ -3,7 +3,7 @@
 // Zelfde taal als de scène: Geist Mono, inkt met lage dekking, rood alleen als accent.
 // Glyph sonar, vortex en mosaic wave zitten in scene.js.
 
-import { morphMatrix } from './matrix.js';
+import { morphMatrix, NOISE_MS } from './matrix.js';
 
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -174,12 +174,15 @@ export function whiteBurst({ center, onPeak = () => {}, done = () => {}, soft = 
 // Laat alle klikken door (pointer-events: none) en stopt niet als je intussen iets anders doet.
 const NIGHT = { fall: 0.45, born: 0.3, open: 1.1, end: 2.3 };
 /* ---- Venster vóór de maandwissel: M1 Het nummer (Victor, 04/11/2026) ----
-   Op het papier van de intro: linksboven het merk, rechtsboven de datum, in het midden het nummer van de nieuwe maand in
-   rode stippen met schimmen (zoals het aantal sterren op de recapkaart), klein eronder de naam van de maand, onderaan een
-   fluistering. Het hele venster is de
-   knop: de tik is de klik die de browser vraagt voor geluid, daarna lost het venster op in het papier van de intro.
-   Zolang het er staat, doen sneltoetsen niets; Enter of spatie opent. */
-export function monthGate({ digits, month = '', date, label, aria, mark, onOpen }) {
+   Op het papier van de intro: linksboven het merk, rechtsboven de datum, in het midden een getal in rode stippen met
+   schimmen (zoals het aantal sterren op de recapkaart), klein eronder de naam van de maand, onderaan een fluistering.
+   Sinds 10/11/2026 (Victor: het nummer van de maand alleen was verwarrend) is dat getal een datum die omslaat: eerst de
+   laatste dag van de vorige maand (31 oktober), en pas na de tik wisselt ze traag, met de ruis van de stippenmatrix, naar
+   de eerste van de nieuwe maand (01 november). Ze blijft even staan, dan lost het venster op in het papier van de intro.
+   Het hele venster is de knop: de tik is de klik die de browser vraagt voor geluid (onTap), onOpen komt na de omslag.
+   Zolang het er staat, doen sneltoetsen niets; Enter of spatie opent. De omslag is niet over te slaan (maandwissel). */
+const GATE = { wait: 350, turn: 2800, hold: 1100, fade: 450 };   // ms: adempauze na de tik, omslag, blijven staan, naam van de maand
+export function monthGate({ from, to, date, label, aria, mark, onTap, onOpen }) {
   const el = document.createElement('div');
   el.className = 'month-gate';
   el.setAttribute('role', 'button');
@@ -187,12 +190,14 @@ export function monthGate({ digits, month = '', date, label, aria, mark, onOpen 
   el.tabIndex = 0;
   el.innerHTML = '<div class="mg-corner"><span class="mg-mark"></span><span class="mg-date"></span></div><span class="mg-dm" aria-hidden="true"></span><span class="mg-month"></span><span class="mg-hint"></span>';
   if (mark) el.querySelector('.mg-mark').append(mark);
+  const dm = el.querySelector('.mg-dm'), name = el.querySelector('.mg-month');
   el.querySelector('.mg-date').textContent = date;
-  el.querySelector('.mg-month').textContent = month;   // naam van de maand onder het nummer (Victor, 04/11/2026)
+  name.textContent = from.month;   // naam van de maand onder het getal (Victor, 04/11/2026)
   el.querySelector('.mg-hint').textContent = label;
   document.body.append(el);
-  morphMatrix(el.querySelector('.mg-dm'), digits);   // het nummer ontstaat uit ruis, zoals de stippenteller wisselt
-  el.querySelector('.mg-dm').removeAttribute('aria-label');
+  morphMatrix(dm, from.digits);   // het getal ontstaat uit ruis, zoals de stippenteller wisselt
+  dm.removeAttribute('aria-label');
+  const ready = performance.now() + NOISE_MS;   // tot dan vormt de oude datum zich nog
   requestAnimationFrame(() => el.focus({ preventScroll: true }));
   let opened = false;
   const keys = e => {
@@ -202,10 +207,23 @@ export function monthGate({ digits, month = '', date, label, aria, mark, onOpen 
   function open() {
     if (opened) return;
     opened = true;
-    removeEventListener('keydown', keys, true);
-    onOpen();
-    el.classList.add('is-out');
-    setTimeout(() => el.remove(), 700);
+    onTap?.();
+    el.classList.add('is-turning');   // de fluistering dooft, het venster is geen knop meer
+    const start = Math.max(GATE.wait, ready - performance.now() + GATE.wait);   // een vroege tik: eerst staat de oude datum er helemaal
+    setTimeout(() => {
+      morphMatrix(dm, to.digits, {
+        ms: GATE.turn,
+        onSwap() { name.textContent = to.month; name.classList.remove('is-swap'); el.setAttribute('aria-label', `${Number(to.digits)} ${to.month}`); },
+      });
+      dm.removeAttribute('aria-label');
+    }, start);
+    setTimeout(() => name.classList.add('is-swap'), start + GATE.turn / 2 - GATE.fade);   // de oude naam dooft net voor de helft
+    setTimeout(() => {
+      removeEventListener('keydown', keys, true);
+      onOpen();
+      el.classList.add('is-out');
+      setTimeout(() => el.remove(), 700);
+    }, start + GATE.turn + GATE.hold);
   }
   addEventListener('keydown', keys, true);
   el.addEventListener('click', open);
