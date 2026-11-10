@@ -1583,6 +1583,7 @@ function showToast(text, action = null, label = tx('undo'), kind = '') {
   $('undo').textContent = label;
   $('undo').hidden = !action;
   $('toast-text').textContent = text;
+  if (!$('greeting').hidden) hideGreeting();   // één ding tegelijk: onderaan lagen melding en begroeting over elkaar (desktop, liggend)
   const toast = $('toast');
   resetToastDrag();
   toast.hidden = false;
@@ -3681,7 +3682,17 @@ const hudMenu = $('hud-menu'), menuBtn = $('menu-btn');
 function setMenu(open) {
   hudMenu.classList.toggle('is-open', open);
   menuBtn.setAttribute('aria-expanded', String(open));
+  fitMenu();
 }
+// Het menu opent naar boven (desktop en liggende gsm). Valt de bovenkant buiten beeld (Victor, 10/11/2026: "Ik kan niet aan
+// het bovenste deel van dit menu op mobiel landscape mode"), dan wordt het zo hoog als er plaats is en scrolt het zelf.
+function fitMenu() {
+  hudMenu.style.maxHeight = '';
+  if (!hudMenu.classList.contains('is-open')) return;
+  const top = 12, r = hudMenu.getBoundingClientRect();   // liggend zit de veilige zone opzij, niet boven
+  if (r.top < top) hudMenu.style.maxHeight = `${Math.max(120, r.bottom - top)}px`;
+}
+window.addEventListener('resize', fitMenu);
 menuBtn.addEventListener('click', () => setMenu(!hudMenu.classList.contains('is-open')));
 document.addEventListener('pointerdown', e => { if (!hudMenu.contains(e.target) && !menuBtn.contains(e.target)) setMenu(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && hudMenu.classList.contains('is-open')) { setMenu(false); menuBtn.focus(); } });
@@ -3733,7 +3744,9 @@ function fitGreeting() {
   const base = parseFloat(getComputedStyle($('greeting')).fontSize);
   for (let size = base; text.getClientRects().length > 2 && size > base - 3; size -= 0.5) text.style.fontSize = `${size - 0.5}px`;
 }
-function sayLine(line) {
+function sayLine(line, tries = 0) {
+  // staat er een melding onderaan, dan eerst die laten gaan (hooguit 12 s wachten), anders liggen ze over elkaar
+  if (toastOn() && tries < 20) { clearTimeout(greetTimer); greetTimer = setTimeout(() => sayLine(line, tries + 1), 600); return; }
   clearTimeout(greetTimer);
   legend.hide(); document.body.classList.remove('has-legend');   // de kern spreekt op dezelfde plek
   $('greeting-text').textContent = line;

@@ -317,6 +317,7 @@ body.is-focus .greeting { z-index: 4; }
   font: 500 var(--fs-caption)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
 }
 .hud-menu.is-open { display: block; animation: menu-in .22s var(--ease); }
+.hud-menu[style*="max-height"] { overflow-y: auto; overscroll-behavior: contain; }
 @keyframes menu-in { from { opacity: 0; transform: translateY(4px); } }
 /* desktop: zo breed als de langste regel, niets breekt af */
 .controls .hud-menu { left: 0; bottom: calc(100% + 10px); width: max-content; min-width: 400px; white-space: nowrap; }
@@ -2106,7 +2107,7 @@ dialog *, .hud-menu { overscroll-behavior: contain; }
   .timer { --timer-bottom: calc(52px + var(--fidget-h, 226.8px) + 10px); }
   body.is-focus .fidget-grip { display: none; }
   /* Instellingen opent naar boven en is hoger dan het scherm: scrolt zelf (guardScroll laat dat toe) */
-  .hud-menu { max-height: calc(100dvh - 64px - env(safe-area-inset-top, 0px)); overflow-y: auto; overscroll-behavior: contain; }
+  .hud-menu { overflow-y: auto; overscroll-behavior: contain; }   /* fitMenu in app.js zet de hoogte als de bovenkant buiten beeld valt */
 }
 /* liggende gsm met touch: de knoppen van de desktopindeling krijgen dezelfde onzichtbare trefzones als op gsm (36 px) */
 @media (orientation: landscape) and (max-height: 500px) and (hover: none) {
