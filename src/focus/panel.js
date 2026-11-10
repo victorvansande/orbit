@@ -2,14 +2,16 @@
 // Een soort in het bakje van de focusmodus (zie fidget.js), op vraag van Victor (03/11/2026): "a lot of different lights,
 // buttons, display animations that makes it look like the servers/computers are doing all sorts of stuff ... as if Orbit
 // is doing very important tasks". Dertien schermen uit vier voorstelrondes (ontwerp/paneel/), tussen te wisselen met een
-// subtiel pijltje onder het bakje: tien als oude CRT-monitor (fosfor dat nagloeit, scanlijnen, vignet, rollende band,
-// lichte flikkering, VT323) en drie in de vlakke inkt van Orbit. Alles leest de echte toestand (getData). De fosforkleur
-// volgt de kleurkiezer van het bakje; de momentkleuren van de taken blijven altijd hun eigen kleur.
+// subtiel pijltje onder het bakje, in twee soorten (Victor, 10/11/2026): Fosfor, tien schermen als oude CRT-monitor
+// (fosfor dat nagloeit, scanlijnen, vignet, rollende band, lichte flikkering, VT323), en Inkt, drie in de vlakke inkt van
+// Orbit. Alles leest de echte toestand (getData). De fosforkleur volgt de kleurkiezer van het bakje; de momentkleuren
+// van de taken blijven altijd hun eigen kleur.
 import { LEVELS as CONF } from '../core/config.js';
 import { LANG } from '../core/i18n.js';
 import { timerState } from './timer.js';
 
-export const PANEL_KEY = 'priority-orbit.panel.v1';
+export const PANEL_KEY = 'priority-orbit.panel.v1';      // gekozen scherm van Fosfor
+export const INK_KEY = 'priority-orbit.panelink.v1';     // gekozen scherm van Inkt
 const W = 326, H = 227, TAU = Math.PI * 2;
 const S = { x: 10, y: 32, w: 306, h: 185 };   // het scherm in het bakje (onder de keuzerij)
 const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
@@ -718,9 +720,20 @@ function wire() {
 return { makers: { panel, wire, radar }, TH };
 })();
 
-// volgorde zoals de favorieten van Victor (03/11/2026)
-export const SCREENS = [['crt', 'scope3'], ['crt', 'mainframe'], ['crt', 'plotter'], ['crt', 'cmd'], ['crt', 'console'], ['crt', 'chartroom'], ['crt', 'rack2'],
-  ['crt', 'termmap'], ['crt', 'wireplot'], ['crt', 'lampwall'], ['flat', 'panel'], ['flat', 'wire'], ['flat', 'radar']];
+// volgorde zoals de favorieten van Victor (03/11/2026), per soort
+const SETS = {
+  crt: ['scope3', 'mainframe', 'plotter', 'cmd', 'console', 'chartroom', 'rack2', 'termmap', 'wireplot', 'lampwall'],
+  flat: ['panel', 'wire', 'radar'],
+};
+const stored = key => { try { const v = localStorage.getItem(key); return v == null ? -1 : Number(v); } catch { return -1; } };
+// Tot 10/11/2026 was er één Paneel met dertien schermen onder PANEL_KEY (0 tot 9 fosfor, 10 tot 12 inkt). Wie op een
+// inktscherm stond, komt bij Inkt op datzelfde scherm uit; PANEL_KEY blijft staan (Fosfor begint dan bij het eerste).
+export function panelMode(mode) {
+  const v = stored(PANEL_KEY), n = SETS.crt.length;
+  if (mode !== 'panel' || stored(INK_KEY) >= 0 || !Number.isInteger(v) || v < n || v >= n + SETS.flat.length) return mode;
+  try { localStorage.setItem(INK_KEY, String(v - n)); } catch { /* geen opslag */ }
+  return 'ink';
+}
 
 const mixRgb = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -731,10 +744,11 @@ function phosphor(hex) {
   return { hi: mixRgb(col, [255, 248, 232], 0.55), mid: col, lo: mixRgb(col, [0, 0, 0], 0.3), bg: mixRgb([10, 10, 13], col, 0.05) };
 }
 
-// zoom: groter bakje = zelfde schermen, groter getekend
-export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1 }) {
-  let idx = 0;
-  try { const v = Number(localStorage.getItem(PANEL_KEY)); if (Number.isInteger(v) && v >= 0 && v < SCREENS.length) idx = v; } catch { /* geen opslag */ }
+// kind: 'crt' (Fosfor) of 'flat' (Inkt); zoom: groter bakje = zelfde schermen, groter getekend
+export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1, kind = 'crt' }) {
+  const crt = kind === 'crt', list = SETS[kind], key = crt ? PANEL_KEY : INK_KEY, makers = (crt ? CRT : FLAT).makers;
+  let idx = stored(key);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= list.length) idx = 0;
   let lastNow = 0, cv = null, g = null, off = null, og = null, small = null, sg = null, pat = null, maker = null, sig = '', dataAt = 0, lastAccent;
   const dpr = Math.min(2, devicePixelRatio || 1) * zoom;
 
@@ -753,9 +767,8 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
     const next = [LEVELS.map(l => l.count).join(','), DATA.total, DATA.stars.length, TASKS.slice(0, 5).join('|')].join(';');
     if (next !== sig) { sig = next; maker = null; }
   }
-  const kind = () => SCREENS[idx][0];
   function current() {
-    if (!maker) maker = (kind() === 'crt' ? CRT : FLAT).makers[SCREENS[idx][1]]();
+    if (!maker) maker = makers[list[idx]]();
     return maker;
   }
   function theme() { return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'; }
@@ -763,14 +776,14 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
   function draw(now) {
     refresh(false);
     const a = accent?.() || null;
-    if (a !== lastAccent) { CRT.setP(phosphor(a)); lastAccent = a; }
+    if (crt && a !== lastAccent) { CRT.setP(phosphor(a)); lastAccent = a; }
     // de tijd gaat nooit terug: een tekenbeurt buiten de lus (performance.now) kan iets later liggen dan het volgende beeld
     lastNow = Math.max(lastNow, now);
     const t = reducedMotion.matches ? 14 : lastNow / 1000, m = current();
     CLOCK = t;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
-    if (kind() === 'flat') { m.draw(g, FLAT.TH[theme()], t); return; }
+    if (!crt) { m.draw(g, FLAT.TH[theme()], t); return; }
     // CRT: scherm op een eigen canvas, dan nagloed (verkleinde kopie opgeschaald, geen blurfilter), scanlijnen en vignet
     const P = CRT.getP(), c = CRT.c;
     og.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -806,13 +819,13 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
     init() {}, step() {}, move() {}, leave() {},
     tap(p) {
       const m = current(), x = p.x / 325.6 * W, y = p.y / 226.8 * H;
-      if (kind() === 'crt') m.tap?.(x - S.x, y - S.y); else m.tap?.(x, y);
+      if (crt) m.tap?.(x - S.x, y - S.y); else m.tap?.(x, y);
       if (cv) draw(performance.now());
     },
     mount(el) {
       if (cv) return;
-      // VT323 pas laden als het paneel er is
-      if (!document.querySelector('link[data-vt323]')) {
+      // VT323 pas laden als het fosforpaneel er is
+      if (crt && !document.querySelector('link[data-vt323]')) {
         const l = Object.assign(document.createElement('link'), { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=VT323&display=swap' });
         l.dataset.vt323 = ''; document.head.append(l);
       }
@@ -821,25 +834,27 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       el.append(cv);
       g = cv.getContext('2d');
-      off = document.createElement('canvas'); off.width = Math.round(S.w * dpr); off.height = Math.round(S.h * dpr); og = off.getContext('2d');
-      small = document.createElement('canvas'); small.width = Math.round(S.w / 3); small.height = Math.round(S.h / 3); sg = small.getContext('2d');
-      const scan = document.createElement('canvas'); scan.width = 4; scan.height = 3;
-      const sc = scan.getContext('2d'); sc.fillStyle = 'rgba(0,0,0,.32)'; sc.fillRect(0, 2, 4, 1);
-      pat = g.createPattern(scan, 'repeat');
+      if (crt) {
+        off = document.createElement('canvas'); off.width = Math.round(S.w * dpr); off.height = Math.round(S.h * dpr); og = off.getContext('2d');
+        small = document.createElement('canvas'); small.width = Math.round(S.w / 3); small.height = Math.round(S.h / 3); sg = small.getContext('2d');
+        const scan = document.createElement('canvas'); scan.width = 4; scan.height = 3;
+        const sc = scan.getContext('2d'); sc.fillStyle = 'rgba(0,0,0,.32)'; sc.fillRect(0, 2, 4, 1);
+        pat = g.createPattern(scan, 'repeat');
+      }
       refresh(true);
-      onScreen?.(idx, SCREENS.length);
+      onScreen?.(idx, list.length);
       draw(performance.now());
-      document.fonts?.load('12px VT323').then(() => { if (cv) draw(performance.now()); }).catch(() => {});
+      if (crt) document.fonts?.load('12px VT323').then(() => { if (cv) draw(performance.now()); }).catch(() => {});
     },
     // elk beeld vanuit de lus van het bakje (loopt enkel in de focusmodus en met een zichtbaar tabblad)
     frame(now) { if (cv) draw(now); },
     unmount() { cv?.remove(); cv = null; maker = null; },
     recolor() { lastAccent = undefined; if (cv) draw(performance.now()); },
     next(dir = 1) {
-      idx = (idx + dir + SCREENS.length) % SCREENS.length;
-      try { localStorage.setItem(PANEL_KEY, String(idx)); } catch { /* geen opslag */ }
+      idx = (idx + dir + list.length) % list.length;
+      try { localStorage.setItem(key, String(idx)); } catch { /* geen opslag */ }
       maker = null;
-      onScreen?.(idx, SCREENS.length);
+      onScreen?.(idx, list.length);
       if (cv) draw(performance.now());
     },
   };

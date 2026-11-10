@@ -33,10 +33,11 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'panel', 'life', 'breakout', 'snake'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'life', 'breakout', 'snake', 'panel', 'ink'];
+const PANELS = ['panel', 'ink'];   // paneel in twee soorten (Victor, 10/11/2026): Fosfor (CRT) en Inkt (vlak, stijl van Orbit)
 
 import { DESKTOP_MQ } from '../core/config.js';
-import { createPanel } from './panel.js';
+import { createPanel, panelMode } from './panel.js';
 import { createLife } from './life.js';
 import { createPlasma } from './plasma.js';
 import { createBreakout } from './breakout.js';
@@ -637,7 +638,7 @@ const hasGL2 = () => {
 };
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
-const ZOOMED = ['breakout', 'panel'];   // vaste opbouw: zoomen mee in plaats van meer inhoud
+const ZOOMED = ['breakout', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
 
 // scores: opslag per spel (src/data/scores.js, createScoreStore), zodat highscores mee synchroniseren
 // fits(w, h): past een bakje van die maat op het scherm (niet over de scène, ruimte voor de zandloper erboven); van app.js
@@ -675,13 +676,17 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   let press = null;   // het bakje staat vast (Victor), en sinds 03/11/2026 ook geen duwtje meer op de inhoud
 
   let modeName = 'lava';   // standaard (Victor); zonder WebGL valt renderBar terug op water
-  try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) modeName = m; } catch { /* geen opslag */ }
+  try {
+    const m = localStorage.getItem(MODE_KEY);
+    if (MODES.includes(m)) modeName = panelMode(m);
+    if (modeName !== m && MODES.includes(m)) localStorage.setItem(MODE_KEY, modeName);   // oud Paneel op een inktscherm: nu Inkt
+  } catch { /* geen opslag */ }
   const modes = {};
   const mode = () => {
     if (!modes[modeName]) {
-      // paneel: dertien schermen, krijgt de toestand van Orbit en de kleur van de kleurkiezer (fosfor)
-      if (modeName === 'panel') {
-        modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen, zoom: W / BASE_W });
+      // paneel: tien schermen in fosfor of drie in inkt, krijgt de toestand van Orbit en de kleur van de kleurkiezer (fosfor)
+      if (PANELS.includes(modeName)) {
+        modes[modeName] = createPanel({ reducedMotion, accent: () => ACCENT, getData, onScreen: showScreen, zoom: W / BASE_W, kind: modeName === 'ink' ? 'flat' : 'crt' });
       } else if (modeName === 'life') {
         modes[modeName] = createLife({ reducedMotion, accent: () => ACCENT, onPreset: showScreen, size: { w: W, h: HH } });
       } else if (modeName === 'plasma') {
@@ -710,7 +715,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
-  const hasPresets = m => ['panel', 'life'].includes(m);
+  const hasPresets = m => [...PANELS, 'life'].includes(m);
   nextBtn.addEventListener('click', () => { if (hasPresets(modeName)) mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
     if (!hasPresets(modeName) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
@@ -725,7 +730,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
 
   const GROUPS = [
     { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma'] },
-    { key: 'groupPlay', modes: ['panel', 'life', 'breakout', 'snake'] }
+    { key: 'groupPlay', modes: ['life', 'breakout', 'snake'] },
+    { key: 'groupPanel', modes: PANELS }
   ];
 
   const menuWrap = document.createElement('div');
@@ -787,7 +793,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       activeOpt?.focus({ preventScroll: true });
       // de gekozen soort in beeld, ook onderaan een lange lijst (enkel de lijst scrolt, niet het bakje of de pagina)
       if (activeOpt) {
-        const bottom = activeOpt.offsetTop + activeOpt.offsetHeight + 8;
+        // past de groep van de gekozen soort in beeld, dan de hele groep (bij Fosfor staat Inkt er dan ook)
+        const col = activeOpt.parentElement, whole = col.offsetHeight <= popScroll.clientHeight;
+        const bottom = (whole ? col.offsetTop + col.offsetHeight : activeOpt.offsetTop + activeOpt.offsetHeight) + 8;
         popScroll.scrollTop = bottom > popScroll.clientHeight ? bottom - popScroll.clientHeight : 0;
       }
       edges();
@@ -867,7 +875,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
 
   function renderBar() {
     if (!available().includes(modeName)) modeName = 'water';
-    menuName.textContent = label(modeName);
+    // de twee panelen heten in het menu Fosfor en Inkt, op de knop staat erbij dat het een paneel is
+    menuName.textContent = PANELS.includes(modeName) ? `${label('groupPanel')} · ${label(modeName)}` : label(modeName);
 
     popScroll.replaceChildren(...GROUPS.map(grp => {
       const col = document.createElement('div');
@@ -921,7 +930,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     cv.hidden = Boolean(m.gl || m.own); cvGL.hidden = !m.gl; own.hidden = !m.own;
     box.classList.toggle('is-gl', Boolean(m.gl || m.own));
     box.classList.toggle('on-dark', ['grain', 'wayglim'].includes(modeName) || Boolean(m.onDark));
-    box.classList.toggle('is-panel', modeName === 'panel');
+    box.classList.toggle('is-panel', PANELS.includes(modeName));
     box.classList.toggle('is-breakout', modeName === 'breakout');
     box.classList.toggle('is-playing', Boolean(m.busy));   // breakout: de keuzerij wijkt tijdens het spel
     if (!m.gl) {

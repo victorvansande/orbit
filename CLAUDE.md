@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 09/11/2026, Claude Code: logo op kleine maat (topbar, Uitleg, maandwissel) gebruikt de kleine tekening uit het merk (A, gekozen door Victor): staart niet meer rafelig. Open: Victor kijkt op pc en gsm.
 - 09/11/2026, Claude Code: zandloper: het gevallen zand ligt op de zichtbare bodem (niet meer in de vervaagde onderste rijen). Open: Victor kijkt.
 - 09/11/2026, Claude Code: Instellingen → Kleuren: Momenten (vijf kleuren) of Rood (tinten van het kernrood, Nu vol, Ooit het minst verzadigd); `PALETTE` in `config.js`, wisselen herlaadt. Open: Victor kijkt.
 - 09/11/2026, Claude Code: opdracht voor een volledige audit van Orbit (Deel A: alles vinden en oplijsten in `docs/audit/register.md`, Deel B: aanpakken) staat in `docs/nalezing.md`; starten met "Voer `docs/nalezing.md` uit". Open: Victor start ze in een nieuwe sessie.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 09/11/2026, Claude Code: oogjes van Orb volgens O1 Spiegelraster (gekozen door Victor): symmetrisch, fijner raster op scherpe schermen, vloeiende rand; blosjes verplaatst; Zzz geprobeerd en weer weggehaald; de kern is altijd even groot (niet meer kleiner bij weinig dringends). Open: Victor kijkt op pc en gsm.
 - 10/11/2026, Claude Code: liggende gsm krijgt de desktopindeling (lijst links, scène, wiel rechts; focus met klok links en bakje rechts), compact voor de lage hoogte, met inkeping en touch; `DESKTOP_MQ` / `MOBILE_MQ` in `config.js`. Open: Victor kijkt op zijn gsm liggend.
 - 10/11/2026, Claude Code: Breakout en Slang bewaren een lopend spel (via `scores.js`, soort `run`): draaien, een andere maat of herladen zet het gepauzeerd terug. Open: Victor speelt op zijn gsm en draait.
+- 10/11/2026, Claude Code: Paneel gesplitst in twee soorten, Fosfor (tien CRT-schermen) en Inkt (drie vlakke, stijl van Orbit), in een eigen groep Paneel in het keuzemenu; een oude keuze op een inktscherm komt bij Inkt uit. Open: Victor kijkt, en zegt of de naam Inkt goed is (alternatief: Orbit).

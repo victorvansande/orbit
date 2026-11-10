@@ -847,6 +847,7 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
   mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
 }
 .fidget-pop-scroll::-webkit-scrollbar { display: none; }
+.fidget-pop-col:first-child { grid-row: span 2; }   /* de derde groep (Paneel) komt rechts onder de tweede, niet onder de lange eerste */
 .fidget-pop-scroll.can-up { --fade-t: 14px; }
 .fidget-pop-scroll.can-down { --fade-b: 18px; }
 @keyframes popover-appear { from { opacity: 0; transform: translateY(-4px) scale(0.97); } to { opacity: 1; transform: none; } }
