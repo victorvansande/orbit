@@ -1,0 +1,248 @@
+<meta charset="utf-8">
+<title>Orbit dagen op rij</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Opbouw: Orbit-papier; bovenaan de keuze waarop de reeks telt, dan één bediening en drie kolommen met het voorstel zoals het onder de takenlijst zou staan */
+:root {
+  --bg: #EBE8DF; --surface: #F8F6F0; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #7A7A83; --line: rgba(27,27,34,.1); --core: #E70049;
+  --inkrgb: 27,27,34; --corergb: 231,0,73;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1); --core: #F0306A;
+  --inkrgb: 236,236,241; --corergb: 240,48,106; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1); --core: #F0306A;
+  --inkrgb: 236,236,241; --corergb: 240,48,106; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 400 14.5px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 26px; }
+.lab { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+h1 { font: 600 28px/1.2 var(--sans); margin: 6px 0 0; text-wrap: balance; }
+h3 { font: 600 15px/1.3 var(--sans); margin: 0 0 6px; }
+p { margin: 0; max-width: 72ch; }
+.lead { color: var(--ink-2); margin-top: 10px; }
+.basis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 720px) { .basis { grid-template-columns: minmax(0, 1fr); } }
+.basis > div { background: var(--surface); border-radius: 14px; padding: 16px 18px; }
+.basis p { color: var(--ink-2); font-size: 13.5px; }
+.basis .pick { box-shadow: inset 0 0 0 1px var(--ink-3); }
+.tag { font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--core); margin-left: 6px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 99px; background: none; color: var(--ink-2); font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.range { display: inline-flex; align-items: center; gap: 10px; font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.range input { width: 160px; accent-color: var(--core); }
+.range output { min-width: 3ch; color: var(--ink); font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 980px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.col h2 { font: 500 12px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; margin: 0; display: flex; justify-content: space-between; gap: 8px; }
+.col h2 span { color: var(--ink-2); }
+.col p { color: var(--ink-2); font-size: 13.5px; }
+/* nagebouwd: onderaan de takenlijst, zoals in de app (teller, muur, instellingen, rang) */
+.shot { background: var(--bg); border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); padding: 18px 20px; display: grid; gap: 14px; }
+.shot canvas.scene { width: 100%; height: 150px; display: block; }
+.foot { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 12px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.count { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.dm { font: 600 22px/1 var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.cap { font: 500 10.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.cap b { font-weight: 500; color: var(--ink); }
+.streak { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.streak canvas { display: block; flex: none; }
+.muted { color: var(--ink-3); }
+.notes { display: grid; gap: 6px; padding-left: 18px; margin: 8px 0 0; color: var(--ink-2); font-size: 13.5px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="lab">Orbit · Dagen op rij · 10/11/2026</p>
+    <h1>Een reeks die optelt, in de taal van Orbit</h1>
+    <p class="lead">Een vlammetje zoals in andere apps past niet bij Orbit: het is luid en het is overal hetzelfde. Hieronder drie manieren om de reeks te tonen met wat Orbit al heeft: rasterpunten, de kern en een rustig label. Eerst de vraag waarop de reeks telt.</p>
+  </header>
+
+  <section class="basis" aria-label="Waarop telt de reeks">
+    <div class="pick">
+      <h3>Dagen met een ster <span class="tag">advies</span></h3>
+      <p>Een dag telt mee als je minstens één taak afvinkt. Dat telt Orbit al: de prestaties Drie op rij tot Onstuitbaar en de maandrecap gebruiken het, het logboek gaat mee in de sync en de export, er komt dus geen nieuwe opslag bij. En het beloont waar Orbit voor is: dingen afronden.</p>
+    </div>
+    <div>
+      <h3>Dagen dat je Orbit opent</h3>
+      <p>Zoals de meeste apps: openen volstaat. Makkelijker vol te houden, maar dan beloont Orbit kijken in plaats van doen, en het vraagt een nieuwe lijst met bezoekdagen die mee moet in sync, export en import.</p>
+    </div>
+  </section>
+
+  <div class="bar">
+    <label class="range" for="days">Dagen op rij <input id="days" type="range" min="0" max="45" value="12"><output id="daysOut">12</output></label>
+    <div class="seg" id="today" role="group" aria-label="Vandaag">
+      <button type="button" data-v="1" aria-pressed="false">Vandaag al een ster</button>
+      <button type="button" data-v="0" aria-pressed="true">Nog niet vandaag</button>
+    </div>
+    <div class="seg" id="theme" role="group" aria-label="Thema">
+      <button type="button" data-v="system" aria-pressed="true">Systeem</button>
+      <button type="button" data-v="light" aria-pressed="false">Licht</button>
+      <button type="button" data-v="dark" aria-pressed="false">Donker</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <h2>R1 · Rastervlam <span>toch een vlam</span></h2>
+      <div class="shot">
+        <div class="foot">
+          <div class="row"><div class="count"><span class="dm">31</span><span class="cap">sterren in totaal</span></div><span class="cap">Muur</span></div>
+          <div class="row"><div class="streak"><canvas id="c1" width="22" height="28"></canvas><span class="cap" id="t1"></span></div><span class="cap">Navigator</span></div>
+        </div>
+      </div>
+      <p>Een klein vlammetje, maar opgebouwd uit zeshoekige rasterpunten zoals de kern: hoe langer de reeks, hoe hoger en voller (1, 3, 7, 14, 30 dagen). Nog geen ster vandaag: de vlam smeult in grafiet en de bovenste puntjes doven. Eerste ster van de dag: ze kleurt rood en flakkert even op. Het dichtst bij wat je in andere apps kent.</p>
+    </div>
+    <div class="col">
+      <h2>R2 · Weekkralen <span>de laatste zeven dagen</span></h2>
+      <div class="shot">
+        <div class="foot">
+          <div class="row"><div class="count"><span class="dm">31</span><span class="cap">sterren in totaal</span></div><span class="cap">Muur</span></div>
+          <div class="row"><div class="streak"><canvas id="c2" width="96" height="16"></canvas><span class="cap" id="t2"></span></div><span class="cap">Navigator</span></div>
+        </div>
+      </div>
+      <p>Zeven zeshoekjes voor de laatste zeven dagen, vandaag rechts: vol in inkt voor een dag met een ster, hol voor een dag zonder. Vandaag is hol met een traag ademend randje tot je eerste ster, dan vult het rood. Ernaast het getal. Je ziet niet alleen hoe lang, maar ook dat er vandaag nog iets open staat. Rustigst en het meest informatief.</p>
+    </div>
+    <div class="col">
+      <h2>R3 · Kernkrans <span>in de scène</span></h2>
+      <div class="shot">
+        <canvas class="scene" id="c3"></canvas>
+        <div class="foot">
+          <div class="row"><div class="count"><span class="dm">31</span><span class="cap">sterren in totaal</span></div><span class="cap" id="t3"></span></div>
+        </div>
+      </div>
+      <p>Geen nieuw element onder de lijst: rond de kern ligt een krans van kleine puntjes, één per dag op rij (tot 30, daarna een tweede, fijnere krans). Vandaag een lege plek die zacht knippert tot je eerste ster, dan landt er een puntje. Onderaan enkel een label. Het mooist als object, maar de minst directe: je moet weten wat de krans betekent.</p>
+    </div>
+  </div>
+
+  <section>
+    <p class="lab">Voor alle drie</p>
+    <ul class="notes">
+      <li>De reeks breekt pas als een hele dag voorbij is zonder ster: vandaag nog niets is "nog niet", geen nul.</li>
+      <li>Gebroken: geen melding, geen schuldgevoel; de vlam, kralen of krans zijn gewoon weer klein. Je langste reeks blijft zichtbaar in de details van de teller.</li>
+      <li>Een tik toont de details (huidige en langste reeks); minder beweging: geen flakkeren of ademen.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const TAU = Math.PI * 2;
+const S = { days: 12, today: false };
+let C = {};
+function tokens() {
+  const s = getComputedStyle(document.documentElement);
+  C = { ink: s.getPropertyValue('--inkrgb').trim(), core: s.getPropertyValue('--corergb').trim() };
+}
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// reeks zoals Orbit hem zou tonen: tot gisteren telt mee; vandaag telt pas als er een ster is
+const shown = () => S.days + (S.today ? 1 : 0);
+const label = n => n === 1 ? '1 dag op rij' : `${n} dagen op rij`;
+function prep(cv, w, h) {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + 'px'; cv.style.height = h + 'px'; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h); return g;
+}
+function hex(g, x, y, r, fill, stroke) {
+  g.beginPath();
+  for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * TAU / 6; g[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r); }
+  g.closePath();
+  if (fill) { g.fillStyle = fill; g.fill(); }
+  if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1; g.stroke(); }
+}
+const hash = n => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
+
+/* R1: vlam van rasterpunten */
+function r1(t) {
+  const g = prep(document.getElementById('c1'), 22, 28), n = shown();
+  const lvl = n >= 30 ? 1 : n >= 14 ? 0.88 : n >= 7 ? 0.76 : n >= 3 ? 0.64 : n >= 1 ? 0.52 : 0;
+  document.getElementById('t1').innerHTML = n ? `<b>${n}</b> ${label(n).replace(/^\d+ /, '')}` : 'Nog geen reeks';
+  if (!lvl) { g.fillStyle = `rgba(${C.ink},.3)`; g.beginPath(); g.arc(11, 24, 1.6, 0, TAU); g.fill(); return; }
+  // druppel: ronde onderkant (onderste 35 %), dan taps naar een punt; de punt wiegt een beetje
+  const H = 26 * lvl, base = 26.5, sp = 2.3, W = 4.2 + 3 * lvl;
+  const sway = still ? 0 : Math.sin(t * 2.3) * 0.8;
+  for (let row = 0; row * sp * 0.87 < H; row++) {
+    const y = base - row * sp * 0.87, u = (base - y) / H;
+    const half = u < 0.35 ? W * Math.sqrt(Math.max(0, 1 - ((0.35 - u) / 0.35) ** 2)) : W * ((1 - u) / 0.65) ** 1.15;
+    const cx = 11 + sway * u * u;
+    for (let x = cx - half + (row % 2 ? sp / 2 : 0); x <= cx + half + 0.01; x += sp) {
+      let size = 1.0 * (1 - u * 0.5) + (still ? 0 : (hash(Math.floor(t * 9) + row * 13 + Math.round(x * 3)) - 0.5) * 0.45 * u);
+      if (size < 0.2) continue;
+      const a = S.today ? 1 : u > 0.55 ? 0.14 : 0.42;   // smeult: grafiet, bovenkant dooft
+      g.fillStyle = S.today ? `rgba(${C.core},${a})` : `rgba(${C.ink},${a})`;
+      g.beginPath(); g.arc(x, y, size, 0, TAU); g.fill();
+    }
+  }
+}
+
+/* R2: zeven kralen */
+function r2(t) {
+  const g = prep(document.getElementById('c2'), 96, 16), n = shown();
+  document.getElementById('t2').innerHTML = n ? `<b>${n}</b> ${label(n).replace(/^\d+ /, '')}` : 'Nog geen reeks';
+  for (let i = 0; i < 7; i++) {
+    const x = 7 + i * 13.5, y = 8, ago = 6 - i;   // 0 = vandaag
+    if (ago === 0) {
+      if (S.today) hex(g, x, y, 5.2, `rgb(${C.core})`);
+      else { const k = still ? 0.6 : 0.4 + 0.35 * (0.5 + 0.5 * Math.sin(t * 2.2)); hex(g, x, y, 4.7, null, `rgba(${C.core},${k})`); }
+    } else if (ago <= S.days) hex(g, x, y, 5.2, `rgba(${C.ink},.85)`);
+    else hex(g, x, y, 4.7, null, `rgba(${C.ink},.28)`);
+  }
+}
+
+/* R3: krans rond de kern */
+function core(g, cx, cy, R) {
+  const sp = R / 6;
+  for (let k = 0; k * sp <= R; k++) {
+    const r = k * sp, n = k ? Math.round(TAU * r / sp / 2) * 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const a = i / n * TAU + (k % 2 ? Math.PI / n : 0), x = Math.cos(a) * r, y = Math.sin(a) * r;
+      const eye = [-R * 0.36, R * 0.36].some(ex => Math.hypot(x - ex, Math.max(0, Math.abs(y + R * 0.12) - R * 0.1)) < R * 0.12);
+      g.fillStyle = eye ? `rgb(${C.ink})` : `rgb(${C.core})`;
+      g.beginPath(); g.arc(cx + x, cy + y, sp * 0.36 * (0.4 + 0.7 * (1 - r / R) ** 0.7) * (eye ? 1.25 : 1), 0, TAU); g.fill();
+    }
+  }
+}
+function r3(t) {
+  const cv = document.getElementById('c3'), w = cv.clientWidth, h = 150, g = prep(cv, w, h), n = shown();
+  document.getElementById('t3').innerHTML = n ? `<b>${n}</b> ${label(n).replace(/^\d+ /, '')}` : 'Nog geen reeks';
+  const cx = w / 2, cy = h / 2, R = 30;
+  // ringen van de scène, vaag
+  for (const rr of [52, 70]) { const m = Math.round(TAU * rr / 7); g.fillStyle = `rgba(${C.ink},.16)`; for (let i = 0; i < m; i++) { const a = i / m * TAU; g.beginPath(); g.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 0.9, 0, TAU); g.fill(); } }
+  core(g, cx, cy, R);
+  const slots = 30, kr = R + 8;
+  const total = S.days;
+  for (let i = 0; i < Math.min(total, slots); i++) {
+    const a = -Math.PI / 2 + i / slots * TAU;
+    g.fillStyle = `rgba(${C.ink},.75)`; g.beginPath(); g.arc(cx + Math.cos(a) * kr, cy + Math.sin(a) * kr, 1.25, 0, TAU); g.fill();
+  }
+  for (let i = slots; i < total; i++) {   // tweede, fijnere krans
+    const a = -Math.PI / 2 + (i - slots) / slots * TAU;
+    g.fillStyle = `rgba(${C.ink},.55)`; g.beginPath(); g.arc(cx + Math.cos(a) * (kr + 4), cy + Math.sin(a) * (kr + 4), 0.85, 0, TAU); g.fill();
+  }
+  const ti = total, ring2 = ti >= slots, a = -Math.PI / 2 + (ti % slots) / slots * TAU, rr = ring2 ? kr + 4 : kr;
+  if (S.today) { g.fillStyle = `rgb(${C.core})`; g.beginPath(); g.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, ring2 ? 1.1 : 1.5, 0, TAU); g.fill(); }
+  else { const k = still ? 0.5 : 0.25 + 0.4 * (0.5 + 0.5 * Math.sin(t * 2.2)); g.strokeStyle = `rgba(${C.core},${k})`; g.lineWidth = 0.8; g.beginPath(); g.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 1.6, 0, TAU); g.stroke(); }
+}
+
+function frame(now) { const t = now / 1000; r1(t); r2(t); r3(t); requestAnimationFrame(frame); }
+
+const days = document.getElementById('days'), out = document.getElementById('daysOut');
+days.addEventListener('input', () => { S.days = Number(days.value); out.textContent = days.value; });
+function seg(id, fn) {
+  document.getElementById(id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    for (const x of b.parentNode.children) x.setAttribute('aria-pressed', String(x === b));
+    fn(b.dataset.v);
+  });
+}
+seg('today', v => { S.today = v === '1'; });
+seg('theme', v => { if (v === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v; tokens(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', tokens);
+tokens(); requestAnimationFrame(frame);
+</script>
