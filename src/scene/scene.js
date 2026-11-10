@@ -25,8 +25,8 @@ const FIT_NARROW = 372;                 // gsm: de ringen vullen bijna de hele b
 
 // Kleuren van structuur en labels per thema; de bollen houden hun eigen kleur
 const THEMES = {
-  light: { glow: 0.2, grid: 1, ink: [24, 24, 32], paper: [235, 232, 223], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
-  dark:  { glow: 0.24, grid: 1.3, ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
+  light: { glow: 0.2, grid: 1, dots: 1.3, ring: 1.22, ink: [24, 24, 32], paper: [235, 232, 223], calm: [168, 168, 178], pillBg: 'rgba(252,252,251,.94)', pillText: '#1b1b22', pillLine: 'rgba(20,20,30,.08)', shadow: 'rgba(20,20,30,.10)', leader: 'rgba(20,20,30,.22)' },
+  dark:  { glow: 0.24, grid: 1.3, dots: 1.3, ring: 1, ink: [236, 236, 241], paper: [15, 15, 18], calm: [112, 112, 124], pillBg: 'rgba(38,38,44,.94)', pillText: '#ECECF1', pillLine: 'rgba(255,255,255,.1)', shadow: 'rgba(0,0,0,.4)', leader: 'rgba(255,255,255,.28)' },
 };
 // Diepte in de banen (B1, Victor, 02/11/2026): hoe verder van de kern, hoe lichter en fijner de stippen. Vroeger overal 0,2
 // (Nu 0,3) en even groot. Ooit houdt een ondergrens van 0,12, anders verdwijnt hij op een zwak scherm.
@@ -605,7 +605,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     ctx.fillStyle = rgba(INK, 1);
     buckets.forEach((b, k) => {
       if (!b.length) return;
-      ctx.globalAlpha = (k + 0.5) / 6 * GRID_ALPHA * theme.grid;   // in het donker iets sterker, anders verdwijnt het
+      ctx.globalAlpha = (k + 0.5) / 6 * GRID_ALPHA * theme.dots;   // dots: in het donker sterker, anders verdwijnt het; in licht sinds 10/11/2026 ook (Victor: meer contrast)
       ctx.beginPath();
       for (let i = 0; i < b.length; i += 3) { ctx.moveTo(b[i] + b[i + 2], b[i + 1]); ctx.arc(b[i], b[i + 1], b[i + 2], 0, TAU); }
       ctx.fill();
@@ -1228,7 +1228,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const hot = ringHot.get(lv.id);
       const pulse = (ringPulse.get(lv.id) || 0) * (reducedMotion.matches || minimal ? 0 : 1);
       const pulseEased = pulse * pulse;
-      const base = RING_ALPHA[idx] ?? RING_ALPHA[RING_ALPHA.length - 1];
+      const base = (RING_ALPHA[idx] ?? RING_ALPHA[RING_ALPHA.length - 1]) * theme.ring;   // ring: in licht iets donkerder (Victor, 10/11/2026)
       const intro = introAlpha(now, 0.15 + idx * 0.12, 0.8);
       const alpha = clamp(base * (1 - 0.32 * maxHot * (1 - hot)) + 0.5 * hot + 0.18 * pulseEased, 0, 1) * intro * orbVeil;   // tijdens de maandwissel wijken ook de ringen: enkel de kern en de sterren
       const z = ring.z * cam.depth;
