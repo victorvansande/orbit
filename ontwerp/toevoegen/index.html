@@ -1,0 +1,344 @@
+<meta charset="utf-8">
+<title>Orbit nieuwe taak</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Opbouw: Orbit-papier met vier nagebouwde vensters Nieuwe taak (huidig + drie voorstellen) naast elkaar; één bediening bovenaan stuurt ze alle vier */
+:root {
+  --bg: #EBE8DF; --backdrop: #D9D6CE; --surface: #F8F6F0; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #7A7A83; --line: rgba(27,27,34,.1);
+  --c1: #E70049; --c2: #E08600; --c3: #0FAE69; --c4: #1F78B4; --c5: #08415C; --dotrgb: 27,27,34;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F0F12; --backdrop: #0B0B0D; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1);
+  --c1: #F0306A; --c2: #F5A623; --c3: #20E08A; --c4: #38A0F0; --c5: #B3B9D6; --dotrgb: 236,236,241; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F0F12; --backdrop: #0B0B0D; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1);
+  --c1: #F0306A; --c2: #F5A623; --c3: #20E08A; --c4: #38A0F0; --c5: #B3B9D6; --dotrgb: 236,236,241; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 400 14.5px/1.55 var(--sans); }
+.wrap { max-width: 1560px; margin: 0 auto; padding-block: 32px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+.lab { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+h1 { font: 600 28px/1.2 var(--sans); margin: 6px 0 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lead { color: var(--ink-2); margin-top: 10px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); }
+.seg button, .go { min-height: 34px; padding: 0 12px; border: 0; border-radius: 99px; background: none; color: var(--ink-2); font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+.go { background: var(--ink); color: var(--surface); padding: 0 16px; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1280px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.col h2 { font: 500 12px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; margin: 0; display: flex; justify-content: space-between; gap: 8px; }
+.col h2 span { color: var(--ink-2); }
+.col p { color: var(--ink-2); font-size: 13.5px; }
+/* het podium: verduisterde achtergrond met het venster erin, zoals in de app */
+.stage { position: relative; background: var(--backdrop); border-radius: 14px; padding: 150px 14px 14px; overflow: hidden; }
+.stage.in { padding-top: 40px; }
+.card { position: relative; background: var(--surface); border-radius: 22px; padding: 22px 22px 18px; box-shadow: 0 30px 70px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06); }
+.card.inset { padding-top: 0; }
+.stage canvas { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; z-index: 2; }
+.card canvas.in { position: relative; display: block; width: 100%; height: 176px; margin: 0 0 4px; }
+.meta { display: flex; justify-content: space-between; font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.meta b { font-weight: 500; color: color-mix(in srgb, var(--tone) 72%, var(--ink)); }
+.title { margin-top: 10px; padding: 10px 0 12px; border-bottom: 1px solid var(--line); font: 450 21px/1.25 var(--sans); letter-spacing: -.015em; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+.chips span { padding: 6px 10px; border-radius: 99px; font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); }
+.chips span.on { color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 60%, transparent); }
+.notes { display: grid; gap: 6px; padding-left: 18px; margin: 0; color: var(--ink-2); font-size: 13.5px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="lab">Orbit · Nieuwe taak · 10/11/2026</p>
+    <h1>Het orbitje boven Nieuwe taak</h1>
+    <p class="lead">Links wat er nu staat, daarnaast drie voorstellen. Kies een moment of druk Voeg toe: alle vier reageren tegelijk. Wat elk voorstel gemeen heeft: dezelfde taal als de scène (stippelringen in grafiet, de kern van rasterpunten met oogjes, een komeet zonder gloed), en niets snijdt door de rand van het venster.</p>
+  </header>
+
+  <div class="bar">
+    <div class="seg" id="levels" role="group" aria-label="Moment"></div>
+    <button class="go" id="go" type="button">Voeg toe</button>
+    <div class="seg" id="theme" role="group" aria-label="Thema">
+      <button type="button" data-v="system" aria-pressed="true">Systeem</button>
+      <button type="button" data-v="light" aria-pressed="false">Licht</button>
+      <button type="button" data-v="dark" aria-pressed="false">Donker</button>
+    </div>
+    <div class="seg" id="motion" role="group" aria-label="Beweging">
+      <button type="button" data-v="on" aria-pressed="true">Beweging</button>
+      <button type="button" data-v="off" aria-pressed="false">Minder beweging</button>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <section>
+    <p class="lab">Wat er nu schort</p>
+    <ul class="notes" style="margin-top:8px">
+      <li>De ringen lopen door de bovenrand van het venster: half op de achtergrond, half op de kaart. Niets ligt op een rand die iets betekent.</li>
+      <li>Doorlopende lijnen en een effen stip als kern, terwijl de scène stippelringen en een kern van rasterpunten met gezicht heeft.</li>
+      <li>Een brede, vlakke staart met een roze gloed rond de kop: de enige plek met zo'n gloed, en ze leest als goedkoop licht.</li>
+      <li>Toevoegen zelf heeft geen moment: het venster gaat dicht en de taak is er.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const LEVELS = [
+  { id: 1, name: 'Nu', ring: 38, period: 2.2 },
+  { id: 2, name: 'Vandaag', ring: 66, period: 3.4 },
+  { id: 3, name: 'Week', ring: 98, period: 5 },
+  { id: 4, name: 'Maand', ring: 134, period: 7 },
+  { id: 5, name: 'Ooit', ring: 174, period: 10 },
+];
+const TAU = Math.PI * 2, ease = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
+const easeIn = t => Math.max(0, Math.min(1, t)) ** 2.2;
+const state = { level: 3, still: false, sendAt: -1e9 };
+let T = {};
+function readTokens() {
+  const s = getComputedStyle(document.documentElement);
+  const hex = h => { h = h.trim().replace('#', ''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  T = { dot: s.getPropertyValue('--dotrgb').trim(), ink: hex(s.getPropertyValue('--ink')), surface: hex(s.getPropertyValue('--surface')),
+    tones: [1, 2, 3, 4, 5].map(i => hex(s.getPropertyValue('--c' + i))), dark: document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches) };
+}
+const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+
+/* ---- gedeelde tekenhulpjes ---- */
+// stippelring als ellips (sy = 1 is een cirkel); clip(y) laat stippen weg die niet getekend mogen worden
+function dotRing(g, cx, cy, r, sy, color, alpha, gap, clip, backFade) {
+  const n = Math.max(12, Math.round(TAU * r / gap));
+  for (let i = 0; i < n; i++) {
+    const a = i / n * TAU, x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * sy;
+    if (clip && !clip(x, y)) continue;
+    const back = backFade ? (Math.sin(a) < 0 ? backFade : 1) : 1;
+    g.fillStyle = typeof color === 'string' ? `rgba(${color},${alpha * back})` : rgba(color, alpha * back);
+    g.beginPath(); g.arc(x, y, 0.95, 0, TAU); g.fill();
+  }
+}
+// komeet: punten langs de baan (kop eerst), taps en uitdovend, effen kop, geen gloed
+function comet(g, pts, head, tone, alpha = 1) {
+  const n = pts.length / 2; if (n < 2) return;
+  const L = [], R = [];
+  for (let k = 0; k < n; k++) {
+    const a = Math.max(0, k - 1), b = Math.min(n - 1, k + 1);
+    const dx = pts[2 * b] - pts[2 * a], dy = pts[2 * b + 1] - pts[2 * a + 1], len = Math.hypot(dx, dy) || 1;
+    const w = head * 0.9 * (1 - k / (n - 1)) ** 1.15;
+    L.push(pts[2 * k] - dy / len * w, pts[2 * k + 1] + dx / len * w); R.push(pts[2 * k] + dy / len * w, pts[2 * k + 1] - dx / len * w);
+  }
+  const f = g.createLinearGradient(pts[0], pts[1], pts[2 * n - 2], pts[2 * n - 1]);
+  f.addColorStop(0, rgba(tone, 0.9 * alpha)); f.addColorStop(0.5, rgba(tone, 0.35 * alpha)); f.addColorStop(1, rgba(tone, 0));
+  g.fillStyle = f; g.beginPath(); g.moveTo(L[0], L[1]);
+  for (let k = 1; k < n; k++) g.lineTo(L[2 * k], L[2 * k + 1]);
+  for (let k = n - 1; k >= 0; k--) g.lineTo(R[2 * k], R[2 * k + 1]);
+  g.closePath(); g.fill();
+  g.fillStyle = rgba(tone, alpha); g.beginPath(); g.arc(pts[0], pts[1], head, 0, TAU); g.fill();
+}
+// kern van rasterpunten met twee inktpillen als oogjes; look = [-1..1, -1..1]; happy = boogjes; half = enkel de bovenhelft
+function core(g, cx, cy, R, look, happy, blink, opts = {}) {
+  const red = T.tones[0], sp = Math.max(2.6, R / 5.4);
+  const h = R * 0.27, gap = R * 0.36, ey = -R * 0.12, rw = h * 0.42, open = Math.max(0.12, 1 - blink);
+  const eyes = [-gap, gap].map(ex => ({ ex, px: ex + look[0] * h * 0.4, py: ey + look[1] * h * 0.35 }));
+  const ink = (x, y) => {
+    let c = 0;
+    for (const e of eyes) {
+      if (happy) { const cy2 = ey + h * 0.45, rad = h * 0.6; if (y > cy2 + rad * 0.2) continue; c = Math.max(c, 1 - Math.abs(Math.hypot(x - e.ex, y - cy2) - rad) / (sp * 0.6)); }
+      else { const hl = h * 0.62 * open, yy = Math.max(e.py - hl, Math.min(e.py + hl, y)); c = Math.max(c, 1 - (Math.hypot(x - e.px, y - yy) - rw) / (sp * 0.7)); }
+    }
+    return Math.max(0, Math.min(1, c));
+  };
+  for (let ring = 0; ring * sp <= R + 0.01; ring++) {
+    const r = ring * sp, n = ring ? Math.round(TAU * r / sp / 2) * 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const a = i / n * TAU + (ring % 2 ? Math.PI / n : 0), x = Math.cos(a) * r, y = Math.sin(a) * r;
+      if (opts.clip && !opts.clip(cx + x, cy + y)) continue;
+      const u = r / R, k = ink(x, y);
+      const size = sp * 0.34 * (0.35 + 0.75 * (1 - u) ** 0.7) * (1 + 0.25 * k) * (opts.pulse || 1);
+      g.fillStyle = rgba(mix(red, T.ink, k), 1);
+      g.beginPath(); g.arc(cx + x, cy + y, size, 0, TAU); g.fill();
+    }
+  }
+}
+// waar kijkt de kern heen: naar de komeet
+const lookAt = (cx, cy, x, y) => { const dx = x - cx, dy = y - cy, m = Math.hypot(dx, dy) || 1; return [dx / m * 0.9, dy / m * 0.8]; };
+
+/* ---- per venster een eigen toestand: hoek, straal die meeglijdt, laatste wissel ---- */
+function makeRun() { return { angle: -Math.PI / 2, ring: state.level, from: state.level, switchAt: -1e9, last: 0, blinkAt: -9, nextBlink: 2 }; }
+function step(run, now) {
+  const dt = Math.min(0.05, (now - (run.last || now)) / 1000); run.last = now;
+  const lv = LEVELS[state.level - 1];
+  if (run.target !== state.level) { run.from = run.ring; run.target = state.level; run.switchAt = now; }
+  const k = state.still ? 1 : ease((now - run.switchAt) / 520);
+  run.ring = run.from + (run.target - run.from) * k;
+  const sendK = (now - state.sendAt) / 1000;
+  const boost = sendK >= 0 && sendK < 0.9 ? 1 + 5 * easeIn(sendK / 0.6) : 1;
+  if (!state.still) run.angle += dt / lv.period * TAU * boost;
+  else run.angle = -Math.PI * 0.32;
+  const t = now / 1000;
+  if (!state.still && t > run.nextBlink) { run.blinkAt = t; run.nextBlink = t + 2.6 + Math.random() * 3.4; }
+  const b = (t - run.blinkAt) / 0.22;
+  run.blink = b > 0 && b < 1 ? Math.sin(b * Math.PI) : 0;
+  run.send = sendK;   // seconden sinds Voeg toe
+  run.happy = sendK >= 0 && sendK < 1.4;
+  return run;
+}
+// straal tussen ringen (fractioneel niveau)
+const ringAt = (f, s) => { const i = Math.max(0, Math.min(3, Math.floor(f - 1))), u = f - 1 - i; return (LEVELS[i].ring + (LEVELS[i + 1].ring - LEVELS[i].ring) * u) * s; };
+// zichtbaarheid van de komeet na Voeg toe: vertrekt, verdwijnt, en een nieuwe dooft zacht in
+function sendAlpha(run) { const s = run.send; if (s < 0 || s > 1.8) return 1; if (s < 0.75) return 1; if (s < 1.1) return 0; return ease((s - 1.1) / 0.6); }
+
+/* ---- de vier vensters ---- */
+const VARIANTS = [
+  { key: 'now', label: 'Huidig', sub: 'zoals nu', desc: 'Vijf doorlopende lijnen, een effen stip en een brede staart met gloed, half boven en half op het venster.', mode: 'over' },
+  { key: 'a', label: 'A · Miniatuur', sub: 'de scène in het klein', desc: 'Het orbitje zit volledig in het venster en is letterlijk de scène in het klein: stippelringen, de kern met oogjes die de komeet volgen, de gekozen ring licht op in zijn kleur. Een ander moment: de komeet glijdt in een korte boog naar zijn nieuwe baan. Voeg toe: hij versnelt en schiet weg, de kern kijkt blij.', mode: 'in' },
+  { key: 'b', label: 'B · Horizon', sub: 'opkomend boven de rand', desc: 'De bovenrand van het venster is de horizon: halve stippelbogen rijzen erboven op, de kern piept erboven uit als een opkomende zon. De komeet komt links op en gaat rechts onder, achter de rand. Voeg toe: hij duikt de kaart in, richting je lijst. Precies op de rand, niets snijdt erdoor.', mode: 'over' },
+  { key: 'c', label: 'C · Schuin', sub: 'de trechter van opzij', desc: 'Dezelfde ringen, gekanteld zoals de zwaartekrachtput: de achterste helft lichter, de komeet loopt vóór en achter de kern langs. Rustig en ruimtelijk zonder 3D-glans. Voeg toe: hij zwiept één keer rond de kern en vertrekt omhoog.', mode: 'in' },
+];
+
+const grid = document.getElementById('grid');
+const views = VARIANTS.map(v => {
+  const col = document.createElement('div'); col.className = 'col';
+  col.innerHTML = `<h2>${v.label} <span>${v.sub}</span></h2>
+    <div class="stage ${v.mode}">${v.mode === 'over' ? '<canvas class="over"></canvas>' : ''}
+      <div class="card${v.mode === 'in' ? ' inset' : ''}">${v.mode === 'in' ? '<canvas class="in"></canvas>' : ''}
+        <div class="meta"><span>Nieuwe taak</span><b class="lv"></b></div>
+        <div class="title">Goudmunt inleveren</div>
+        <div class="chips">${LEVELS.map(l => `<span data-l="${l.id}">${l.name}</span>`).join('')}</div>
+      </div></div>
+    <p>${v.desc}</p>`;
+  grid.appendChild(col);
+  const cv = col.querySelector('canvas'), stage = col.querySelector('.stage'), card = col.querySelector('.card');
+  return { v, col, cv, stage, card, run: makeRun() };
+});
+
+function fit(view) {
+  const dpr = Math.min(2, devicePixelRatio || 1), r = view.cv.getBoundingClientRect();
+  let w = r.width, h = view.v.mode === 'over' ? view.card.offsetTop + 150 : r.height;
+  if (view.v.mode === 'over') view.cv.style.height = h + 'px';
+  if (view.cv.width !== Math.round(w * dpr) || view.cv.height !== Math.round(h * dpr)) { view.cv.width = Math.round(w * dpr); view.cv.height = Math.round(h * dpr); }
+  return { w, h, dpr, edge: view.card.offsetTop, cardL: view.card.offsetLeft, cardW: view.card.offsetWidth };
+}
+
+/* Huidig: zoals in app.js (drawComposerOrbit), verkleind */
+function drawNow(g, f, run) {
+  const C = f.w / 2, cy = f.edge, s = Math.min(1, (f.w - 20) / 400), radii = [64, 92, 124, 160, 200].map(r => r * 0.7 * s);
+  const tone = T.tones[state.level - 1];
+  const rr = (() => { const i = Math.max(0, Math.min(3, Math.floor(run.ring - 1))), u = run.ring - 1 - i; return radii[i] + (radii[i + 1] - radii[i]) * u; })();
+  radii.forEach((r, k) => { g.beginPath(); g.arc(C, cy, r, 0, TAU); g.lineWidth = k + 1 === state.level ? 1.3 : 0.8; g.strokeStyle = k + 1 === state.level ? rgba(tone, 0.45) : `rgba(${T.dot},0.09)`; g.stroke(); });
+  const red = T.tones[0];
+  g.fillStyle = rgba(red, 0.2); g.beginPath(); g.arc(C, cy, 10, 0, TAU); g.fill();
+  g.fillStyle = rgba(red, 1); g.beginPath(); g.arc(C, cy, 3.4, 0, TAU); g.fill();
+  const a = run.angle, hx = C + Math.cos(a) * rr, hy = cy + Math.sin(a) * rr, head = 7;
+  const glow = g.createRadialGradient(hx, hy, 2, hx, hy, head * 3.2);
+  glow.addColorStop(0, rgba(tone, T.dark ? 0.3 : 0.22)); glow.addColorStop(1, rgba(tone, 0));
+  g.fillStyle = glow; g.beginPath(); g.arc(hx, hy, head * 3.2, 0, TAU); g.fill();
+  const pts = []; for (let k = 0; k <= 16; k++) { const aa = a - 1.35 * k / 16; pts.push(C + Math.cos(aa) * rr, cy + Math.sin(aa) * rr); }
+  const L = [], Rr = []; for (let k = 0; k <= 16; k++) { const aa = a - 1.35 * k / 16, w = head * (1 - k / 16); L.push(C + Math.cos(aa) * (rr + w), cy + Math.sin(aa) * (rr + w)); Rr.push(C + Math.cos(aa) * (rr - w), cy + Math.sin(aa) * (rr - w)); }
+  const fd = g.createLinearGradient(hx, hy, pts[32], pts[33]); fd.addColorStop(0, rgba(tone, 0.95)); fd.addColorStop(0.75, rgba(tone, 0.22)); fd.addColorStop(1, rgba(tone, 0));
+  g.fillStyle = fd; g.beginPath(); g.moveTo(L[0], L[1]); for (let k = 1; k <= 16; k++) g.lineTo(L[2 * k], L[2 * k + 1]); for (let k = 16; k >= 0; k--) g.lineTo(Rr[2 * k], Rr[2 * k + 1]); g.fill();
+  g.fillStyle = rgba(tone, 1); g.beginPath(); g.arc(hx, hy, head, 0, TAU); g.fill();
+}
+
+/* A: plat, volledig in de kaart */
+function drawA(g, f, run) {
+  const cx = f.w / 2, cy = f.h / 2, s = (f.h / 2 - 6) / 174, tone = T.tones[state.level - 1];
+  LEVELS.forEach((l, k) => {
+    const on = Math.max(0, 1 - Math.abs(run.ring - l.id));
+    dotRing(g, cx, cy, l.ring * s, 1, mix(T.ink, tone, on), 0.16 + 0.5 * on, 6.2);
+  });
+  const r = ringAt(run.ring, s), a = run.angle, sw = run.send;
+  // vertrek: de baan opent zich naar boven en de komeet schiet uit beeld
+  const out = sw >= 0 && sw < 0.75 ? easeIn((sw - 0.25) / 0.5) : 0;
+  const rr = r + out * 160, al = sendAlpha(run);
+  const pts = []; const span = 0.42 + 0.9 * out;
+  for (let k = 0; k <= 14; k++) { const aa = a - span * k / 14, ro = r + out * 160 * (1 - k / 14) ** 2; pts.push(cx + Math.cos(aa) * ro, cy + Math.sin(aa) * ro); }
+  const head = 4.6;
+  if (al > 0) comet(g, pts, head, tone, al);
+  core(g, cx, cy, 17, lookAt(cx, cy, pts[0], pts[1]), run.happy, run.blink);
+}
+
+/* B: halve bogen op de bovenrand van de kaart */
+function drawB(g, f, run) {
+  const cx = f.w / 2, cy = f.edge, s = Math.min((f.edge - 14) / 174, (f.w / 2 - 12) / 174), tone = T.tones[state.level - 1];
+  const above = (x, y) => y < cy - 1.2;
+  LEVELS.forEach(l => {
+    const on = Math.max(0, 1 - Math.abs(run.ring - l.id));
+    dotRing(g, cx, cy, l.ring * s, 1, mix(T.ink, tone, on), 0.18 + 0.5 * on, 6.2, above);
+  });
+  const r = ringAt(run.ring, s), sw = run.send;
+  // de komeet loopt enkel over de bovenhelft: van links (pi) naar rechts (2 pi), dan onder de rand terug
+  // 80 % van de omloop boven de rand, de rest snel eronder door
+  const p = (((run.angle - Math.PI / 2) % TAU) + TAU) % TAU / TAU;
+  const a = state.still ? Math.PI * 1.32 : p < 0.8 ? Math.PI + p / 0.8 * Math.PI : 2 * Math.PI + (p - 0.8) / 0.2 * Math.PI;
+  const dive = sw >= 0 && sw < 0.75 ? easeIn((sw - 0.15) / 0.6) : 0;
+  const al = sendAlpha(run);
+  const pts = [];
+  for (let k = 0; k <= 14; k++) { const aa = a - 0.5 * k / 14; const ro = r * (1 - dive * 0.9 * (1 - k / 14)); pts.push(cx + Math.cos(aa) * ro, cy + Math.sin(aa) * ro + dive * 60 * (1 - k / 14)); }
+  g.save(); g.beginPath(); g.rect(0, 0, f.w, cy - 1.2); g.clip();
+  if (al > 0) comet(g, pts, 4.6, tone, al);
+  core(g, cx, cy, 24, lookAt(cx, cy - 8, pts[0], pts[1]).map((v, i) => i ? Math.min(v, 0.1) : v), run.happy, run.blink, { });
+  g.restore();
+}
+
+/* C: gekanteld, komeet vóór en achter de kern */
+function drawC(g, f, run) {
+  const cx = f.w / 2, cy = f.h / 2 + 8, sy = 0.36, s = Math.min((f.w / 2 - 10) / 174, (f.h / 2 - 12) / (174 * sy)), tone = T.tones[state.level - 1];
+  LEVELS.forEach(l => {
+    const on = Math.max(0, 1 - Math.abs(run.ring - l.id));
+    dotRing(g, cx, cy, l.ring * s, sy, mix(T.ink, tone, on), 0.2 + 0.5 * on, 6.4, null, 0.45);
+  });
+  const r = ringAt(run.ring, s), a = run.angle, sw = run.send;
+  const lift = sw >= 0 && sw < 0.75 ? easeIn((sw - 0.3) / 0.45) : 0;
+  const al = sendAlpha(run);
+  const pts = [];
+  for (let k = 0; k <= 14; k++) { const aa = a - 0.5 * k / 14; pts.push(cx + Math.cos(aa) * r, cy + Math.sin(aa) * r * sy - lift * 150 * (1 - k / 14) ** 1.5); }
+  const behind = Math.sin(a) < 0 && lift < 0.2;
+  const head = 4.6 * (0.82 + 0.18 * (Math.sin(a) + 1) / 2);   // achteraan iets kleiner: diepte
+  const drawCm = () => { if (al > 0) comet(g, pts, head, tone, al * (behind ? 0.75 : 1)); };
+  if (behind) drawCm();
+  core(g, cx, cy - 2, 17, lookAt(cx, cy - 2, pts[0], pts[1]), run.happy, run.blink);
+  if (!behind) drawCm();
+}
+
+const DRAW = { now: drawNow, a: drawA, b: drawB, c: drawC };
+
+function frame(now) {
+  for (const view of views) {
+    const f = fit(view), g = view.cv.getContext('2d');
+    g.setTransform(f.dpr, 0, 0, f.dpr, 0, 0); g.clearRect(0, 0, f.w, f.h);
+    DRAW[view.v.key](g, f, step(view.run, now));
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---- bediening ---- */
+const levelsEl = document.getElementById('levels');
+LEVELS.forEach(l => { const b = document.createElement('button'); b.type = 'button'; b.textContent = l.name; b.dataset.l = l.id; levelsEl.appendChild(b); });
+function syncUI() {
+  for (const b of levelsEl.children) b.setAttribute('aria-pressed', String(Number(b.dataset.l) === state.level));
+  const tone = `var(--c${state.level})`;
+  for (const view of views) {
+    view.card.style.setProperty('--tone', tone);
+    view.card.querySelector('.lv').textContent = LEVELS[state.level - 1].name;
+    for (const c of view.card.querySelectorAll('.chips span')) c.classList.toggle('on', Number(c.dataset.l) === state.level);
+  }
+}
+levelsEl.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.level = Number(b.dataset.l); syncUI(); });
+document.getElementById('go').addEventListener('click', () => { state.sendAt = performance.now(); });
+document.getElementById('theme').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  for (const x of b.parentNode.children) x.setAttribute('aria-pressed', String(x === b));
+  if (b.dataset.v === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = b.dataset.v;
+  readTokens();
+});
+document.getElementById('motion').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  for (const x of b.parentNode.children) x.setAttribute('aria-pressed', String(x === b));
+  state.still = b.dataset.v === 'off';
+});
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.querySelector('#motion [data-v="off"]').click();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+readTokens(); syncUI(); requestAnimationFrame(frame);
+</script>
