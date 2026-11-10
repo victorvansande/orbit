@@ -2010,6 +2010,17 @@ button.gift[aria-checked="true"] { --rank-cut: color-mix(in srgb, var(--tint) va
 button.gift[aria-checked="true"]::before { clip-path: circle(150% at var(--x, 50%) var(--y, 50%)); }
 @media (hover: hover) { button.gift[aria-checked="false"]:hover { background: var(--fill-2); } }
 @media (prefers-reduced-motion: reduce) { button.gift, button.gift::before, .gift-badge * { transition: none; } }
+/* ---- Zwart gat ---- */
+/* Z1 Raster (src/scene/hole.js, Victor 10/11/2026): desktop rechts onder de boog van het wiel, gecentreerd onder de
+   wielhint, 20 px eronder; gsm en liggend: op zijn plek gezet door hole.js, enkel zichtbaar tijdens het slepen van een bol. */
+.hole { position: fixed; z-index: 2; width: 96px; height: 59px; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .35s var(--ease), visibility .35s; }
+.hole canvas { display: block; width: 100%; height: 100%; }
+.hole.is-on { opacity: 1; visibility: visible; }
+.hole-fx { position: fixed; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; }
+@media (min-width: 1000px) and (min-height: 501px) {
+  .hole { width: 120px; height: 74px; right: 76px; top: calc(50% + min(360px, 50dvh - 140px) + 20px); pointer-events: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .hole { transition: none; } }
 /* melding bovenaan bij een nieuwe prestatie: Komeet zonder kader (Victor, 02/11/2026, voorstel C uit vijf; de ingelaten pil
    was niet logisch boven een pagina die eronder doorscrolt). Ontstaat zacht ter plaatse (Victor, 02/11/2026: geen veeg of
    inglijden): de vlek papier bloeit open, de ring van de badge tekent zich, de ster draait open, dan de tekst. Verdwijnt zacht. */

@@ -3,6 +3,7 @@ import { LEVELS, LEVEL_BY_ID, URGENT_LEVEL, DEFAULT_LEVEL, toneNode, PALETTE, se
 import { createScene } from './scene/scene.js';
 import { createWheel } from './scene/wheel.js';
 import { createLegend } from './scene/legend.js';
+import { createHole } from './scene/hole.js';
 import { createHorizon } from './scene/horizon.js';
 import { createStreak } from './scene/streak.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/deadline.js';
@@ -258,8 +259,19 @@ function applyDeadlines() {
 const groupsEl = $('groups');
 let hotTask = null, hotLevel = null;
 
+// Zwart gat (Z1 Raster, Victor 10/11/2026): een bol erin slepen verwijdert de taak, zoals het prullenbakje, met Ongedaan
+// maken. Desktop: altijd rechts onder de boog van het wiel; gsm en liggend: pas zichtbaar als je een bol vastneemt.
+const hole = createHole({ reducedMotion, permanent: matchMedia('(min-width: 1000px) and (min-height: 501px)'), minimal: () => minimalFx });
+document.body.append(hole.el, hole.fx);
+function dropInHole(id, x, y, rgb) {
+  hole.swallow(x, y, rgb);
+  deleteTask(id, groupsEl.querySelector(`.track[data-id="${CSS.escape(id)}"]`));
+}
+
 const scene = createScene($('scene'), {
   reducedMotion,
+  hole,
+  onDiscard: dropInHole,
   onHover(taskId, level) { hotTask = taskId; hotLevel = level; markHot(); },
   onReassign(id, level) { setLevel(id, level); },
   onView(name) { syncViewButtons(name); setTimeout(placeLegend, 950); },
@@ -1307,11 +1319,11 @@ function deleteTask(id, li) {
   if (!task || leaving.has(id)) return;
   leaving.add(id);
 
-  for (const d of li.querySelectorAll('.t-swipe-del-btn, .t-act-del')) d.remove();
-  groupsEl.style.pointerEvents = 'none';
+  for (const d of li?.querySelectorAll('.t-swipe-del-btn, .t-act-del') ?? []) d.remove();
+  if (li) groupsEl.style.pointerEvents = 'none';
 
-  const trackRow = li.querySelector('.track-row');
-  const check = li.querySelector('.t-check');
+  const trackRow = li?.querySelector('.track-row');
+  const check = li?.querySelector('.t-check');
 
   // 1. Soepele uitschuifbeweging naar links
   if (trackRow) {
@@ -1345,8 +1357,8 @@ function deleteTask(id, li) {
     $('tracks-count').textContent = String(tasks.length).padStart(2, '0');
     $('tracks-demo').hidden = !tasks.some(t => t.demo);
 
-    const group = li.closest('.group');
-    li.remove();
+    const group = li?.closest('.group');
+    li?.remove();
     if (group && !group.querySelector('.track')) group.remove();
     leaving.delete(id);
 

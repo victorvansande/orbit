@@ -113,7 +113,7 @@ function distToSegment(px, py, ax, ay, bx, by) {
   return Math.hypot(px - ax - t * vx, py - ay - t * vy);
 }
 
-export function createScene(canvas, { onHover = () => {}, onReassign = () => {}, onView = () => {}, onCore = () => {}, onLegend = () => {}, reducedMotion }) {
+export function createScene(canvas, { onHover = () => {}, onReassign = () => {}, onView = () => {}, onCore = () => {}, onLegend = () => {}, onDiscard = () => {}, hole = null, reducedMotion }) {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, DPR = 1;
   let insets = { left: 0, right: 0 }, center = { x: 0, y: 0 }, centerReady = false;
@@ -1544,7 +1544,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (!project(x, y, z, true)) { o.sx = null; continue; }
       let sx = pt.x, sy = pt.y;
       const f = pt.f, depth = pt.z;
-      if (drag?.type === 'orb' && drag.id === o.id && drag.active) { sx = pointer.x; sy = pointer.y; }
+      if (drag?.type === 'orb' && drag.id === o.id && drag.active) { sx = pointer.x + (drag.pull?.[0] || 0); sy = pointer.y + (drag.pull?.[1] || 0); }
       else if (o.blend) { const e = ease(o.blend.p); sx = o.blend.x + (sx - o.blend.x) * e; sy = o.blend.y + (sy - o.blend.y) * e; }
       const r = lv.size / 2 * ORB_SCALE * cam.du * f * (isHot(o) ? 1.2 : 1);
       o.sx = sx; o.sy = sy; o.sr = Math.max(r, 4);
@@ -1885,10 +1885,15 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (!drag.active && Math.hypot(dx, dy) > 5) {
         if (drag.fixed) return; // deadline-taak: vaste schil
         drag.active = true;
+        if (drag.type === 'orb') hole?.setDragging(true);
       }
       if (!drag.active) return;
       if (drag.type === 'orb') {
-        const lv = nearestRing(p.x, p.y, 70);
+        // zwart gat (src/scene/hole.js): erboven hangen verwijdert bij loslaten, in de buurt trekt het zachtjes aan
+        drag.over = Boolean(hole?.hit(e.clientX, e.clientY));
+        drag.pull = hole?.pull(e.clientX, e.clientY) || [0, 0];
+        hole?.setHover(drag.over);
+        const lv = drag.over ? null : nearestRing(p.x, p.y, 70);
         dropLevel = lv;
         canvas.style.cursor = 'grabbing';
       } else {
@@ -1953,6 +1958,17 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     canvas.style.cursor = 'default';
     if (d.type === 'orb') {
       const o = orbs.get(d.id);
+      if (d.active) hole?.setDragging(false);
+      if (d.active && o && !cancelled && d.over) {
+        // in het zwarte gat: de bol verdwijnt hier meteen, het gat tekent zijn val; de app verwijdert de taak
+        const r = canvas.getBoundingClientRect();
+        const x = r.left + pointer.x + (d.pull?.[0] || 0), y = r.top + pointer.y + (d.pull?.[1] || 0);
+        orbs.delete(d.id);
+        layoutOffsets();
+        dropLevel = null;
+        onDiscard(d.id, x, y, colors.get(o.level));
+        return;
+      }
       if (d.active && o) {
         if (!cancelled && dropLevel) {
           const targetR = LEVEL_BY_ID.get(dropLevel).orbit;

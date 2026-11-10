@@ -59,7 +59,7 @@ src/styles.css   alle stijl, tokens bovenaan, secties /* ---- Naam ---- */
 src/core/   config, i18n, deadline, demo, mark, badge
 src/data/   store, backup, stats, feats, recap
 src/sync/   sync, pair, keychain
-src/scene/  scene, wheel, legend, fx, matrix, greet, sound, promo, turn
+src/scene/  scene, wheel, legend, fx, matrix, greet, sound, promo, turn, hole
 src/focus/  timer, glass, fidget, panel, life, weather, quotes, plasma, breakout, snake
 src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 ```
@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 10/11/2026, Claude Code: orbitje boven Nieuwe taak vervangen door B Horizon (gekozen door Victor): halve stippelringen op de bovenrand van de kaart, kern met oogjes als opkomende zon, komeet die bij Voeg toe de kaart in duikt (`src/scene/horizon.js`). Open: Victor kijkt op pc en gsm.
 - 10/11/2026, Claude Code: Fosfor en Inkt wisselen om de 20 s vanzelf van scherm (Fosfor klapt in tot een lichtstreep, Inkt ververst met een lijn van boven naar onder). Open: Victor kijkt of 20 s goed voelt.
 - 10/11/2026, Claude Code: in licht iets meer contrast voor de rasterstippen (x 1,3) en de banen (x 1,22), donker ongewijzigd (`dots`, `ring` in `THEMES`). Open: Victor kijkt of het genoeg is.
 - 10/11/2026, Claude Code: liggende gsm: de kern spreekt enkel nog na een tik, en dan in de strook tussen lijst en wiel (keuze 3 van Victor; `LYING_MQ`, `sayLine(..., asked)`). Open: Victor kijkt liggend.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 10/11/2026, Claude Code: kern pulseerde wild bij terugkeer naar een venster dat al even openstond: de ademgolf was `sin(tijd sinds laden x tempo)`, en elke tempowissel (inslapen, wakker worden) joeg de fase op; nu een opgetelde fase `breath` (Valkuilen in `docs/kennis.md`). Open: Victor kijkt of het weg is.
 - 10/11/2026, Claude Code: de ogen van de kern volgen de muis over het hele venster, ook boven de lijst en het wiel (`gaze` in `scene.js`, vanuit `window`); de rest van de scène reageert enkel boven de scène. Open: Victor kijkt.
 - 10/11/2026, Claude Code: een versleepte bol landt waar je hem loslaat (`ringAngleAt` keert de projectie om; vroeger `atan2` op het scherm, dat de draaiing van de scène negeerde). Open: Victor sleept.
+- 10/11/2026, Claude Code: zwart gat Z1 Raster (gekozen door Victor uit `ontwerp/zwartgat/`): echte straalberekening rond een Schwarzschild-gat in rasterpunten, desktop rechts onder de boog, gsm en liggend enkel tijdens het slepen; een bol erin = verwijderen met Ongedaan maken, met een val die vertraagt en rood uitdooft (`src/scene/hole.js`). Open: Victor sleept, en zegt of het gat op desktop altijd zichtbaar mag blijven.
