@@ -2456,16 +2456,17 @@ function giftTile(g) {
     sw.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));
     sw.setAttribute('aria-label', tx(`gift.${g.id}`));
     sw.append(el('i'));
+    li.sw = sw;   // eigen kolom rechts, verticaal in het midden van de tegel: de uitleg loopt er niet onder
     sw.addEventListener('click', () => {
       if (giftPrefs.off[g.id]) delete giftPrefs.off[g.id]; else giftPrefs.off[g.id] = 1;
       saveGiftPrefs(giftPrefs);
       applyGifts(giftLevel);
       sw.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));   // ter plaatse, zodat de stip zichtbaar schuift
     });
-    name.append(sw);
   }
   body.append(name, el('p', 'feat-desc', got ? tx(`gift.${g.id}.desc`) : tx('gift.lockedDesc', { n: g.rank, name: RANK_NAMES[g.rank - 1] })));
   li.append(icon, body);
+  if (got) li.append(li.sw);
   return li;
 }
 function checkFeats(pop) {
@@ -2507,7 +2508,6 @@ function renderFeatsBadge(r = featsNow()) {
 }
 function renderFeats() {
   const r = featsNow();
-  $('feats-count').textContent = tx('feats.count', { a: r.earned, b: FEATS.length });
   $('feats-level').textContent = tx('feats.level', { n: r.rank.level });
   $('feats-rankname').textContent = r.rank.name;
   $('feats-rank-badge').innerHTML = rankSvg(r.rank.level);
@@ -2524,8 +2524,10 @@ function renderFeats() {
     const got = items.filter(x => x.at || x.value >= x.goal).length;
     return featSection(groupName(g), `${got}/${items.length}`, items);
   });
-  $('feats-tab-feats-n').textContent = `${r.earned}/${FEATS.length}`;
-  $('feats-tab-gifts-n').textContent = `${giftsAt(giftLevel).length}/${GIFTS.length}`;
+  // titel en teller linksboven en rechtsboven volgen het tabblad (Victor, 10/11/2026: geen getal naast de tabs)
+  const gifts = featsTab === 'gifts';
+  $('feats-title').textContent = tx(gifts ? 'gifts.title' : 'feats.title');
+  $('feats-count').textContent = gifts ? tx('feats.count', { a: giftsAt(giftLevel).length, b: GIFTS.length }) : tx('feats.count', { a: r.earned, b: FEATS.length });
   for (const t of ['feats', 'gifts']) $(`feats-tab-${t}`).setAttribute('aria-selected', String(featsTab === t));
   list.setAttribute('aria-labelledby', `feats-tab-${featsTab}`);
   if (featsTab === 'gifts') { list.replaceChildren(giftSection()); return; }
