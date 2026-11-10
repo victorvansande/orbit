@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 09/11/2026, Claude Code: oogjes van Orb volgens O1 Spiegelraster (gekozen door Victor): symmetrisch, fijner raster op scherpe schermen, vloeiende rand; blosjes verplaatst; Zzz geprobeerd en weer weggehaald; de kern is altijd even groot (niet meer kleiner bij weinig dringends). Open: Victor kijkt op pc en gsm.
 - 10/11/2026, Claude Code: liggende gsm krijgt de desktopindeling (lijst links, scène, wiel rechts; focus met klok links en bakje rechts), compact voor de lage hoogte, met inkeping en touch; `DESKTOP_MQ` / `MOBILE_MQ` in `config.js`. Open: Victor kijkt op zijn gsm liggend.
 - 10/11/2026, Claude Code: Breakout en Slang bewaren een lopend spel (via `scores.js`, soort `run`): draaien, een andere maat of herladen zet het gepauzeerd terug. Open: Victor speelt op zijn gsm en draait.
 - 10/11/2026, Claude Code: Paneel gesplitst in twee soorten, Fosfor (tien CRT-schermen) en Inkt (drie vlakke, stijl van Orbit), in een eigen groep Paneel in het keuzemenu; een oude keuze op een inktscherm komt bij Inkt uit. Open: Victor kijkt, en zegt of de naam Inkt goed is (alternatief: Orbit).
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 10/11/2026, Claude Code: Fosfor en Inkt wisselen om de 20 s vanzelf van scherm (Fosfor klapt in tot een lichtstreep, Inkt ververst met een lijn van boven naar onder). Open: Victor kijkt of 20 s goed voelt.
 - 10/11/2026, Claude Code: in licht iets meer contrast voor de rasterstippen (x 1,3) en de banen (x 1,22), donker ongewijzigd (`dots`, `ring` in `THEMES`). Open: Victor kijkt of het genoeg is.
 - 10/11/2026, Claude Code: liggende gsm: de kern spreekt enkel nog na een tik, en dan in de strook tussen lijst en wiel (keuze 3 van Victor; `LYING_MQ`, `sayLine(..., asked)`). Open: Victor kijkt liggend.
+- 10/11/2026, Claude Code: dagen op rij volgens R4 Matrixwissel (gekozen door Victor): derde stand in de stippenteller met een vlammetje (grafiet, rood na de eerste ster van de dag), ontsteekanimatie bij de eerste ster van de dag (of de kern zegt het op gsm), details met regels en een maandkalender in zeshoekjes (`streakInfo`, `src/scene/streak.js`). Open: Victor kijkt en vinkt morgen iets af.

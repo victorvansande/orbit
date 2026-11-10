@@ -273,6 +273,16 @@
     </div>
     <div class="stats-detail" id="stats-detail" hidden>
       <dl id="stats-rows"></dl>
+      <div class="streak-box" id="streak-box" hidden>
+        <p class="skies-title" data-i="streak.title">Dagen op rij</p>
+        <dl id="streak-rows"></dl>
+        <div class="streak-cal-head">
+          <button type="button" class="streak-nav" id="streak-prev" aria-label="Vorige maand" data-ia="aria-label:recap.prev"><svg viewBox="0 0 10 12" width="10" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 2 2.5 6l4 4"/></svg></button>
+          <span class="streak-month" id="streak-month"></span>
+          <button type="button" class="streak-nav" id="streak-next" aria-label="Volgende maand" data-ia="aria-label:recap.next"><svg viewBox="0 0 10 12" width="10" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 2l4 4-4 4"/></svg></button>
+        </div>
+        <div class="streak-grid" id="streak-grid" role="group"></div>
+      </div>
       <button type="button" class="stats-reset-btn recap-open" id="recap-open" data-i="recap.open">Maandrecap</button>
       <button type="button" class="stats-reset-btn recap-open" id="turn-replay" data-i="turn.replay" hidden>Speel maandwissel</button>
       <button type="button" class="stats-reset-btn recap-open" id="meteor-btn" data-i="meteor.replay" hidden>Laat een ster vallen</button>

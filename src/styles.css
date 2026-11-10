@@ -437,7 +437,15 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
   transition: color .2s var(--ease);
 }
 .stats-total:hover, .stats-total[aria-expanded="true"] { color: var(--ink-2); }
-.stat-dm { --dm-h: 22px; display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
+.stat-dm { --dm-h: 22px; position: relative; display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); }
+/* dagen op rij (R4 Matrixwissel): vlammetje in grafiet tot de eerste ster van vandaag, dan rood; ontsteken van onder naar boven */
+.stat-dm .dm-flame { color: var(--ink-3); }
+.stat-dm.is-hot .dm-flame { color: var(--core); }
+.stat-dm .dm-flame .o { transition: fill .35s var(--ease); transition-delay: var(--fd, 0ms); }
+.stat-dm .dm-flame.is-ignite .o { animation: flame-pop .55s var(--ease) both; animation-delay: var(--fd, 0ms); transform-box: fill-box; transform-origin: center; }
+@keyframes flame-pop { 45% { transform: scale(1.7); } }
+.dm-spark { position: absolute; width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: var(--core); pointer-events: none; opacity: 0; animation: dm-spark .9s var(--ease) both; }
+@keyframes dm-spark { 15% { opacity: 1; } to { opacity: 0; transform: translateY(-18px) scale(.5); } }
 .stat-dm .dm { display: block; flex: none; height: 100%; width: calc(var(--dm-h) * 5 / 7); overflow: visible;
   transition: width .45s var(--ease), margin .45s var(--ease), opacity .35s var(--ease); }
 /* een vakje dat erbij komt of wegvalt (100 sterren of meer), schuift open of dicht */
@@ -455,6 +463,30 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .stats-detail dt { color: var(--ink-3); }
 .stats-detail dd { margin: 0; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
 .skies { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+/* Dagen op rij in de details: regels en een maandkalender in zeshoekige rasterpunten (src/scene/streak.js) */
+.streak-box { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.streak-box[hidden] { display: none; }
+.streak-sub { display: block; margin-top: 3px; color: var(--ink-3); }
+.streak-cal-head { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.streak-month { font: 500 var(--fs-label)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+/* randloze knop: het pijltje (10 px in 36 px) staat op de rand van het vlak */
+.streak-nav { display: grid; place-items: center; width: 36px; height: 36px; margin: 0 -13px; border-radius: 50%; color: var(--ink-3); transition: color .2s var(--ease); }
+.streak-nav:hover:not(:disabled) { color: var(--ink); }
+.streak-nav:disabled { opacity: .3; cursor: default; }
+.streak-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px 0; margin-top: 4px; }
+.sw { padding-bottom: 2px; text-align: center; font: 500 9.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.sc { display: grid; justify-items: center; align-content: start; gap: 3px; }
+.sc svg { display: block; width: 14px; height: 14px; overflow: visible; }
+.sc path { fill: var(--ink-3); transform-box: fill-box; transform-origin: center; }
+.sc.is-quiet path { opacity: .35; transform: scale(.28); }
+.sc.is-star path { transform: scale(calc(.5 + .125 * var(--n, 1))); }   /* grootte = aantal sterren die dag */
+.sc.is-run path { fill: var(--ink); }
+.sc.is-today.is-star path { fill: var(--core); }
+.sc.is-open path { fill: none; stroke: var(--core); stroke-width: 1.2; transform: scale(.75); animation: sc-breathe 2.4s ease-in-out infinite; }
+@keyframes sc-breathe { 50% { opacity: .35; } }
+.sc-x { display: grid; place-items: center; width: 14px; height: 14px; font: 500 12px/1 var(--mono); color: var(--ink-3); }
+.sc-d { font: 500 9px/1 var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.sc.is-run .sc-d, .sc.is-today .sc-d { color: var(--ink-2); }
 .skies-title { margin: 0 0 6px; font: 500 var(--fs-label)/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 .skies-list { display: grid; gap: 2px; margin-bottom: 4px; }
 .skies-list:empty { display: none; }
@@ -1844,6 +1876,9 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .t-check svg path, .fn-check svg path { transition: none !important; }
   .dm .o { animation: none; }
   .stat-dm .dm { transition: none; }
+  .stat-dm .dm-flame .o { transition: none; }
+  .stat-dm .dm-flame.is-ignite .o, .sc.is-open path { animation: none; }
+  .dm-spark { display: none; }
 }
 
 /* ---- Effecten (src/scene/fx.js) ---- */

@@ -112,6 +112,39 @@ export function doneSummary(done, now = new Date()) {
   return { today: days[today] || 0, week, month: inMonth, best, first: times.length ? times.reduce((a, b) => Math.min(a, b)) : null };
 }
 
+/* ---- Dagen op rij ---- */
+// Een dag telt mee met minstens één afgevinkte taak (Victor, 10/11/2026, R4 Matrixwissel). Vandaag telt mee vanaf de
+// eerste ster; zolang er vandaag nog niets is, loopt de reeks tot gisteren door (pas na een hele lege dag is hij weg).
+// Alles volgt uit het logboek `done`, dus het gaat vanzelf mee in sync, export en import.
+const dayOf = key => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); };
+const shift = (date, n) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+export function streakInfo(done, now = new Date()) {
+  const days = perDay(done), keys = Object.keys(days).sort();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayDone = !!days[dayKey(today)];
+  // huidige reeks: terug vanaf vandaag (of gisteren als vandaag nog leeg is)
+  let current = 0, cursor = todayDone ? today : shift(today, -1);
+  while (days[dayKey(cursor)]) { current++; cursor = shift(cursor, -1); }
+  const start = current ? shift(cursor, 1) : null;
+  // langste reeks (bij gelijkstand de recentste)
+  let longest = null, run = null, prev = null;
+  for (const k of keys) {
+    const d = dayOf(k);
+    run = prev && dayKey(shift(prev, 1)) === k ? { from: run.from, to: d, n: run.n + 1 } : { from: d, to: d, n: 1 };
+    if (!longest || run.n >= longest.n) longest = run;
+    prev = d;
+  }
+  // laatst gemiste dag: de recentste lege dag tussen de eerste ster en gisteren
+  const first = keys.length ? dayOf(keys[0]) : null;
+  let missed = null;
+  if (first) {
+    const end = start ? shift(start, -1) : shift(today, -1);
+    if (end >= first && !days[dayKey(end)]) missed = end;
+  }
+  const span = first ? Math.round((today - first) / 86400000) + 1 : 0;
+  return { current, todayDone, start, longest, missed, first, active: keys.length, span, days };
+}
+
 /* ---- Sterrenhemel ---- */
 // Coördinaten in stage-eenheden rond het midden van de scène (los van de 3D-camera: de hemel hangt erachter).
 // buiten de ring Nu (38) met wat lucht, tot net buiten de buitenste ring. Victor, 03/11/2026: "laat sterren nooit binnen de

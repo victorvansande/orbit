@@ -4,12 +4,13 @@ import { createScene } from './scene/scene.js';
 import { createWheel } from './scene/wheel.js';
 import { createLegend } from './scene/legend.js';
 import { createHorizon } from './scene/horizon.js';
+import { createStreak } from './scene/streak.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync/sync.js';
 import { mirror, readMirror } from './data/backup.js';
-import { setMatrix, morphMatrix, twinkleDot } from './scene/matrix.js';
+import { setMatrix, morphMatrix, twinkleDot, igniteFlame } from './scene/matrix.js';
 import { loadDone, saveDone, cleanDone, isFiller, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
-  loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView } from './data/stats.js';
+  loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView, streakInfo } from './data/stats.js';
 import { QUOTES } from './focus/quotes.js';
 import { createWeather } from './focus/weather.js';
 import { renderQr, codeFromText, createScanner, deviceName } from './sync/pair.js';
@@ -504,6 +505,8 @@ $('wall-toggle').addEventListener('click', () => {
   renderWall();
 });
 
+const streakView = createStreak($('streak-box'));   // dagen op rij in de details van de teller
+const renderStreak = () => { if (streak) streakView.render(streak); };
 function renderStats({ quiet = false } = {}) {
   const now = new Date();
   try { renderRecapPill(); } catch { /* bij het opstarten nog niet klaar (recap.js wordt verderop geladen) */ }
@@ -523,7 +526,9 @@ function renderStats({ quiet = false } = {}) {
   renderSkies();
   const sum = doneSummary(done, now);
   statN = { all: total, month: sum.month };
+  streak = streakInfo(done, now);
   showStatDm();
+  renderStreak();
   const day = ts => LONG_DAY.format(ts);
   const bestDay = sum.best ? (([y, m, d]) => new Date(y, m - 1, d))(sum.best.day.split('-').map(Number)) : null;
   const rows = [
@@ -538,38 +543,82 @@ function renderStats({ quiet = false } = {}) {
 // De stippenteller wisselt om de 8 s tussen de sterren van deze maand en alle sterren (Victor, 03/11/2026),
 // met ruis die bezinkt in het nieuwe getal (morphMatrix, V5). Enkel als de teller in beeld is; stil met Minimaal of minder beweging.
 const STAT_SWAP_MS = 8000;
-let statMode = 'all', statN = { all: 0, month: 0 }, statSwapT = 0;
+// Derde stand: dagen op rij met een vlammetje in het stippenraster (R4 Matrixwissel, Victor 10/11/2026), enkel met een
+// lopende reeks. Grafiet zolang er vandaag nog geen ster is, rood daarna (.is-hot). streakHold: tijdens het afvinken van de
+// eerste taak van de dag toont de teller nog de oude reeks, tot de animatie (playStreakUp) hem ophoogt.
+let statMode = 'all', statN = { all: 0, month: 0 }, statSwapT = 0, streak = null, streakHold = null;
+const shownStreak = () => streakHold ?? streak?.current ?? 0;
+const streakHot = () => streakHold == null && !!streak?.todayDone;
 function statLabel() {
+  if (statMode === 'streak') return shownStreak() === 1 ? tx('stats.streak1') : tx('stats.streak');
   const n = statN[statMode];
   return statMode === 'month' ? (n === 1 ? tx('stats.month1') : tx('stats.month')) : (n === 1 ? tx('stats.label1') : tx('stats.label'));
 }
 function statAria() {
-  $('stat-total').setAttribute('aria-label', tx(statMode === 'month' ? 'stats.monthAria' : 'stats.total', { n: statN[statMode] }));
+  const dm = $('stat-total');
+  if (statMode === 'streak') { dm.setAttribute('aria-label', tx(streakHot() ? 'stats.streakAria' : 'stats.streakOpen', { n: shownStreak() })); return; }
+  dm.setAttribute('aria-label', tx(statMode === 'month' ? 'stats.monthAria' : 'stats.total', { n: statN[statMode] }));
 }
 // altijd minstens twee vakjes (een nul ervoor); vanaf 100 schuift er een derde vakje bij (Victor, 04/11/2026)
-const statText = () => String(statN[statMode]).padStart(2, '0');
+const statText = () => (statMode === 'streak' ? 'f' + String(shownStreak()).padStart(2, '0') : String(statN[statMode]).padStart(2, '0'));
+const statHot = () => $('stat-total').classList.toggle('is-hot', statMode === 'streak' && streakHot());
 const statStill = () => { try { return minimalFx || reducedMotion.matches; } catch { return true; } };   // minimalFx bestaat pas later bij het opstarten
 function showStatDm() {
+  if (statMode === 'streak' && !shownStreak()) statMode = 'all';   // reeks weg (nieuwe dag, ongedaan maken): terug naar alle sterren
   const dm = $('stat-total'), text = statText();
   if (!dm._morphT && dm._chars && dm._chars.length && dm._chars.length !== text.length) morphMatrix(dm, text, { still: statStill() });
   else setMatrix(dm, text);
-  if (!$('stat-total')._morphT) { $('stat-stars-label').textContent = statLabel(); statAria(); }
+  if (!$('stat-total')._morphT) { $('stat-stars-label').textContent = statLabel(); statAria(); statHot(); }
   clearTimeout(statSwapT);
   statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS);
 }
+const statSeen = () => { const r = $('stat-total').getBoundingClientRect(); return !document.hidden && !$('stats').hidden && r.width > 0 && r.bottom > 0 && r.top < innerHeight; };
 function swapStatDm() {
   const dm = $('stat-total'), label = $('stat-stars-label');
-  const r = dm.getBoundingClientRect();
-  const seen = !document.hidden && !$('stats').hidden && r.width > 0 && r.bottom > 0 && r.top < innerHeight;
-  if (!seen) { statSwapT = setTimeout(swapStatDm, 1000); return; }
-  statMode = statMode === 'all' ? 'month' : 'all';
+  if (!statSeen()) { statSwapT = setTimeout(swapStatDm, 1000); return; }
+  const order = shownStreak() ? ['all', 'month', 'streak'] : ['all', 'month'];
+  statMode = order[(order.indexOf(statMode) + 1) % order.length];
   const still = minimalFx || reducedMotion.matches;
   if (!still) label.classList.add('is-swap');
   morphMatrix(dm, statText(), {
     still,
-    onSwap: () => { label.textContent = statLabel(); label.classList.remove('is-swap'); statAria(); },
+    onSwap: () => { label.textContent = statLabel(); label.classList.remove('is-swap'); statAria(); statHot(); },
   });
   statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS);
+}
+// Eerste ster van de dag: de reeks gaat één omhoog. Staat de teller in beeld, dan springt hij naar het vlammetje met de
+// oude reeks, het vlammetje ontsteekt van onder naar boven en het getal slaat om; anders zegt de kern het. Via de
+// regisseur na de nacht en de nieuwe ster, vóór de toast (prioriteit 1,5).
+function playStreakUp() {
+  whenCalm(() => {
+    const was = streakHold;
+    streakHold = null;
+    if (was == null || !streak?.todayDone || streak.current <= was) { renderStats({ quiet: true }); return; }   // intussen ongedaan gemaakt
+    const n = streak.current, dm = $('stat-total'), label = $('stat-stars-label');
+    if (statStill() || !statSeen()) {
+      if (statSeen()) { statMode = 'streak'; showStatDm(); }
+      else sayLine(tx('streak.line', { n }), 0, true);
+      return;
+    }
+    const give = takeStage(3200);
+    clearTimeout(statSwapT);
+    const toFlame = statMode !== 'streak';
+    statMode = 'streak';
+    streakHold = was;   // eerst nog de oude reeks, in grafiet
+    const ignite = () => {
+      streakHold = null;
+      igniteFlame(dm, statHot);
+      setTimeout(() => {
+        morphMatrix(dm, statText(), { only: true, ms: 900, onSwap: () => { label.textContent = statLabel(); statAria(); } });
+      }, 650);
+      setTimeout(() => { give(); statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS); }, 1800);
+    };
+    if (toFlame) {
+      label.classList.add('is-swap');
+      morphMatrix(dm, statText(), { onSwap: () => { label.textContent = statLabel(); label.classList.remove('is-swap'); statAria(); statHot(); } });
+      setTimeout(ignite, 1350);
+    } else { statHot(); setTimeout(ignite, 200); }
+  }, 1.5);
 }
 // Hemels: een nieuwe, lege hemel zonder iets te wissen; vorige hemels of alle sterren samen kun je terug tonen
 const SKY_DATE = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' });
@@ -638,6 +687,7 @@ function stopWallSweep() { sweepWanted = false; scene.cancelWallSweep(); }
 function showStatsDetail(open) {
   $('stats-detail').hidden = !open;
   $('stats-toggle').setAttribute('aria-expanded', String(open));
+  if (open) streakView.reset();
   if (open) triggerWallSweep();
   else stopWallSweep();
 }
@@ -1370,12 +1420,16 @@ function complete(id, row) {
       tasks.push(next);
     }
     archive = saveArchive([{ ...task, doneAt: now, ...(next ? { next: next.id } : {}) }, ...archive]);
+    const before = streakInfo(done);
     done[id] = now;
     saveDone(done);
     recordDone(feats, task, now);
+    const firstToday = !before.todayDone;
+    if (firstToday) streakHold = before.current;   // eerste ster van vandaag: de teller houdt de oude reeks vast tot de animatie
     if (skyView !== 'current' && skyView !== 'all') { skyView = 'current'; saveSkyView(skyView); }   // een nieuwe ster hoort bij deze hemel
     placeStar(sky, id, spot, true, starVisible);
     renderStats();
+    if (firstToday) playStreakUp();
     const shown = Object.keys(done).filter(starVisible).length;
     if (shown % 25 === 0) {   // mijlpaal: de laatste 25 sterren vormen even een sterrenbeeld; meldingen wachten tot het getekend is
       scene.constellation(25);

@@ -14,6 +14,8 @@ const GLYPHS = {
   '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
   '9': ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
   ':': ['.', '.', '#', '.', '#', '.', '.'],
+  // vlammetje voor de dagen op rij (R4 Matrixwissel, Victor 10/11/2026); grafiet of rood via .dm-flame in styles.css
+  'f': ['..#..', '.##..', '.###.', '#.###', '#..##', '##.##', '.###.'],
 };
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -30,7 +32,7 @@ function dotGroup(svg) {
 function glyph(ch) {
   const rows = GLYPHS[ch];
   const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('class', ch === ':' ? 'dm dm-colon' : 'dm');
+  svg.setAttribute('class', ch === ':' ? 'dm dm-colon' : ch === 'f' ? 'dm dm-flame' : 'dm');
   svg.setAttribute('viewBox', `-0.5 -0.5 ${rows[0].length} 7`);
   svg.setAttribute('aria-hidden', 'true');
   const dots = dotGroup(svg);
@@ -89,7 +91,7 @@ export function morphMatrix(root, text, { still = false, only = false, onSwap, m
   const svgs = Array.from({ length: n }, (_, i) => {
     const cw = width(i), keep = only && F[i] === T[i];
     const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('class', (cw === 1 ? 'dm dm-colon' : 'dm') + (i < grow ? ' is-gone' : '')); svg.setAttribute('viewBox', `-0.5 -0.5 ${cw} 7`); svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('class', (cw === 1 ? 'dm dm-colon' : 'dm') + (T[i] === 'f' || (T[i] === ' ' && F[i] === 'f') ? ' dm-flame' : '') + (i < grow ? ' is-gone' : '')); svg.setAttribute('viewBox', `-0.5 -0.5 ${cw} 7`); svg.setAttribute('aria-hidden', 'true');
     const dots = dotGroup(svg);
     for (let y = 0; y < 7; y++) for (let x = 0; x < cw; x++) {
       const c = document.createElementNS(NS, 'circle');
@@ -131,6 +133,30 @@ export function morphMatrix(root, text, { still = false, only = false, onSwap, m
     if (root._pending !== text) setMatrix(root, root._pending);   // intussen een nieuwe tekst
   };
   root._morphT = requestAnimationFrame(step);
+}
+
+// Vlammetje ontsteken (dagen op rij erbij): de stippen van het vlammetje kleuren van onder naar boven rood met een
+// klein opspringen, daarna stijgen drie vonkjes op. hot() zet de klasse die de kleur geeft; de rest is CSS.
+export function igniteFlame(root, hot) {
+  const flame = root.querySelector('.dm-flame');
+  if (!flame) { hot(); return; }
+  for (const c of flame.querySelectorAll('circle')) {
+    const y = Number(c.getAttribute('cy')), x = Number(c.getAttribute('cx'));
+    c.style.setProperty('--fd', `${((6 - y) * 75 + hash(x, y) * 60).toFixed(0)}ms`);
+  }
+  flame.classList.remove('is-ignite'); flame.getBoundingClientRect(); flame.classList.add('is-ignite');
+  hot();
+  const box = root.getBoundingClientRect(), f = flame.getBoundingClientRect();
+  for (let i = 0; i < 3; i++) {
+    const s = document.createElement('span');
+    s.className = 'dm-spark';
+    s.style.left = `${f.left - box.left + f.width * (0.3 + 0.2 * i)}px`;
+    s.style.top = `${f.top - box.top + f.height * 0.15}px`;
+    s.style.animationDelay = `${520 + i * 140}ms`;
+    root.append(s);
+    s.addEventListener('animationend', () => s.remove());
+  }
+  setTimeout(() => flame.classList.remove('is-ignite'), 1600);
 }
 
 // Knipoog naar de sterrenhemel: één verlichte stip fonkelt even uit als dezelfde vierpuntige ster (holle zijden)
