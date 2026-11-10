@@ -1334,9 +1334,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const breathe = breatheAmp ? breatheAmp * Math.sin(t * (1.3 - 0.85 * sleepK) - d.r * 0.25) : 0;
       let gulp = 0;
       if (tw) for (const age of tw) gulp += 0.9 * (1 - age / 0.4) * Math.exp(-(((d.r - age / 0.32 * (rMax + 8)) / (3.2 * grow)) ** 2));
-      const size = base + bump + breathe + gulp;
-      if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
       const ink = eyes.ink(d.x, d.y);
+      const size = base + bump + breathe * (1 - ink) + gulp;   // de ogen ademen niet mee: ze krimpen nooit
+      if (size < 0.25 || !project(d.x, d.y, z, false)) continue;
       if (blush && ink < 0.25 && Math.min(Math.hypot(d.x - eyes.cheek.x, d.y - eyes.cheek.y), Math.hypot(d.x + eyes.cheek.x, d.y - eyes.cheek.y)) < eyes.cheek.r) {
         blushDots.push(pt.x, pt.y, size * grow * CORE_DOT * cam.s * pt.f);
         continue;
@@ -1384,9 +1384,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const b = (t - face.blinkAt) / 0.24;
       if (b >= 0 && b < 1) open = 1 - Math.sin(b * Math.PI);
     }
-    const sleepy = new Date().getHours() < 6;                     // 's nachts slaperig: half zo hoog, bovenkant zakt
-    if (sleepy) open *= 0.42;
-    open *= 1 - 0.95 * sleepK;                                    // slapend: ogen dicht
+    // De ogen worden nooit kleiner (Victor, 10/11/2026): niet half dicht 's nachts en niet dicht als de kern slaapt;
+    // enkel knipperen en de knipoog sluiten ze even.
     const happy = performance.now() < face.happyUntil;
     const h = Math.max(rMax * 0.25, spacing * 2.2);   // O1: nooit kleiner dan 2,2 puntafstanden, ook op een grof raster
     const gap = Math.max(rMax * 0.36, h * 1.3), ey = -rMax * 0.12;
@@ -1397,7 +1396,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const eyes = [-gap, gap].map((ex, i) => {
       const px = ex + lx * h * 0.4, py = ey + ly * h * 0.35;
       const oe = wink && i === 1 ? 0.12 : o, hle = h * 0.62 * oe;
-      return { ex, px, py, top: sleepy ? py - hle * 0.2 : py - hle, bot: py + hle, flat: Math.min(1, Math.max(0.25, oe * 2)) };
+      return { ex, px, py, top: py - hle, bot: py + hle, flat: Math.min(1, Math.max(0.25, oe * 2)) };
     });
     const cover = (v, w) => Math.max(0, Math.min(1, (w - v) / soft + 0.5));
     return {
