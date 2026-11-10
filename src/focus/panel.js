@@ -744,11 +744,18 @@ function phosphor(hex) {
   return { hi: mixRgb(col, [255, 248, 232], 0.55), mid: col, lo: mixRgb(col, [0, 0, 0], 0.3), bg: mixRgb([10, 10, 13], col, 0.05) };
 }
 
+// Wisselen vanzelf, als een echt bedieningspaneel dat beurtelings andere informatie toont (Victor, 10/11/2026): om de
+// 20 s het volgende scherm. Fosfor klapt in tot een lichtstreep en weer open (360 ms), Inkt ververst met een lijn die
+// van boven naar onder loopt (520 ms). Pijltje of tik zet de klok opnieuw; minder beweging: niet vanzelf.
+const AUTO_MS = 20000, CRT_SWAP_MS = 360, INK_SWAP_MS = 520;
+const easeStd = t => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+
 // kind: 'crt' (Fosfor) of 'flat' (Inkt); zoom: groter bakje = zelfde schermen, groter getekend
 export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1, kind = 'crt' }) {
   const crt = kind === 'crt', list = SETS[kind], key = crt ? PANEL_KEY : INK_KEY, makers = (crt ? CRT : FLAT).makers;
   let idx = stored(key);
   if (!Number.isInteger(idx) || idx < 0 || idx >= list.length) idx = 0;
+  let shownAt = 0, prevFrame = 0, swap = null;   // swap: { at, prev } tijdens een wissel
   let lastNow = 0, cv = null, g = null, off = null, og = null, small = null, sg = null, pat = null, maker = null, sig = '', dataAt = 0, lastAccent;
   const dpr = Math.min(2, devicePixelRatio || 1) * zoom;
 
@@ -779,11 +786,33 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
     if (crt && a !== lastAccent) { CRT.setP(phosphor(a)); lastAccent = a; }
     // de tijd gaat nooit terug: een tekenbeurt buiten de lus (performance.now) kan iets later liggen dan het volgende beeld
     lastNow = Math.max(lastNow, now);
-    const t = reducedMotion.matches ? 14 : lastNow / 1000, m = current();
+    // vanzelf wisselen: een pauze in de lus (ander tabblad, focus dicht) telt niet mee
+    if (prevFrame && lastNow - prevFrame > 1000) shownAt += lastNow - prevFrame;
+    prevFrame = lastNow;
+    if (!shownAt) shownAt = lastNow;
+    if (!swap && !reducedMotion.matches && lastNow - shownAt > AUTO_MS) {
+      swap = { at: lastNow, prev: current() };
+      idx = (idx + 1) % list.length; maker = null;
+      onScreen?.(idx, list.length);
+    }
+    const k = swap ? (lastNow - swap.at) / (crt ? CRT_SWAP_MS : INK_SWAP_MS) : 1;
+    if (swap && k >= 1) { swap = null; shownAt = lastNow; }
+    const t = reducedMotion.matches ? 14 : lastNow / 1000;
+    // Fosfor: eerste helft het oude scherm dat inklapt, tweede helft het nieuwe dat openklapt
+    const m = swap && crt && k < 0.5 ? swap.prev : current();
     CLOCK = t;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
-    if (!crt) { m.draw(g, FLAT.TH[theme()], t); return; }
+    if (!crt) {
+      const th = FLAT.TH[theme()];
+      if (!swap) { m.draw(g, th, t); return; }
+      // Inkt: het nieuwe scherm verschijnt boven een lijn die naar onder loopt, eronder staat nog het oude
+      const y = easeStd(k) * H;
+      g.save(); g.beginPath(); g.rect(0, y, W, H - y); g.clip(); swap.prev.draw(g, th, t); g.restore();
+      g.save(); g.beginPath(); g.rect(0, 0, W, y); g.clip(); m.draw(g, th, t); g.restore();
+      g.fillStyle = `rgba(${th.ink.join(',')},.35)`; g.fillRect(0, Math.round(y), W, 1);
+      return;
+    }
     // CRT: scherm op een eigen canvas, dan nagloed (verkleinde kopie opgeschaald, geen blurfilter), scanlijnen en vignet
     const P = CRT.getP(), c = CRT.c;
     og.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -797,8 +826,15 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
     const flick = reducedMotion.matches ? 1 : 0.94 + 0.06 * hash(Math.floor(t * 24));
     sg.clearRect(0, 0, small.width, small.height); sg.drawImage(off, 0, 0, small.width, small.height);
     g.globalCompositeOperation = 'lighter';
+    // wissel: het beeld klapt verticaal samen tot een lichtstreep en weer open
+    const fold = swap ? Math.max(0.012, easeStd(k < 0.5 ? 1 - k / 0.5 : (k - 0.5) / 0.5)) : 1, cy = S.y + S.h / 2;
+    if (fold < 1) { g.save(); g.translate(0, cy); g.scale(1, fold); g.translate(0, -cy); }
     g.globalAlpha = 0.7 * flick; g.drawImage(small, S.x - 2, S.y - 2, S.w + 4, S.h + 4);
     g.globalAlpha = flick; g.drawImage(off, S.x, S.y, S.w, S.h);
+    if (fold < 1) {
+      g.restore();
+      g.globalAlpha = 1 - fold; g.fillStyle = c(P.hi, 0.9); g.fillRect(S.x + S.w * 0.08, cy - 1, S.w * 0.84, 2);
+    }
     if (!reducedMotion.matches) {
       const by = S.y + ((t * 22) % (S.h + 60)) - 30, band = g.createLinearGradient(0, by - 24, 0, by + 24);
       band.addColorStop(0, c(P.mid, 0)); band.addColorStop(0.5, c(P.mid, 0.05)); band.addColorStop(1, c(P.mid, 0));
@@ -819,6 +855,7 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
     init() {}, step() {}, move() {}, leave() {},
     tap(p) {
       const m = current(), x = p.x / 325.6 * W, y = p.y / 226.8 * H;
+      shownAt = lastNow;
       if (crt) m.tap?.(x - S.x, y - S.y); else m.tap?.(x, y);
       if (cv) draw(performance.now());
     },
@@ -848,10 +885,11 @@ export function createPanel({ reducedMotion, accent, getData, onScreen, zoom = 1
     },
     // elk beeld vanuit de lus van het bakje (loopt enkel in de focusmodus en met een zichtbaar tabblad)
     frame(now) { if (cv) draw(now); },
-    unmount() { cv?.remove(); cv = null; maker = null; },
+    unmount() { cv?.remove(); cv = null; maker = null; swap = null; shownAt = prevFrame = 0; },
     recolor() { lastAccent = undefined; if (cv) draw(performance.now()); },
     next(dir = 1) {
       idx = (idx + dir + list.length) % list.length;
+      swap = null; shownAt = lastNow;
       try { localStorage.setItem(key, String(idx)); } catch { /* geen opslag */ }
       maker = null;
       onScreen?.(idx, list.length);
