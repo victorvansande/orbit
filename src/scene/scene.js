@@ -1932,6 +1932,20 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     else drag = { type: 'cam', x0: p.x, y0: p.y, t0: t, spin0: spinDrag, active: false };
   });
 
+  // Hoek op een baan (wereld) onder een schermpunt: de projectie omgekeerd, door te zoeken. De scène draait (spin),
+  // kantelt en heeft perspectief, dus atan2 op het scherm landde de losgelaten bol op een schijnbaar willekeurige plek
+  // (Victor, 10/11/2026). Grof per 2 graden, dan fijn rond het beste punt.
+  function ringAngleAt(r, x, y) {
+    const dist = a => project(...orbFunnel({ r }, a), true) ? Math.hypot(pt.x - x, pt.y - y) : Infinity;
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < 180; i++) { const a = i * TAU / 180, d = dist(a); if (d < bestD) { bestD = d; best = a; } }
+    for (let step = TAU / 360; step > 1e-4; step /= 2) {
+      const l = dist(best - step), m = dist(best + step);
+      if (l < bestD) { bestD = l; best -= step; } else if (m < bestD) { bestD = m; best += step; }
+    }
+    return (best % TAU + TAU) % TAU;
+  }
+
   function endDrag(e, cancelled) {
     if (!drag) return;
     const d = drag;
@@ -1942,7 +1956,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (d.active && o) {
         if (!cancelled && dropLevel) {
           const targetR = LEVEL_BY_ID.get(dropLevel).orbit;
-          const dropAngle = (Math.atan2(pointer.y - cam.cy, pointer.x - cam.cx) + TAU) % TAU;
+          const dropAngle = ringAngleAt(targetR, pointer.x, pointer.y);
           o.r = targetR;
           o.vr = 0;
           o.vo = 0;

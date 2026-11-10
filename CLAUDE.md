@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 10/11/2026, Claude Code: de oogjes van Orb worden nooit meer kleiner: niet slaperig 's nachts, niet dicht als de kern slaapt, en ze ademen niet mee in rust; enkel knipperen en knipoog sluiten ze even. Open: Victor kijkt of slapen zo nog duidelijk genoeg is.
 - 10/11/2026, Claude Code: orbitje boven Nieuwe taak vervangen door B Horizon (gekozen door Victor): halve stippelringen op de bovenrand van de kaart, kern met oogjes als opkomende zon, komeet die bij Voeg toe de kaart in duikt (`src/scene/horizon.js`). Open: Victor kijkt op pc en gsm.
 - 10/11/2026, Claude Code: Fosfor en Inkt wisselen om de 20 s vanzelf van scherm (Fosfor klapt in tot een lichtstreep, Inkt ververst met een lijn van boven naar onder). Open: Victor kijkt of 20 s goed voelt.
 - 10/11/2026, Claude Code: in licht iets meer contrast voor de rasterstippen (x 1,3) en de banen (x 1,22), donker ongewijzigd (`dots`, `ring` in `THEMES`). Open: Victor kijkt of het genoeg is.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 10/11/2026, Claude Code: details onder de sterrenteller dekkend (`--fill-solid`, de hemel scheen erdoor), scrollen zelf in de vaste kolom (op 1440 × 900 vielen ze onder het scherm) en hebben een knop Sluit rechts naast Nieuwe hemel. Open: Victor kijkt.
 - 10/11/2026, Claude Code: kern pulseerde wild bij terugkeer naar een venster dat al even openstond: de ademgolf was `sin(tijd sinds laden x tempo)`, en elke tempowissel (inslapen, wakker worden) joeg de fase op; nu een opgetelde fase `breath` (Valkuilen in `docs/kennis.md`). Open: Victor kijkt of het weg is.
 - 10/11/2026, Claude Code: de ogen van de kern volgen de muis over het hele venster, ook boven de lijst en het wiel (`gaze` in `scene.js`, vanuit `window`); de rest van de scène reageert enkel boven de scène. Open: Victor kijkt.
+- 10/11/2026, Claude Code: een versleepte bol landt waar je hem loslaat (`ringAngleAt` keert de projectie om; vroeger `atan2` op het scherm, dat de draaiing van de scène negeerde). Open: Victor sleept.
