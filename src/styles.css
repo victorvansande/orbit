@@ -1083,25 +1083,26 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 
 /* ---- Venster: nieuwe taak ---- */
 .composer {
+  --horizon: 150px;   /* hoogte van het orbitje boven de kaart (B Horizon); het venster reserveert die ruimte zelf */
   width: min(480px, calc(100vw - 32px));
   max-width: none; max-height: none;
   margin: auto;
-  padding: 0; border: 0;
+  padding: var(--horizon) 0 0; border: 0;
   background: transparent; color: var(--ink);
   overflow: visible;
 }
 .composer::backdrop { background: var(--backdrop); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .composer form {
   position: relative;
-  padding: 128px 28px 22px;
+  padding: 26px 28px 22px;
   background: var(--surface);
   border-radius: 28px;
   box-shadow: 0 40px 90px var(--shadow-3), 0 2px 8px var(--shadow);
 }
+/* onderrand van het canvas = bovenrand van de kaart = de horizon */
 .composer-orb {
-  position: absolute; left: 50%; top: -128px;
-  width: 280px; height: 280px;
-  translate: -50% 0;
+  position: absolute; left: 0; top: calc(-1 * var(--horizon));
+  width: 100%; height: var(--horizon);
   pointer-events: none;
 }
 .composer-meta {
@@ -1121,12 +1122,10 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 .composer-title::placeholder { color: var(--placeholder); }
 .composer-title:focus { border-bottom-color: var(--ink); }
 .composer-title:focus-visible { outline: none; }
-/* Lage schermen (bv. 320 x 568): het orbitje steekt boven het venster uit en viel buiten beeld. Het venster reserveert
-   die ruimte zelf (padding bovenaan) zodat centreren het orbitje meetelt, en alles wordt iets compacter. */
+/* Lage schermen (bv. 320 x 568): een lager orbitje en alles iets compacter. */
 @media (max-height: 760px) {
-  .composer { padding-top: 84px; }
-  .composer form { padding-top: 92px; padding-bottom: 18px; }
-  .composer-orb { width: 196px; height: 196px; top: -88px; }
+  .composer { --horizon: 104px; }
+  .composer form { padding-top: 22px; padding-bottom: 18px; }
 }
 @media (max-width: 360px) {
   .composer form { padding-left: 22px; padding-right: 22px; }
@@ -1839,7 +1838,6 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
 @media (hover: none) { .hud-menu .menu-keys, .controls kbd, .menu-label kbd, .hud-menu kbd { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .composer-orb, .composer-orb.is-swap { animation: none; }
   .composer[open] form, .composer.is-closing form, .composer[open]::backdrop, .composer.is-closing::backdrop { animation-duration: .01s; }
   .track, .tracks, .wheel, .focus-info, .focus-now li, .fn-check::after, .toast { transition-duration: .01s; }
   .track.is-done .t-check::before { animation: none; }
