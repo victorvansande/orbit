@@ -139,6 +139,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let constellation = null;                  // {edges: [[x1,y1,x2,y2]...], t0}
   const sparks = [];                         // lichtpuntjes van een rij in de lijst naar de bol: {x0,y0,x1,y1,t0,level}
   let sleepK = 0, wakeUntil = 0;             // slapende kern (0 = wakker, 1 = slaapt)
+  let breath = 0;                            // fase van de ademgolf van de kern (opgeteld per beeld, zie update)
   // vortex: stof dat in het zijaanzicht langs de trechter naar de kern spiraalt; meer en sneller bij een volle lijst
   const dust = Array.from({ length: DUST }, (_, i) => ({ r: 20 + Math.random() * 190, a: Math.random() * TAU, s: 0.55 + Math.random() * 0.9, k: i / DUST }));
   let dustAmount = 0;
@@ -538,6 +539,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const hr = new Date().getHours();
     const asleep = nowCount === 0 && todayCount === 0 && (orbs.size === 0 || hr >= 23 || hr < 6) && now > wakeUntil;
     sleepK = motion ? smooth(sleepK, asleep ? 1 : 0, asleep ? 0.6 : 4, dt) : (asleep ? 1 : 0);
+    // De ademgolf vertraagt in de slaap. De fase wordt opgeteld, niet berekend als tijd x tempo: met de tijd sinds het
+    // laden (na een uur 3600 s) maakte elke verandering van tempo (wakker worden, inslapen) de fase razendsnel, en de kern
+    // pulseerde wild bij terugkeer naar een venster dat al even openstond (Victor, 10/11/2026).
+    if (motion) breath += dt * (1.3 - 0.85 * sleepK);
 
     // kern: urgentie, kleur, tempo en aantal golven glijden mee met de taken
     const target = nowCount > 0 ? 1 + Math.min(nowCount - 1, 3) / 3 : todayCount > 0 ? 0.5 : 0;
@@ -1315,7 +1320,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const front = p * (rMax + 8);   // golf rolt van het midden tot net buiten het raster
     const rippleAmp = still ? 0 : (0.5 + 0.9 * strength) * (1 - p * 0.6) * live * waveVis * beatScale;
     const breatheAmp = still ? 0 : (0.12 + 0.1 * sleepK) * (1 - live) * waveVis;
-    const t = now / 1000;
     const spacing = Math.min(rMax / (DPR >= 2 ? 5.2 : 4.2), Math.max(CORE_SPACING * (DPR >= 2 ? CORE_FINE : 1), (DPR >= 2 ? CORE_MIN_PX_SHARP : CORE_MIN_PX) / cam.s));
     const grow = spacing / CORE_SPACING;                     // grover raster, grotere puntjes
     const eyes = faceState(now, rMax, spacing, z);
@@ -1331,7 +1335,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       const edgeSoft = 1 - smoothstep(0.82, 1.04, uR);
       const base = (0.2 + 1.08 * Math.pow(1 - uR, 0.68)) * (0.72 + 0.28 * edgeSoft);
       const bump = rippleAmp ? Math.exp(-(((d.r - front) / (3.2 * grow)) ** 2)) * rippleAmp : 0;
-      const breathe = breatheAmp ? breatheAmp * Math.sin(t * (1.3 - 0.85 * sleepK) - d.r * 0.25) : 0;
+      const breathe = breatheAmp ? breatheAmp * Math.sin(breath - d.r * 0.25) : 0;
       let gulp = 0;
       if (tw) for (const age of tw) gulp += 0.9 * (1 - age / 0.4) * Math.exp(-(((d.r - age / 0.32 * (rMax + 8)) / (3.2 * grow)) ** 2));
       const ink = eyes.ink(d.x, d.y);
