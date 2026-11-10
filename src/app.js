@@ -2440,33 +2440,34 @@ function giftSection() {
   return sec;
 }
 function giftTile(g) {
+  // G1 Inkt (Victor, 10/11/2026, in plaats van de schakelaar): de hele tegel is de knop. Aan krijgt ze een zweem van het
+  // metaal van de rang met een fijn zeshoekig raster, die openvloeit vanaf de tik; uit staat het rangteken in grafiet.
   const got = g.rank <= giftLevel;
-  const li = el('li', `feat gift${got ? ' is-got' : ''}`);
-  li.style.setProperty('--tier', `var(--tier-${rankMetal(g.rank)})`);
-  li.style.setProperty('--rank-cut', 'var(--fill)');
+  const li = el('li');
+  const tile = el(got ? 'button' : 'div', `feat gift${got ? ' is-got' : ''}`);
+  tile.style.setProperty('--tint', `var(--tier-${rankMetal(g.rank)})`);
   const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   icon.setAttribute('viewBox', RANK_BOX); icon.setAttribute('class', 'feat-badge gift-badge'); icon.setAttribute('aria-hidden', 'true');
   icon.innerHTML = rankSvg(g.rank);
-  const body = el('div', 'feat-body');
-  const name = el('p', 'feat-name', got ? tx(`gift.${g.id}`) : tx('gift.locked'));
-  if (got) {   // schakelaar S1 Baan: dunne capsule met een holle stip, aan = de stip schuift en vult zich in het metaal van de rang
-    const sw = el('button', 'gift-switch');
-    sw.type = 'button';
-    sw.setAttribute('role', 'switch');
-    sw.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));
-    sw.setAttribute('aria-label', tx(`gift.${g.id}`));
-    sw.append(el('i'));
-    li.sw = sw;   // eigen kolom rechts, verticaal in het midden van de tegel: de uitleg loopt er niet onder
-    sw.addEventListener('click', () => {
+  const body = el('span', 'feat-body');
+  body.append(el('span', 'feat-name', got ? tx(`gift.${g.id}`) : tx('gift.locked')),
+    el('span', 'feat-desc', got ? tx(`gift.${g.id}.desc`) : tx('gift.lockedDesc', { n: g.rank, name: RANK_NAMES[g.rank - 1] })));
+  tile.append(icon, body);
+  if (got) {
+    tile.type = 'button';
+    tile.setAttribute('role', 'switch');
+    tile.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));
+    tile.addEventListener('click', e => {
+      const r = tile.getBoundingClientRect(), mouse = e.detail > 0;   // toetsenbord: vanuit het midden
+      tile.style.setProperty('--x', `${mouse ? e.clientX - r.left : r.width / 2}px`);
+      tile.style.setProperty('--y', `${mouse ? e.clientY - r.top : r.height / 2}px`);
       if (giftPrefs.off[g.id]) delete giftPrefs.off[g.id]; else giftPrefs.off[g.id] = 1;
       saveGiftPrefs(giftPrefs);
       applyGifts(giftLevel);
-      sw.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));   // ter plaatse, zodat de stip zichtbaar schuift
+      tile.setAttribute('aria-checked', String(!giftPrefs.off[g.id]));   // ter plaatse, zodat de inkt zichtbaar vloeit
     });
   }
-  body.append(name, el('p', 'feat-desc', got ? tx(`gift.${g.id}.desc`) : tx('gift.lockedDesc', { n: g.rank, name: RANK_NAMES[g.rank - 1] })));
-  li.append(icon, body);
-  if (got) li.append(li.sw);
+  li.append(tile);
   return li;
 }
 function checkFeats(pop) {

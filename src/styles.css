@@ -14,6 +14,7 @@
   --line-soft: rgba(27, 27, 34, .06);
   --fill: rgba(27, 27, 34, .045);
   --fill-2: rgba(27, 27, 34, .07);
+  --gift-wash: 13%;   /* geschenk aan: zweem van het metaal in de tegel (G1 Inkt) */
   --chip: #fff;
   --on-ink: #fff;
   --on-late: #fff;
@@ -85,6 +86,7 @@
   --line-soft: rgba(255, 255, 255, .06);
   --fill: rgba(255, 255, 255, .06);
   --fill-2: rgba(255, 255, 255, .1);
+  --gift-wash: 16%;
   --chip: #26262C;
   --on-ink: #0F0F12;
   --stroke: rgba(255, 255, 255, .28);
@@ -1980,21 +1982,28 @@ body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, 
 .feat-meta { margin: 5px 0 0; font: 400 var(--fs-micro)/1 var(--mono); letter-spacing: .06em; color: var(--ink-2); }
 .feat-meta:empty { display: none; }
 /* Geschenken bij een nieuwe rang (src/core/gifts.js), in een eigen tabblad naast Prestaties (P3, Victor 10/11/2026; de tabs
-   zoals die van het Archief): tegels zoals de prestaties, met het rangteken van die rang en een schakelaar waar bij een
-   prestatie de punten staan (S1 Baan; eigen kolom, verticaal in het midden van de tegel): dunne capsule in grafiet met een holle stip; aan schuift de stip en vult zich in het
-   metaal van die rang, de capsule krijgt er een zweem van. Zichtbaar 30 x 16, trefzone 44 x 36. */
+   zoals die van het Archief): tegels zoals de prestaties, met het rangteken van die rang, waarbij per
+   geschenk de hele tegel de knop is (G1 Inkt, Victor 10/11/2026; de schakelaar S1 vond hij te iOS): aan = een zweem van
+   het metaal met een fijn zeshoekig raster, openvloeiend vanaf de tik (clip-path vanuit --x/--y); uit = het rangteken in grafiet. */
 .feats-tabs { margin-top: -4px; }   /* zichtbare tekst: 20 px onder de uitleg en boven de lijst (de tabknoppen zijn 32 px hoog) */
 .feats-tabs + .feats-list { margin-top: -2px; }
 .gifts-note { margin: 0 0 10px; font-size: var(--fs-small); line-height: 1.4; color: var(--ink-2); }
 .gift-badge { width: 30px; height: 30px; }
 .is-gifts .feats-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }   /* negen tegels: de laatste (rang 10) over de volle breedte, geen losse tegel */
-.gift-switch { position: relative; flex: none; align-self: center; width: 30px; height: 16px; margin: 0; padding: 0; border: 0; border-radius: 99px; background: none; box-shadow: inset 0 0 0 1px var(--ink-3); cursor: pointer; transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
-.gift-switch::after { content: ''; position: absolute; inset: -10px -7px; }
-.gift-switch i { position: absolute; top: 3px; left: 3px; width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.3px var(--ink-3); transition: transform .2s var(--ease), background-color .2s var(--ease), box-shadow .2s var(--ease); }
-.gift-switch[aria-checked="true"] { background: color-mix(in srgb, var(--tier) 16%, transparent); box-shadow: inset 0 0 0 1px var(--tier); }
-.gift-switch[aria-checked="true"] i { transform: translateX(14px); background: var(--tier); box-shadow: none; }
-@media (hover: hover) { .gift-switch:hover { box-shadow: inset 0 0 0 1px var(--ink-2); } .gift-switch[aria-checked="true"]:hover { box-shadow: inset 0 0 0 1px var(--tier); } }
-@media (prefers-reduced-motion: reduce) { .gift-switch, .gift-switch i { transition: none; } }
+.gift { position: relative; isolation: isolate; overflow: hidden; height: 100%; --tier: var(--tint); --rank-cut: var(--gift-bg); --gift-bg: color-mix(in srgb, var(--ink) 4.5%, var(--surface)); }
+.gift .feat-desc { display: block; }
+button.gift { width: 100%; margin: 0; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: background-color .2s var(--ease); }
+button.gift[aria-checked="false"] { --tier: var(--ink-3); }
+.gift-badge * { transition: fill .35s var(--ease), stroke .35s var(--ease); }
+button.gift::before { content: ''; position: absolute; inset: 0; z-index: -1; background:
+    radial-gradient(circle, color-mix(in srgb, var(--tint) 30%, transparent) .75px, transparent 1.15px) 0 0 / 8px 6.93px,
+    radial-gradient(circle, color-mix(in srgb, var(--tint) 30%, transparent) .75px, transparent 1.15px) 4px 3.46px / 8px 6.93px,
+    color-mix(in srgb, var(--tint) var(--gift-wash), var(--surface));
+  clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path .55s var(--ease); }
+button.gift[aria-checked="true"] { --rank-cut: color-mix(in srgb, var(--tint) var(--gift-wash), var(--surface)); }
+button.gift[aria-checked="true"]::before { clip-path: circle(150% at var(--x, 50%) var(--y, 50%)); }
+@media (hover: hover) { button.gift[aria-checked="false"]:hover { background: var(--fill-2); } }
+@media (prefers-reduced-motion: reduce) { button.gift, button.gift::before, .gift-badge * { transition: none; } }
 /* melding bovenaan bij een nieuwe prestatie: Komeet zonder kader (Victor, 02/11/2026, voorstel C uit vijf; de ingelaten pil
    was niet logisch boven een pagina die eronder doorscrolt). Ontstaat zacht ter plaatse (Victor, 02/11/2026: geen veeg of
    inglijden): de vlek papier bloeit open, de ring van de badge tekent zich, de ster draait open, dan de tekst. Verdwijnt zacht. */
