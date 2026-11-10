@@ -177,6 +177,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   let orbVeil = 1;
   let tempo = TEMPO.normaal, spinScale = 1, beatScale = 1, waveVis = 1;
   let pointer = { x: -1, y: -1, inside: false };
+  let gaze = { x: -1, y: -1, on: false };    // waar de ogen van de kern naar kijken: de muis over het hele venster, niet enkel boven de scène
   // Gezicht van de kern ("Uitgespaard", gekozen door Victor): twee oogvormen uitgespaard in het raster, met een pupil
   // in inktkleur die je cursor volgt (anders rustig rondkijkt), af en toe knippert, blij kijkt bij afvinken en 's
   // nachts slaperig is. look: kijkrichting (-1..1), lookGoal: waar hij heen wil kijken (null = vrij).
@@ -1374,8 +1375,8 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const dt = Math.min(0.1, Math.max(0, (now - face.last) / 1000)); face.last = now;
     // kijkrichting: naar de cursor, naar een gevraagd doel, of rustig rondkijken
     let goal = face.lookGoal;
-    if (!goal && pointer.inside && project(0, 0, z, false)) {
-      const dx = pointer.x - pt.x, dy = pointer.y - pt.y, m = Math.hypot(dx, dy) || 1;
+    if (!goal && gaze.on && project(0, 0, z, false)) {
+      const dx = gaze.x - pt.x, dy = gaze.y - pt.y, m = Math.hypot(dx, dy) || 1;
       goal = [dx / m * Math.min(1, m / 220), dy / m * Math.min(1, m / 220)];
     }
     if (!goal) goal = still ? [0, 0.1] : [0.35 * Math.sin(t * 0.31), 0.1 + 0.2 * Math.sin(t * 0.19 + 1)];
@@ -1902,6 +1903,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     setHover(h);
     canvas.style.cursor = h.orb ? (orbs.get(h.orb)?.due ? 'pointer' : 'grab') : onCoreSpot(p) ? 'pointer' : 'default';
   });
+
+  // De ogen volgen de muis over het hele scherm, ook boven de takenlijst, het wiel en de vensters (Victor, 10/11/2026);
+  // de rest van de scène (buiging, lamp, kanteling, aanwijzen) blijft enkel reageren boven de scène zelf.
+  window.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    const p = local(e);
+    gaze = { ...p, on: true };
+  }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', () => { gaze.on = false; });
+  window.addEventListener('blur', () => { gaze.on = false; });
 
   canvas.addEventListener('pointerleave', () => {
     pointer.inside = false;
