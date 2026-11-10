@@ -8,7 +8,7 @@ import { createStreak } from './scene/streak.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync/sync.js';
 import { mirror, readMirror } from './data/backup.js';
-import { setMatrix, morphMatrix, twinkleDot, igniteFlame } from './scene/matrix.js';
+import { setMatrix, morphMatrix, twinkleDot, igniteFlame, liveFlame } from './scene/matrix.js';
 import { loadDone, saveDone, cleanDone, isFiller, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
   loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView, streakInfo } from './data/stats.js';
 import { QUOTES } from './focus/quotes.js';
@@ -573,6 +573,7 @@ function showStatDm() {
   statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS);
 }
 const statSeen = () => { const r = $('stat-total').getBoundingClientRect(); return !document.hidden && !$('stats').hidden && r.width > 0 && r.bottom > 0 && r.top < innerHeight; };
+liveFlame($('stat-total'), { still: statStill, hot: () => $('stat-total').classList.contains('is-hot'), seen: statSeen });   // het vlammetje leeft
 function swapStatDm() {
   const dm = $('stat-total'), label = $('stat-stars-label');
   if (!statSeen()) { statSwapT = setTimeout(swapStatDm, 1000); return; }

@@ -135,6 +135,45 @@ export function morphMatrix(root, text, { still = false, only = false, onSwap, m
   root._morphT = requestAnimationFrame(step);
 }
 
+// Vlammetje dat leeft (Victor, 10/11/2026: "Kan je het vlammetje wat laten animeren in haar matrix box?"): de onderste
+// rijen blijven staan, de bovenkant wisselt tussen een paar vormen in hetzelfde raster. Rood: levendig flakkeren
+// (140 tot 260 ms per beeld, de punt wiegt links en rechts); grafiet: traag smeulen (enkel de punt dooft en komt terug).
+// Loopt op zijn eigen klok zolang er een vlammetje in de teller staat, niet tijdens een wissel, niet buiten beeld.
+const FLAMES = [
+  ['..#..', '.##..', '.###.', '#.###', '#..##', '##.##', '.###.'],
+  ['...#.', '..##.', '.###.', '##.##', '#..##', '##.##', '.###.'],
+  ['.#...', '.##..', '.###.', '###.#', '##..#', '##.##', '.###.'],
+  ['..#..', '..##.', '.####', '#.###', '#..##', '##.##', '.###.'],
+  ['.....', '..#..', '.###.', '#.###', '#..##', '##.##', '.###.'],
+];
+export function liveFlame(root, { still, hot, seen }) {
+  let frame = 0;
+  const tick = () => {
+    const flame = root.querySelector('.dm-flame:not(.is-ignite)');
+    if (!flame || root._morphT || still() || !seen()) {
+      if (flame && frame) { frame = 0; paint(flame, FLAMES[0]); }
+      setTimeout(tick, 600); return;
+    }
+    const lively = hot();
+    const choices = lively ? [0, 1, 2, 3] : [0, 4];
+    let next = choices[Math.floor(Math.random() * choices.length)];
+    if (next === frame) next = choices[(choices.indexOf(next) + 1) % choices.length];
+    frame = next;
+    paint(flame, FLAMES[frame]);
+    setTimeout(tick, lively ? 140 + Math.random() * 120 : 420 + Math.random() * 380);
+  };
+  const paint = (flame, rows) => {
+    const dots = flame.querySelectorAll('circle');
+    dots.forEach((c, i) => {
+      const on = rows[Math.floor(i / 5)]?.[i % 5] === '#';
+      if (c.classList.contains('o') === on) return;
+      c.setAttribute('class', on ? 'o n' : 'g');   // n: zonder de oplicht-animatie van een gewoon cijfer
+      c.setAttribute('r', on ? 0.4 : 0.33);
+    });
+  };
+  setTimeout(tick, 600);
+}
+
 // Vlammetje ontsteken (dagen op rij erbij): de stippen van het vlammetje kleuren van onder naar boven rood met een
 // klein opspringen, daarna stijgen drie vonkjes op. hot() zet de klasse die de kleur geeft; de rest is CSS.
 export function igniteFlame(root, hot) {
