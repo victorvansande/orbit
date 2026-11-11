@@ -28,7 +28,7 @@ import { createTimer, timerState, saveTimerState, TIMER_KEY } from './focus/time
 import { createGlass } from './focus/glass.js';
 import { loadScores, saveScores, mergeScores, scoresSig, createScoreStore, isScoreKey } from './data/scores.js';
 import { FEATS, FEATS_KEY, RANK_NAMES, GROUPS, groupName, loadFeats, saveFeats, mergeFeats, recordDone, recordEvent, recordFocus, backfill, purge, evaluate, revoke } from './data/feats.js';
-import { softReveal, whiteBurst, smallNight, coreWave, monthGate, createWall } from './scene/fx.js';
+import { softReveal, whiteBurst, smallNight, coreWave, monthGate, createWall, emberGlow } from './scene/fx.js';
 import { turnStyle, TURN_STYLES } from './scene/turn.js';
 import { loadRecap, saveRecap, monthKey, monthStart, monthStats, drawPoster, posterBlob, posterName } from './data/recap.js';
 
@@ -261,8 +261,8 @@ let hotTask = null, hotLevel = null;
 
 // Zwart gat (Z1 Raster, Victor 10/11/2026): een bol erin slepen verwijdert de taak, zoals het prullenbakje, met Ongedaan
 // maken. Desktop: altijd rechts onder de boog van het wiel; gsm en liggend: pas zichtbaar als je een bol vastneemt.
-const hole = createHole({ reducedMotion, permanent: matchMedia('(min-width: 1000px) and (min-height: 501px)'), minimal: () => minimalFx, onEaten: () => scene.discardHeld() });
-document.body.append(hole.el, hole.fx);
+const hole = createHole({ reducedMotion, permanent: matchMedia('(min-width: 1000px) and (min-height: 501px)'), minimal: () => minimalFx });
+document.body.append(hole.fx);   // het gat zelf hangt in de scène (hole.js, place)
 function dropInHole(id) { deleteTask(id, groupsEl.querySelector(`.track[data-id="${CSS.escape(id)}"]`)); }
 
 const scene = createScene($('scene'), {
@@ -618,6 +618,7 @@ function playStreakUp() {
     const ignite = () => {
       streakHold = null;
       igniteFlame(dm, statHot);
+      setTimeout(() => emberGlow(dm.querySelector('.dm-flame')), 450);   // gloed zodra het vlammetje helemaal rood is (de stippen kleuren in 0,45 s)
       setTimeout(() => {
         morphMatrix(dm, statText(), { only: true, ms: 900, onSwap: () => { label.textContent = statLabel(); statAria(); } });
       }, 650);

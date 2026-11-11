@@ -2074,18 +2074,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (edges) constellation = { edges, t0: Math.max(performance.now(), lastStarAt) + 1200 };   // na de nieuwe ster
     },
     clearSelection,
-    // het zwarte gat heeft de vastgehouden bol helemaal opgeslokt (te lang te dichtbij): het slepen stopt, de taak is weg
-    discardHeld() {
-      if (drag?.type !== 'orb' || !drag.active) return;
-      const d = drag;
-      drag = null; dropLevel = null;
-      canvas.style.cursor = 'default';
-      hole?.setDragging(false);
-      if (!orbs.delete(d.id)) return;
-      layoutOffsets();
-      setHover({ orb: null, level: null });
-      onDiscard(d.id);
-    },
     // glyph sonar vanuit de kern; target: id van de taak waar de kern over praat (die bol krijgt een echo)
     // quiet + timeTo: enkel de echo rond de bol, getimed op de zachte golf van fx.js (coreWave) in plaats van de tekens
     sonar(target = null, { quiet = false, timeTo = null } = {}) { if (!reducedMotion.matches && !minimal) sonar = { t0: performance.now(), target, quiet, timeTo }; },

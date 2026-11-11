@@ -94,7 +94,7 @@ export function* lensSteps() {
   const crit = (lo + hi) / 2;
   const P = [], S = [];
   const add = a => { const q = ray2d(a); if (q.r0 != null && q.r0 >= 2) P.push([a, q.r0]); if (q.r1 != null && q.r1 >= 2) S.push([a, q.r1]); };
-  const aMax = Math.atan(FOV * 1.7);
+  const aMax = Math.atan(FOV * 4.2);   // tot ongeveer 250 px van het gat: daar grijpt het gat de bol al vast
   for (let i = 1; i <= 420; i++) { add(aMax * i / 420); yield; }
   for (let i = 0; i <= 260; i++) { add(crit * (0.7 + 0.75 * i / 260)); yield; }
   for (let k = 1; k <= 28; k++) { const e = Math.pow(10, -k / 4); add(crit * (1 + e)); add(crit * (1 - e)); yield; }

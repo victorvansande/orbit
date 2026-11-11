@@ -14,10 +14,13 @@ import { trace, emit, lensSteps, backdropSteps, stepFree, shift, weight, R_IN, F
 
 const TIME = 13;          // M per seconde: één klok voor de schijf en voor wat erin valt
 const N = 120;            // deeltjes per bol
-const STIFF = 0.0065;     // samenhang van de bol (veerconstante per massa): de enige vrije materiaalkeuze
+// Uitvergroot (Victor, 11/11/2026: "De effecten mogen gewoon meer uitgesproken zijn aangezien het zwarte gat al zo klein
+// is"): de vorm volgt de echte getijden (verschil in gewicht over de bol), de sterkte is opgeschroefd.
+const STIFF = 5.3e-5;     // samenhang van de bol tegen het verschil in gewicht: rek x2 op 30 M, losscheuren vanaf 22 M
+const SAG = 2500;         // hoe ver de hele bol naar het gat toe gezogen wordt per eenheid gewicht (op 50 M ongeveer 1 M)
 const TEAR = 3.2;         // een deeltje scheurt los zodra het verder dan zoveel bolstralen van zijn plek getrokken is
-const R_HOLD = 6;         // binnen de binnenste stabiele baan kan niets blijven hangen: daar neemt het gat de bol uit je hand
-const HIT = 0.32, REACH = 0.56;   // loslaten binnen HIT x breedte verwijdert; binnen REACH neemt het gat de bol over
+const R_HOLD = 6;         // binnen de binnenste stabiele baan kan niets blijven hangen: dichter komt de bol niet
+const HIT = 0.42, REACH = 1.7;    // loslaten binnen HIT x breedte verwijdert; binnen REACH (ongeveer 200 px) grijpt het gat de bol al vast
 const SECOND = 14;        // het tweede beeld is in het echt ongeveer zoveel keer zwakker dan getekend (anders zie je het niet)
 const RED = [196, 24, 52];
 const THROW = 10;          // de aanwijzer beweegt veel sneller dan het licht op deze schaal: zijn snelheid telt voor een tiende
@@ -26,9 +29,9 @@ const DEPTH = 14;         // het stippenraster ligt zoveel M achter het gat
 const W_DESK = 120, H_DESK = 74, W_SMALL = 96, H_SMALL = 59;
 
 const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
-const BANDS = Array.from({ length: 64 }, (_, i) => 0.55 + 0.9 * hash(i + 1));
+const BANDS = Array.from({ length: 64 }, (_, i) => 0.4 + 1.2 * hash(i + 1));
 
-export function createHole({ reducedMotion, permanent, minimal = () => false, onEaten = () => {} }) {
+export function createHole({ reducedMotion, permanent, minimal = () => false }) {
   const el = document.createElement('div');
   el.className = 'hole';
   el.setAttribute('aria-hidden', 'true');
@@ -53,7 +56,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
   new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
 
-  const shown = () => (permanent.matches ? !document.body.classList.contains('is-focus') : dragging || loose.length > 0) && !document.hidden;
+  const shown = () => (permanent.matches ? true : dragging || loose.length > 0) && !document.body.classList.contains('is-focus') && !document.hidden;
   const still = () => reducedMotion.matches || minimal();
   const size = () => (permanent.matches ? [W_DESK, H_DESK] : [W_SMALL, H_SMALL]);
   function center() { const b = cv.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2, b.width]; }
@@ -84,11 +87,11 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
   // heeft (Ω = r^-1,5), loopt de binnenkant voor op de buitenkant en smeert de vlek uit tot een boog.
   function tendSpots(tm) {
     spots = spots.filter(s => tm - s.t0 < s.life);
-    if (spots.length < 6 && tm >= nextSpot) {
+    if (spots.length < 12 && tm >= nextSpot) {
       const q = k => hash(spotSeed * 7.13 + k), r0 = R_IN + 0.6 + q(1) * 7.5;
-      spots.push({ r0, phi0: q(2) * Math.PI * 2, t0: tm, life: (1.6 + q(3) * 1.6) * Math.PI * 2 * Math.pow(r0, 1.5), amp: spotSeed % 2 ? 1 + q(4) * 1.4 : -0.55 - q(4) * 0.3, sr: 0.6 + q(5) * 0.7 });
+      spots.push({ r0, phi0: q(2) * Math.PI * 2, t0: tm, life: (1 + q(3) * 1.5) * Math.PI * 2 * Math.pow(r0, 1.5), amp: spotSeed % 3 ? 1.6 + q(4) * 2 : -0.7 - q(4) * 0.25, sr: 0.5 + q(5) * 0.8 });
       spotSeed++;
-      nextSpot = tm + 14 + q(6) * 40;
+      nextSpot = tm + 4 + q(6) * 14;
     }
   }
   function shade(tm, hits) {
@@ -105,7 +108,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
       }
       v += emit(h.r) * (BANDS[i0 & 63] * (1 - fr) + BANDS[(i0 + 1) & 63] * fr) * Math.max(0.12, hot) * h.g ** 4 * (h.k ? 1.25 : 1);
     }
-    return 1 - Math.exp(-0.62 * v);   // zachte begrenzing: de heldere kant brandt niet uit tot een vlek
+    return 1 - Math.exp(-0.5 * v);   // zachte begrenzing: de heldere kant brandt niet uit tot een vlek
   }
   function draw(tm) {
     const [w, h] = size();
@@ -131,17 +134,22 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
   }
 
   /* ---- De bol als wolk ---- */
-  // Vastgehouden: de bol hangt aan de aanwijzer. Elk deeltje voelt zijn eigen gewicht (dat van iets wat stil hangt:
-  // 1 / (r² sqrt(1 - 2/r)), oneindig aan de horizon) en wordt teruggehouden door de samenhang van de bol. De kant bij
-  // het gat weegt meer dan de andere kant, dus de bol zakt door en rekt uit tot een druppel naar het gat toe. Ver weg is
-  // dat een fractie van een pixel; dichtbij groeit het gewicht sneller dan de samenhang kan volgen: een deeltje loopt
-  // weg, scheurt los en valt, het eerst aan de punt. Zo loopt de bol leeg langs een draad.
+  // Vastgehouden: de bol hangt aan de aanwijzer, maar het gat trekt hem naar zich toe (`SAG`) en rekt hem uit. Elk
+  // deeltje voelt het verschil tussen zijn eigen gewicht (dat van iets wat stil hangt: 1 / (r² sqrt(1 - 2/r)), oneindig
+  // aan de horizon) en dat van het midden, tegen de samenhang van de bol in: de kant bij het gat zakt verder door, de
+  // verre kant blijft achter, dus een druppel en dan een draad naar het gat. Waar het verschil sneller groeit dan de
+  // samenhang kan volgen, scheurt een deeltje los en valt. Zolang je de bol dichtbij houdt, blijft hij leegstromen
+  // langs die draad (losgescheurde deeltjes groeien aan zijn achterkant weer aan); weg is hij pas als je loslaat.
   function stepCloud(dt) {
-    const c = cloud, k = 1 - Math.exp(-9 * dt), cap = 0.45 * TIME * dt;
+    const c = cloud, k = 1 - Math.exp(-9 * dt), cap = 0.6 * TIME * dt;
+    const rc = Math.hypot(c.C[0], c.C[1]), ex = c.C[0] / rc, ey = c.C[1] / rc, gc = weight(rc);
     for (const p of c.parts) {
       if (p.gone) continue;
       const x = c.C[0] + p.ox + p.dx, y = c.C[1] + p.oy + p.dy, r = Math.max(2.06, Math.hypot(x, y)), gp = weight(r);
-      let mx = (-x / r) * gp / STIFF - p.dx, my = (-y / r) * gp / STIFF - p.dy;
+      let tx = ((-x / r) * gp + ex * gc) / STIFF, ty = ((-y / r) * gp + ey * gc) / STIFF;
+      const out = tx * ex + ty * ey;   // de verre kant: wordt van het gat weg getrokken, maar je vinger houdt hem tegen
+      if (out > 0) { tx -= out * ex; ty -= out * ey; }
+      let mx = tx - p.dx, my = ty - p.dy;
       mx *= k; my *= k;
       const m = Math.hypot(mx, my);
       if (m > cap) { mx *= cap / m; my *= cap / m; }
@@ -150,14 +158,18 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
       if (Math.hypot(p.dx, p.dy) > TEAR * c.a || nr < 3.4) {
         p.gone = true; c.left--;
         const f = Math.sqrt(1 - 2 / Math.max(2.1, nr)), dtc = Math.max(1e-3, dt * TIME);
-        loose.push({ x: nx, y: ny, ux: mx / dtc / f, uy: my / dtc / f, rgb: c.rgb, dot: c.dot });
+        if (loose.length < 1600) loose.push({ x: nx, y: ny, ux: mx / dtc / f, uy: my / dtc / f, rgb: c.rgb, dot: c.dot });
       }
     }
-    if (c.left < N * 0.3 || c.fall) {   // het gat heeft hem: de rest valt mee en de taak is weg
-      cloud = null;
-      dropAll(c, c.fall);
-      onEaten();
+    // aangroeien aan de kant van je vinger: de bol blijft herkenbaar zolang je hem vasthoudt (ongeveer 60 deeltjes per s)
+    c.grow += dt * 60;
+    for (let n = 0; n < 40 && c.grow >= 1 && c.left < N; n++) {
+      const p = c.parts[Math.floor(Math.random() * N)];
+      if (!p.gone) continue;
+      c.grow--;
+      p.gone = false; p.dx = p.dy = 0; c.left++;
     }
+    if (c.left >= N) c.grow = 0;
   }
   function dotAt(g, hx, hy, k, dpr, x, y, ux, uy, rgb, dot) {
     const r = Math.hypot(x, y), P = lens.primary(Math.min(r, lens.rMax));
@@ -239,18 +251,24 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
   function wake() { if (!raf) raf = requestAnimationFrame(frame); }
   function update() { el.classList.toggle('is-on', shown()); wake(); }
   permanent.addEventListener('change', () => { field = null; place(); update(); });
+  addEventListener('resize', () => { place(); update(); });
+  setTimeout(() => { place(); update(); }, 1200);
   document.addEventListener('visibilitychange', update);
   new MutationObserver(update).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
-  // gsm en liggend: rechtsonder in de scène, links van het wiel als dat ernaast staat
+  // Gsm en liggend: rechtsonder in de scène, liggend links van het wiel; enkel zichtbaar tijdens het slepen (Victor,
+  // 11/11/2026: "doe toch maar enkel zichtbaar op gsm als je sleept. Op pc altijd."). Het gat hangt in de scène
+  // (`.stage`) en scrolt mee.
   function place() {
+    const st = document.getElementById('stage');
+    if (st && el.parentNode !== st) st.append(el);
     if (permanent.matches) { el.style.left = el.style.top = ''; return; }
-    const sc = document.getElementById('scene')?.getBoundingClientRect(), wh = document.getElementById('wheel')?.getBoundingClientRect();
-    if (!sc) return;
-    let right = Math.min(sc.right, innerWidth) - 14;
+    const sc = document.getElementById('scene')?.getBoundingClientRect(), wh = document.getElementById('wheel')?.getBoundingClientRect(), box = st?.getBoundingClientRect();
+    if (!sc || !box) return;
+    let right = sc.right - 14;
     if (wh && wh.width && wh.left > sc.left + sc.width / 2 && wh.left < right && wh.bottom > sc.bottom - 80) right = wh.left - 8;   // liggend: het wiel staat rechts
-    const bottom = Math.min(sc.bottom, innerHeight) - 12;
-    el.style.left = `${Math.round(right - W_SMALL)}px`; el.style.top = `${Math.round(bottom - H_SMALL)}px`;
+    const bottom = Math.min(sc.bottom, innerHeight) - 12, left = right - W_SMALL, top = bottom - H_SMALL;
+    el.style.left = `${Math.round(left - box.left)}px`; el.style.top = `${Math.round(top - box.top)}px`;
   }
 
   // Wat er van de bol over is, valt: elk deeltje op zijn eigen baan. Met `moving` krijgt het de snelheid en richting van
@@ -279,7 +297,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
   function newCloud(rgb, rpx, k, rc) {
     const a = rpx / pxPerM(rc, k), parts = [];   // straal van de bol in M
     for (let i = 0; i < N; i++) { const rr = a * Math.sqrt((i + 0.5) / N), th = i * 2.399963; parts.push({ ox: rr * Math.cos(th), oy: rr * Math.sin(th), dx: 0, dy: 0, gone: false }); }
-    return { rgb, a, C: [rc, 0], parts, left: N, dot: Math.max(0.7, rpx * 0.21) };
+    return { rgb, a, C: [rc, 0], parts, left: N, grow: 0, dot: Math.max(0.7, rpx * 0.21) };
   }
 
   return {
@@ -319,11 +337,11 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
       while (trail.length > 2 && now - trail[0][0] > 90) trail.shift();
       const over = rho <= HIT * w, taken = !still() && Boolean(lens) && rho <= REACH * w;
       if (taken) {
-        const k = w / 2 / FOV, raw = lens.radius(rho / k), rc = Math.max(R_HOLD, raw);
-        if (!cloud) cloud = newCloud(rgb, rpx, k, rc);
+        const k = w / 2 / FOV, raw = lens.radius(rho / k), held = Math.max(R_HOLD, raw);
+        const rc = Math.max(R_HOLD, held - Math.min(0.35 * held, SAG * weight(held)));   // het gat zuigt de bol naar zich toe
+        if (!cloud) cloud = newCloud(rgb, rpx, k, held);
         const ux = rho > 0.5 ? dx / rho : 1, uy = rho > 0.5 ? dy / rho : 0;
         cloud.C = [ux * rc, uy * rc];
-        if (raw < R_HOLD) cloud.fall = true;   // te diep: het volgende beeld laat het gat hem vallen (zie stepCloud)
       } else cloud = null;
       wake();
       return { over, taken };

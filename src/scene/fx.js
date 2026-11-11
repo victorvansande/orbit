@@ -375,6 +375,36 @@ export function smallNight({ star, stars = [], scene = null, onOpen = () => {}, 
 }
 
 
+/* ---- Gloed uit het vlammetje (dagen op rij) ---- */
+// Victor, 11/11/2026: "kan er dan eenzelfde gloed uitkomen als uit een nieuwe ster die aan de hemel verschijnt, maar dan
+// in het rood van orbit, vertrekkende vanuit het vlammetje dat ook rood wordt?" Zelfde vorm en tijdsverloop als de gloed
+// rond een nieuwe ster in smallNight (radiaal verloop, bloeit in 0,35 s open met overschot, zakt in 1,6 s terug), in
+// --core, vanuit het midden van het vlammetje; daarna dooft hij zacht uit.
+export function emberGlow(el) {
+  if (!el) return;
+  const ov = overlay('fx-night'), probe = document.createElement('canvas').getContext('2d');
+  probe.fillStyle = css('--core');
+  const red = [1, 3, 5].map(i => parseInt(probe.fillStyle.slice(i, i + 2), 16)).join(',');
+  const easeOut = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  const t0 = performance.now(), END = 2.4;
+  let b = el.getBoundingClientRect();   // het getal slaat om terwijl de gloed loopt: dan verdwijnt dit vlammetje, de plek blijft
+  function frame(now) {
+    ov.fresh();
+    const g = ov.g, u = (now - t0) / 1000;
+    if (el.isConnected) b = el.getBoundingClientRect();
+    g.clearRect(0, 0, ov.W, ov.H);
+    if (u >= END || !b.width) { ov.cv.remove(); return; }
+    const x = b.left + b.width / 2, y = b.top + b.height / 2, r0 = Math.max(b.width, b.height) / 2;
+    const k = easeOut(u / 0.35) * (1 + 1.8 * (1 - easeOut(u / 1.6))), R = 8 + r0 * 4 * k;
+    const a = (document.documentElement.dataset.theme === 'dark' ? 0.46 : 0.34) * (1 - smoothstep(1.6, END, u));   // rood op donker leest zwakker
+    const glow = g.createRadialGradient(x, y, 0, x, y, R);
+    glow.addColorStop(0, `rgba(${red},${a})`); glow.addColorStop(0.45, `rgba(${red},${a * 0.35})`); glow.addColorStop(1, `rgba(${red},0)`);
+    g.fillStyle = glow; g.fillRect(x - R, y - R, R * 2, R * 2);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
 /* ---- Typographic wall: de lege lijst ---- */
 // Als alles afgevinkt is: een muur van wat je onlangs afvinkte, in kapitaaltjes, bijna onzichtbaar. Waar je aanwijst
 // (of waar een zacht licht rondzwerft) worden de woorden leesbaar.
