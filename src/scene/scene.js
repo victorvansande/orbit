@@ -1881,8 +1881,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     return best;
   }
 
-  function pick(x, y) {
-    let best = null, bd = 10;
+  // slack: hoeveel px naast de bol nog telt; op touch ruimer, zodat de trefzone 36 tot 44 px is
+  const TOUCH_SLACK = 16;
+  function pick(x, y, slack = 10) {
+    let best = null, bd = slack;
     for (const o of orbs.values()) {
       if (o.leaving || o.sx == null) continue;
       const d = Math.hypot(o.sx - x, o.sy - y) - o.sr;
@@ -1966,7 +1968,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     if (e.button !== 0) return;
     const p = local(e);
     pointer = { ...p, inside: true };
-    const h = pick(p.x, p.y);
+    const h = pick(p.x, p.y, e.pointerType === 'touch' ? TOUCH_SLACK : 10);
     if (e.pointerType !== 'mouse') setHover(h);
     canvas.setPointerCapture(e.pointerId);
     if (h.orb) drag = { type: 'orb', id: h.orb, x0: p.x, y0: p.y, active: false, fixed: Boolean(orbs.get(h.orb)?.due) };
@@ -2042,6 +2044,18 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   }
   canvas.addEventListener('pointerup', e => endDrag(e, false));
   canvas.addEventListener('pointercancel', e => endDrag(e, true));
+  // Op gsm laat de scène verticaal scrollen (touch-action: pan-y), zodat je over de scène heen naar de lijst kunt.
+  // Begon een aanraking op een versleepbare bol, dan nam de browser elke verticale beweging over om te scrollen en
+  // stuurde hij pointercancel: de bol viel los (Victor, 11/11/2026). Nu houdt de scène zo'n gebaar zelf vast; elders op
+  // de scène blijft scrollen werken. touch-action kan tijdens een gebaar niet meer veranderen, preventDefault op de
+  // eerste aanraking wel (iOS: ook op elke beweging).
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    const r = canvas.getBoundingClientRect(), t = e.touches[0];
+    const h = pick(t.clientX - r.left, t.clientY - r.top, TOUCH_SLACK);
+    if (h.orb && !orbs.get(h.orb)?.due) e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => { if (drag?.type === 'orb' && !drag.fixed) e.preventDefault(); }, { passive: false });
 
   requestAnimationFrame(frame);
 
