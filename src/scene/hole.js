@@ -62,14 +62,25 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   const pair = [0, 0];
   let field = null, filled = 0, lens = null, sky = null, dragging = false, raf = 0, lastT = 0, fxDirty = false;
   let sRef = Infinity, echoT0 = 0, echoAmp = 9;   // kortste weg van het licht (nul van de reistijd), begin en sterkte van de laatste opflakkering
-  let bloat = 0, MASS = 1, clock = 0;   // klik: begin van het opzwellen en de massa nu (1 = gewoon); klok van de schijf in M
+  let bloat = 0, MASS = 1, clock = 0, wakeUp = 0, lookX = null, lookY = null;   // klik: begin van het opzwellen en de massa nu (1 = gewoon); klok van de schijf in M
   let cloud = null;       // de vastgehouden bol: { rgb, a, C, parts: [{ ox, oy, dx, dy, gone }], left, dot }
   let loose = [];         // losse deeltjes in vrije val: { x, y, ux, uy, rgb, dot }
   let trail = [];         // laatste posities van de aanwijzer, voor de snelheid bij het loslaten
-  let INK = [0, 0, 0], NIGHT = [0, 0, 0];
+  let INK = [0, 0, 0], HOLE = [0, 0, 0], NIGHTC = null;
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const rgbOf = c => { const g = fx.getContext('2d'); g.fillStyle = c; const h = g.fillStyle; return h.startsWith('#') ? [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)) : h.match(/[\d.]+/g).slice(0, 3).map(Number); };
-  function recolor() { INK = rgbOf(css('--ink')); NIGHT = rgbOf(css('--night')); wake(); }
+  // achtergrond van het gat: papier in licht, nacht in donker (de lichtste van de twee tokens is het papier)
+  function recolor() { INK = rgbOf(css('--ink')); const bg = rgbOf(css('--bg')); NIGHTC = rgbOf(css('--night')); HOLE = bg[0] + bg[1] + bg[2] > 384 ? bg : NIGHTC; loadGrain(); wake(); }
+  // dezelfde korrel als .grain (styles.css), als patroon voor de schaduw van het grote gat
+  let grain = null;
+  function loadGrain() {
+    const el = document.querySelector('.grain');
+    if (!el) return;
+    const st = getComputedStyle(el), url = st.backgroundImage.match(/url\("?(.*?)"?\)$/)?.[1];
+    const next = { op: parseFloat(st.opacity) || 0, blend: st.mixBlendMode === 'normal' ? 'source-over' : st.mixBlendMode, pat: grain?.pat };
+    grain = next;
+    if (url && !next.pat) { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; c.getContext('2d').drawImage(im, 0, 0); grain.pat = fx.getContext('2d').createPattern(c, 'repeat'); }; im.src = url; }
+  }
   new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
 
@@ -122,11 +133,19 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     const s = W / field.cols, rMax = s * 0.72;   // vetter (Victor, 11/11/2026: "het mag wat vetter/dikker getekend worden")
     g.fillStyle = `rgb(${INK})`;
     g.beginPath();
+    // wakker: de schijf licht op; kijkt mee: het meest aan de kant van de bol (zoals de ogen van de kern de muis volgen)
+    let look = 0, la = 0;
+    if (wakeUp > 0.001 && lookX != null) { const b = cv.getBoundingClientRect(); la = Math.atan2(lookY - (b.top + b.height / 2), lookX - (b.left + b.width / 2)); look = wakeUp; }
     for (const c of field.cells) {
       if (!c.res) continue;
       let v = 0;
       for (const hits of c.res) v += shade(tm, hits);
       v /= c.res.length;
+      if (wakeUp > 0.001) {
+        let m = 1 + 0.4 * wakeUp;   // iets zachter dan in het voorstel: samen met het meekijken stapelt het
+        if (look) { const q = Math.cos(Math.atan2((c.y - 0.5) * h, (c.x - 0.5) * w) - la); if (q > 0) m *= 1 + 0.9 * look * q * q; }
+        v = 1 - Math.pow(1 - Math.min(0.999, v), m);   // zelfde zachte begrenzing, meer licht
+      }
       if (v < 0.02) continue;
       const r = rMax * Math.sqrt(v);
       g.moveTo(c.x * W + r, c.y * H); g.arc(c.x * W, c.y * H, r, 0, Math.PI * 2);
@@ -219,21 +238,42 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     if (!lens || (!cloud && !loose.length && MASS <= 1.001)) return;
     fxDirty = true;
     const [hx, hy, w] = center(), k = w / 2 / FOV;
-    if (MASS > 1.001) {   // opgezwollen: de schaduw (straal 3√3 M) met de fotonring op haar rand
-      const R = Math.sqrt(27) * k / D * MASS * dpr, a = Math.min(1, (MASS - 1) / 0.4), pitch = 2.4 * dpr;
-      // Een vol vlak: wat erachter ligt (ook de HTML, die niet kan buigen) moet echt verdwijnen. Een rasterdruk met
-      // gaatjes liet de tekst erdoor en werd door de afronding op pixels een geweven gaas (geprobeerd, 11/11/2026).
-      g.fillStyle = `rgba(${NIGHT},${a})`;
+    if (MASS > 1.001) {   // opgezwollen: G3 Halo (Victor, 11/11/2026, uit ontwerp/zwartgat/groot.html; G1 Fotonringen en G2 Inzoomen afgewezen)
+      const R = Math.sqrt(27) * k / D * MASS * dpr, grow = Math.min(1, (MASS - 1) / 0.4);
+      // De schaduw in de kleur van de achtergrond van het gat, zoals in het kleine beeld: in licht is licht inkt en
+      // donker papier, in donker omgekeerd. Een vol vlak, want ook de HTML erachter (die niet kan buigen) moet weg.
+      g.fillStyle = `rgba(${HOLE},${grow})`;
       g.beginPath(); g.arc(hx * dpr, hy * dpr, R, 0, Math.PI * 2); g.fill();
-      // Fotonring als stippellijn net buiten de schaduw. Zolang er nog schijf over is, draagt hij haar doppler mee
-      // (de kant die naar je toe draait, links, helderder); is de schijf opgeslokt, dan is het enkel nog het licht van
-      // alles erachter, rondom even sterk.
-      const ring = Math.min(0.9, (MASS - 1) / 2), lop = Math.max(0, 1 - (MASS - 1) / 2.5), Rr = R + 1.6 * dpr, n = Math.ceil(Math.PI * 2 * Rr / (pitch * 0.85));
-      g.fillStyle = `rgba(${INK},${ring})`;
+      // avondtint en korrel van het papier (.warmth en .grain liggen onder dit canvas) lopen door in de schaduw, anders
+      // een vlak dat lichter en gladder is dan de pagina eromheen
+      if (HOLE !== NIGHTC) {
+        g.save(); g.clip();
+        const wm = document.querySelector('.warmth'), ws = wm && getComputedStyle(wm), wo = ws ? parseFloat(ws.opacity) || 0 : 0;
+        if (wo > 0.002) { g.globalAlpha = wo * grow; g.globalCompositeOperation = ws.mixBlendMode === 'normal' ? 'source-over' : ws.mixBlendMode; g.fillStyle = ws.backgroundColor; g.fillRect(hx * dpr - R, hy * dpr - R, 2 * R, 2 * R); }
+        if (grain?.pat) { g.globalAlpha = grain.op * grow; g.globalCompositeOperation = grain.blend; g.fillStyle = grain.pat; g.fillRect(hx * dpr - R, hy * dpr - R, 2 * R, 2 * R); }
+        g.restore();
+      }
+      // Halo: het gas van de opgeslokte schijf gloeit nog rond de schaduw. Zeshoekig rooster van stippen, grootte =
+      // helderheid: een smalle piek op de fotonring (net buiten de schaduw) en een brede gloed die naar buiten uitdooft
+      // (r^-6), helderder aan de kant die naar je toe draait (links), met trage klonters die meedraaien op de klok van
+      // de schijf (die vertraagt met de massa). Zacht naar nul, geen harde buitenrand.
+      const a = Math.min(1, (MASS - 1) / 1.2), p = 3.2 * dpr, row = p * 0.866, Rp = R * 1.04, out = R * 1.8, cx = hx * dpr, cy = hy * dpr;
+      const W2 = fx.width, H2 = fx.height;
+      g.fillStyle = `rgba(${INK},${a})`;
       g.beginPath();
-      for (let i = 0; i < n; i++) {
-        const th = i / n * Math.PI * 2, b = 0.62 + 0.38 * lop * -Math.cos(th), r = pitch * 0.42 * Math.sqrt(b), x = hx * dpr + Math.cos(th) * Rr, y = hy * dpr + Math.sin(th) * Rr;
-        g.moveTo(x + r, y); g.arc(x, y, r, 0, Math.PI * 2);
+      for (let j = Math.floor(Math.max(0, cy - out) / row); j <= Math.min(H2, cy + out) / row; j++) {
+        const y = j * row, off = j % 2 ? p / 2 : 0;
+        for (let i = Math.floor((Math.max(0, cx - out) - off) / p); i <= (Math.min(W2, cx + out) - off) / p; i++) {
+          const x = i * p + off, dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy);
+          if (r < R || r > out) continue;
+          const th = Math.atan2(dy, dx), u = r / R;
+          const clump = 1 + 0.35 * Math.sin(5 * th - clock * 0.18 * Math.pow(u * 3, -1.5) + 1.3) * Math.sin(3 * th + clock * 0.02);
+          const I = (1.1 * Math.exp(-0.5 * ((r - Rp) / (R * 0.03)) ** 2) + 0.6 * Math.pow(1 / u, 6)) * (0.5 + 0.5 * -Math.cos(th)) * clump;
+          const v = Math.min(1, I) - 0.04;
+          if (v <= 0) continue;
+          const rr = p * 0.62 * Math.sqrt(v / 0.96);
+          g.moveTo(x + rr, y); g.arc(x, y, rr, 0, Math.PI * 2);
+        }
       }
       g.fill();
     }
@@ -308,7 +348,12 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     }
     // klok van de schijf als opgetelde fase: rond een gat van massa M lopen alle tijdschalen M keer trager, dus bij een
     // klik vertraagt de stroming en de echo mee terwijl de massa aanzwelt (nooit tijd x tempo: dat springt)
-    clock += dt * TIME / MASS;
+    // Een bol vastgenomen (V1 Wakker + V3 Kijkt mee, Victor 11/11/2026, uit ontwerp/zwartgat/vastnemen.html; V2 Bereik
+    // afgewezen): het gat wordt wakker, snel aan (0,18 s), trager weer in rust (0,35 s)
+    const wantWake = dragging && !still() ? 1 : 0;
+    wakeUp += (wantWake - wakeUp) * (1 - Math.exp(-dt / (wantWake ? 0.18 : 0.35)));
+    if (Math.abs(wantWake - wakeUp) < 0.003) wakeUp = wantWake;
+    clock += dt * TIME / MASS * (1 + 0.6 * wakeUp);   // de stroming gaat iets sneller
     const live = shown(), tm = still() ? 0 : clock;
     if (live) draw(tm);
     drawFx(dt);
@@ -318,7 +363,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     power = still() || Math.abs(goal - power) < 0.004 ? goal : power + (goal - power) * (1 - Math.exp(-7 * dt));
     if (power) { const c = center(); HX = c[0]; HY = c[1]; KPX = c[2] / 2 / FOV; }
     // de lus loopt enkel zolang er iets beweegt of nog gerekend wordt
-    if ((live && (!still() || filled < (field?.cells.length ?? 1))) || cloud || loose.length || fxDirty || bloat || power !== goal) raf = requestAnimationFrame(frame);
+    if ((live && (!still() || filled < (field?.cells.length ?? 1))) || cloud || loose.length || fxDirty || bloat || power !== goal || wakeUp !== wantWake) raf = requestAnimationFrame(frame);
     else lastT = 0;
   }
   function wake() { if (!raf) raf = requestAnimationFrame(frame); }
@@ -402,10 +447,15 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       return 2;
     },
     // een bol wordt vastgenomen of losgelaten: op gsm verschijnt het gat
-    setDragging(on) { dragging = on; if (on) { place(); trail = []; } update(); },
+    setDragging(on) {
+      dragging = on;
+      if (on) { place(); trail = []; lookX = lookY = null; if (!still() && clock - echoT0 > 30) { echoT0 = clock - 2; echoAmp = 7; } }   // één lichtecho bij het vastnemen, iets zachter dan de gewone
+      update();
+    },
     // De versleepte bol staat op (x, y), met kleur en straal op het scherm. Geeft terug of loslaten hier verwijdert
     // (`over`) en of het gat de bol nu zelf tekent (`taken`: de scène laat hem dan weg).
     hold(x, y, rgb, rpx, glow = 0) {
+      lookX = x; lookY = y;
       if (!shown()) return { over: false, taken: false };
       const [hx, hy, w] = center(), dx = x - hx, dy = y - hy, rho = Math.hypot(dx, dy), now = performance.now();
       trail.push([now, x, y]);

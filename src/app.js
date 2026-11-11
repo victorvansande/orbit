@@ -2021,7 +2021,8 @@ renderSound();
 
 /* ---- Effecten: Alle of Minimaal ---- */
 // Minimaal zet alle extra effecten uit (intro, gloed, raster dat buigt en klopt, schokgolf, vallende ster,
-// sterrenbeeld, spoor op de baan, lichtpuntje, vortex, sonar, muur, avondtint, bakje water, fonkelende klok).
+// sterrenbeeld, spoor op de baan, lichtpuntje, vortex, sonar, muur, avondtint, bakje water, fonkelende klok,
+// zwart gat: stroming, echo, wolk, opzwellen en wakker worden bij het vastnemen van een bol; het gat zelf blijft werken).
 // Wat blijft: de scène zelf (ringen, kometen, kern met gezicht, sterren) en het uitfonkelen bij afvinken.
 const FX_KEY = 'priority-orbit.fx.v1';
 let minimalFx = false;

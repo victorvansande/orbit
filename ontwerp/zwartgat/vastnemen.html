@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Orbit gat wacht</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Drie voorstellen voor wat het gat doet zodra je een bol vastneemt. De rekenmodule src/scene/gravity.js zit hier
+   letterlijk in; de pagina erachter is een nabootsing van de hoek rechtsonder van Orbit. */
+:root {
+  --bg: #EBE8DF; --surface: #F8F6F0; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #7A7A83; --line: rgba(27,27,34,.1);
+  --night: #15151B;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1); --night: #050507; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1); --night: #050507; color-scheme: dark }
+* { box-sizing: border-box; }
+html { overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14.5px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 56px; padding-inline: 16px; display: grid; gap: 22px; }
+.lab { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+h1 { font: 600 28px/1.2 var(--sans); margin: 6px 0 0; text-wrap: balance; }
+.lead { color: var(--ink-2); margin: 10px 0 0; max-width: 76ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 99px; background: none; color: var(--ink-2); font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+#stage { width: 100%; aspect-ratio: 8 / 5; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); display: block; background: var(--bg); }
+#prog { font: 500 11px/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.grid h3 { font: 500 12px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; margin: 0 0 6px; }
+.grid p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="lab">Orbit · Zwart gat · een bol vastnemen</p>
+    <h1>Het gat merkt dat je een bol vastneemt</h1>
+    <p class="lead">Drie voorstellen, afgespeeld in een nabootsing van de hoek rechtsonder van Orbit op desktop, op ware grootte. Een bol wordt vastgenomen, wat rondgesleept (nog buiten het bereik van het gat) en weer losgelaten. Zet Vergroot aan om het gat van dichtbij te zien.</p>
+  </header>
+  <div class="bar">
+    <div class="seg" id="modes"><button data-v="v1" aria-pressed="true">V1 Wakker</button><button data-v="v2" aria-pressed="false">V2 Bereik</button><button data-v="v3" aria-pressed="false">V3 Kijkt mee</button></div>
+    <div class="seg" id="zoom"><button data-v="1" aria-pressed="true">Ware grootte</button><button data-v="3" aria-pressed="false">Vergroot</button></div>
+    <div class="seg" id="theme"><button data-v="light" aria-pressed="true">Licht</button><button data-v="dark" aria-pressed="false">Donker</button></div>
+  </div>
+  <canvas id="stage" aria-label="Nabootsing van de hoek rechtsonder van Orbit met het zwarte gat en een bol die wordt vastgenomen"></canvas>
+  <p id="prog">Lichtstralen rekenen</p>
+  <div class="grid">
+    <div><h3>V1 Wakker</h3><p>Zodra je een bol vastneemt, wordt het gat wakker: de schijf licht op (er komt iets aan om op te eten), de stroming gaat iets sneller en één lichtecho loopt door de schijf en de fotonring. Laat je los, dan zakt het weer naar rust.</p></div>
+    <div><h3>V2 Bereik</h3><p>Rond het gat verschijnt een fijne stippelcirkel op de plek waar loslaten de taak verwijdert, traag draaiend in de richting van de schijf. Het zegt het meest letterlijk: hierin kun je hem kwijt. Weg bij loslaten.</p></div>
+    <div><h3>V3 Kijkt mee</h3><p>De schijf licht op aan de kant van de bol en die heldere kant volgt hem terwijl je sleept, zoals de ogen van de kern de muis volgen. Het gat heeft hem gezien. Weg bij loslaten.</p></div>
+  </div>
+</div>
+<script>
+// ---- src/scene/gravity.js, letterlijk ----
+/* ---- Zwaartekracht rond een niet-draaiend zwart gat (Schwarzschild) ---- */
+// Zuivere rekenfuncties voor het zwarte gat (src/scene/hole.js); geen DOM. Eenheden G = c = M = 1: horizon r = 2,
+// fotonbaan r = 3 (kritische botsparameter b = 3√3), binnenste stabiele cirkelbaan r = 6.
+// Bronnen van de vergelijkingen: lichtbanen en deeltjesbanen volgen de vergelijking van Binet voor Schwarzschild,
+// u'' + u = 3u² (licht) en u'' + u = 1/L² + 3u² (materie), hier geschreven als een centrale versnelling in
+// cartesische coördinaten (r de omtrekstraal van Schwarzschild); getijden en roodverschuiving uit de metriek zelf.
+
+const D = 4000;                        // afstand van de camera: een verre toeschouwer, zodat de schaal op het hele scherm dezelfde is
+const PXM = 2.8;                       // schermpixels per M bij een gat van 120 px breed
+const ELEV = 7.5 * Math.PI / 180;      // hoogte van de camera boven het vlak van de schijf
+const R_IN = 6, R_OUT = 17;            // schijf: van de binnenste stabiele baan tot 17
+const FOV = 60 / (PXM * D);             // halve beeldbreedte (tangens)
+const CAM = [0, D * Math.sin(ELEV), D * Math.cos(ELEV)];
+const FWD = [0, -Math.sin(ELEV), -Math.cos(ELEV)], RIGHT = [1, 0, 0], UP = [0, Math.cos(ELEV), -Math.sin(ELEV)];
+
+/* ---- Beeld van de schijf: één lichtstraal terug vanaf de camera ---- */
+// x'' = -3 h² x / r^5 met h = |x × v| geeft exact de lichtbanen. Tot drie kruisingen met de schijf, of gevangen,
+// of voorbij.
+function trace(sx, sy) {
+  let px = CAM[0], py = CAM[1], pz = CAM[2], s = 0;   // s: afgelegde weg (= reistijd van het licht, voor de lichtecho)
+  let vx = FWD[0] + FOV * (sx * RIGHT[0] + sy * UP[0]), vy = FWD[1] + FOV * (sx * RIGHT[1] + sy * UP[1]), vz = FWD[2] + FOV * (sx * RIGHT[2] + sy * UP[2]);
+  const n = Math.hypot(vx, vy, vz); vx /= n; vy /= n; vz /= n;
+  const cx = py * vz - pz * vy, cy = pz * vx - px * vz, cz = px * vy - py * vx, h2 = cx * cx + cy * cy + cz * cz;
+  const acc = (x, y, z) => { const r2 = x * x + y * y + z * z, k = -3 * h2 / (r2 * r2 * Math.sqrt(r2)); return [k * x, k * y, k * z]; };
+  const hits = [];
+  for (let i = 0; i < 3000; i++) {
+    const r = Math.hypot(px, py, pz);
+    if (r < 2.02) return { hits };
+    if (r > 40 && px * vx + py * vy + pz * vz > 0) return { hits };   // voorbij de schijf en op weg naar buiten
+    const dt = Math.max(0.012, 0.06 * (r - 1.6));   // ver weg grote stappen (de baan is daar recht), dichtbij fijn
+    const a1 = acc(px, py, pz);
+    const v2 = [vx + a1[0] * dt / 2, vy + a1[1] * dt / 2, vz + a1[2] * dt / 2], a2 = acc(px + vx * dt / 2, py + vy * dt / 2, pz + vz * dt / 2);
+    const v3 = [vx + a2[0] * dt / 2, vy + a2[1] * dt / 2, vz + a2[2] * dt / 2], a3 = acc(px + v2[0] * dt / 2, py + v2[1] * dt / 2, pz + v2[2] * dt / 2);
+    const v4 = [vx + a3[0] * dt, vy + a3[1] * dt, vz + a3[2] * dt], a4 = acc(px + v3[0] * dt, py + v3[1] * dt, pz + v3[2] * dt);
+    const nx = px + dt / 6 * (vx + 2 * v2[0] + 2 * v3[0] + v4[0]), ny = py + dt / 6 * (vy + 2 * v2[1] + 2 * v3[1] + v4[1]), nz = pz + dt / 6 * (vz + 2 * v2[2] + 2 * v3[2] + v4[2]);
+    const nvx = vx + dt / 6 * (a1[0] + 2 * a2[0] + 2 * a3[0] + a4[0]), nvy = vy + dt / 6 * (a1[1] + 2 * a2[1] + 2 * a3[1] + a4[1]), nvz = vz + dt / 6 * (a1[2] + 2 * a2[2] + 2 * a3[2] + a4[2]);
+    if (py * ny < 0) {
+      const f = py / (py - ny), hx = px + (nx - px) * f, hz = pz + (nz - pz) * f, rr = Math.hypot(hx, hz);
+      if (rr >= R_IN && rr <= R_OUT) {
+        // roodverschuiving van gas op een cirkelbaan: g = sqrt(1 - 3/r) / (1 - Ω L), Ω = r^-1,5, L = impulsmoment van
+        // het foton om de as (we volgen terug, dus het foton zelf beweegt tegen v in)
+        const kx = -(vx + (nvx - vx) * f), kz = -(vz + (nvz - vz) * f), L = hz * kx - hx * kz;
+        hits.push({ r: rr, phi: Math.atan2(hz, hx), g: Math.sqrt(1 - 3 / rr) / (1 - Math.pow(rr, -1.5) * L), k: hits.length, s: s + dt * f });
+        if (hits.length >= 3) return { hits };
+      }
+    }
+    s += dt; px = nx; py = ny; pz = nz; vx = nvx; vy = nvy; vz = nvz;
+  }
+  return { hits };
+}
+// helderheid van de schijf per oppervlak (vorm van Page en Thorne, genormaliseerd op haar maximum)
+const emit = r => { const x = R_IN / r; return Math.max(0, (1 - Math.sqrt(x)) * x * x * x) / 0.0255; };
+/* ---- Lens voor een voorwerp naast het gat ---- */
+// Een puntbron in het hemelvlak (het vlak door het gat, loodrecht op de kijklijn) op afstand r heeft een hoofdbeeld aan
+// haar eigen kant en een tweede beeld aan de overkant, vlak bij de fotonring (het licht loopt driekwart rond het gat).
+// Door de bolsymmetrie volstaat één doorsnede: een straal vanaf de camera onder hoek α kruist het hemelvlak een eerste
+// keer (hoofdbeeld van een bron op die afstand) en, als hij genoeg afbuigt, een tweede keer aan de andere kant.
+function ray2d(alpha, plane = 0) {
+  let x = D, y = 0, vx = -Math.cos(alpha), vy = Math.sin(alpha);
+  const h2 = (x * vy - y * vx) ** 2;
+  const acc = (px, py) => { const r2 = px * px + py * py, k = -3 * h2 / (r2 * r2 * Math.sqrt(r2)); return [k * px, k * py]; };
+  let r0 = null, r1 = null, back = null, turned = false;
+  for (let i = 0; i < 20000; i++) {
+    const r = Math.hypot(x, y);
+    if (r < 2.0005) return { r0, r1, back, cap: true };
+    if (r > 90 && x * vx + y * vy > 0 && (!plane || x < -plane - 1)) return { r0, r1, back, cap: false };
+    const dt = Math.max(0.004, 0.04 * (r - 1.9));
+    const a1 = acc(x, y);
+    const v2 = [vx + a1[0] * dt / 2, vy + a1[1] * dt / 2], a2 = acc(x + vx * dt / 2, y + vy * dt / 2);
+    const v3 = [vx + a2[0] * dt / 2, vy + a2[1] * dt / 2], a3 = acc(x + v2[0] * dt / 2, y + v2[1] * dt / 2);
+    const v4 = [vx + a3[0] * dt, vy + a3[1] * dt], a4 = acc(x + v3[0] * dt, y + v3[1] * dt);
+    const nx = x + dt / 6 * (vx + 2 * v2[0] + 2 * v3[0] + v4[0]), ny = y + dt / 6 * (vy + 2 * v2[1] + 2 * v3[1] + v4[1]);
+    if (vx > 0) turned = true;   // omgekeerd: die straal ziet het vlak erachter niet meer rechtstreeks
+    if (plane && back == null && !turned && x > -plane && nx <= -plane) back = y + (ny - y) * ((x + plane) / (x - nx));
+    if (r0 == null && x > 0 && nx <= 0 && y > 0) r0 = y + (ny - y) * (x / (x - nx));
+    else if (r0 != null && r1 == null && x < 0 && nx >= 0 && y < 0) r1 = -(y + (ny - y) * (x / (x - nx)));   // verder volgen: gevangen of niet bepaalt de schaduwrand
+    vx += dt / 6 * (a1[0] + 2 * a2[0] + 2 * a3[0] + a4[0]); vy += dt / 6 * (a1[1] + 2 * a2[1] + 2 * a3[1] + a4[1]);
+    x = nx; y = ny;
+  }
+  return { r0, r1, cap: false };
+}
+// botsparameter b = L/E van een straal die bij de camera hoek α maakt met de richting naar het gat
+const impact = alpha => D / Math.sqrt(1 / Math.tan(alpha) ** 2 + 1 - 2 / D);
+
+// Tabellen r -> beeldhoek. `primary(r)` en `secondary(r)` geven { tan, b } (tangens van de beeldhoek, botsparameter)
+// of null; `radius(tan)` is het omgekeerde van het hoofdbeeld (waar staat een bron die je op die plek ziet?).
+// In stukjes: `lensSteps()` is een generator die na elke straal even pauzeert (yield) en aan het eind de tabel geeft,
+// zodat het rekenwerk over rustige momenten gespreid kan worden; `lensTable()` rekent alles in één keer (controles).
+const runAll = it => { let r; while (!(r = it.next()).done); return r.value; };
+const lensTable = () => runAll(lensSteps());
+function* lensSteps() {
+  let lo = 1 / D, hi = 12 / D;   // kritische hoek: de rand van de schaduw
+  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (ray2d(m).cap) lo = m; else hi = m; yield; }
+  const crit = (lo + hi) / 2;
+  const P = [], S = [];
+  const add = a => { const q = ray2d(a); if (q.r0 != null && q.r0 >= 2) P.push([a, q.r0]); if (q.r1 != null && q.r1 >= 2) S.push([a, q.r1]); };
+  const aMax = Math.atan(FOV * 6);   // tot ongeveer 360 px van het gat: binnen 300 px grijpt het gat de bol al vast
+  for (let i = 1; i <= 600; i++) { add(aMax * i / 600); yield; }
+  for (let i = 0; i <= 260; i++) { add(crit * (0.7 + 0.75 * i / 260)); yield; }
+  for (let k = 1; k <= 28; k++) { const e = Math.pow(10, -k / 4); add(crit * (1 + e)); add(crit * (1 - e)); yield; }
+  const mono = list => { list.sort((p, q) => p[0] - q[0]); const out = []; for (const e of list) if (!out.length || e[1] > out[out.length - 1][1]) out.push(e); return out; };
+  const p = mono(P), s = mono(S);
+  const at = (list, r) => {   // hoek bij straal r (lineair tussen de steunpunten)
+    if (!list.length || r < list[0][1] || r > list[list.length - 1][1]) return null;
+    let a = 0, b = list.length - 1;
+    while (b - a > 1) { const m = (a + b) >> 1; if (list[m][1] <= r) a = m; else b = m; }
+    const f = (r - list[a][1]) / ((list[b][1] - list[a][1]) || 1), al = list[a][0] + (list[b][0] - list[a][0]) * f;
+    return { tan: Math.tan(al), b: impact(al) };
+  };
+  return {
+    crit: Math.tan(crit),                       // schaduwrand (tangens)
+    rMax: p[p.length - 1][1],
+    primary: r => at(p, r),
+    secondary: r => at(s, r),
+    radius(tan) {
+      const al = Math.atan(tan);
+      if (al <= p[0][0]) return p[0][1];
+      if (al >= p[p.length - 1][0]) return p[p.length - 1][1];
+      let a = 0, b = p.length - 1;
+      while (b - a > 1) { const m = (a + b) >> 1; if (p[m][0] <= al) a = m; else b = m; }
+      return p[a][1] + (p[b][1] - p[a][1]) * (al - p[a][0]) / (p[b][0] - p[a][0]);
+    },
+  };
+}
+
+/* ---- Lens voor het raster achter het gat ---- */
+// Het stippenraster is een vlak op afstand `depth` achter het gat, loodrecht op de kijklijn. Een punt van dat vlak dat
+// je zonder gat op afstand t van het gat zou zien (tangens van de hoek), zie je met gat op twee plekken: het hoofdbeeld
+// aan dezelfde kant, naar buiten geschoven tot voorbij de ring van Einstein, en een tweede beeld aan de overkant,
+// binnen die ring. Licht buigt naar het gat toe, dus beelden schuiven ervan weg. Staat een punt recht achter het gat,
+// dan vloeien de twee beelden samen tot een ring. De helderheid per oppervlak blijft gelijk; het beeld wordt in de
+// richting van het gat samengedrukt (factor `slope`) en dwars uitgerekt (beeldafstand / bronafstand).
+// `primary(t, out)` en `secondary(t, out)` zetten [tangens van het beeld, slope] in `out` en geven false als er geen is.
+// Eén afspraak: de afstandsmaat rond een zwart gat loopt niet gelijk met die van vlakke ruimte (een lichtstraal loopt
+// ongeveer 1 M dichter langs het gat dan haar richting van ver doet verwachten), dus "hetzelfde punt met en zonder gat"
+// ligt niet vanzelf vast. We leggen het raster zo dat punten ver van het gat op hun plaats blijven (`far`, gemeten op
+// 250 M); wat overblijft is de buiging dichtbij.
+const backdropTable = depth => runAll(backdropSteps(depth));
+function* backdropSteps(depth) {
+  const bc = Math.sqrt(27), pts = [];
+  const alphaOf = b => Math.atan(1 / Math.sqrt(D * D / (b * b) - 1 + 2 / D));
+  const ref = alphaOf(250), far = (D + depth) * Math.tan(ref) - ray2d(ref, depth).back;
+  for (let i = 0; i <= 360; i++) {
+    const al = alphaOf(bc + 1e-2 * Math.pow(2.6e4, i / 360)), q = ray2d(al, depth);
+    if (!q.cap && q.back != null) pts.push([Math.tan(al), q.back * (1 + far / Math.hypot(q.back, depth)) / (D + depth)]);
+    yield;
+  }
+  const list = [];
+  for (const e of pts) if (!list.length || e[1] > list[list.length - 1][1]) list.push(e);
+  const find = (v, out) => {
+    if (v < list[0][1]) return false;
+    if (v >= list[list.length - 1][1]) { out[0] = v; out[1] = 1; return true; }   // ver weg: geen merkbare buiging meer
+    let a = 0, b = list.length - 1;
+    while (b - a > 1) { const m = (a + b) >> 1; if (list[m][1] <= v) a = m; else b = m; }
+    const sl = (list[b][0] - list[a][0]) / (list[b][1] - list[a][1]);
+    out[0] = list[a][0] + (v - list[a][1]) * sl; out[1] = sl;
+    return true;
+  };
+  return { primary: (t, out) => find(t, out), secondary: (t, out) => find(-t, out) };
+}
+
+/* ---- Materie: vrije val in de tijd van een verre toeschouwer ---- */
+// Een deeltje {x, y, ux, uy} in zijn baanvlak (u = dx/dτ, eigentijd). Exacte baan: d²x/dτ² = -(1/r³ + 3L²/r^5) x met
+// L = x·uy - y·ux. We stappen in coördinaattijd t (wat een verre toeschouwer meet): dτ = dt (1 - 2/r) / E, met
+// E² = (1 - 2/r)(1 + L²/r²) + (dr/dτ)². Bij de horizon gaat dτ naar nul: het deeltje lijkt te bevriezen.
+// Geeft false zodra het deeltje de horizon zo dicht genaderd is dat het voor de toeschouwer stilstaat.
+function stepFree(p, dt, sub = 6) {
+  const h = dt / sub;
+  for (let i = 0; i < sub; i++) {
+    let r = Math.hypot(p.x, p.y);
+    if (r < 2.004) return false;
+    const L = p.x * p.uy - p.y * p.ux, rd = (p.x * p.ux + p.y * p.uy) / r, f = 1 - 2 / r;
+    const E = Math.sqrt(f * (1 + L * L / (r * r)) + rd * rd);
+    const dtau = h * f / E;
+    p.tau = (p.tau || 0) + dtau;   // verstreken eigentijd (voor de controle tegen de theorie)
+    let k = -(1 / (r * r * r) + 3 * L * L / (r ** 5));
+    p.ux += k * p.x * dtau / 2; p.uy += k * p.y * dtau / 2;
+    p.x += p.ux * dtau; p.y += p.uy * dtau;
+    r = Math.hypot(p.x, p.y);
+    if (r < 2.004) return false;
+    k = -(1 / (r * r * r) + 3 * L * L / (r ** 5));
+    p.ux += k * p.x * dtau / 2; p.uy += k * p.y * dtau / 2;
+  }
+  return true;
+}
+// behouden energie per massa van een deeltje (1 = uit rust op oneindig)
+function energy(p) {
+  const r = Math.hypot(p.x, p.y), L = p.x * p.uy - p.y * p.ux, rd = (p.x * p.ux + p.y * p.uy) / r;
+  return Math.sqrt((1 - 2 / r) * (1 + L * L / (r * r)) + rd * rd);
+}
+// Verhouding ontvangen / uitgezonden frequentie voor licht van een deeltje in het hemelvlak naar de verre camera.
+// Het licht vertrekt in het vlak door de kijklijn, dus loodrecht op de dwarssnelheid van het deeltje: enkel de radiale
+// snelheid en de tijdvertraging tellen. `b` is de botsparameter van dat beeld, `out` of het licht eerst naar buiten gaat
+// (hoofdbeeld) of eerst naar binnen (tweede beeld). Stilstaand: sqrt(1 - 2/r); invallend bij de horizon: naar nul.
+function shift(p, b, out = true) {
+  const r = Math.hypot(p.x, p.y), f = 1 - 2 / r, rd = (p.x * p.ux + p.y * p.uy) / r;
+  const kr = Math.sqrt(Math.max(0, 1 - b * b * f / (r * r))) * (out ? 1 : -1);
+  return f / (energy(p) - kr * rd);
+}
+// gewicht per massa van iets dat stil gehouden wordt op afstand r (wordt oneindig aan de horizon)
+const weight = r => 1 / (r * r * Math.sqrt(1 - 2 / r));
+
+// ---- einde gravity.js ----
+
+const cv = document.getElementById('stage'), g = cv.getContext('2d'), prog = document.getElementById('prog');
+const SW = 800, SH = 500;                      // de hoek rechtsonder van een scherm van 1440 × 900 (vanaf 640, 400)
+const HX = 714, HY = 446, KPX = 60 / FOV;      // midden van het gat en schaal (px per eenheid tangens bij massa 1)
+const TIME = 25, ECHO = 220, FRONT = 0.45, FLARE = 40, BLOAT = 4.3;
+let mode = 'v1', C = {};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const rgbOf = c => { g.fillStyle = c; const h = g.fillStyle; return h.startsWith('#') ? [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)) : h.match(/[\d.]+/g).slice(0, 3).map(Number); };
+function colors() { C = { bg: rgbOf(css('--bg')), ink: rgbOf(css('--ink')), ink3: rgbOf(css('--ink-3')), night: rgbOf(css('--night')), dark: document.documentElement.dataset.theme === 'dark' }; }
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const ease = x => { x = Math.min(1, Math.max(0, x)); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+
+// ---- de stroming en de lichtecho van de schijf, zoals in hole.js ----
+const NR = 26, RINGS = Array.from({ length: NR }, (_, i) => ({ r: 6 + 11 * i / (NR - 1), w: [0, 1, 2].map(k => ({ f: 3 + Math.floor(hash(i * 3 + k) * 7), p: hash(i * 7 + k + 50) * 6.28, a: 0.5 + hash(i * 11 + k) })) }));
+function flow(r, phi, t) {
+  const u = (r - 6) / 11 * (NR - 1), i = Math.max(0, Math.min(NR - 2, Math.floor(u))), fr = u - i;
+  const at = R => { const q = phi - Math.pow(R.r, -1.5) * t; let v = 0, n = 0; for (const w of R.w) { v += w.a * Math.sin(w.f * q + w.p); n += w.a; } return v / n; };
+  return Math.max(0.04, 1 + 0.44 * (at(RINGS[i]) * (1 - fr) + at(RINGS[i + 1]) * fr));
+}
+let sRef = Infinity, echoT0 = 0;
+function shade(tm, hits) {
+  let v = 0;
+  if (tm - echoT0 > ECHO) echoT0 = tm;
+  for (const h of hits) {
+    let m = 0.55 * flow(h.r, h.phi, tm);
+    const ph = tm - (h.s - sRef) - echoT0;
+    if (ph > 0 && ph < FLARE) m += 9 * Math.exp(-0.5 * ((h.r - 6 - ph * FRONT) / 1.1) ** 2) * (1 - ph / FLARE);
+    v += emit(h.r) * m * h.g ** 4 * (h.k ? 1.25 : 1);
+  }
+  return 1 - Math.exp(-0.42 * v);
+}
+
+// ---- vooraf: het beeld van de schijf in een fijn rooster (in eenheden van de massa), en de lens voor het raster ----
+const FX = 1.3, FY = 0.82, ST = 0.0085, NX = Math.round(2 * FX / ST), NY = Math.round(2 * FY / ST);
+const field = new Array(NX * NY);
+let sky = null, ready = false;
+function* prepare() {
+  let n = 0;
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+    const hits = trace(-FX + (i + 0.5) * ST, FY - (j + 0.5) * ST).hits;
+    for (const h of hits) sRef = Math.min(sRef, h.s);
+    field[j * NX + i] = hits.length ? hits : null;
+    if (++n % 400 === 0) yield n / (NX * NY) * 0.8;
+  }
+  const it = backdropSteps(14); let r;
+  while (!(r = it.next()).done) yield 0.8 + 0.2 * Math.random() * 0.1;
+  sky = r.value;
+}
+const job = prepare();
+function pump() {
+  const t0 = performance.now();
+  while (performance.now() - t0 < 12) { const r = job.next(); if (r.done) { ready = true; prog.textContent = 'Klaar · klik op het gat'; return; } prog.textContent = `Lichtstralen rekenen · ${Math.round(r.value * 100)} %`; }
+  setTimeout(pump, 0);
+}
+pump();
+const at = (sx, sy) => { const i = Math.floor((sx + FX) / ST), j = Math.floor((FY - sy) / ST); return i < 0 || j < 0 || i >= NX || j >= NY ? null : field[j * NX + i]; };
+
+// ---- de nagebootste pagina: raster (buigt mee, zoals in Orbit), banen en tekst (buigen niet) ----
+const GRID = []; { const p = 26; for (let j = -2; j < SH / (p * 0.866) + 2; j++) for (let i = -2; i < SW / p + 2; i++) GRID.push([i * p + (j % 2 ? p / 2 : 0), j * p * 0.866]); }
+const CORE = [80, 50];   // de kern van Orbit ligt linksboven buiten beeld
+function drawPage() {
+  g.fillStyle = rgba(C.ink, C.dark ? 0.32 : 0.28);
+  for (const R of [300, 372, 448]) {   // banen als stippellijnen
+    const n = Math.round(R * 6.283 / 9);
+    g.beginPath();
+    for (let i = 0; i < n; i++) { const a = i / n * 6.283, x = CORE[0] + Math.cos(a) * R, y = CORE[1] + Math.sin(a) * R; if (x < -4 || y < -4 || x > SW + 4 || y > SH + 4) continue; g.moveTo(x + 1, y); g.arc(x, y, 1, 0, 6.283); }
+    g.fill();
+  }
+  g.fillStyle = rgba(C.ink3, 1); g.font = '500 11px "Geist Mono", monospace';
+  const lab = 'SCROLL · KLIK OM TOE TE VOEGEN'; let x = 360;
+  for (const ch of lab) { g.fillText(ch, x, 380); x += g.measureText(ch).width + 1.5; }
+  g.font = '400 15px "Geist", sans-serif'; g.fillStyle = rgba(C.ink, 0.9); g.fillText('Week +', 600, 80);
+  g.fillStyle = rgba(C.ink3, 0.9); g.fillText('Maand', 610, 180); g.fillText('Ooit', 640, 280);
+}
+const pair = [0, 0];
+function drawGrid(M, fine) {
+  const KM = KPX * M, r0 = 1.25, A = C.dark ? 0.26 : 0.24;
+  g.fillStyle = rgba(C.ink, A); g.strokeStyle = rgba(C.ink, A); g.lineCap = 'round';
+  const flat = [];
+  g.beginPath();
+  for (const [x, y] of GRID) {
+    const dx = x - HX, dy = y - HY, rho = Math.hypot(dx, dy);
+    if (!sky || rho > 260 * KM / D || !sky.primary(rho / KM, pair)) { g.moveTo(x + r0, y); g.arc(x, y, r0, 0, 6.283); continue; }
+    const ux = rho > 1e-3 ? dx / rho : 1, uy = rho > 1e-3 ? dy / rho : 0, ang = Math.atan2(uy, ux);
+    const half = rho <= r0 ? Math.PI : Math.asin(Math.min(1, r0 / rho));
+    const a = pair[0] * KM, sl = pair[1];
+    flat.push([HX + ux * a, HY + uy * a, r0 * sl, a * half, ang, a, 1]);
+    if (sky.secondary(rho / KM, pair)) {
+      const a2 = pair[0] * KM, thin = r0 * pair[1];
+      if (fine ? thin > 0.02 : thin >= 0.12) flat.push([HX - ux * a2, HY - uy * a2, thin, Math.max(thin, a2 * half), ang + Math.PI, a2, 1]);
+    }
+  }
+  g.fill();
+  for (const [x, y, thin, long, ang, R] of flat) {
+    // te dun voor een pixel: even breed als een halve pixel, met evenredig minder dekking (zelfde hoeveelheid licht)
+    const w = Math.max(thin * 2, 0.5), k = Math.min(1, thin * 2 / 0.5);
+    g.globalAlpha = k;
+    if (long <= thin * 3 && thin * 2 >= 0.5) { g.beginPath(); g.ellipse(x, y, thin, long, ang, 0, 6.283); g.fill(); }
+    else { const h = Math.min(Math.PI, Math.max(0.002, long - thin) / R); g.lineWidth = w; g.beginPath(); g.arc(x - Math.cos(ang) * R, y - Math.sin(ang) * R, R, ang - h, ang + h); g.stroke(); }
+  }
+  g.globalAlpha = 1;
+}
+
+// ---- afspelen: een bol wordt vastgenomen, rondgesleept en losgelaten (om de 7 s) ----
+let t0 = performance.now(), clock = 0, last = performance.now(), zoom = 1, wake = 0, echoAmp = 9;
+const ORB = [262, 150], PATH = [[262, 150], [360, 205], [430, 240], [470, 300], [420, 330], [330, 250], [262, 150]];
+function orbAt(t) {   // 0 tot 1 s in rust, 1 tot 5,6 s vastgehouden en gesleept, daarna terug op zijn baan
+  if (t < 1 || t > 5.6) return { x: ORB[0], y: ORB[1], held: false };
+  const u = Math.min(1, (t - 1) / 4.6) * (PATH.length - 1), i = Math.min(PATH.length - 2, Math.floor(u)), f = ease(u - i);
+  return { x: PATH[i][0] + (PATH[i + 1][0] - PATH[i][0]) * f, y: PATH[i][1] + (PATH[i + 1][1] - PATH[i][1]) * f, held: true };
+}
+function frame(now) {
+  const dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(cv.clientWidth * dpr), H = Math.round(cv.clientHeight * dpr);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  let t = (now - t0) / 1000;
+  if (t > 7) { t0 = now; t = 0; }
+  const o = orbAt(t);
+  wake += ((o.held ? 1 : 0) - wake) * (1 - Math.exp(-dt / (o.held ? 0.18 : 0.35)));
+  if (mode === 'v1' && o.held && !orbAt(t - dt).held) { echoT0 = clock - 2; }
+  clock += dt * TIME * (mode === 'v1' ? 1 + 0.6 * wake : 1);
+  const s = W / SW * zoom, ox = zoom > 1 ? HX - SW / 2 / zoom * 1.0 : 0, oy = zoom > 1 ? HY - SH / 2 / zoom : 0;
+  g.setTransform(s, 0, 0, s, -ox * s, -oy * s);
+  g.fillStyle = rgba(C.bg, 1); g.fillRect(ox, oy, SW / zoom, SH / zoom);
+  drawPage();
+  drawGrid(1, false);
+  // de bol: in de kleur van Week, met de greepring zolang hij vastgehouden wordt
+  g.fillStyle = C.dark ? '#22D68A' : '#0FAE69'; g.beginPath(); g.arc(o.x, o.y, 4.2, 0, 6.283); g.fill();
+  if (o.held) { g.strokeStyle = rgba(C.ink, 0.35); g.lineWidth = 1; g.beginPath(); g.arc(o.x, o.y, 8.2, 0, 6.283); g.stroke(); }
+  if (!ready) { requestAnimationFrame(frame); return; }
+  if (mode === 'v1') drawDiskMod(clock, 1 + 0.55 * wake, null);
+  else if (mode === 'v3') drawDiskMod(clock, 1, wake > 0.01 ? { x: o.x, y: o.y, k: wake } : null);
+  else drawDiskMod(clock, 1, null);
+  if (mode === 'v2' && wake > 0.01) {
+    // stippelcirkel op de plek waar loslaten verwijdert (0,42 x de breedte van het gat = 50 px), traag meedraaiend
+    const R = 50, n = 64, rot = clock * 0.004;
+    g.fillStyle = rgba(C.ink, 0.42 * wake); g.beginPath();
+    for (let i = 0; i < n; i++) { const th = rot + i / n * 6.283, x = HX + Math.cos(th) * R, y = HY + Math.sin(th) * R * 0.9; g.moveTo(x + 0.75, y); g.arc(x, y, 0.75, 0, 6.283); }
+    g.fill();
+  }
+  requestAnimationFrame(frame);
+}
+// het kleine gat zoals in Orbit (120 px breed), met een helderheidsfactor en eventueel een heldere kant naar de bol
+function drawDiskMod(tm, boost, look) {
+  const k = 60, pitch = 2.4, rMax = pitch * 0.72, row = pitch * 0.866;
+  g.fillStyle = rgba(C.ink, 1); g.beginPath();
+  for (let j = Math.floor(-37 / row); j <= 37 / row; j++) {
+    const y = j * row, off = j % 2 ? pitch / 2 : 0;
+    for (let i = Math.floor(-60 / pitch); i <= 60 / pitch; i++) {
+      const x = i * pitch + off, hits = at(x / k, -y / k);
+      if (!hits) continue;
+      let v = shade(tm, hits);
+      if (v < 0.005) continue;
+      let m = boost;
+      if (look) { const a = Math.atan2(look.y - HY, look.x - HX), b = Math.atan2(y, x), c = Math.cos(b - a); m *= 1 + 0.9 * look.k * Math.max(0, c) ** 2; }
+      v = 1 - Math.pow(1 - Math.min(0.999, v), m);   // zelfde zachte begrenzing, meer licht
+      if (v < 0.02) continue;
+      const r = rMax * Math.sqrt(v);
+      g.moveTo(HX + x + r, HY + y); g.arc(HX + x, HY + y, r, 0, 6.283);
+    }
+  }
+  g.fill();
+}
+colors();
+requestAnimationFrame(frame);
+
+
+function setSeg(id, v) { document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v))); }
+document.getElementById('modes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; mode = b.dataset.v; setSeg('modes', mode); t0 = performance.now(); });
+document.getElementById('zoom').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; zoom = Number(b.dataset.v); setSeg('zoom', b.dataset.v); });
+document.getElementById('theme').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; document.documentElement.dataset.theme = b.dataset.v; setSeg('theme', b.dataset.v); colors(); });
+try { if (matchMedia('(prefers-color-scheme: dark)').matches) { document.documentElement.dataset.theme = 'dark'; setSeg('theme', 'dark'); colors(); } } catch (e) {}
+</script>
+</body>
+</html>
