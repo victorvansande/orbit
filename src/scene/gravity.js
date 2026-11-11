@@ -17,7 +17,7 @@ const FWD = [0, -Math.sin(ELEV), -Math.cos(ELEV)], RIGHT = [1, 0, 0], UP = [0, M
 // x'' = -3 h² x / r^5 met h = |x × v| geeft exact de lichtbanen. Tot drie kruisingen met de schijf, of gevangen,
 // of voorbij.
 export function trace(sx, sy) {
-  let px = CAM[0], py = CAM[1], pz = CAM[2];
+  let px = CAM[0], py = CAM[1], pz = CAM[2], s = 0;   // s: afgelegde weg (= reistijd van het licht, voor de lichtecho)
   let vx = FWD[0] + FOV * (sx * RIGHT[0] + sy * UP[0]), vy = FWD[1] + FOV * (sx * RIGHT[1] + sy * UP[1]), vz = FWD[2] + FOV * (sx * RIGHT[2] + sy * UP[2]);
   const n = Math.hypot(vx, vy, vz); vx /= n; vy /= n; vz /= n;
   const cx = py * vz - pz * vy, cy = pz * vx - px * vz, cz = px * vy - py * vx, h2 = cx * cx + cy * cy + cz * cz;
@@ -40,11 +40,11 @@ export function trace(sx, sy) {
         // roodverschuiving van gas op een cirkelbaan: g = sqrt(1 - 3/r) / (1 - Ω L), Ω = r^-1,5, L = impulsmoment van
         // het foton om de as (we volgen terug, dus het foton zelf beweegt tegen v in)
         const kx = -(vx + (nvx - vx) * f), kz = -(vz + (nvz - vz) * f), L = hz * kx - hx * kz;
-        hits.push({ r: rr, phi: Math.atan2(hz, hx), g: Math.sqrt(1 - 3 / rr) / (1 - Math.pow(rr, -1.5) * L), k: hits.length });
+        hits.push({ r: rr, phi: Math.atan2(hz, hx), g: Math.sqrt(1 - 3 / rr) / (1 - Math.pow(rr, -1.5) * L), k: hits.length, s: s + dt * f });
         if (hits.length >= 3) return { hits };
       }
     }
-    px = nx; py = ny; pz = nz; vx = nvx; vy = nvy; vz = nvz;
+    s += dt; px = nx; py = ny; pz = nz; vx = nvx; vy = nvy; vz = nvz;
   }
   return { hits };
 }

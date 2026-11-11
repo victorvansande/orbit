@@ -10,9 +10,9 @@
 //   de rand, wordt roder en dooft uit. Elk deeltje wordt door de lens getekend, met een zwak tweede beeld aan de overkant.
 // Voorstellen: ontwerp/zwartgat/index.html.
 import { tx } from '../core/i18n.js';
-import { trace, emit, lensSteps, backdropSteps, stepFree, shift, weight, R_IN, FOV, D } from './gravity.js';
+import { trace, emit, lensSteps, backdropSteps, stepFree, shift, weight, FOV, D } from './gravity.js';
 
-const TIME = 13;          // M per seconde: één klok voor de schijf en voor wat erin valt
+const TIME = 25;          // M per seconde: één klok voor de schijf en voor wat erin valt
 const N = 120;            // deeltjes per bol
 // Uitvergroot (Victor, 11/11/2026: "De effecten mogen gewoon meer uitgesproken zijn aangezien het zwarte gat al zo klein
 // is"): de vorm volgt de echte getijden (verschil in gewicht over de bol), de sterkte is opgeschroefd.
@@ -29,7 +29,19 @@ const DEPTH = 14;         // het stippenraster ligt zoveel M achter het gat
 const W_DESK = 120, H_DESK = 74, W_SMALL = 96, H_SMALL = 59;
 
 const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
-const BANDS = Array.from({ length: 64 }, (_, i) => 0.4 + 1.2 * hash(i + 1));
+// Stroming: elke ring van de schijf zijn eigen klonterig patroon, meedraaiend met zijn eigen Ω = r^-1,5. Elke ring
+// houdt zijn patroon, dus het wikkelt zich niet op tot ruis (een doorlopende textuur zou dat wel doen).
+const NR = 26, RINGS = Array.from({ length: NR }, (_, i) => ({ r: 6 + 11 * i / (NR - 1), w: [0, 1, 2].map(k => ({ f: 3 + Math.floor(hash(i * 3 + k) * 7), p: hash(i * 7 + k + 50) * 6.28, a: 0.5 + hash(i * 11 + k) })) }));
+function flow(r, phi, t) {
+  const u = (r - 6) / 11 * (NR - 1), i = Math.max(0, Math.min(NR - 2, Math.floor(u))), fr = u - i;
+  const at = R => { const q = phi - Math.pow(R.r, -1.5) * t; let v = 0, n = 0; for (const w of R.w) { v += w.a * Math.sin(w.f * q + w.p); n += w.a; } return v / n; };
+  return Math.max(0.04, 1 + 0.44 * (at(RINGS[i]) * (1 - fr) + at(RINGS[i + 1]) * fr));
+}
+// Lichtecho (R3, gekozen door Victor op 11/11/2026 uit ontwerp/zwartgat/rust.html; R1 Stroming en R2 Hete vlek
+// afgewezen): om de ECHO M loopt een opflakkering aan 0,45 c van de binnenrand naar buiten. Elk punt licht op op het
+// moment van uitzenden plus zijn eigen reistijd (de weglengte s van zijn lichtstraal): eerst de voorkant, dan de
+// achterkant, en ongeveer 16 M later nog eens in de fotonring (licht dat eerst om het gat liep).
+const ECHO = 220, FRONT = 0.45, FLARE = 40;
 
 export function createHole({ reducedMotion, permanent, minimal = () => false }) {
   const el = document.createElement('div');
@@ -45,7 +57,8 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   let power = 0, HX = 0, HY = 0, KPX = 1;   // lens voor het raster van de scène: sterkte (0..1, volgt het verschijnen), midden en schaal
   const pair = [0, 0];
   let field = null, filled = 0, lens = null, sky = null, dragging = false, raf = 0, lastT = 0, fxDirty = false;
-  let spots = [], spotSeed = 1, nextSpot = 0;
+  let sRef = Infinity, echoT0 = 0, echoAmp = 9;   // kortste weg van het licht (nul van de reistijd), begin en sterkte van de laatste opflakkering
+  let star = 0, starHit = false;   // tijdstip van de laatste ster (klik), om er niet twee tegelijk te sturen; heeft ze de binnenrand al bereikt
   let cloud = null;       // de vastgehouden bol: { rgb, a, C, parts: [{ ox, oy, dx, dy, gone }], left, dot }
   let loose = [];         // losse deeltjes in vrije val: { x, y, ux, uy, rgb, dot }
   let trail = [];         // laatste posities van de aanwijzer, voor de snelheid bij het loslaten
@@ -80,35 +93,19 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       c.res = [];
       if (Math.abs(b - 5.4) < 1.5) { for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) c.res.push(trace(c.sx + i * cw / 3, c.sy + j * ch / 3).hits); }
       else c.res.push(trace(c.sx, c.sy).hits);
-    }
-  }
-  // Vlekken in de schijf: heldere (zoals de opflakkeringen die bij het gat in het centrum van de Melkweg gemeten zijn)
-  // en donkere (ijler gas), om en om. Elke vlek ontstaat op een afstand, leeft een paar omlopen en draait mee. Omdat elke afstand haar eigen baansnelheid
-  // heeft (Ω = r^-1,5), loopt de binnenkant voor op de buitenkant en smeert de vlek uit tot een boog.
-  function tendSpots(tm) {
-    spots = spots.filter(s => tm - s.t0 < s.life);
-    if (spots.length < 12 && tm >= nextSpot) {
-      const q = k => hash(spotSeed * 7.13 + k), r0 = R_IN + 0.6 + q(1) * 7.5;
-      spots.push({ r0, phi0: q(2) * Math.PI * 2, t0: tm, life: (1 + q(3) * 1.5) * Math.PI * 2 * Math.pow(r0, 1.5), amp: spotSeed % 3 ? 1.6 + q(4) * 2 : -0.7 - q(4) * 0.25, sr: 0.5 + q(5) * 0.8 });
-      spotSeed++;
-      nextSpot = tm + 4 + q(6) * 14;
+      for (const hits of c.res) for (const h of hits) sRef = Math.min(sRef, h.s);
     }
   }
   function shade(tm, hits) {
     let v = 0;
+    if (tm - echoT0 > ECHO) { echoT0 = tm; echoAmp = 9; }   // vanzelf, om de ECHO M
     for (const h of hits) {
-      const ring = (h.r - R_IN) * 3.1, i0 = Math.floor(ring), fr = ring - i0;
-      let hot = 1;
-      for (const s of spots) {
-        const dr = (h.r - s.r0) / s.sr;
-        if (dr * dr > 9) continue;
-        const age = tm - s.t0, a = h.phi - s.phi0 - Math.pow(h.r, -1.5) * age, d = (a - Math.PI * 2 * Math.round(a / (Math.PI * 2))) / 0.42;
-        if (d * d > 9) continue;
-        hot += s.amp * Math.sin(Math.PI * age / s.life) * Math.exp(-0.5 * (dr * dr + d * d));
-      }
-      v += emit(h.r) * (BANDS[i0 & 63] * (1 - fr) + BANDS[(i0 + 1) & 63] * fr) * Math.max(0.12, hot) * h.g ** 4 * (h.k ? 1.25 : 1);
+      let m = 0.55 * flow(h.r, h.phi, tm);
+      const ph = tm - (h.s - sRef) - echoT0;
+      if (ph > 0 && ph < FLARE) m += echoAmp * Math.exp(-0.5 * ((h.r - 6 - ph * FRONT) / 1.1) ** 2) * (1 - ph / FLARE);
+      v += emit(h.r) * m * h.g ** 4 * (h.k ? 1.25 : 1);
     }
-    return 1 - Math.exp(-0.5 * v);   // zachte begrenzing: de heldere kant brandt niet uit tot een vlek
+    return 1 - Math.exp(-0.32 * v);   // zachte begrenzing: de heldere kant brandt niet uit tot een vlek
   }
   function draw(tm) {
     const [w, h] = size();
@@ -157,8 +154,11 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       const nx = c.C[0] + p.ox + p.dx, ny = c.C[1] + p.oy + p.dy, nr = Math.hypot(nx, ny);
       if (Math.hypot(p.dx, p.dy) > TEAR * c.a || nr < 3.4) {
         p.gone = true; c.left--;
-        const f = Math.sqrt(1 - 2 / Math.max(2.1, nr)), dtc = Math.max(1e-3, dt * TIME);
-        if (loose.length < 1600) loose.push({ x: nx, y: ny, ux: mx / dtc / f, uy: my / dtc / f, rgb: c.rgb, dot: c.dot });
+        // Losgescheurd: met de snelheid waarmee het wegliep, maar zoals bij loslaten: de aanwijzer telt voor een tiende,
+        // nooit naar buiten en met weinig draaiing. Met de volle snelheid kwamen deeltjes in een vaste baan ver rond
+        // het gat terecht en bleven daar hangen (Victor, 11/11/2026).
+        const f = Math.sqrt(1 - 2 / Math.max(2.1, nr)), dtc = Math.max(1e-3, dt * TIME * THROW);
+        if (loose.length < 1600) loose.push(tame({ x: nx, y: ny, ux: mx / dtc / f, uy: my / dtc / f, rgb: c.rgb, dot: c.dot, born: performance.now() }));
       }
     }
     // aangroeien aan de kant van je vinger: de bol blijft herkenbaar zolang je hem vasthoudt (ongeveer 60 deeltjes per s)
@@ -171,11 +171,21 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     }
     if (c.left >= N) c.grow = 0;
   }
-  function dotAt(g, hx, hy, k, dpr, x, y, ux, uy, rgb, dot) {
+  // nooit naar buiten, hooguit 0,4 c, impulsmoment hooguit 3,2 (onder sqrt(12) heeft geen baan een keerpunt)
+  function tame(p) {
+    const r = Math.hypot(p.x, p.y), ex = p.x / r, ey = p.y / r;
+    let vr = Math.min(0, p.ux * ex + p.uy * ey), vt = -p.ux * ey + p.uy * ex;
+    const sp = Math.hypot(vr, vt);
+    if (sp > 0.4) { vr *= 0.4 / sp; vt *= 0.4 / sp; }
+    if (Math.abs(vt) * r > 3.2) vt *= 3.2 / (Math.abs(vt) * r);
+    p.ux = vr * ex - vt * ey; p.uy = vr * ey + vt * ex;
+    return p;
+  }
+  function dotAt(g, hx, hy, k, dpr, x, y, ux, uy, rgb, dot, fade = 1) {
     const r = Math.hypot(x, y), P = lens.primary(Math.min(r, lens.rMax));
     if (!P) return 0;
     const q = { x, y, ux, uy };
-    const z = shift(q, P.b, true), a = Math.min(1, (z / 0.96) ** GAMMA);
+    const z = shift(q, P.b, true), a = Math.min(1, (z / 0.96) ** GAMMA) * fade;
     if (a > 0.02) {
       const t = Math.min(1, Math.max(0, (0.96 - z) * 1.25));   // roodverschuiving: naar rood, en via a naar donker
       g.fillStyle = `rgba(${rgb.map((c, i) => Math.round(c + (RED[i] - c) * t))},${a})`;
@@ -184,7 +194,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     // tweede beeld: aan de overkant, vlak buiten de fotonring; het licht is er driekwart omheen gelopen
     const S = lens.secondary(r);
     if (S) {
-      const z2 = Math.min(1.15, shift(q, S.b, false)), a2 = Math.min(0.85, (z2 / 0.96) ** GAMMA * SECOND * (S.tan / P.tan) * 0.02);
+      const z2 = Math.min(1.15, shift(q, S.b, false)), a2 = Math.min(0.85, (z2 / 0.96) ** GAMMA * SECOND * (S.tan / P.tan) * 0.02) * fade;
       if (a2 > 0.02) {
         g.fillStyle = `rgba(${rgb},${a2})`;
         g.beginPath(); g.arc((hx - x / r * S.tan * k) * dpr, (hy - y / r * S.tan * k) * dpr, Math.max(0.45, dot * 0.5) * dpr, 0, Math.PI * 2); g.fill();
@@ -205,11 +215,15 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       const c = cloud;
       if (c) for (const p of c.parts) if (!p.gone) dotAt(g, hx, hy, k, dpr, c.C[0] + p.ox + p.dx, c.C[1] + p.oy + p.dy, 0, 0, c.rgb, c.dot);
     }
-    const keep = [];
+    const keep = [], now = performance.now();
     for (const p of loose) {
       const alive = stepFree(p, dt * TIME);
-      const a = dotAt(g, hx, hy, k, dpr, p.x, p.y, p.ux, p.uy, p.rgb, p.dot);
-      if (alive && a > 0.04) keep.push(p);
+      // wat toch blijft rondcirkelen, vervaagt na 10 s (in 1,5 s)
+      const fade = 1 - Math.min(1, Math.max(0, (now - (p.born || now) - 10000) / 1500));
+      const a = dotAt(g, hx, hy, k, dpr, p.x, p.y, p.ux, p.uy, p.rgb, p.dot, fade);
+      // het eerste stukje van een verscheurde ster dat de binnenrand bereikt, laat de schijf oplichten (lichtecho)
+      if (p.star && !starHit && Math.hypot(p.x, p.y) < 6.5) { starHit = true; echoT0 = now / 1000 * TIME; echoAmp = 16; }
+      if (alive && a > 0.04 && fade > 0) keep.push(p);
     }
     loose = keep;
   }
@@ -232,12 +246,32 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   }
   setTimeout(warm, 2500);
 
+  // Klik op het gat (desktop): een ster komt te dicht langs en wordt verscheurd (getijdenverstoring). Ze valt van
+  // linksboven in op een licht open baan (E = 1,04) met impulsmoment 4,3, net boven de grens (4) waaronder iets uit het
+  // oneindige gevangen wordt. Door haar eigen breedte krijgt elk stukje een iets ander impulsmoment: ongeveer de helft
+  // zwiept rond en valt erin (rood, uitdovend, door de lens ook als boog boven de schaduw), de andere helft wordt weer
+  // weggeslingerd (nagerekend: 46 van 90 gevangen, 44 ontsnapt). Na 1,6 s bereikt het eerste gas de binnenrand en
+  // licht de schijf op met de lichtecho.
+  function sendStar() {
+    if (still() || !lens || performance.now() - star < 4000) return;
+    star = performance.now(); starHit = false;
+    const r0 = 20, a0 = Math.PI + 0.75 + (hash(star) - 0.5) * 0.5, cx = Math.cos(a0) * r0, cy = Math.sin(a0) * r0, ex = cx / r0, ey = cy / r0;
+    const E = 1.04, L = 4.3, f = 1 - 2 / r0, vt = L / r0, vr = -Math.sqrt(Math.max(0, E * E - f * (1 + L * L / (r0 * r0))));
+    const ux = vr * ex + vt * ey, uy = vr * ey - vt * ex;   // draait met de klok mee, langs onder het gat
+    for (let i = 0; i < 90; i++) {
+      const rr = 0.9 * Math.sqrt((i + 0.5) / 90), th = i * 2.399963;
+      loose.push({ x: cx + rr * Math.cos(th), y: cy + rr * Math.sin(th), ux, uy, rgb: INK, dot: 0.85, born: star, star: true });
+    }
+    wake();
+  }
+  el.addEventListener('click', sendStar);
+
   function frame(now) {
     raf = 0;
     const dt = Math.min(0.05, (now - (lastT || now)) / 1000);
     lastT = now;
     const live = shown(), tm = still() ? 0 : now / 1000 * TIME;
-    if (live) { if (!still()) tendSpots(tm); draw(tm); }
+    if (live) draw(tm);
     drawFx(dt);
     el.classList.toggle('is-on', shown());   // gsm: het gat blijft tot alles gevallen is
     // de lens voor het raster komt en gaat met het gat (zacht, zoals het gat zelf)
@@ -290,7 +324,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     for (const p of c.parts) if (!p.gone) far = Math.max(far, Math.hypot(c.C[0] + p.ox + p.dx, c.C[1] + p.oy + p.dy));
     if (Math.abs(vt) * far > 3.2) vt *= 3.2 / (Math.abs(vt) * far);
     const ux = vr * ex - vt * ey, uy = vr * ey + vt * ex;
-    for (const p of c.parts) if (!p.gone) loose.push({ x: c.C[0] + p.ox + p.dx, y: c.C[1] + p.oy + p.dy, ux, uy, rgb: c.rgb, dot: c.dot });
+    for (const p of c.parts) if (!p.gone) loose.push({ x: c.C[0] + p.ox + p.dx, y: c.C[1] + p.oy + p.dy, ux, uy, rgb: c.rgb, dot: c.dot, born: performance.now() });
   }
   // px per M van het hoofdbeeld op afstand rc
   const pxPerM = (rc, k) => (lens.primary(Math.min(lens.rMax, rc + 0.5)).tan - lens.primary(Math.max(2.1, rc - 0.5)).tan) * k;
