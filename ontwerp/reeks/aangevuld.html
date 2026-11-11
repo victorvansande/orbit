@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reeks aangevuld</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap">
+<style>
+/* Papier van Orbit; per voorstel een kaart met een nagebootste taakrij en de echte teller op ware grootte (22 px). */
+:root {
+  --bg: #EBE8DF; --surface: #F8F6F0; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #7A7A83;
+  --line: rgba(27, 27, 34, .1); --fill: rgba(27, 27, 34, .06); --core: #E70049; --today: #E08600;
+  --ghost: rgba(27, 27, 34, .08);
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78;
+  --line: rgba(255, 255, 255, .1); --fill: rgba(255, 255, 255, .07); --core: #F0306A; --today: #F09A1A; --ghost: rgba(255, 255, 255, .08); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78;
+  --line: rgba(255, 255, 255, .1); --fill: rgba(255, 255, 255, .07); --core: #F0306A; --today: #F09A1A; --ghost: rgba(255, 255, 255, .08); color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--sans); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.label { font: 500 10.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+header { display: grid; gap: 10px; margin-bottom: 28px; }
+h1 { margin: 0; font-weight: 500; font-size: clamp(24px, 4vw, 32px); letter-spacing: -.01em; text-wrap: balance; }
+.intro { margin: 0; max-width: 66ch; color: var(--ink-2); }
+h2.sec { margin: 36px 0 14px; font-size: 13px; font-weight: 500; }
+
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.card.ref { background: transparent; border-style: dashed; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.head h3 { margin: 0; font-size: 15px; font-weight: 500; }
+.head h3 small { font: 500 10.5px var(--mono); letter-spacing: .14em; color: var(--ink-3); margin-right: 8px; }
+.desc { margin: 0; color: var(--ink-2); font-size: 13px; }
+.play { font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); background: none;
+  border: 1px solid var(--line); border-radius: 999px; height: 32px; padding: 0 12px; cursor: pointer; flex: none; }
+.play:hover { background: var(--fill); }
+.play:focus-visible { outline: 2px solid var(--core); outline-offset: 2px; }
+
+/* nagebootst stuk app: taakrij boven, teller onder */
+.stage { position: relative; height: 200px; border-radius: 10px; background: var(--bg); overflow: hidden; }
+.task { position: absolute; left: 14px; right: 14px; top: 18px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.box { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--today); flex: none; display: grid; place-items: center; transition: background .25s var(--ease); }
+.box svg { width: 10px; height: 10px; opacity: 0; transition: opacity .2s var(--ease); }
+.task.is-done .box { background: var(--today); }
+.task.is-done .box svg { opacity: 1; }
+.task span { transition: color .4s var(--ease), opacity .4s var(--ease); }
+.task.is-done span { color: var(--ink-3); }
+.task .when { margin-left: auto; font: 500 10px var(--mono); letter-spacing: .12em; color: var(--ink-3); }
+.counter { position: absolute; left: 14px; bottom: 18px; display: flex; align-items: center; gap: 10px; }
+.dmrow { --dm-h: 22px; display: flex; gap: calc(var(--dm-h) / 7); height: var(--dm-h); color: var(--ink); position: relative; }
+.dmrow svg { display: block; height: 100%; width: calc(var(--dm-h) * 5 / 7); overflow: visible; }
+.dmrow circle.g { fill: var(--ghost); }
+.dmrow circle.o { fill: currentColor; transform-box: fill-box; transform-origin: center; }
+.dmrow .fl { color: var(--ink-3); }
+.dmrow .fl.hot { color: var(--core); }
+.dmrow .fl.hot circle.o { transition: fill .3s var(--ease); }
+.cl { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; position: relative; }
+.cl .alt { position: absolute; left: 0; top: 0; color: var(--core); opacity: 0; }
+.glow { position: absolute; pointer-events: none; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--core) 38%, transparent) 0%, transparent 70%); }
+.spark { position: absolute; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: var(--core); pointer-events: none; }
+svg.week { position: absolute; left: 0; top: 50%; transform: translateY(-50%); overflow: visible; opacity: 0; }
+
+/* uitbreidingen */
+.extras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.mini { height: 120px; border-radius: 10px; background: var(--bg); position: relative; overflow: hidden; display: grid; place-items: center; }
+.hal { display: grid; justify-items: center; gap: 12px; }
+.hal i { width: 26px; height: 26px; border-radius: 50%; background: var(--core); display: block; position: relative; }
+.hal i::before, .hal i::after { content: ""; position: absolute; top: 10px; width: 3px; height: 5px; border-radius: 2px; background: var(--surface); }
+.hal i::before { left: 8px; } .hal i::after { right: 8px; }
+.hal p { margin: 0; font-size: 13px; color: var(--ink-2); min-height: 20px; }
+footer { margin-top: 28px; font-size: 12.5px; color: var(--ink-3); max-width: 76ch; }
+@media (max-width: 1040px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .grid, .extras { grid-template-columns: minmax(0, 1fr); } .wrap { padding-block: 28px 40px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="label">Orbit · Dagen op rij</span>
+    <h1>Duidelijker tonen dat de reeks aangevuld is</h1>
+    <p class="intro">Nu ontsteekt het vlammetje rood, met een gloed, en slaat het getal om via ruis. Twee dingen maken dat onduidelijk. Je kijkt naar de taak die je afvinkt, niet naar de teller linksonder. En de ruis verbergt dat 12 een 13 wordt: je ziet dat er iets verandert, niet dat er één bijkomt. Elke variant pakt een van die twee aan, op ware grootte. Druk op Speel of tik op een kaart.</p>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <h2 class="sec">Combineerbaar met elke variant</h2>
+  <div class="extras">
+    <article class="card">
+      <div class="head"><h3><small>+A</small>Een eigen geluid</h3><button class="play" type="button" id="snd">Beluister</button></div>
+      <p class="desc">Nu speelt alleen de gewone afvinktik. Een warme kwint omhoog (E5, dan B5), zacht en met de echo van de sonar, op het moment dat het vlammetje ontsteekt. Je hoort dat het om meer gaat dan een taak, ook zonder te kijken.</p>
+      <div class="mini" id="snd-vis"></div>
+    </article>
+    <article class="card">
+      <div class="head"><h3><small>+B</small>De kern zegt het altijd</h3><button class="play" type="button" id="halb">Speel</button></div>
+      <p class="desc">Nu zegt de kern "Dag 13 op rij." enkel als de teller buiten beeld is. Ook op desktop, één regel onder de scène, waar je toch kijkt. Op mijlpalen een tweede woord.</p>
+      <div class="mini"><div class="hal"><i aria-hidden="true"></i><p id="hal-line"></p></div></div>
+    </article>
+    <article class="card">
+      <div class="head"><h3><small>+C</small>Mijlpalen tellen meer</h3><button class="play" type="button" id="mile">Speel</button></div>
+      <p class="desc">Op 7, 30, 100 en 365 dagen verschijnt de vierpuntige ster even boven het vlammetje, zoals bij afronden. Gewone dagen blijven klein, mijlpalen vallen op.</p>
+      <div class="mini" id="mile-stage"></div>
+    </article>
+  </div>
+
+  <footer>Voorstel, nog niets gebouwd. Glyphs, kleuren en de rode gloed zijn die van de app (<code>GLYPHS</code> en <code>FLAMES</code> in <code>src/scene/matrix.js</code>, <code>emberGlow</code> in <code>fx.js</code>). Bij minder beweging toont elke variant meteen de eindstand.</footer>
+</div>
+
+<script>
+const GLYPHS = {
+  '0': ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  '1': ['..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  '2': ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'],
+  '3': ['.###.', '#...#', '....#', '..##.', '....#', '#...#', '.###.'],
+  '4': ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'],
+  '5': ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
+  '6': ['..##.', '.#...', '#....', '####.', '#...#', '#...#', '.###.'],
+  '7': ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
+  '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
+  '9': ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
+  'f': ['..#..', '.##..', '.###.', '#.###', '#..##', '##.##', '.###.'],
+};
+const NS = 'http://www.w3.org/2000/svg';
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait = ms => new Promise(r => setTimeout(r, RM ? 0 : ms));
+
+function glyph(ch, rows = GLYPHS[ch]) {
+  const s = document.createElementNS(NS, 'svg');
+  s.setAttribute('viewBox', '-0.5 -0.5 5 7'); s.setAttribute('aria-hidden', 'true');
+  if (ch === 'f') s.classList.add('fl');
+  rows.forEach((row, y) => [...row].forEach((v, x) => {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', v === '#' ? .4 : .33);
+    c.setAttribute('class', v === '#' ? 'o' : 'g'); c.dataset.x = x; c.dataset.y = y; s.append(c);
+  }));
+  return s;
+}
+function paint(svg, rows) {
+  for (const c of svg.querySelectorAll('circle')) {
+    const on = rows[+c.dataset.y][+c.dataset.x] === '#';
+    c.setAttribute('class', on ? 'o' : 'g'); c.setAttribute('r', on ? .4 : .33);
+  }
+}
+// wissel met ruis, zoals morphMatrix: flikkeren, van links naar rechts vastvallen
+async function noise(svg, to, ms = 900) {
+  if (RM) { paint(svg, GLYPHS[to]); return; }
+  const t0 = performance.now(), cs = [...svg.querySelectorAll('circle')];
+  await new Promise(done => {
+    const tick = () => {
+      const u = (performance.now() - t0) / ms;
+      for (const c of cs) {
+        const x = +c.dataset.x, y = +c.dataset.y, fix = 0.35 + x * 0.12 + ((x * 7 + y * 13) % 5) * 0.02;
+        const on = u >= fix ? GLYPHS[to][y][x] === '#' : Math.random() < .45;
+        c.setAttribute('class', on ? 'o' : 'g'); c.setAttribute('r', on ? .4 : .33);
+      }
+      if (u < 1) setTimeout(tick, 70); else { paint(svg, GLYPHS[to]); done(); }
+    };
+    tick();
+  });
+}
+function center(el, stage) { const a = el.getBoundingClientRect(), b = stage.getBoundingClientRect(); return { x: a.left - b.left + a.width / 2, y: a.top - b.top + a.height / 2, w: a.width, h: a.height }; }
+// ontsteken zoals igniteFlame: elke stip van onder naar boven rood met een sprongetje, drie vonkjes
+async function ignite(fl, stage, { sparks = true, glow = true } = {}) {
+  const dots = [...fl.querySelectorAll('circle.o')];
+  fl.classList.add('hot');
+  if (!RM) dots.forEach(c => { const d = (6 - c.dataset.y) * 55 + ((c.dataset.x * 7) % 3) * 20; c.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.7)', offset: .45 }, { transform: 'scale(1)' }], { duration: 550, delay: d, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' }); });
+  const p = center(fl, stage);
+  if (sparks && !RM) [-4, 0, 4].forEach((dx, i) => { const s = document.createElement('i'); s.className = 'spark'; s.style.left = p.x + dx + 'px'; s.style.top = p.y - 8 + 'px'; stage.append(s);
+    s.animate([{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 0, transform: 'translateY(-18px) scale(.5)' }], { duration: 900, delay: 300 + i * 120, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' }).onfinish = () => s.remove(); });
+  if (glow) setTimeout(() => ember(p, stage), RM ? 0 : 450);
+}
+function ember(p, stage) {
+  if (RM) return;
+  const g = document.createElement('i'), r = 8 + 2.4 * p.w;
+  g.className = 'glow'; Object.assign(g.style, { left: p.x - r + 'px', top: p.y - r + 'px', width: 2 * r + 'px', height: 2 * r + 'px' });
+  stage.append(g);
+  g.animate([{ opacity: 0, transform: 'scale(.3)' }, { opacity: 1, transform: 'scale(1.25)', offset: .2 }, { opacity: .9, transform: 'scale(1)', offset: .6 }, { opacity: 0, transform: 'scale(1)' }], { duration: 2400, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => g.remove();
+}
+
+// ---- een kaart ----
+function build(card) {
+  const st = card.querySelector('.stage');
+  st.innerHTML = `<div class="task"><div class="box"><svg viewBox="0 0 10 10"><path d="M2 5.2l2 2 4-4.4" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Offerte sturen</span><b class="when">VANDAAG</b></div>
+    <div class="counter"><div class="dmrow"></div><div class="cl"><span class="main">days in a row</span><span class="alt"></span></div></div>`;
+  const row = st.querySelector('.dmrow');
+  for (const ch of 'f12') row.append(glyph(ch));
+  return { st, task: st.querySelector('.task'), row, fl: row.children[0], d1: row.children[1], d2: row.children[2], label: st.querySelector('.cl') };
+}
+
+const VARIANTS = [
+  { id: 'nu', tag: 'NU', name: 'Huidig', ref: true,
+    desc: 'Ter vergelijking: vlammetje ontsteekt met vonkjes en gloed, het getal slaat om via ruis.',
+    async run(v) { await wait(500); await ignite(v.fl, v.st); await wait(650); await noise(v.d2, '3'); } },
+
+  { id: 'vonk', tag: 'S1', name: 'Vonk',
+    desc: 'Uit het afgevinkte bolletje vertrekt een rood vonkje dat in een boog naar het vlammetje vliegt en het aansteekt. Je blik volgt het vonkje van je taak naar de teller; oorzaak en gevolg worden één beweging.',
+    async run(v) {
+      await wait(350);
+      const a = center(v.task.querySelector('.box'), v.st), b = center(v.fl, v.st);
+      if (!RM) await new Promise(done => {
+        const t0 = performance.now(), T = 820, trail = [];
+        for (let i = 0; i < 7; i++) { const s = document.createElement('i'); s.className = 'spark'; s.style.width = s.style.height = (4 - i * .4) + 'px'; s.style.opacity = 1 - i * .13; v.st.append(s); trail.push(s); }
+        const at = u => { const e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, cx = (a.x + b.x) / 2 + 70, cy = Math.min(a.y, b.y) + 20;
+          return { x: (1 - e) ** 2 * a.x + 2 * (1 - e) * e * cx + e * e * b.x, y: (1 - e) ** 2 * a.y + 2 * (1 - e) * e * cy + e * e * b.y }; };
+        const tick = () => { const u = Math.min(1, (performance.now() - t0) / T);
+          trail.forEach((s, i) => { const p = at(Math.max(0, u - i * .035)); s.style.left = p.x + 'px'; s.style.top = p.y + 'px'; });
+          if (u < 1) requestAnimationFrame(tick); else { trail.forEach(s => s.remove()); done(); } };
+        tick();
+      });
+      await ignite(v.fl, v.st, { sparks: false }); await wait(650); await noise(v.d2, '3');
+    } },
+
+  { id: 'tel', tag: 'S2', name: 'Eén erbij',
+    desc: 'Geen ruis maar een telwerk: het oude cijfer schuift omhoog weg, het nieuwe rolt van onder in, eerst rood en dan inkt. Het label zegt even "+1 vandaag". Zo lees je 12 → 13, niet enkel dat er iets wisselde.',
+    async run(v) {
+      await wait(500); await ignite(v.fl, v.st, { sparks: false }); await wait(450);
+      const alt = v.label.querySelector('.alt'), main = v.label.querySelector('.main');
+      alt.textContent = '+1 vandaag';
+      const old = v.d2, nu = glyph('3'); nu.style.color = 'var(--core)';
+      const box = document.createElement('div'); box.style.cssText = 'position:relative;height:100%;overflow:hidden;width:calc(var(--dm-h)*5/7 + 4px);margin:0 -2px;';
+      old.replaceWith(box); box.append(old, nu); old.style.cssText = nu.style.cssText = 'position:absolute;left:2px;top:0;'; nu.style.color = 'var(--core)';
+      const o = { duration: RM ? 0 : 620, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' };
+      old.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-100%)', opacity: 0 }], o);
+      nu.animate([{ transform: 'translateY(100%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], o);
+      main.animate([{ opacity: 1 }, { opacity: 0 }], { ...o, duration: RM ? 0 : 300 }); alt.animate([{ opacity: 0 }, { opacity: 1 }], { ...o, duration: RM ? 0 : 300, delay: RM ? 0 : 200 });
+      await wait(1400);
+      nu.style.transition = 'color 1s cubic-bezier(.4,0,.2,1)'; nu.style.color = 'var(--ink)';
+      await wait(500);
+      main.animate([{ opacity: 0 }, { opacity: 1 }], { duration: RM ? 0 : 400, fill: 'both', delay: RM ? 0 : 150 }); alt.animate([{ opacity: 1 }, { opacity: 0 }], { duration: RM ? 0 : 300, fill: 'both' });
+    } },
+
+  { id: 'week', tag: 'S3', name: 'Ketting',
+    desc: 'Op de plaats van het label schuift de week uit: zeven zeshoekjes, de voorbije dagen in inkt. Vandaag staat hol in rood, vult zich, en een lijntje knoopt het vast aan gisteren. De ketting werd één schakel langer, daarna keert het label terug.',
+    async run(v) {
+      await wait(500); await ignite(v.fl, v.st, { sparks: false });
+      const main = v.label.querySelector('.main'), n = [2, 3, 1, 2, 4, 2, 0], W = 17;
+      const s = document.createElementNS(NS, 'svg'); s.setAttribute('class', 'week'); s.setAttribute('width', 7 * W); s.setAttribute('height', 26); s.setAttribute('viewBox', `0 -13 ${7 * W} 26`);
+      const hex = (x, r) => { let d = ''; for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; d += (k ? 'L' : 'M') + (x + r * Math.cos(a)).toFixed(2) + ' ' + (r * Math.sin(a)).toFixed(2); } return d + 'Z'; };
+      const ln = document.createElementNS(NS, 'path'); ln.setAttribute('d', `M${5 * W + W / 2} 0H${6 * W + W / 2}`); ln.setAttribute('stroke', 'var(--core)'); ln.setAttribute('stroke-width', '1.2'); ln.setAttribute('stroke-dasharray', W); ln.setAttribute('stroke-dashoffset', W); s.append(ln);
+      const nodes = n.map((k, i) => { const p = document.createElementNS(NS, 'path'), r = i === 6 ? 4.6 : 2.4 + k * .6; p.setAttribute('d', hex(i * W + W / 2, r));
+        if (i < 6) p.setAttribute('fill', 'var(--ink)'); else { p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'var(--core)'); p.setAttribute('stroke-width', '1.2'); } s.append(p); return p; });
+      v.label.append(s);
+      const o = d => ({ duration: RM ? 0 : d, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' });
+      main.animate([{ opacity: 1 }, { opacity: 0 }], o(250));
+      s.animate([{ opacity: 0, transform: 'translate(-8px,-50%)' }, { opacity: 1, transform: 'translate(0,-50%)' }], o(450));
+      await wait(700);
+      ln.animate([{ strokeDashoffset: W }, { strokeDashoffset: 0 }], o(380)); await wait(300);
+      const t = nodes[6]; t.setAttribute('fill', 'var(--core)');
+      if (!RM) t.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.6)', offset: .4 }, { transform: 'scale(1)' }], { duration: 600, easing: 'cubic-bezier(.4,0,.2,1)', transformOrigin: 'center' }), t.style.transformBox = 'fill-box', t.style.transformOrigin = 'center';
+      noise(v.d2, '3');
+      await wait(1900);
+      s.animate([{ opacity: 1 }, { opacity: 0 }], o(350)); main.animate([{ opacity: 0 }, { opacity: 1 }], { ...o(350), delay: RM ? 0 : 200 });
+      await wait(600); s.remove();
+    } },
+];
+
+const grid = document.getElementById('grid'), cards = {};
+for (const V of VARIANTS) {
+  const el = document.createElement('article'); el.className = 'card' + (V.ref ? ' ref' : '');
+  el.innerHTML = `<div class="head"><h3><small>${V.tag}</small>${V.name}</h3><button class="play" type="button" id="play-${V.id}">Speel</button></div><div class="stage" role="img" aria-label="Voorbeeld ${V.name}"></div><p class="desc">${V.desc}</p>`;
+  grid.append(el);
+  let busy = false;
+  const go = async () => {
+    if (busy) return; busy = true;
+    const v = build(el); await wait(250);
+    v.task.classList.add('is-done');
+    await V.run(v); await wait(800); busy = false;
+  };
+  el.querySelector('.play').addEventListener('click', e => { e.stopPropagation(); go(); });
+  el.querySelector('.stage').addEventListener('click', go);
+  build(el); cards[V.id] = go;
+}
+// eindstand bij minder beweging, anders één keer alles na elkaar afspelen bij laden
+if (RM) Object.values(cards).forEach(f => f()); else setTimeout(() => Object.values(cards).forEach((f, i) => setTimeout(f, i * 350)), 600);
+
+// +A geluid: warme kwint omhoog met de echo van de sonar
+let ctx;
+document.getElementById('snd').addEventListener('click', () => {
+  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume();
+  const a = ctx, out = a.createGain(); out.gain.value = .5; out.connect(a.destination);
+  const ping = (t, f, g) => { const o = a.createOscillator(), e = a.createGain(), dl = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), wet = a.createGain();
+    o.frequency.value = f; e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(.2 * g, t + .006); e.gain.setTargetAtTime(0, t + .006, .09);
+    dl.delayTime.value = .16; fb.gain.value = .36; lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); wet.gain.value = .5;
+    o.connect(e).connect(out); e.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wet).connect(out); o.start(t); o.stop(t + 1.2); };
+  const t = a.currentTime + .03; ping(t, 659.26, 1); ping(t + .14, 987.77, .8);
+  const vis = document.getElementById('snd-vis'); vis.innerHTML = '';
+  [0, 140].forEach((d, i) => { const s = document.createElement('i'); s.className = 'spark'; Object.assign(s.style, { width: '8px', height: '8px', margin: '-4px', left: (45 + i * 10) + '%', top: (58 - i * 16) + '%' }); vis.append(s);
+    s.animate([{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1)', offset: .1 }, { opacity: 0, transform: 'scale(2.2)' }], { duration: RM ? 1 : 1200, delay: RM ? 0 : d, fill: 'both' }); });
+});
+// +B kern
+document.getElementById('halb').addEventListener('click', async () => {
+  const p = document.getElementById('hal-line'), lines = ['Dag 13 op rij.', 'Dag 30 op rij. Een maand.'];
+  for (const l of lines) { p.textContent = l; p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: RM ? 0 : 500, fill: 'both' }); await wait(1900); }
+});
+// +C mijlpaal met star4
+const ms = document.getElementById('mile-stage');
+function mileBuild() { ms.innerHTML = '<div class="dmrow" style="position:relative"></div>'; const r = ms.firstChild; for (const ch of 'f30') r.append(glyph(ch)); r.children[0].classList.add('hot'); return r; }
+mileBuild();
+document.getElementById('mile').addEventListener('click', async () => {
+  const r = mileBuild(); r.children[0].classList.remove('hot'); paint(r.children[2], GLYPHS['9']); paint(r.children[1], GLYPHS['2']);
+  await wait(300); await ignite(r.children[0], ms, { sparks: false }); noise(r.children[1], '3'); noise(r.children[2], '0'); await wait(500);
+  const st = document.createElementNS(NS, 'svg'); st.setAttribute('viewBox', '-10 -10 20 20'); st.setAttribute('width', 18); st.setAttribute('height', 18);
+  st.style.cssText = 'position:absolute;left:calc(var(--dm-h)*5/14 - 9px);top:-26px;overflow:visible';
+  const p = document.createElementNS(NS, 'path'); p.setAttribute('d', 'M0 -10 Q1.6 -1.6 10 0 Q1.6 1.6 0 10 Q-1.6 1.6 -10 0 Q-1.6 -1.6 0 -10Z'); p.setAttribute('fill', 'var(--core)'); st.append(p); r.append(st);
+  st.animate([{ opacity: 0, transform: 'scale(0) rotate(-45deg)' }, { opacity: 1, transform: 'scale(1.15) rotate(0)', offset: .35 }, { opacity: 1, transform: 'scale(1)', offset: .75 }, { opacity: 0, transform: 'scale(.8) translateY(-4px)' }], { duration: RM ? 1 : 2600, easing: 'cubic-bezier(.3,.6,.3,1)', fill: 'both' });
+});
+</script>
+</body>
+</html>
