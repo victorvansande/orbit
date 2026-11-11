@@ -1544,15 +1544,16 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (!project(x, y, z, true)) { o.sx = null; continue; }
       let sx = pt.x, sy = pt.y;
       const f = pt.f, depth = pt.z;
-      if (drag?.type === 'orb' && drag.id === o.id && drag.active) { sx = pointer.x + (drag.pull?.[0] || 0); sy = pointer.y + (drag.pull?.[1] || 0); }
+      if (drag?.type === 'orb' && drag.id === o.id && drag.active) { sx = pointer.x; sy = pointer.y; }
       else if (o.blend) { const e = ease(o.blend.p); sx = o.blend.x + (sx - o.blend.x) * e; sy = o.blend.y + (sy - o.blend.y) * e; }
       const r = lv.size / 2 * ORB_SCALE * cam.du * f * (isHot(o) ? 1.2 : 1);
-      o.sx = sx; o.sy = sy; o.sr = Math.max(r, 4);
+      o.sx = sx; o.sy = sy; o.sr = Math.max(r, 4); o.pr = r;
       items.push({ o, lv, a, x: sx, y: sy, sx, sy, r, f, depth });
     }
     items.sort((p, q) => p.depth - q.depth);
     for (const it of items) {
       const { o, lv } = it;
+      if (drag?.taken && drag.id === o.id) continue;   // vlak bij het zwarte gat tekent het gat de bol zelf (als wolk, door zijn lens)
       const sp = speed.get(o.level);
       const free = !(drag?.type === 'orb' && drag.id === o.id && drag.active) && !o.blend;
       if (isHot(o)) {
@@ -1889,10 +1890,10 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       }
       if (!drag.active) return;
       if (drag.type === 'orb') {
-        // zwart gat (src/scene/hole.js): erboven hangen verwijdert bij loslaten, in de buurt trekt het zachtjes aan
-        drag.over = Boolean(hole?.hit(e.clientX, e.clientY));
-        drag.pull = hole?.pull(e.clientX, e.clientY) || [0, 0];
-        hole?.setHover(drag.over);
+        // zwart gat (src/scene/hole.js): in zijn buurt neemt het de bol over (rekt hem uit, trekt eraan), erboven
+        // loslaten verwijdert de taak
+        const held = orbs.get(drag.id), hs = held && hole?.hold(e.clientX, e.clientY, colors.get(held.level), held.pr || 4);
+        drag.over = Boolean(hs?.over); drag.taken = Boolean(hs?.taken);
         const lv = drag.over ? null : nearestRing(p.x, p.y, 70);
         dropLevel = lv;
         canvas.style.cursor = 'grabbing';
@@ -1958,15 +1959,15 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     canvas.style.cursor = 'default';
     if (d.type === 'orb') {
       const o = orbs.get(d.id);
+      // in het zwarte gat: de bol verdwijnt hier meteen, het gat laat hem vallen; de app verwijdert de taak
+      const r = canvas.getBoundingClientRect();
+      const fell = d.active && Boolean(hole?.release(cancelled ? -1e6 : r.left + pointer.x, cancelled ? -1e6 : r.top + pointer.y));
       if (d.active) hole?.setDragging(false);
-      if (d.active && o && !cancelled && d.over) {
-        // in het zwarte gat: de bol verdwijnt hier meteen, het gat tekent zijn val; de app verwijdert de taak
-        const r = canvas.getBoundingClientRect();
-        const x = r.left + pointer.x + (d.pull?.[0] || 0), y = r.top + pointer.y + (d.pull?.[1] || 0);
+      if (fell && o) {
         orbs.delete(d.id);
         layoutOffsets();
         dropLevel = null;
-        onDiscard(d.id, x, y, colors.get(o.level));
+        onDiscard(d.id);
         return;
       }
       if (d.active && o) {
@@ -2024,6 +2025,18 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (edges) constellation = { edges, t0: Math.max(performance.now(), lastStarAt) + 1200 };   // na de nieuwe ster
     },
     clearSelection,
+    // het zwarte gat heeft de vastgehouden bol helemaal opgeslokt (te lang te dichtbij): het slepen stopt, de taak is weg
+    discardHeld() {
+      if (drag?.type !== 'orb' || !drag.active) return;
+      const d = drag;
+      drag = null; dropLevel = null;
+      canvas.style.cursor = 'default';
+      hole?.setDragging(false);
+      if (!orbs.delete(d.id)) return;
+      layoutOffsets();
+      setHover({ orb: null, level: null });
+      onDiscard(d.id);
+    },
     // glyph sonar vanuit de kern; target: id van de taak waar de kern over praat (die bol krijgt een echo)
     // quiet + timeTo: enkel de echo rond de bol, getimed op de zachte golf van fx.js (coreWave) in plaats van de tekens
     sonar(target = null, { quiet = false, timeTo = null } = {}) { if (!reducedMotion.matches && !minimal) sonar = { t0: performance.now(), target, quiet, timeTo }; },

@@ -59,7 +59,7 @@ src/styles.css   alle stijl, tokens bovenaan, secties /* ---- Naam ---- */
 src/core/   config, i18n, deadline, demo, mark, badge
 src/data/   store, backup, stats, feats, recap
 src/sync/   sync, pair, keychain
-src/scene/  scene, wheel, legend, fx, matrix, greet, sound, promo, turn, hole
+src/scene/  scene, wheel, legend, fx, matrix, greet, sound, promo, turn, hole, gravity
 src/focus/  timer, glass, fidget, panel, life, weather, quotes, plasma, breakout, snake
 src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 ```
@@ -87,4 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 10/11/2026, Claude Code: kern pulseerde wild bij terugkeer naar een venster dat al even openstond: de ademgolf was `sin(tijd sinds laden x tempo)`, en elke tempowissel (inslapen, wakker worden) joeg de fase op; nu een opgetelde fase `breath` (Valkuilen in `docs/kennis.md`). Open: Victor kijkt of het weg is.
 - 10/11/2026, Claude Code: de ogen van de kern volgen de muis over het hele venster, ook boven de lijst en het wiel (`gaze` in `scene.js`, vanuit `window`); de rest van de scène reageert enkel boven de scène. Open: Victor kijkt.
 - 10/11/2026, Claude Code: een versleepte bol landt waar je hem loslaat (`ringAngleAt` keert de projectie om; vroeger `atan2` op het scherm, dat de draaiing van de scène negeerde). Open: Victor sleept.
-- 10/11/2026, Claude Code: zwart gat Z1 Raster (gekozen door Victor uit `ontwerp/zwartgat/`): echte straalberekening rond een Schwarzschild-gat in rasterpunten, desktop rechts onder de boog, gsm en liggend enkel tijdens het slepen; een bol erin = verwijderen met Ongedaan maken, met een val die vertraagt en rood uitdooft (`src/scene/hole.js`). Open: Victor sleept, en zegt of het gat op desktop altijd zichtbaar mag blijven.
+- 11/11/2026, Claude Code: zwart gat Z1 Raster (gekozen door Victor uit `ontwerp/zwartgat/`), desktop rechts onder de boog, gsm en liggend enkel tijdens het slepen. Een bol in de buurt wordt een deeltjeswolk: vastgehouden rekt hij als een druppel en dan een draad naar het gat, losgelaten valt elk deeltje op zijn eigen echte baan (uitrekken, vertragen aan de rand, roder, uitdoven), door de lens getekend met een tweede beeld op de fotonring; het gat neemt de bol ook zelf als je binnen de binnenste baan komt. Fysica in `src/scene/gravity.js` (nagerekend tegen de theorie), tekenen in `hole.js`. Open: Victor sleept (traag naderen, loslaten, een zwaai), ook op gsm; zegt of het gat op desktop altijd zichtbaar mag blijven en of het tempo goed is.

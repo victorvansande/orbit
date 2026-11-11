@@ -261,12 +261,9 @@ let hotTask = null, hotLevel = null;
 
 // Zwart gat (Z1 Raster, Victor 10/11/2026): een bol erin slepen verwijdert de taak, zoals het prullenbakje, met Ongedaan
 // maken. Desktop: altijd rechts onder de boog van het wiel; gsm en liggend: pas zichtbaar als je een bol vastneemt.
-const hole = createHole({ reducedMotion, permanent: matchMedia('(min-width: 1000px) and (min-height: 501px)'), minimal: () => minimalFx });
+const hole = createHole({ reducedMotion, permanent: matchMedia('(min-width: 1000px) and (min-height: 501px)'), minimal: () => minimalFx, onEaten: () => scene.discardHeld() });
 document.body.append(hole.el, hole.fx);
-function dropInHole(id, x, y, rgb) {
-  hole.swallow(x, y, rgb);
-  deleteTask(id, groupsEl.querySelector(`.track[data-id="${CSS.escape(id)}"]`));
-}
+function dropInHole(id) { deleteTask(id, groupsEl.querySelector(`.track[data-id="${CSS.escape(id)}"]`)); }
 
 const scene = createScene($('scene'), {
   reducedMotion,
