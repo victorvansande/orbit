@@ -74,7 +74,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; }
   <header>
     <span class="label">Orbit · Maandwissel</span>
     <h1>De vier maandwissels, om te beluisteren</h1>
-    <p class="intro">Dit is de echte geluidscode uit de app, met dezelfde tijdlijn als het beeld. Tikjes komen links of rechts uit, afhankelijk van waar de ster aankomt: met een hoofdtelefoon hoor je dat het best. Z1 en Z3 klinken anders naargelang het aantal sterren in de oude hemel.</p>
+    <p class="intro">Dit is de echte geluidscode uit de app, met dezelfde tijdlijn als het beeld. Tikjes komen links of rechts uit, afhankelijk van waar de ster aankomt: met een hoofdtelefoon hoor je dat het best. Z1 en Z3 klinken anders naargelang het aantal sterren in de oude hemel. De golfvorm in elke kaart is uit de echte audio berekend; rood is waar het geluid boven de grens gaat en clipt.</p>
     <div class="bar">
       <span class="label">Sterren in de oude hemel</span>
       <div class="seg" id="stars" role="group" aria-label="Aantal sterren">
@@ -82,19 +82,23 @@ footer code { font-family: var(--mono); font-size: 11.5px; }
         <button type="button" id="n30" data-n="30" aria-pressed="true">30</button>
         <button type="button" id="n80" data-n="80" aria-pressed="false">80</button>
       </div>
+      <span class="label">Versie</span>
+      <div class="seg" id="ver" role="group" aria-label="Versie">
+        <button type="button" id="v-new" data-v="new" aria-pressed="true">Nieuw</button>
+        <button type="button" id="v-old" data-v="old" aria-pressed="false">Vorige</button>
+      </div>
     </div>
   </header>
 
   <div class="grid" id="grid"></div>
 
-  <footer>Bron: <code>MONTH</code>, <code>monthTicks</code> en <code>monthChord</code> in <code>src/scene/sound.js</code>, tijdlijn uit <code>turnPlan</code> in <code>src/scene/turn.js</code>, letterlijk overgenomen. De sterren zijn een vaste proefhemel, geen echte gegevens. Boven de middellijn: links, eronder: rechts.</footer>
+  <footer>Bron: <code>MONTH</code>, <code>monthTicks</code> en <code>monthSwell</code> in <code>src/scene/sound.js</code>, tijdlijn uit <code>turnPlan</code> in <code>src/scene/turn.js</code>, letterlijk overgenomen. De sterren zijn een vaste proefhemel, geen echte gegevens. Vorige is de versie van 4 tot 11 november 2026 (met <code>monthChord</code>). Boven de middellijn: links, eronder: rechts.</footer>
 </div>
 
 <script>
-// ---- letterlijk uit src/scene/turn.js ----
 const TURN_STYLES = ['slok', 'kolk', 'beeld', 'adem'];
+// ---- letterlijk uit src/scene/turn.js ----
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const seg = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
 const pullEase = u => u * u * (1.6 - 0.6 * u);   // zacht vertrek, versnelt, zonder ruk op het einde
 const SKY_IN = 50, SKY_OUT = 250, CORE_U = 30;          // binnen- en buitenrand van de hemel, rand van de kern (eenheden)
 const frac = v => v - Math.floor(v);
@@ -163,7 +167,145 @@ function turnPlan(style, stars) {
   plan.end = plan.light + 3.1;
   return plan;
 }
-// ---- letterlijk uit src/scene/sound.js ----
+
+
+// ---- letterlijk uit src/scene/sound.js (nu) ----
+const NEW = (() => {
+const P = { E2: 82.41, E3: 164.81, G3: 196, B3: 246.94, D4: 293.66, E4: 329.63, Fs4: 369.99, G4: 392, A4: 440, B4: 493.88, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.5 };
+const SONAR_NOTES = [0, P.E5, P.C5, P.A4, P.G4, P.E4];   // Nu .. Ooit
+const ECHO = [0, 0.075, 0.115, 0.16, 0.22, 0.3];         // Nu .. Ooit: afstand tot de kern, in s
+const DET = [0, 5, -4, 3, -6, 2, -2];                     // kleine vaste stemverschillen bij herhaling (cent)
+function soft(g, t, peak, attack, decay) {
+  g.gain.setValueAtTime(0.00001, t);
+  g.gain.linearRampToValueAtTime(peak, t + attack);
+  g.gain.setTargetAtTime(0.00001, t + attack, decay / 5);
+}
+// echo, fb, wet en att overschrijven de gewone sonar (de maandwissel gebruikt kortere en langere echo's)
+function ping(a, out, t, f, { g = 1, dur = 0.16, det = 0, lv = 3, echo, fb: fbk = 0.36, wet: wg = 0.55, att = 0.004 } = {}) {
+  const o = a.createOscillator(), e = a.createGain();
+  o.frequency.value = f; o.detune.value = det;
+  soft(e, t, 0.2 * g, att, dur);
+  o.connect(e); e.connect(out);
+  if (echo !== 0) {
+    const dl = a.createDelay(1), fb = a.createGain(), lp = a.createBiquadFilter(), wet = a.createGain();
+    dl.delayTime.value = echo || ECHO[lv] || ECHO[3]; fb.gain.value = fbk;
+    lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 2.2); wet.gain.value = wg;
+    e.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wet).connect(out);
+  }
+  const stopT = t + att + dur * 1.5 + 0.1;
+  e.gain.setValueAtTime(0.00001, stopT - 0.015);
+  e.gain.linearRampToValueAtTime(0, stopT);
+  o.start(t); o.stop(stopT);
+}
+function panTo(a, out, p) {
+  if (!a.createStereoPanner) return out;
+  const n = a.createStereoPanner(); n.pan.value = Math.max(-1, Math.min(1, p)); n.connect(out);
+  return n;
+}
+// slot van Z1 tot Z3, in de geest van Z4 (Victor, 11/11/2026: "die serene vibe"): een akkoord dat al stil begint terwijl de
+// kern inademt, bij het licht openbloeit achter een lage doorlaat en lang uitademt. Elke stem staat vanaf haar start op een
+// vaste sterkte en de enige omhullende begint op 0: geen tik bij het begin. (Vroeger begonnen stemmen 2 tot 4 tot 36 ms vóór
+// hun omhullende op volle sterkte, de "pop" die door de begrenzer klonk alsof het clipte.)
+function monthSwell(a, out, tL, notes, { inhale = 0.4, bloom = 0.5, open = 1700, hold = 0.3, tail = 1.1, g = 0.8, rest = 520 } = {}) {
+  const t = tL - inhale, lp = a.createBiquadFilter(), v = a.createGain();
+  lp.type = 'lowpass'; lp.Q.value = 0.6;
+  lp.frequency.setValueAtTime(240, t); lp.frequency.exponentialRampToValueAtTime(600, tL);
+  lp.frequency.exponentialRampToValueAtTime(open, tL + bloom); lp.frequency.setTargetAtTime(rest, tL + bloom + hold, tail * 1.3);
+  v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(0.3 * g, tL); v.gain.linearRampToValueAtTime(g, tL + bloom);
+  v.gain.setValueAtTime(g, tL + bloom + hold); v.gain.setTargetAtTime(0, tL + bloom + hold, tail);
+  lp.connect(v).connect(out);
+  const end = tL + bloom + hold + tail * 7;
+  for (const [f, gg] of notes) for (const det of [-5, 5]) {
+    const os = a.createOscillator(), e = a.createGain();
+    os.frequency.value = f; os.detune.value = det; e.gain.value = gg;
+    os.connect(e).connect(lp); os.start(t); os.stop(end);
+  }
+}
+// een tikje per ster die aankomt, steeds lager naarmate de kern voller wordt; te dicht op elkaar wordt één tikje
+function monthTicks(a, out, t0, arrivals) {
+  const notes = [P.E6, P.D6, P.C6, P.A5, P.G5, P.E5];
+  let last = -1, extra = 0, n = 0;   // eerste tikje altijd
+  const bus = a.createGain();
+  bus.gain.value = 0.75;
+  bus.connect(out);
+  for (let i = 0; i < arrivals.length; i++) {
+    const x = arrivals[i], u = x.u;
+    if (x.t - last < 0.045) { extra++; continue; }
+    ping(a, panTo(a, bus, 0.5 * Math.cos(x.a || 0)), t0 + x.t, notes[Math.min(5, Math.floor(u * 6))],
+      { g: Math.min(0.38, (0.16 + 0.12 * u) * (1 + 0.08 * Math.min(extra, 3))), dur: 0.07, echo: 0.06, fb: 0.14, wet: 0.28, det: DET[n++ % DET.length] });
+    last = x.t; extra = 0;
+  }
+}
+// slotakkoorden: elk een eigen kleur in E, geen kopie van Z4 (dat E3 B3 E4 G4 houdt)
+const OPEN = [[P.E3, 0.13], [P.B3, 0.085], [P.E4, 0.05], [P.B4, 0.02]];      // Z1: lege kwinten, wat overblijft na de slokken
+const STARRY = [[P.E3, 0.12], [P.B3, 0.08], [P.Fs4, 0.045], [P.A4, 0.03]];   // Z3: zwevend (sus), sluit aan op de pings E5 en A4
+const WARM = [[P.E3, 0.12], [P.B3, 0.075], [P.D4, 0.05], [P.G4, 0.025]];     // Z2: warm (Em7) na het draaien
+const MONTH = {
+  // Z1 Opgeslokt: tikjes op de slokken; terwijl de kern inademt begint het akkoord stil en bloeit het met het licht open
+  slok(a, o, t0, pl) {
+    monthTicks(a, o, t0, pl.arrivals);
+    monthSwell(a, o, t0 + pl.light, OPEN, { inhale: 0.38 });
+    ping(a, o, t0 + pl.light + 0.3, P.E6, { g: 0.08, dur: 0.7, echo: 0.3, fb: 0.4, att: 0.12 });
+  },
+  // Z2 Draaikolk: geen wind meer (Victor, 11/11/2026: "te druk, ongezellige wind") maar een zachte toon die met de schijf
+  // meedraait: hij pulseert en zwaait van links naar rechts, steeds sneller (1 naar 6 keer per seconde), terwijl de doorlaat
+  // opengaat; een lage toon eronder glijdt van E2 naar E3. Vlak voor het dichtknijpen ademt alles weg, dan bloeit het akkoord.
+  kolk(a, o, t0, pl) {
+    const C = pl.collapse, T = x => t0 + x, s0 = 0.9;
+    const lfo = a.createOscillator(), depth = a.createGain(), am = a.createGain(), lp = a.createBiquadFilter(), v = a.createGain();
+    lfo.frequency.setValueAtTime(1, T(s0)); lfo.frequency.exponentialRampToValueAtTime(2.2, T(3)); lfo.frequency.exponentialRampToValueAtTime(6, T(C));
+    depth.gain.setValueAtTime(0.15, T(s0)); depth.gain.linearRampToValueAtTime(0.35, T(C));
+    am.gain.value = 0.62; lfo.connect(depth).connect(am.gain);
+    lp.type = 'lowpass'; lp.Q.value = 0.6;
+    lp.frequency.setValueAtTime(300, T(s0)); lp.frequency.exponentialRampToValueAtTime(1100, T(C));
+    v.gain.setValueAtTime(0, T(s0)); v.gain.linearRampToValueAtTime(0.45, T(3)); v.gain.linearRampToValueAtTime(0.75, T(C - 0.35));
+    v.gain.linearRampToValueAtTime(0, T(C - 0.02));
+    let tail = v;
+    if (a.createStereoPanner) {
+      const pan = a.createStereoPanner(), sway = a.createGain();
+      sway.gain.setValueAtTime(0.1, T(s0)); sway.gain.linearRampToValueAtTime(0.4, T(C));
+      lfo.connect(sway).connect(pan.pan); v.connect(pan); tail = pan;
+    }
+    am.connect(lp).connect(v); tail.connect(o);
+    for (const [f, gg] of [[P.E3, 0.1], [P.B3, 0.06], [P.E4, 0.03]]) for (const det of [-6, 6]) {
+      const os = a.createOscillator(), e = a.createGain();
+      os.frequency.value = f; os.detune.value = det; e.gain.value = gg;
+      os.connect(e).connect(am); os.start(T(s0)); os.stop(T(C + 0.1));
+    }
+    lfo.start(T(s0)); lfo.stop(T(C + 0.1));
+    const lo = a.createOscillator(), lg = a.createGain();
+    lo.frequency.setValueAtTime(P.E2, T(1.2)); lo.frequency.exponentialRampToValueAtTime(P.E3, T(C));
+    lg.gain.setValueAtTime(0, T(1.2)); lg.gain.linearRampToValueAtTime(0.045, T(C - 0.35)); lg.gain.linearRampToValueAtTime(0, T(C - 0.02));
+    lo.connect(lg).connect(o); lo.start(T(1.2)); lo.stop(T(C + 0.1));
+    monthSwell(a, o, T(C), WARM, { inhale: 0.08, bloom: 0.6, open: 1500, hold: 0.25, tail: 1.2, g: 0.95 });
+  },
+  // Z3 Sterrenbeeld: een zachte ping per laag die zich tekent, een tikje per kraal die de kern bereikt, dan bloeit het akkoord
+  beeld(a, o, t0, pl) {
+    pl.layers.forEach((tl, d) => ping(a, o, t0 + tl, d % 2 ? P.A4 : P.E5, { g: Math.max(0.12, 0.32 - 0.012 * d), dur: 0.14, echo: 0.22, fb: 0.4, wet: 0.6 }));
+    monthTicks(a, o, t0, pl.arrivals);
+    monthSwell(a, o, t0 + pl.light, STARRY, { inhale: 0.38, bloom: 0.6, open: 1900, tail: 1.3, g: 0.88 });
+  },
+  // Z4 Inademen: één lang akkoord dat zwelt en zich opent terwijl de hemel inzakt, vasthoudt, en bij het uitademen opengaat
+  adem(a, o, t0, pl) {
+    const T = x => t0 + x, lp = a.createBiquadFilter(), g = a.createGain();
+    lp.type = 'lowpass'; lp.Q.value = 0.7;
+    lp.frequency.setValueAtTime(240, T(1.1)); lp.frequency.exponentialRampToValueAtTime(1100, T(pl.inEnd)); lp.frequency.setValueAtTime(1100, T(pl.light));
+    lp.frequency.exponentialRampToValueAtTime(3200, T(pl.light + 0.3)); lp.frequency.setTargetAtTime(600, T(pl.light + 0.5), 1.2);
+    g.gain.setValueAtTime(0.0001, T(1.1)); g.gain.linearRampToValueAtTime(0.7, T(pl.inEnd)); g.gain.linearRampToValueAtTime(0.62, T(pl.light));
+    g.gain.linearRampToValueAtTime(1, T(pl.light + 0.2)); g.gain.setTargetAtTime(0.0001, T(pl.light + 0.3), 0.9);
+    lp.connect(g).connect(o);
+    for (const [f, gg] of [[P.E3, 0.14], [P.B3, 0.09], [P.E4, 0.06], [P.G4, 0.025]]) for (const det of [-5, 5]) {
+      const os = a.createOscillator(), e = a.createGain();
+      os.frequency.value = f; os.detune.value = det; e.gain.value = gg;
+      os.connect(e).connect(lp); os.start(T(1.1)); os.stop(T(pl.light + 6));
+    }
+    ping(a, o, T(pl.light + 0.12), P.E6, { g: 0.1, dur: 0.8, echo: 0.3, fb: 0.42, att: 0.08 });
+  },
+};
+return MONTH;
+})();
+// ---- letterlijk uit src/scene/sound.js (vorige versie) ----
+const OLD = (() => {
 const P = { E2: 82.41, E3: 164.81, G3: 196, B3: 246.94, E4: 329.63, G4: 392, A4: 440, B4: 493.88, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.5 };
 const SONAR_NOTES = [0, P.E5, P.C5, P.A4, P.G4, P.E4];   // Nu .. Ooit
 const ECHO = [0, 0.075, 0.115, 0.16, 0.22, 0.3];         // Nu .. Ooit: afstand tot de kern, in s
@@ -269,15 +411,26 @@ const MONTH = {
     ping(a, o, T(pl.light + 0.12), P.E6, { g: 0.1, dur: 0.8, echo: 0.3, fb: 0.42, att: 0.08 });
   },
 };
+return MONTH;
+})();
 
 
 // ---- afspelen (zelfde kanaal als cue() in de app: begrenzer, versterking 0,504) ----
 const STYLES = [
-  { id: 'slok', z: 'Z1', name: 'Opgeslokt', desc: 'Een tikje per ster, precies op haar aankomst, van E6 naar E5 naarmate de kern voller wordt. Een stilte terwijl de kern inademt, dan zwelt het slotakkoord E3 B3 E4 G4 met het licht, met een fluistering E6 erboven.' },
-  { id: 'kolk', z: 'Z2', name: 'Draaikolk', desc: 'Bandruis die met de schijf mee omhoog draait, van 260 naar 2600 Hz, met een lage toon van E2 naar E3 eronder. Alles valt weg op het moment dat de schijf dichtknijpt, dan het akkoord E3 B3 E4 B4.' },
-  { id: 'beeld', z: 'Z3', name: 'Sterrenbeeld', desc: 'Een zachte ping per laag van het sterrenbeeld terwijl die zich tekent, E5 en A4 om beurten. Dan een tikje per kraal die de kern bereikt, en het slotakkoord.' },
-  { id: 'adem', z: 'Z4', name: 'Inademen', desc: 'Eén lang akkoord dat zwelt en opengaat terwijl de hemel inzakt, even vasthoudt en bij het uitademen helemaal opengaat, met een fluistering E6.' },
+  { id: 'slok', z: 'Z1', name: 'Opgeslokt',
+    desc: 'Een tikje per ster, precies op haar aankomst, van E6 naar E5 naarmate de kern voller wordt. Terwijl de kern inademt begint het akkoord al stil; bij het licht bloeit het open, lege kwinten E3 B3 E4 B4, en ademt lang uit. Een fluistering E6 erboven.',
+    old: 'Een tikje per ster, van E6 naar E5. Een stilte terwijl de kern inademt, dan het slotakkoord E3 B3 E4 G4 met het licht (de pop), en een fluistering E6.' },
+  { id: 'kolk', z: 'Z2', name: 'Draaikolk',
+    desc: 'Geen wind meer: een zachte toon die met de schijf meedraait. Hij pulseert en zwaait van links naar rechts, steeds sneller, van 1 naar 6 keer per seconde, terwijl hij opengaat; een lage toon glijdt van E2 naar E3. Vlak voor het dichtknijpen ademt alles weg, dan bloeit een warm akkoord E3 B3 D4 G4.',
+    old: 'Bandruis die met de schijf mee omhoog draait, van 260 naar 2600 Hz, met een lage toon van E2 naar E3. Weg bij het dichtknijpen, dan het akkoord E3 B3 E4 B4 (de pop).' },
+  { id: 'beeld', z: 'Z3', name: 'Sterrenbeeld',
+    desc: 'Een zachte ping per laag van het sterrenbeeld terwijl die zich tekent, E5 en A4 om beurten. Dan een tikje per kraal die de kern bereikt. Het akkoord begint stil tijdens het inademen en bloeit open, zwevend: E3 B3 F♯4 A4.',
+    old: 'Een zachte ping per laag (E5 en A4), een tikje per kraal, dan het slotakkoord E3 B3 E4 G4 (de pop).' },
+  { id: 'adem', z: 'Z4', name: 'Inademen',
+    desc: 'Eén lang akkoord dat zwelt en opengaat terwijl de hemel inzakt, even vasthoudt en bij het uitademen helemaal opengaat, met een fluistering E6. Ongewijzigd: de maatstaf voor de andere drie.' },
 ];
+let VER = 'new';
+const bank = () => VER === 'old' ? OLD : NEW;
 let ctx = null, limiter = null, current = null;
 function audio() {
   if (!ctx) {
@@ -296,7 +449,28 @@ function sky(n) {
   return Array.from({ length: n }, () => { const rr = SKY_IN + (SKY_OUT - SKY_IN) * Math.sqrt(r()), a = r() * Math.PI * 2; return { x: rr * Math.cos(a), y: rr * Math.sin(a), ph: r() * 10 }; });
 }
 let N = 30, plans = {};
-function rebuild() { const st = sky(N); for (const v of STYLES) plans[v.id] = turnPlan(v.id, st); }
+function rebuild() { const st = sky(N); for (const v of STYLES) plans[v.id] = turnPlan(v.id, st); waves = {}; renderWaves(); }
+
+// golfvorm uit de echte audio: offline gerenderd door hetzelfde kanaal, per vakje de hoogste waarde links en rechts
+let waves = {}, gen = 0;
+const BINS = 900;
+async function renderWaves() {
+  const my = ++gen, OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OAC) return;
+  for (const ver of ['new', 'old']) for (const v of STYLES) {
+    const pl = plans[v.id], T = Math.ceil(pl.end), sr = 22050;
+    try {
+      const a = new OAC(2, Math.ceil(sr * T), sr), lim = a.createDynamicsCompressor(), pre = a.createGain();
+      lim.threshold.value = -3; lim.knee.value = 8; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12;
+      lim.connect(a.destination); pre.gain.value = 0.504; pre.connect(lim);
+      (ver === 'old' ? OLD : NEW)[v.id](a, pre, 0, pl);
+      const buf = await a.startRendering(); if (my !== gen) return;
+      const l = buf.getChannelData(0), r = buf.getChannelData(1), L = new Float32Array(BINS), R = new Float32Array(BINS), step = l.length / BINS;
+      for (let i = 0; i < l.length; i++) { const k = Math.min(BINS - 1, Math.floor(i / step)); if (Math.abs(l[i]) > L[k]) L[k] = Math.abs(l[i]); if (Math.abs(r[i]) > R[k]) R[k] = Math.abs(r[i]); }
+      waves[ver + v.id] = { L, R, T };
+      if (ver === VER) redraw();
+    } catch { /* geen offline audio: enkel de tikjes */ }
+  }
+}
 
 // welke tikjes monthTicks echt speelt (dezelfde regel: binnen 45 ms wordt één voller tikje)
 function playedTicks(arr) {
@@ -318,7 +492,7 @@ function play(id, card) {
   const a = audio(); if (!a) return;
   const out = a.createGain(); out.gain.value = 0.504; out.connect(limiter);
   const pl = plans[id], t0 = a.currentTime + 0.06;
-  MONTH[id](a, out, t0, pl);
+  bank()[id](a, out, t0, pl);
   current = { id, out, t0, card, end: pl.end };
   card.classList.add('is-on'); card.querySelector('.play').setAttribute('aria-label', 'Stop ' + card.dataset.name);
   loop();
@@ -354,32 +528,18 @@ function draw(id, t = -1) {
   for (let s = 0; s <= T; s++) { g.fillRect(X(s), axisY - 3, 1, 3); if (s % (W < 360 ? 2 : 1) === 0) g.fillText(s + 's', Math.min(X(s), W - 10), H - 3); }
   g.textAlign = 'left'; g.fillText('L', 2, mid - span + 8); g.fillText('R', 2, mid + span);
 
-  // omhullende van het akkoord (en bij Z2 de ruis, bij Z4 het lange akkoord)
-  const env = (pts) => {
-    g.beginPath(); g.moveTo(X(pts[0][0]), mid);
-    for (const [s, v] of pts) g.lineTo(X(s), mid - v * span);
-    for (let i = pts.length - 1; i >= 0; i--) g.lineTo(X(pts[i][0]), mid + pts[i][1] * span);
-    g.closePath(); g.fillStyle = fill; g.fill();
-    g.beginPath(); pts.forEach(([s, v], i) => i ? g.lineTo(X(s), mid - v * span) : g.moveTo(X(s), mid - v * span));
-    g.strokeStyle = ink3; g.stroke();
-  };
-  const chordAt = (c, h = 0.62) => { const p = []; for (let s = 0; s <= 3.2; s += 0.08) p.push([c + s, h * (s < 0.14 ? s / 0.14 : Math.exp(-(s - 0.14) / 0.75))]); env(p.filter(q => q[0] <= T)); };
-
-  if (id === 'kolk') {
-    const C = pl.collapse, p = [];
-    for (let s = 0.9; s <= C; s += 0.05) { const v = s < 3 ? 0.05 * (s - 0.9) / 2.1 : 0.05 + 0.11 * (s - 3) / (C - 0.08 - 3); p.push([s, Math.min(0.16, v) * 4.6]); }
-    p.push([C, 0]); env(p);
-    // lage toon E2 naar E3
-    g.strokeStyle = ink; g.globalAlpha = .55; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(X(1.2), mid + span - 2); g.lineTo(X(C), mid + span * 0.45); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
-    chordAt(C + 0.04);
-  } else if (id === 'adem') {
-    const p = [], L = pl.light;
-    for (let s = 1.1; s <= pl.inEnd; s += 0.05) p.push([s, 0.7 * (s - 1.1) / (pl.inEnd - 1.1)]);
-    p.push([L, 0.62]); p.push([L + 0.2, 1]);
-    for (let s = L + 0.3; s <= T; s += 0.08) p.push([s, Math.exp(-(s - L - 0.3) / 0.9)]);
-    env(p.map(([s, v]) => [s, v * 0.85]));
-  } else {
-    chordAt(pl.light);
+  // golfvorm: links boven, rechts onder, wortelschaal (vol = 0 dBFS); rood waar het clipt
+  const wv = waves[VER + id];
+  if (wv) {
+    const bw = (W - padL - padR) / BINS, col = css('--ink-3'), red = css('--core');
+    for (let k = 0; k < BINS; k++) {
+      const s = (k + 0.5) * wv.T / BINS, hl = Math.min(1, Math.sqrt(wv.L[k])) * span, hr = Math.min(1, Math.sqrt(wv.R[k])) * span;
+      if (hl < 0.4 && hr < 0.4) continue;
+      const clip = wv.L[k] > 0.99 || wv.R[k] > 0.99;
+      g.fillStyle = clip ? red : col; g.globalAlpha = clip ? 1 : (t < 0 || past(s) ? 0.55 : 0.3);
+      g.fillRect(X(s) - bw / 2, mid - hl, Math.max(1, bw), hl + hr);
+    }
+    g.globalAlpha = 1;
   }
 
   // lagen van het sterrenbeeld: holle zeshoekjes
@@ -415,10 +575,9 @@ const grid = document.getElementById('grid');
 for (const v of STYLES) {
   const el = document.createElement('article');
   el.className = 'card'; el.dataset.name = v.z + ' ' + v.name;
-  const legend = v.id === 'kolk'
-    ? '<span><i style="background:var(--fill);outline:1px solid var(--ink-3)"></i>ruis en akkoord</span><span>- - lage toon</span>'
-    : v.id === 'adem' ? '<span><i style="background:var(--fill);outline:1px solid var(--ink-3)"></i>akkoord</span><span><i style="background:var(--c1)"></i>fluistering</span>'
-    : '<span><i style="background:var(--c1)"></i>hoog</span><span><i style="background:var(--c4)"></i>laag</span>' + (v.id === 'beeld' ? '<span>⬡ laag van het beeld</span>' : '') + '<span><i style="background:var(--fill);outline:1px solid var(--ink-3)"></i>akkoord</span>';
+  const legend = (v.id === 'slok' || v.id === 'beeld' ? '<span><i style="background:var(--c1)"></i>hoog tikje</span><span><i style="background:var(--c4)"></i>laag tikje</span>' : '')
+    + (v.id === 'beeld' ? '<span>⬡ laag van het beeld</span>' : '')
+    + '<span><i style="background:var(--ink-3)"></i>golfvorm</span><span><i style="background:var(--core)"></i>clipt</span>';
   el.innerHTML = `<div class="head">
       <button type="button" class="play" id="p-${v.id}" aria-label="Speel ${v.z} ${v.name}">
         <svg class="i-play" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9.5-5.5z" fill="currentColor"/></svg>
@@ -427,7 +586,7 @@ for (const v of STYLES) {
       <div class="title"><span class="label">${v.z}</span><h2>${v.name}<code>${v.id}</code></h2></div>
       <span class="dur" id="d-${v.id}"></span>
     </div>
-    <p class="desc">${v.desc}</p>
+    <p class="desc" id="desc-${v.id}">${v.desc}</p>
     <canvas id="cv-${v.id}" aria-label="Tijdlijn van wat je hoort bij ${v.name}"></canvas>
     <div class="legend">${legend}</div>`;
   el.querySelector('.play').addEventListener('click', () => play(v.id, el));
@@ -439,8 +598,15 @@ document.getElementById('stars').addEventListener('click', e => {
   document.querySelectorAll('#stars button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   rebuild(); durs(); drawAll();
 });
+document.getElementById('ver').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  stop(); VER = b.dataset.v;
+  document.querySelectorAll('#ver button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  for (const v of STYLES) document.getElementById('desc-' + v.id).textContent = VER === 'old' && v.old ? v.old : v.desc;
+  drawAll();
+});
+function redraw() { drawAll(); if (current) draw(current.id, ctx.currentTime - current.t0); }
 rebuild(); durs();
-const redraw = () => { drawAll(); if (current) draw(current.id, ctx.currentTime - current.t0); };
 addEventListener('resize', redraw);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
 new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

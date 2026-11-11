@@ -124,7 +124,7 @@ export const SOUNDS = {
    Elke toon wordt zacht aangezet en loopt exponentieel uit, nooit een sprong. Genormaliseerd zodat het afvinken net als
    baken piekt op ongeveer -20 dBFS (gemeten met OfflineAudioContext). Geluid krijgen enkel: afvinken, prestatie, nieuwe
    rang, zandloper klaar en de maandwissel. */
-const P = { E2: 82.41, E3: 164.81, G3: 196, B3: 246.94, E4: 329.63, G4: 392, A4: 440, B4: 493.88, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.5 };
+const P = { E2: 82.41, E3: 164.81, G3: 196, B3: 246.94, D4: 293.66, E4: 329.63, Fs4: 369.99, G4: 392, A4: 440, B4: 493.88, C5: 523.25, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.5 };
 const SONAR_NOTES = [0, P.E5, P.C5, P.A4, P.G4, P.E4];   // Nu .. Ooit
 const ECHO = [0, 0.075, 0.115, 0.16, 0.22, 0.3];         // Nu .. Ooit: afstand tot de kern, in s
 const DET = [0, 5, -4, 3, -6, 2, -2];                     // kleine vaste stemverschillen bij herhaling (cent)
@@ -346,17 +346,24 @@ function panTo(a, out, p) {
   const n = a.createStereoPanner(); n.pan.value = Math.max(-1, Math.min(1, p)); n.connect(out);
   return n;
 }
-// zacht slotakkoord: twee stemmen per toon, een lage doorlaat die opengaat en weer sluit, lange uitadem
-function monthChord(a, out, t, notes, { g = 1, att = 0.08, dur = 2.6, open = 2400 } = {}) {
-  const lp = a.createBiquadFilter(); lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(open, t + att + 0.25); lp.frequency.setTargetAtTime(700, t + att + 0.4, dur / 3);
-  lp.connect(out);
-  notes.forEach(([f, gg], i) => [-4, 4].forEach(det => {
-    const o = a.createOscillator(), e = a.createGain();
-    o.frequency.value = f; o.detune.value = det + i;
-    soft(e, t + i * 0.012, 0.11 * g * gg, att, dur);
-    o.connect(e).connect(lp); o.start(t); o.stop(t + att + dur * 1.8);
-  }));
+// slot van Z1 tot Z3, in de geest van Z4 (Victor, 11/11/2026: "die serene vibe"): een akkoord dat al stil begint terwijl de
+// kern inademt, bij het licht openbloeit achter een lage doorlaat en lang uitademt. Elke stem staat vanaf haar start op een
+// vaste sterkte en de enige omhullende begint op 0: geen tik bij het begin. (Vroeger begonnen stemmen 2 tot 4 tot 36 ms vóór
+// hun omhullende op volle sterkte, de "pop" die door de begrenzer klonk alsof het clipte.)
+function monthSwell(a, out, tL, notes, { inhale = 0.4, bloom = 0.5, open = 1700, hold = 0.3, tail = 1.1, g = 0.8, rest = 520 } = {}) {
+  const t = tL - inhale, lp = a.createBiquadFilter(), v = a.createGain();
+  lp.type = 'lowpass'; lp.Q.value = 0.6;
+  lp.frequency.setValueAtTime(240, t); lp.frequency.exponentialRampToValueAtTime(600, tL);
+  lp.frequency.exponentialRampToValueAtTime(open, tL + bloom); lp.frequency.setTargetAtTime(rest, tL + bloom + hold, tail * 1.3);
+  v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(0.3 * g, tL); v.gain.linearRampToValueAtTime(g, tL + bloom);
+  v.gain.setValueAtTime(g, tL + bloom + hold); v.gain.setTargetAtTime(0, tL + bloom + hold, tail);
+  lp.connect(v).connect(out);
+  const end = tL + bloom + hold + tail * 7;
+  for (const [f, gg] of notes) for (const det of [-5, 5]) {
+    const os = a.createOscillator(), e = a.createGain();
+    os.frequency.value = f; os.detune.value = det; e.gain.value = gg;
+    os.connect(e).connect(lp); os.start(t); os.stop(end);
+  }
 }
 // een tikje per ster die aankomt, steeds lager naarmate de kern voller wordt; te dicht op elkaar wordt één tikje
 function monthTicks(a, out, t0, arrivals) {
@@ -373,35 +380,54 @@ function monthTicks(a, out, t0, arrivals) {
     last = x.t; extra = 0;
   }
 }
-const ENDING = [[P.E3, 1], [P.B3, 0.6], [P.E4, 0.42], [P.G4, 0.16]];
+// slotakkoorden: elk een eigen kleur in E, geen kopie van Z4 (dat E3 B3 E4 G4 houdt)
+const OPEN = [[P.E3, 0.13], [P.B3, 0.085], [P.E4, 0.05], [P.B4, 0.02]];      // Z1: lege kwinten, wat overblijft na de slokken
+const STARRY = [[P.E3, 0.12], [P.B3, 0.08], [P.Fs4, 0.045], [P.A4, 0.03]];   // Z3: zwevend (sus), sluit aan op de pings E5 en A4
+const WARM = [[P.E3, 0.12], [P.B3, 0.075], [P.D4, 0.05], [P.G4, 0.025]];     // Z2: warm (Em7) na het draaien
 const MONTH = {
-  // Z1 Opgeslokt: tikjes op de slokken, een stilte terwijl de kern inademt, dan zwelt het akkoord met het licht
+  // Z1 Opgeslokt: tikjes op de slokken; terwijl de kern inademt begint het akkoord stil en bloeit het met het licht open
   slok(a, o, t0, pl) {
     monthTicks(a, o, t0, pl.arrivals);
-    monthChord(a, o, t0 + pl.light, ENDING, { g: 1.1, att: 0.14, dur: 3.2 });
-    ping(a, o, t0 + pl.light + 0.18, P.E6, { g: 0.12, dur: 0.6, echo: 0.3, fb: 0.4, att: 0.06 });
+    monthSwell(a, o, t0 + pl.light, OPEN, { inhale: 0.38 });
+    ping(a, o, t0 + pl.light + 0.3, P.E6, { g: 0.08, dur: 0.7, echo: 0.3, fb: 0.4, att: 0.12 });
   },
-  // Z2 Draaikolk: een adem van ruis die met de schijf mee omhoog draait, een lage toon eronder, weg bij het dichtknijpen
+  // Z2 Draaikolk: geen wind meer (Victor, 11/11/2026: "te druk, ongezellige wind") maar een zachte toon die met de schijf
+  // meedraait: hij pulseert en zwaait van links naar rechts, steeds sneller (1 naar 6 keer per seconde), terwijl de doorlaat
+  // opengaat; een lage toon eronder glijdt van E2 naar E3. Vlak voor het dichtknijpen ademt alles weg, dan bloeit het akkoord.
   kolk(a, o, t0, pl) {
-    const C = pl.collapse, T = x => t0 + x;
-    const len = Math.ceil(a.sampleRate * 2), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    const src = a.createBufferSource(), bp = a.createBiquadFilter(), g = a.createGain();
-    src.buffer = buf; src.loop = true; bp.type = 'bandpass'; bp.Q.value = 5;
-    bp.frequency.setValueAtTime(260, T(0.9)); bp.frequency.exponentialRampToValueAtTime(620, T(3.0)); bp.frequency.exponentialRampToValueAtTime(2600, T(C - 0.05));
-    g.gain.setValueAtTime(0.0001, T(0.9)); g.gain.linearRampToValueAtTime(0.05, T(3.0)); g.gain.linearRampToValueAtTime(0.16, T(C - 0.08)); g.gain.linearRampToValueAtTime(0.0001, T(C));
-    src.connect(bp).connect(g).connect(o); src.start(T(0.9)); src.stop(T(C + 0.1));
+    const C = pl.collapse, T = x => t0 + x, s0 = 0.9;
+    const lfo = a.createOscillator(), depth = a.createGain(), am = a.createGain(), lp = a.createBiquadFilter(), v = a.createGain();
+    lfo.frequency.setValueAtTime(1, T(s0)); lfo.frequency.exponentialRampToValueAtTime(2.2, T(3)); lfo.frequency.exponentialRampToValueAtTime(6, T(C));
+    depth.gain.setValueAtTime(0.15, T(s0)); depth.gain.linearRampToValueAtTime(0.35, T(C));
+    am.gain.value = 0.62; lfo.connect(depth).connect(am.gain);
+    lp.type = 'lowpass'; lp.Q.value = 0.6;
+    lp.frequency.setValueAtTime(300, T(s0)); lp.frequency.exponentialRampToValueAtTime(1100, T(C));
+    v.gain.setValueAtTime(0, T(s0)); v.gain.linearRampToValueAtTime(0.45, T(3)); v.gain.linearRampToValueAtTime(0.75, T(C - 0.35));
+    v.gain.linearRampToValueAtTime(0, T(C - 0.02));
+    let tail = v;
+    if (a.createStereoPanner) {
+      const pan = a.createStereoPanner(), sway = a.createGain();
+      sway.gain.setValueAtTime(0.1, T(s0)); sway.gain.linearRampToValueAtTime(0.4, T(C));
+      lfo.connect(sway).connect(pan.pan); v.connect(pan); tail = pan;
+    }
+    am.connect(lp).connect(v); tail.connect(o);
+    for (const [f, gg] of [[P.E3, 0.1], [P.B3, 0.06], [P.E4, 0.03]]) for (const det of [-6, 6]) {
+      const os = a.createOscillator(), e = a.createGain();
+      os.frequency.value = f; os.detune.value = det; e.gain.value = gg;
+      os.connect(e).connect(am); os.start(T(s0)); os.stop(T(C + 0.1));
+    }
+    lfo.start(T(s0)); lfo.stop(T(C + 0.1));
     const lo = a.createOscillator(), lg = a.createGain();
     lo.frequency.setValueAtTime(P.E2, T(1.2)); lo.frequency.exponentialRampToValueAtTime(P.E3, T(C));
-    lg.gain.setValueAtTime(0.0001, T(1.2)); lg.gain.linearRampToValueAtTime(0.05, T(C - 0.1)); lg.gain.linearRampToValueAtTime(0.0001, T(C));
+    lg.gain.setValueAtTime(0, T(1.2)); lg.gain.linearRampToValueAtTime(0.045, T(C - 0.35)); lg.gain.linearRampToValueAtTime(0, T(C - 0.02));
     lo.connect(lg).connect(o); lo.start(T(1.2)); lo.stop(T(C + 0.1));
-    monthChord(a, o, T(C + 0.04), [[P.E3, 1], [P.B3, 0.6], [P.E4, 0.4], [P.B4, 0.14]], { g: 1.1, att: 0.05, dur: 3 });
+    monthSwell(a, o, T(C), WARM, { inhale: 0.08, bloom: 0.6, open: 1500, hold: 0.25, tail: 1.2, g: 0.95 });
   },
-  // Z3 Sterrenbeeld: een zachte ping per laag die zich tekent, een tikje per kraal die de kern bereikt, het akkoord
+  // Z3 Sterrenbeeld: een zachte ping per laag die zich tekent, een tikje per kraal die de kern bereikt, dan bloeit het akkoord
   beeld(a, o, t0, pl) {
     pl.layers.forEach((tl, d) => ping(a, o, t0 + tl, d % 2 ? P.A4 : P.E5, { g: Math.max(0.12, 0.32 - 0.012 * d), dur: 0.14, echo: 0.22, fb: 0.4, wet: 0.6 }));
     monthTicks(a, o, t0, pl.arrivals);
-    monthChord(a, o, t0 + pl.light, ENDING, { g: 1.1, att: 0.14, dur: 3.2 });
+    monthSwell(a, o, t0 + pl.light, STARRY, { inhale: 0.38, bloom: 0.6, open: 1900, tail: 1.3, g: 0.88 });
   },
   // Z4 Inademen: één lang akkoord dat zwelt en zich opent terwijl de hemel inzakt, vasthoudt, en bij het uitademen opengaat
   adem(a, o, t0, pl) {
