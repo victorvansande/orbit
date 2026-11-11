@@ -5,16 +5,17 @@
 // u'' + u = 3u² (licht) en u'' + u = 1/L² + 3u² (materie), hier geschreven als een centrale versnelling in
 // cartesische coördinaten (r de omtrekstraal van Schwarzschild); getijden en roodverschuiving uit de metriek zelf.
 
-export const D = 34;                          // afstand van de camera
+export const D = 4000;                        // afstand van de camera: een verre toeschouwer, zodat de schaal op het hele scherm dezelfde is
+export const PXM = 2.8;                       // schermpixels per M bij een gat van 120 px breed
 export const ELEV = 7.5 * Math.PI / 180;      // hoogte van de camera boven het vlak van de schijf
 export const R_IN = 6, R_OUT = 17;            // schijf: van de binnenste stabiele baan tot 17
-export const FOV = 0.8;                       // halve beeldbreedte (tangens)
+export const FOV = 60 / (PXM * D);             // halve beeldbreedte (tangens)
 const CAM = [0, D * Math.sin(ELEV), D * Math.cos(ELEV)];
 const FWD = [0, -Math.sin(ELEV), -Math.cos(ELEV)], RIGHT = [1, 0, 0], UP = [0, Math.cos(ELEV), -Math.sin(ELEV)];
 
 /* ---- Beeld van de schijf: één lichtstraal terug vanaf de camera ---- */
 // x'' = -3 h² x / r^5 met h = |x × v| geeft exact de lichtbanen. Tot drie kruisingen met de schijf, of gevangen,
-// of ontsnapt (dan `esc`: de richting, voor het raster achter het gat).
+// of voorbij.
 export function trace(sx, sy) {
   let px = CAM[0], py = CAM[1], pz = CAM[2];
   let vx = FWD[0] + FOV * (sx * RIGHT[0] + sy * UP[0]), vy = FWD[1] + FOV * (sx * RIGHT[1] + sy * UP[1]), vz = FWD[2] + FOV * (sx * RIGHT[2] + sy * UP[2]);
@@ -25,8 +26,8 @@ export function trace(sx, sy) {
   for (let i = 0; i < 3000; i++) {
     const r = Math.hypot(px, py, pz);
     if (r < 2.02) return { hits };
-    if (r > D * 1.4 && px * vx + py * vy + pz * vz > 0) return { hits, esc: [vx, vy, vz] };
-    const dt = Math.min(1.2, Math.max(0.012, 0.06 * (r - 1.6)));
+    if (r > 40 && px * vx + py * vy + pz * vz > 0) return { hits };   // voorbij de schijf en op weg naar buiten
+    const dt = Math.max(0.012, 0.06 * (r - 1.6));   // ver weg grote stappen (de baan is daar recht), dichtbij fijn
     const a1 = acc(px, py, pz);
     const v2 = [vx + a1[0] * dt / 2, vy + a1[1] * dt / 2, vz + a1[2] * dt / 2], a2 = acc(px + vx * dt / 2, py + vy * dt / 2, pz + vz * dt / 2);
     const v3 = [vx + a2[0] * dt / 2, vy + a2[1] * dt / 2, vz + a2[2] * dt / 2], a3 = acc(px + v2[0] * dt / 2, py + v2[1] * dt / 2, pz + v2[2] * dt / 2);
@@ -49,36 +50,28 @@ export function trace(sx, sy) {
 }
 // helderheid van de schijf per oppervlak (vorm van Page en Thorne, genormaliseerd op haar maximum)
 export const emit = r => { const x = R_IN / r; return Math.max(0, (1 - Math.sqrt(x)) * x * x * x) / 0.0255; };
-// het stippenraster achter het gat, gezien langs de afgebogen straal (0..1)
-export function gridOf(esc) {
-  if (!esc) return 0;
-  const f = esc[0] * FWD[0] + esc[1] * FWD[1] + esc[2] * FWD[2];
-  if (f <= 0.05) return 0;
-  const bx = (esc[0] * RIGHT[0] + esc[1] * RIGHT[1] + esc[2] * RIGHT[2]) / f, by = (esc[0] * UP[0] + esc[1] * UP[1] + esc[2] * UP[2]) / f;
-  const u = bx / 0.085, w = by / 0.085;
-  return Math.max(0, 1 - Math.hypot(u - Math.round(u), w - Math.round(w)) / 0.22);
-}
-
 /* ---- Lens voor een voorwerp naast het gat ---- */
 // Een puntbron in het hemelvlak (het vlak door het gat, loodrecht op de kijklijn) op afstand r heeft een hoofdbeeld aan
 // haar eigen kant en een tweede beeld aan de overkant, vlak bij de fotonring (het licht loopt driekwart rond het gat).
 // Door de bolsymmetrie volstaat één doorsnede: een straal vanaf de camera onder hoek α kruist het hemelvlak een eerste
 // keer (hoofdbeeld van een bron op die afstand) en, als hij genoeg afbuigt, een tweede keer aan de andere kant.
-function ray2d(alpha) {
+function ray2d(alpha, plane = 0) {
   let x = D, y = 0, vx = -Math.cos(alpha), vy = Math.sin(alpha);
   const h2 = (x * vy - y * vx) ** 2;
   const acc = (px, py) => { const r2 = px * px + py * py, k = -3 * h2 / (r2 * r2 * Math.sqrt(r2)); return [k * px, k * py]; };
-  let r0 = null, r1 = null;
+  let r0 = null, r1 = null, back = null, turned = false;
   for (let i = 0; i < 20000; i++) {
     const r = Math.hypot(x, y);
-    if (r < 2.0005) return { r0, r1, cap: true };
-    if (r > D * 1.5 && x * vx + y * vy > 0) return { r0, r1, cap: false };
-    const dt = Math.min(1, Math.max(0.004, 0.04 * (r - 1.9)));
+    if (r < 2.0005) return { r0, r1, back, cap: true };
+    if (r > 90 && x * vx + y * vy > 0 && (!plane || x < -plane - 1)) return { r0, r1, back, cap: false };
+    const dt = Math.max(0.004, 0.04 * (r - 1.9));
     const a1 = acc(x, y);
     const v2 = [vx + a1[0] * dt / 2, vy + a1[1] * dt / 2], a2 = acc(x + vx * dt / 2, y + vy * dt / 2);
     const v3 = [vx + a2[0] * dt / 2, vy + a2[1] * dt / 2], a3 = acc(x + v2[0] * dt / 2, y + v2[1] * dt / 2);
     const v4 = [vx + a3[0] * dt, vy + a3[1] * dt], a4 = acc(x + v3[0] * dt, y + v3[1] * dt);
     const nx = x + dt / 6 * (vx + 2 * v2[0] + 2 * v3[0] + v4[0]), ny = y + dt / 6 * (vy + 2 * v2[1] + 2 * v3[1] + v4[1]);
+    if (vx > 0) turned = true;   // omgekeerd: die straal ziet het vlak erachter niet meer rechtstreeks
+    if (plane && back == null && !turned && x > -plane && nx <= -plane) back = y + (ny - y) * ((x + plane) / (x - nx));
     if (r0 == null && x > 0 && nx <= 0 && y > 0) r0 = y + (ny - y) * (x / (x - nx));
     else if (r0 != null && r1 == null && x < 0 && nx >= 0 && y < 0) r1 = -(y + (ny - y) * (x / (x - nx)));   // verder volgen: gevangen of niet bepaalt de schaduwrand
     vx += dt / 6 * (a1[0] + 2 * a2[0] + 2 * a3[0] + a4[0]); vy += dt / 6 * (a1[1] + 2 * a2[1] + 2 * a3[1] + a4[1]);
@@ -91,16 +84,20 @@ export const impact = alpha => D / Math.sqrt(1 / Math.tan(alpha) ** 2 + 1 - 2 / 
 
 // Tabellen r -> beeldhoek. `primary(r)` en `secondary(r)` geven { tan, b } (tangens van de beeldhoek, botsparameter)
 // of null; `radius(tan)` is het omgekeerde van het hoofdbeeld (waar staat een bron die je op die plek ziet?).
-export function lensTable() {
-  let lo = 0.05, hi = 0.4;   // kritische hoek: de rand van de schaduw
-  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (ray2d(m).cap) lo = m; else hi = m; }
+// In stukjes: `lensSteps()` is een generator die na elke straal even pauzeert (yield) en aan het eind de tabel geeft,
+// zodat het rekenwerk over rustige momenten gespreid kan worden; `lensTable()` rekent alles in één keer (controles).
+const runAll = it => { let r; while (!(r = it.next()).done); return r.value; };
+export const lensTable = () => runAll(lensSteps());
+export function* lensSteps() {
+  let lo = 1 / D, hi = 12 / D;   // kritische hoek: de rand van de schaduw
+  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (ray2d(m).cap) lo = m; else hi = m; yield; }
   const crit = (lo + hi) / 2;
   const P = [], S = [];
   const add = a => { const q = ray2d(a); if (q.r0 != null && q.r0 >= 2) P.push([a, q.r0]); if (q.r1 != null && q.r1 >= 2) S.push([a, q.r1]); };
   const aMax = Math.atan(FOV * 1.7);
-  for (let i = 1; i <= 420; i++) add(aMax * i / 420);
-  for (let i = 0; i <= 260; i++) add(crit * (0.7 + 0.75 * i / 260));
-  for (let k = 1; k <= 28; k++) { const e = Math.pow(10, -k / 4); add(crit * (1 + e)); add(crit * (1 - e)); }
+  for (let i = 1; i <= 420; i++) { add(aMax * i / 420); yield; }
+  for (let i = 0; i <= 260; i++) { add(crit * (0.7 + 0.75 * i / 260)); yield; }
+  for (let k = 1; k <= 28; k++) { const e = Math.pow(10, -k / 4); add(crit * (1 + e)); add(crit * (1 - e)); yield; }
   const mono = list => { list.sort((p, q) => p[0] - q[0]); const out = []; for (const e of list) if (!out.length || e[1] > out[out.length - 1][1]) out.push(e); return out; };
   const p = mono(P), s = mono(S);
   const at = (list, r) => {   // hoek bij straal r (lineair tussen de steunpunten)
@@ -124,6 +121,42 @@ export function lensTable() {
       return p[a][1] + (p[b][1] - p[a][1]) * (al - p[a][0]) / (p[b][0] - p[a][0]);
     },
   };
+}
+
+/* ---- Lens voor het raster achter het gat ---- */
+// Het stippenraster is een vlak op afstand `depth` achter het gat, loodrecht op de kijklijn. Een punt van dat vlak dat
+// je zonder gat op afstand t van het gat zou zien (tangens van de hoek), zie je met gat op twee plekken: het hoofdbeeld
+// aan dezelfde kant, naar buiten geschoven tot voorbij de ring van Einstein, en een tweede beeld aan de overkant,
+// binnen die ring. Licht buigt naar het gat toe, dus beelden schuiven ervan weg. Staat een punt recht achter het gat,
+// dan vloeien de twee beelden samen tot een ring. De helderheid per oppervlak blijft gelijk; het beeld wordt in de
+// richting van het gat samengedrukt (factor `slope`) en dwars uitgerekt (beeldafstand / bronafstand).
+// `primary(t, out)` en `secondary(t, out)` zetten [tangens van het beeld, slope] in `out` en geven false als er geen is.
+// Eén afspraak: de afstandsmaat rond een zwart gat loopt niet gelijk met die van vlakke ruimte (een lichtstraal loopt
+// ongeveer 1 M dichter langs het gat dan haar richting van ver doet verwachten), dus "hetzelfde punt met en zonder gat"
+// ligt niet vanzelf vast. We leggen het raster zo dat punten ver van het gat op hun plaats blijven (`far`, gemeten op
+// 250 M); wat overblijft is de buiging dichtbij.
+export const backdropTable = depth => runAll(backdropSteps(depth));
+export function* backdropSteps(depth) {
+  const bc = Math.sqrt(27), pts = [];
+  const alphaOf = b => Math.atan(1 / Math.sqrt(D * D / (b * b) - 1 + 2 / D));
+  const ref = alphaOf(250), far = (D + depth) * Math.tan(ref) - ray2d(ref, depth).back;
+  for (let i = 0; i <= 360; i++) {
+    const al = alphaOf(bc + 1e-2 * Math.pow(2.6e4, i / 360)), q = ray2d(al, depth);
+    if (!q.cap && q.back != null) pts.push([Math.tan(al), q.back * (1 + far / Math.hypot(q.back, depth)) / (D + depth)]);
+    yield;
+  }
+  const list = [];
+  for (const e of pts) if (!list.length || e[1] > list[list.length - 1][1]) list.push(e);
+  const find = (v, out) => {
+    if (v < list[0][1]) return false;
+    if (v >= list[list.length - 1][1]) { out[0] = v; out[1] = 1; return true; }   // ver weg: geen merkbare buiging meer
+    let a = 0, b = list.length - 1;
+    while (b - a > 1) { const m = (a + b) >> 1; if (list[m][1] <= v) a = m; else b = m; }
+    const sl = (list[b][0] - list[a][0]) / (list[b][1] - list[a][1]);
+    out[0] = list[a][0] + (v - list[a][1]) * sl; out[1] = sl;
+    return true;
+  };
+  return { primary: (t, out) => find(t, out), secondary: (t, out) => find(-t, out) };
 }
 
 /* ---- Materie: vrije val in de tijd van een verre toeschouwer ---- */

@@ -202,6 +202,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
   });
 
   let grid = [];
+  const LENS_OUT = new Float32Array(12);
   function buildGrid(s) {
     const R = Math.hypot(W, H) / s * 0.62;
     const gap = Math.max(18, 2 * R * Math.sqrt(Math.PI / 4 / GRID_MAX));
@@ -588,6 +589,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     const fade = introAlpha(now, 0, 1.4) * (0.5 + 0.2 * depth);
     if (fade <= 0) return;
     const buckets = Array.from({ length: 6 }, () => []);
+    // zwart gat (src/scene/hole.js): rasterpunten in zijn buurt staan waar hun licht na de buiging vandaan lijkt te komen
+    const lensing = Boolean(hole?.lensOn()), box = lensing ? canvas.getBoundingClientRect() : null;
+    const bent = lensing ? Array.from({ length: 6 }, () => []) : null;
     for (const g of grid) {
       const z = g.r < RIM ? depthAt(g.r) * depth : 0;
       if (!project(g.x, g.y, z, false)) continue;
@@ -605,8 +609,13 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
           gx += dx / d * pull; gy += dy / d * pull;
         }
       }
-      const k = Math.min(5, Math.floor(a / GRID_ALPHA * 6));
-      buckets[k].push(gx, gy, 0.9 * cam.du * pt.f);
+      const k = Math.min(5, Math.floor(a / GRID_ALPHA * 6)), rad = 0.9 * cam.du * pt.f;
+      if (lensing) {
+        const n = hole.bend(box.left + gx, box.top + gy, rad, LENS_OUT);
+        for (let i = 0; i < n; i++) bent[k].push(LENS_OUT[i * 6] - box.left, LENS_OUT[i * 6 + 1] - box.top, LENS_OUT[i * 6 + 2], LENS_OUT[i * 6 + 3], LENS_OUT[i * 6 + 4], LENS_OUT[i * 6 + 5]);
+        if (n) continue;
+      }
+      buckets[k].push(gx, gy, rad);
     }
     ctx.fillStyle = rgba(INK, 1);
     buckets.forEach((b, k) => {
@@ -616,6 +625,32 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       for (let i = 0; i < b.length; i += 3) { ctx.moveTo(b[i] + b[i + 2], b[i + 1]); ctx.arc(b[i], b[i + 1], b[i + 2], 0, TAU); }
       ctx.fill();
     });
+    // gebogen punten: een ellips (samengedrukt naar het gat toe, uitgerekt dwars erop), of een boog rond het gat als
+    // de rek groot is; dezelfde dekking als het punt zelf (lichtbuiging verandert de helderheid per oppervlak niet)
+    if (bent) {
+      ctx.strokeStyle = rgba(INK, 1);
+      ctx.lineCap = 'round';
+      bent.forEach((b, k) => {
+        if (!b.length) return;
+        ctx.globalAlpha = (k + 0.5) / 6 * GRID_ALPHA * theme.dots;
+        ctx.beginPath();
+        for (let i = 0; i < b.length; i += 6) {
+          const x = b[i], y = b[i + 1], thin = b[i + 2], long = b[i + 3], ang = b[i + 4];
+          if (long <= thin * 3) { ctx.moveTo(x + Math.cos(ang) * thin, y + Math.sin(ang) * thin); ctx.ellipse(x, y, thin, long, ang, 0, TAU); }
+        }
+        ctx.fill();
+        for (let i = 0; i < b.length; i += 6) {
+          const x = b[i], y = b[i + 1], thin = b[i + 2], long = b[i + 3], ang = b[i + 4], R = b[i + 5];
+          if (long <= thin * 3) continue;
+          const half = Math.min(Math.PI, Math.max(0, long - thin) / R);
+          ctx.lineWidth = thin * 2;
+          ctx.beginPath();
+          ctx.arc(x - Math.cos(ang) * R, y - Math.sin(ang) * R, R, ang - half, ang + half);
+          ctx.stroke();
+        }
+      });
+      ctx.lineCap = 'butt';
+    }
     ctx.globalAlpha = 1;
   }
 

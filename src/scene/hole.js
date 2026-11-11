@@ -10,11 +10,11 @@
 //   de rand, wordt roder en dooft uit. Elk deeltje wordt door de lens getekend, met een zwak tweede beeld aan de overkant.
 // Voorstellen: ontwerp/zwartgat/index.html.
 import { tx } from '../core/i18n.js';
-import { trace, emit, gridOf, lensTable, stepFree, shift, weight, R_IN, FOV } from './gravity.js';
+import { trace, emit, lensSteps, backdropSteps, stepFree, shift, weight, R_IN, FOV, D } from './gravity.js';
 
 const TIME = 13;          // M per seconde: één klok voor de schijf en voor wat erin valt
 const N = 120;            // deeltjes per bol
-const STIFF = 0.0045;     // samenhang van de bol (veerconstante per massa): de enige vrije materiaalkeuze
+const STIFF = 0.0065;     // samenhang van de bol (veerconstante per massa): de enige vrije materiaalkeuze
 const TEAR = 3.2;         // een deeltje scheurt los zodra het verder dan zoveel bolstralen van zijn plek getrokken is
 const R_HOLD = 6;         // binnen de binnenste stabiele baan kan niets blijven hangen: daar neemt het gat de bol uit je hand
 const HIT = 0.32, REACH = 0.56;   // loslaten binnen HIT x breedte verwijdert; binnen REACH neemt het gat de bol over
@@ -22,6 +22,7 @@ const SECOND = 14;        // het tweede beeld is in het echt ongeveer zoveel kee
 const RED = [196, 24, 52];
 const THROW = 10;          // de aanwijzer beweegt veel sneller dan het licht op deze schaal: zijn snelheid telt voor een tiende
 const GAMMA = 1.8;        // ontvangen lichtsterkte gaat met de vierde macht van de roodverschuiving; een scherm toont de 2,2-de machtswortel
+const DEPTH = 14;         // het stippenraster ligt zoveel M achter het gat
 const W_DESK = 120, H_DESK = 74, W_SMALL = 96, H_SMALL = 59;
 
 const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
@@ -38,15 +39,17 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
   fx.className = 'hole-fx';
   fx.setAttribute('aria-hidden', 'true');
 
-  let field = null, filled = 0, lens = null, dragging = false, raf = 0, lastT = 0, fxDirty = false;
+  let power = 0, HX = 0, HY = 0, KPX = 1;   // lens voor het raster van de scène: sterkte (0..1, volgt het verschijnen), midden en schaal
+  const pair = [0, 0];
+  let field = null, filled = 0, lens = null, sky = null, dragging = false, raf = 0, lastT = 0, fxDirty = false;
   let spots = [], spotSeed = 1, nextSpot = 0;
   let cloud = null;       // de vastgehouden bol: { rgb, a, C, parts: [{ ox, oy, dx, dy, gone }], left, dot }
   let loose = [];         // losse deeltjes in vrije val: { x, y, ux, uy, rgb, dot }
   let trail = [];         // laatste posities van de aanwijzer, voor de snelheid bij het loslaten
-  let INK = [0, 0, 0], INK3 = [0, 0, 0];
+  let INK = [0, 0, 0];
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const rgbOf = c => { const g = fx.getContext('2d'); g.fillStyle = c; const h = g.fillStyle; return h.startsWith('#') ? [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)) : h.match(/[\d.]+/g).slice(0, 3).map(Number); };
-  function recolor() { INK = rgbOf(css('--ink')); INK3 = rgbOf(css('--ink-3')); wake(); }
+  function recolor() { INK = rgbOf(css('--ink')); wake(); }
   new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
 
@@ -61,13 +64,20 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
     field = { w, h, cols, rows, cells: [] };
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       const x = (i + 0.5 + (j % 2 ? 0.5 : 0)) / cols, y = (j + 0.5) / rows;
-      field.cells.push({ x, y, sx: x * 2 - 1, sy: (1 - y * 2) * asp, res: null, bg: 0 });
+      field.cells.push({ x, y, sx: x * 2 - 1, sy: (1 - y * 2) * asp, res: null });
     }
     filled = 0;
   }
+  // Op de rand van de schaduw ligt de fotonring: dunner dan één rasterpunt. Daar negen stralen per punt in plaats van
+  // één, anders wordt de ring toevallig wel of niet geraakt en staat er een rij losse stippen.
   function fill(budget) {
-    const t0 = performance.now();
-    while (filled < field.cells.length && performance.now() - t0 < budget) { const c = field.cells[filled++]; c.res = trace(c.sx, c.sy); c.bg = gridOf(c.res.esc); }
+    const t0 = performance.now(), cw = 2 / field.cols, ch = 2 * (field.h / field.w) / field.rows;
+    while (filled < field.cells.length && performance.now() - t0 < budget) {
+      const c = field.cells[filled++], b = Math.hypot(c.sx, c.sy) * FOV * D;
+      c.res = [];
+      if (Math.abs(b - 5.4) < 1.5) { for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) c.res.push(trace(c.sx + i * cw / 3, c.sy + j * ch / 3).hits); }
+      else c.res.push(trace(c.sx, c.sy).hits);
+    }
   }
   // Vlekken in de schijf: heldere (zoals de opflakkeringen die bij het gat in het centrum van de Melkweg gemeten zijn)
   // en donkere (ijler gas), om en om. Elke vlek ontstaat op een afstand, leeft een paar omlopen en draait mee. Omdat elke afstand haar eigen baansnelheid
@@ -110,17 +120,11 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
     g.beginPath();
     for (const c of field.cells) {
       if (!c.res) continue;
-      const v = shade(tm, c.res.hits);
+      let v = 0;
+      for (const hits of c.res) v += shade(tm, hits);
+      v /= c.res.length;
       if (v < 0.02) continue;
       const r = rMax * Math.sqrt(v);
-      g.moveTo(c.x * W + r, c.y * H); g.arc(c.x * W, c.y * H, r, 0, Math.PI * 2);
-    }
-    g.fill();
-    g.fillStyle = `rgba(${INK3},.6)`;
-    g.beginPath();
-    for (const c of field.cells) {
-      if (!c.res || !c.bg || c.res.hits.length) continue;
-      const r = rMax * 0.42 * c.bg;
       g.moveTo(c.x * W + r, c.y * H); g.arc(c.x * W, c.y * H, r, 0, Math.PI * 2);
     }
     g.fill();
@@ -199,11 +203,20 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
   }
 
   // Vooraf rekenen in rustige momenten (gsm: het gat verschijnt pas bij het slepen en moet dan klaar zijn)
+  let jobs = null;
   function warm() {
     if (!field) build();
     if (filled < field.cells.length) fill(4);
-    else if (!lens) { lens = lensTable(); return; }
-    setTimeout(warm, 60);
+    else {
+      jobs = jobs || [lensSteps(), backdropSteps(DEPTH)];
+      const t0 = performance.now();
+      while (jobs.length && performance.now() - t0 < 4) {
+        const r = jobs[0].next();
+        if (r.done) { if (jobs.length === 2) lens = r.value; else sky = r.value; jobs.shift(); }
+      }
+      if (!jobs.length) { wake(); return; }
+    }
+    setTimeout(warm, 40);
   }
   setTimeout(warm, 2500);
 
@@ -215,8 +228,12 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
     if (live) { if (!still()) tendSpots(tm); draw(tm); }
     drawFx(dt);
     el.classList.toggle('is-on', shown());   // gsm: het gat blijft tot alles gevallen is
+    // de lens voor het raster komt en gaat met het gat (zacht, zoals het gat zelf)
+    const goal = shown() && sky ? 1 : 0;
+    power = still() || Math.abs(goal - power) < 0.004 ? goal : power + (goal - power) * (1 - Math.exp(-7 * dt));
+    if (power) { const c = center(); HX = c[0]; HY = c[1]; KPX = c[2] / 2 / FOV; }
     // de lus loopt enkel zolang er iets beweegt of nog gerekend wordt
-    if ((live && (!still() || filled < (field?.cells.length ?? 1))) || cloud || loose.length || fxDirty) raf = requestAnimationFrame(frame);
+    if ((live && (!still() || filled < (field?.cells.length ?? 1))) || cloud || loose.length || fxDirty || power !== goal) raf = requestAnimationFrame(frame);
     else lastT = 0;
   }
   function wake() { if (!raf) raf = requestAnimationFrame(frame); }
@@ -267,6 +284,30 @@ export function createHole({ reducedMotion, permanent, minimal = () => false, on
 
   return {
     el, fx, recolor,
+    // Buigt het gat nu het raster van de scène? (per beeld gevraagd, vóór de punten)
+    lensOn: () => power > 0.004,
+    // Eén rasterpunt van de scène op (x, y) met straal r0, zoals het door het gat gezien wordt (backdropTable in
+    // gravity.js). Schrijft per beeld zes getallen in `out`: x, y, halve dikte in de richting van het gat, halve lengte
+    // dwars daarop, de richting vanuit het gat, de afstand tot het gat; en geeft het aantal beelden (0 = teken het punt
+    // gewoon: te ver weg voor een merkbaar verschil). Het hoofdbeeld schuift van het gat weg en wordt een boogje; het
+    // tweede beeld staat gespiegeld aan de overkant; een punt recht achter het gat wordt een ring.
+    bend(x, y, r0, out) {
+      const dx = x - HX, dy = y - HY, rho = Math.hypot(dx, dy);
+      if (rho > 260 * KPX / D) return 0;   // voorbij 260 M buigt niets merkbaar meer
+      const t = rho / KPX;
+      if (!sky.primary(t, pair)) return 0;
+      const a = pair[0] * KPX, sl = pair[1];
+      if (Math.abs(a - rho) < 0.15 && Math.abs(sl - 1) < 0.02) return 0;
+      const ux = rho > 1e-3 ? dx / rho : 1, uy = rho > 1e-3 ? dy / rho : 0, ang = Math.atan2(uy, ux);
+      const ring = rho <= r0, half = ring ? Math.PI : Math.asin(Math.min(1, r0 / rho));   // halve hoek die het punt rond de as beslaat
+      const R = rho + (a - rho) * power;
+      out[0] = HX + ux * R; out[1] = HY + uy * R; out[2] = r0 * (1 + (sl - 1) * power); out[3] = r0 + (a * half - r0) * power; out[4] = ang; out[5] = R;
+      if (!sky.secondary(t, pair)) return 1;
+      const a2 = pair[0] * KPX, thin = r0 * pair[1] * power;
+      if (thin < 0.12) return 1;   // te dun om nog te zien
+      out[6] = HX - ux * a2; out[7] = HY - uy * a2; out[8] = thin; out[9] = Math.max(thin, a2 * half * power); out[10] = ang + Math.PI; out[11] = a2;
+      return 2;
+    },
     // een bol wordt vastgenomen of losgelaten: op gsm verschijnt het gat
     setDragging(on) { dragging = on; if (on) { place(); trail = []; } update(); },
     // De versleepte bol staat op (x, y), met kleur en straal op het scherm. Geeft terug of loslaten hier verwijdert
