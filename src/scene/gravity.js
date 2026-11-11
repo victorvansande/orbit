@@ -134,14 +134,14 @@ export function* lensSteps() {
 // Eén afspraak: de afstandsmaat rond een zwart gat loopt niet gelijk met die van vlakke ruimte (een lichtstraal loopt
 // ongeveer 1 M dichter langs het gat dan haar richting van ver doet verwachten), dus "hetzelfde punt met en zonder gat"
 // ligt niet vanzelf vast. We leggen het raster zo dat punten ver van het gat op hun plaats blijven (`far`, gemeten op
-// 250 M); wat overblijft is de buiging dichtbij.
+// 300 M, waar ook het buigen stopt); wat overblijft is de buiging dichtbij.
 export const backdropTable = depth => runAll(backdropSteps(depth));
 export function* backdropSteps(depth) {
   const bc = Math.sqrt(27), pts = [];
   const alphaOf = b => Math.atan(1 / Math.sqrt(D * D / (b * b) - 1 + 2 / D));
-  const ref = alphaOf(250), far = (D + depth) * Math.tan(ref) - ray2d(ref, depth).back;
-  for (let i = 0; i <= 360; i++) {
-    const al = alphaOf(bc + 1e-2 * Math.pow(2.6e4, i / 360)), q = ray2d(al, depth);
+  const ref = alphaOf(300), far = (D + depth) * Math.tan(ref) - ray2d(ref, depth).back;
+  for (let i = 0; i <= 480; i++) {
+    const al = alphaOf(bc + 1e-2 * Math.pow(1.2e5, i / 480)), q = ray2d(al, depth);
     if (!q.cap && q.back != null) pts.push([Math.tan(al), q.back * (1 + far / Math.hypot(q.back, depth)) / (D + depth)]);
     yield;
   }

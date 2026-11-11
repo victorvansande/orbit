@@ -29,8 +29,15 @@ const SECOND = 14;        // het tweede beeld is in het echt ongeveer zoveel kee
 const RED = [196, 24, 52];
 const THROW = 10;          // de aanwijzer beweegt veel sneller dan het licht op deze schaal: zijn snelheid telt voor een tiende
 const GAMMA = 1.8;        // ontvangen lichtsterkte gaat met de vierde macht van de roodverschuiving; een scherm toont de 2,2-de machtswortel
-const DEPTH = 14;         // het stippenraster ligt zoveel M achter het gat
+// Het stippenraster ligt zoveel M achter het gat. Hoe verder erachter, hoe sterker de lens (ring van Einstein ∝ √diepte):
+// op 80 M buigt het raster al merkbaar van ver (200 px: 9 px, 300 px: 5 px; op 14 M was dat 0,7 en 0,3 px) (Victor,
+// 11/11/2026: "Buig de dots op de achtergrond al van verder rond het zwarte gat")
+const DEPTH = 80;
 const W_DESK = 120, H_DESK = 74, W_SMALL = 96, H_SMALL = 59;
+// Een bol vastgenomen: het gat wordt 1,25 keer zo groot (Victor, 11/11/2026: "Maak het zwarte gat ook wat groter als je
+// een bol vastneemt"). Het canvas wordt altijd op die grootte getekend en met een transform geschaald, dus scherp; de
+// lens voor het raster, de bol en de zones lezen de maat van het canvas, dus groeien mee.
+const GROW = 1.25;
 
 const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
 // Stroming: elke ring van de schijf zijn eigen klonterig patroon, meedraaiend met zijn eigen Ω = r^-1,5. Elke ring
@@ -126,7 +133,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     const [w, h] = size();
     if (!field || field.w !== w) build();
     if (filled < field.cells.length) fill(5);
-    const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(w * dpr), H = Math.round(h * dpr);
+    const dpr = Math.min(2, window.devicePixelRatio || 1) * GROW, W = Math.round(w * dpr), H = Math.round(h * dpr);
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
     const g = cv.getContext('2d');
     g.clearRect(0, 0, W, H);
@@ -354,6 +361,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     wakeUp += (wantWake - wakeUp) * (1 - Math.exp(-dt / (wantWake ? 0.18 : 0.35)));
     if (Math.abs(wantWake - wakeUp) < 0.003) wakeUp = wantWake;
     clock += dt * TIME / MASS * (1 + 0.6 * wakeUp);   // de stroming gaat iets sneller
+    cv.style.transform = wakeUp > 0.001 ? `scale(${1 + (GROW - 1) * wakeUp})` : '';   // en het gat groeit
     const live = shown(), tm = still() ? 0 : clock;
     if (live) draw(tm);
     drawFx(dt);
@@ -431,7 +439,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     // tweede beeld staat gespiegeld aan de overkant; een punt recht achter het gat wordt een ring.
     bend(x, y, r0, out) {
       const dx = x - HX, dy = y - HY, rho = Math.hypot(dx, dy), KM = KPX * MASS;   // alle afstanden schalen met de massa
-      if (rho > 260 * KM / D) return 0;   // voorbij 260 M buigt niets merkbaar meer
+      if (rho > 300 * KM / D) return 0;   // voorbij 300 M (het ijkpunt van backdropSteps) buigt niets meer
       const t = rho / KM;
       if (!sky.primary(t, pair)) return 0;
       const a = pair[0] * KM, sl = pair[1];
@@ -460,7 +468,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       const [hx, hy, w] = center(), dx = x - hx, dy = y - hy, rho = Math.hypot(dx, dy), now = performance.now();
       trail.push([now, x, y]);
       while (trail.length > 2 && now - trail[0][0] > 90) trail.shift();
-      const over = rho <= HIT * w, taken = !still() && Boolean(lens) && rho <= (permanent.matches ? REACH : REACH_SMALL) * w;
+      const over = rho <= HIT * w, taken = !still() && Boolean(lens) && rho <= (permanent.matches ? REACH : REACH_SMALL) * w / (1 + (GROW - 1) * wakeUp);   // grijpen op de basismaat, loslaten op wat je ziet
       if (taken) {
         const k = w / 2 / FOV, raw = lens.radius(rho / k), held = Math.max(R_HOLD, raw);
         const rc = Math.max(R_HOLD, held - Math.min(0.35 * held, SAG * weight(held)));   // het gat zuigt de bol naar zich toe
