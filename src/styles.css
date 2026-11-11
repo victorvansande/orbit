@@ -2011,14 +2011,13 @@ button.gift[aria-checked="true"]::before { clip-path: circle(150% at var(--x, 50
 @media (hover: hover) { button.gift[aria-checked="false"]:hover { background: var(--fill-2); } }
 @media (prefers-reduced-motion: reduce) { button.gift, button.gift::before, .gift-badge * { transition: none; } }
 /* ---- Zwart gat ---- */
-/* Z1 Raster (src/scene/hole.js, Victor 10/11/2026): desktop rechts onder de boog van het wiel, gecentreerd onder de
-   wielhint, 20 px eronder; gsm en liggend: op zijn plek gezet door hole.js, enkel zichtbaar tijdens het slepen van een bol. */
+/* Z1 Raster (src/scene/hole.js, Victor 10/11/2026): desktop in de hoek rechtsonder; gsm en liggend: op zijn plek gezet door hole.js, enkel zichtbaar tijdens het slepen van een bol. */
 .hole { position: absolute; z-index: 1; width: 96px; height: 59px; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .35s var(--ease), visibility .35s; }
 .hole canvas { display: block; width: 100%; height: 100%; }
 .hole.is-on { opacity: 1; visibility: visible; }
 .hole-fx { position: fixed; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; }
 @media (min-width: 1000px) and (min-height: 501px) {
-  .hole { cursor: pointer; width: 120px; height: 74px; right: 76px; top: calc(50% + min(360px, 50dvh - 140px) + 20px); pointer-events: auto; }
+  .hole { cursor: pointer; width: 120px; height: 74px; right: 26px; bottom: 17px; pointer-events: auto; }   /* zichtbare schijf 40 px van de rechterrand en 30 px van de onderrand, gespiegeld aan Instellingen linksonder (Victor, 11/11/2026) */
 }
 @media (prefers-reduced-motion: reduce) { .hole { transition: none; } }
 /* melding bovenaan bij een nieuwe prestatie: Komeet zonder kader (Victor, 02/11/2026, voorstel C uit vijf; de ingelaten pil

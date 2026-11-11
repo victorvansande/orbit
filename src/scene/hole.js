@@ -105,7 +105,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       if (ph > 0 && ph < FLARE) m += echoAmp * Math.exp(-0.5 * ((h.r - 6 - ph * FRONT) / 1.1) ** 2) * (1 - ph / FLARE);
       v += emit(h.r) * m * h.g ** 4 * (h.k ? 1.25 : 1);
     }
-    return 1 - Math.exp(-0.32 * v);   // zachte begrenzing: de heldere kant brandt niet uit tot een vlek
+    return 1 - Math.exp(-0.42 * v);   // zachte begrenzing: de heldere kant brandt niet uit tot een vlek
   }
   function draw(tm) {
     const [w, h] = size();
@@ -115,7 +115,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
     const g = cv.getContext('2d');
     g.clearRect(0, 0, W, H);
-    const s = W / field.cols, rMax = s * 0.56;
+    const s = W / field.cols, rMax = s * 0.72;   // vetter (Victor, 11/11/2026: "het mag wat vetter/dikker getekend worden")
     g.fillStyle = `rgb(${INK})`;
     g.beginPath();
     for (const c of field.cells) {
