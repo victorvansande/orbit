@@ -58,14 +58,14 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   const pair = [0, 0];
   let field = null, filled = 0, lens = null, sky = null, dragging = false, raf = 0, lastT = 0, fxDirty = false;
   let sRef = Infinity, echoT0 = 0, echoAmp = 9;   // kortste weg van het licht (nul van de reistijd), begin en sterkte van de laatste opflakkering
-  let star = 0, starHit = false;   // tijdstip van de laatste ster (klik), om er niet twee tegelijk te sturen; heeft ze de binnenrand al bereikt
+  let bloat = 0, MASS = 1;   // klik: begin van het opzwellen en de massa nu (1 = gewoon)
   let cloud = null;       // de vastgehouden bol: { rgb, a, C, parts: [{ ox, oy, dx, dy, gone }], left, dot }
   let loose = [];         // losse deeltjes in vrije val: { x, y, ux, uy, rgb, dot }
   let trail = [];         // laatste posities van de aanwijzer, voor de snelheid bij het loslaten
-  let INK = [0, 0, 0];
+  let INK = [0, 0, 0], NIGHT = [0, 0, 0];
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const rgbOf = c => { const g = fx.getContext('2d'); g.fillStyle = c; const h = g.fillStyle; return h.startsWith('#') ? [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)) : h.match(/[\d.]+/g).slice(0, 3).map(Number); };
-  function recolor() { INK = rgbOf(css('--ink')); wake(); }
+  function recolor() { INK = rgbOf(css('--ink')); NIGHT = rgbOf(css('--night')); wake(); }
   new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
 
@@ -207,9 +207,16 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     if (fx.width !== W || fx.height !== H) { fx.width = W; fx.height = H; }
     const g = fx.getContext('2d');
     if (fxDirty) { g.clearRect(0, 0, W, H); fxDirty = false; }
-    if (!lens || (!cloud && !loose.length)) return;
+    if (!lens || (!cloud && !loose.length && MASS <= 1.001)) return;
     fxDirty = true;
     const [hx, hy, w] = center(), k = w / 2 / FOV;
+    if (MASS > 1.001) {   // opgezwollen: de schaduw (straal 3√3 M) met de fotonring op haar rand
+      const R = Math.sqrt(27) * k / D * MASS * dpr, a = Math.min(1, (MASS - 1) / 0.4);
+      g.fillStyle = `rgba(${NIGHT},${a})`;
+      g.beginPath(); g.arc(hx * dpr, hy * dpr, R, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = `rgba(${INK},${Math.min(0.9, (MASS - 1) / 2)})`; g.lineWidth = Math.max(1, 1.4 * dpr);
+      g.beginPath(); g.arc(hx * dpr, hy * dpr, R * 1.012, 0, Math.PI * 2); g.stroke();
+    }
     if (cloud) {
       stepCloud(dt);
       const c = cloud;
@@ -221,8 +228,6 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       // wat toch blijft rondcirkelen, vervaagt na 10 s (in 1,5 s)
       const fade = 1 - Math.min(1, Math.max(0, (now - (p.born || now) - 10000) / 1500));
       const a = dotAt(g, hx, hy, k, dpr, p.x, p.y, p.ux, p.uy, p.rgb, p.dot, fade);
-      // het eerste stukje van een verscheurde ster dat de binnenrand bereikt, laat de schijf oplichten (lichtecho)
-      if (p.star && !starHit && Math.hypot(p.x, p.y) < 6.5) { starHit = true; echoT0 = now / 1000 * TIME; echoAmp = 16; }
       if (alive && a > 0.04 && fade > 0) keep.push(p);
     }
     loose = keep;
@@ -246,30 +251,30 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   }
   setTimeout(warm, 2500);
 
-  // Klik op het gat (desktop): een ster komt te dicht langs en wordt verscheurd (getijdenverstoring). Ze valt van
-  // linksboven in op een licht open baan (E = 1,04) met impulsmoment 4,3, net boven de grens (4) waaronder iets uit het
-  // oneindige gevangen wordt. Door haar eigen breedte krijgt elk stukje een iets ander impulsmoment: ongeveer de helft
-  // zwiept rond en valt erin (rood, uitdovend, door de lens ook als boog boven de schaduw), de andere helft wordt weer
-  // weggeslingerd (nagerekend: 46 van 90 gevangen, 44 ontsnapt). Na 1,6 s bereikt het eerste gas de binnenrand en
-  // licht de schijf op met de lichtecho.
-  function sendStar() {
-    if (still() || !lens || performance.now() - star < 4000) return;
-    star = performance.now(); starHit = false;
-    const r0 = 20, a0 = Math.PI + 0.75 + (hash(star) - 0.5) * 0.5, cx = Math.cos(a0) * r0, cy = Math.sin(a0) * r0, ex = cx / r0, ey = cy / r0;
-    const E = 1.04, L = 4.3, f = 1 - 2 / r0, vt = L / r0, vr = -Math.sqrt(Math.max(0, E * E - f * (1 + L * L / (r0 * r0))));
-    const ux = vr * ex + vt * ey, uy = vr * ey - vt * ex;   // draait met de klok mee, langs onder het gat
-    for (let i = 0; i < 90; i++) {
-      const rr = 0.9 * Math.sqrt((i + 0.5) / 90), th = i * 2.399963;
-      loose.push({ x: cx + rr * Math.cos(th), y: cy + rr * Math.sin(th), ux, uy, rgb: INK, dot: 0.85, born: star, star: true });
-    }
+  // Klik op het gat (desktop): K2 Lens over alles (Victor, 11/11/2026, uit ontwerp/zwartgat/klik.html; K1 Nacht en
+  // K3 Rondvlucht afgewezen). De massa zwelt in 1,3 s op tot 10 keer, blijft even en krimpt in 1,4 s terug. Het raster
+  // van de scène buigt mee (bend rekent met de massa: alle afstanden schalen met M), de schaduw groeit (straal 3√3 M) en
+  // slokt de eigen schijf op, want de schijf is materie van vaste grootte. Op de rand van de schaduw de fotonring.
+  // HTML (lijst, wiel) kan niet buigen: wat in de schaduw valt, verdwijnt er even achter.
+  const ease = x => { x = Math.min(1, Math.max(0, x)); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+  const BLOAT = 4.3;
+  function swell() {
+    if (still() || !sky || bloat) return;
+    bloat = performance.now();
     wake();
   }
-  el.addEventListener('click', sendStar);
+  el.addEventListener('click', swell);
 
   function frame(now) {
     raf = 0;
     const dt = Math.min(0.05, (now - (lastT || now)) / 1000);
     lastT = now;
+    if (bloat) {
+      const t = (now - bloat) / 1000;
+      MASS = t >= BLOAT ? 1 : 1 + 9 * Math.min(ease(t / 1.3), 1 - ease((t - 2.9) / 1.4));
+      if (t >= BLOAT) bloat = 0;
+      cv.style.opacity = MASS > 1.001 ? String(Math.max(0, 1 - (MASS - 1) / 1.5)) : '';
+    }
     const live = shown(), tm = still() ? 0 : now / 1000 * TIME;
     if (live) draw(tm);
     drawFx(dt);
@@ -279,7 +284,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     power = still() || Math.abs(goal - power) < 0.004 ? goal : power + (goal - power) * (1 - Math.exp(-7 * dt));
     if (power) { const c = center(); HX = c[0]; HY = c[1]; KPX = c[2] / 2 / FOV; }
     // de lus loopt enkel zolang er iets beweegt of nog gerekend wordt
-    if ((live && (!still() || filled < (field?.cells.length ?? 1))) || cloud || loose.length || fxDirty || power !== goal) raf = requestAnimationFrame(frame);
+    if ((live && (!still() || filled < (field?.cells.length ?? 1))) || cloud || loose.length || fxDirty || bloat || power !== goal) raf = requestAnimationFrame(frame);
     else lastT = 0;
   }
   function wake() { if (!raf) raf = requestAnimationFrame(frame); }
@@ -344,18 +349,18 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     // gewoon: te ver weg voor een merkbaar verschil). Het hoofdbeeld schuift van het gat weg en wordt een boogje; het
     // tweede beeld staat gespiegeld aan de overkant; een punt recht achter het gat wordt een ring.
     bend(x, y, r0, out) {
-      const dx = x - HX, dy = y - HY, rho = Math.hypot(dx, dy);
-      if (rho > 260 * KPX / D) return 0;   // voorbij 260 M buigt niets merkbaar meer
-      const t = rho / KPX;
+      const dx = x - HX, dy = y - HY, rho = Math.hypot(dx, dy), KM = KPX * MASS;   // alle afstanden schalen met de massa
+      if (rho > 260 * KM / D) return 0;   // voorbij 260 M buigt niets merkbaar meer
+      const t = rho / KM;
       if (!sky.primary(t, pair)) return 0;
-      const a = pair[0] * KPX, sl = pair[1];
+      const a = pair[0] * KM, sl = pair[1];
       if (Math.abs(a - rho) < 0.15 && Math.abs(sl - 1) < 0.02) return 0;
       const ux = rho > 1e-3 ? dx / rho : 1, uy = rho > 1e-3 ? dy / rho : 0, ang = Math.atan2(uy, ux);
       const ring = rho <= r0, half = ring ? Math.PI : Math.asin(Math.min(1, r0 / rho));   // halve hoek die het punt rond de as beslaat
       const R = rho + (a - rho) * power;
       out[0] = HX + ux * R; out[1] = HY + uy * R; out[2] = r0 * (1 + (sl - 1) * power); out[3] = r0 + (a * half - r0) * power; out[4] = ang; out[5] = R;
       if (!sky.secondary(t, pair)) return 1;
-      const a2 = pair[0] * KPX, thin = r0 * pair[1] * power;
+      const a2 = pair[0] * KM, thin = r0 * pair[1] * power;
       if (thin < 0.12) return 1;   // te dun om nog te zien
       out[6] = HX - ux * a2; out[7] = HY - uy * a2; out[8] = thin; out[9] = Math.max(thin, a2 * half * power); out[10] = ang + Math.PI; out[11] = a2;
       return 2;

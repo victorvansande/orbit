@@ -15,6 +15,7 @@
   --fill: rgba(27, 27, 34, .045);
   --fill-2: rgba(27, 27, 34, .07);
   --fill-solid: #E2DFD6;   /* --fill dekkend op --bg, voor vlakken boven de hemel */
+  --night: #15151B;   /* schaduw van het zwarte gat als het opzwelt (klik) */
   --gift-wash: 13%;   /* geschenk aan: zweem van het metaal in de tegel (G1 Inkt) */
   --chip: #fff;
   --on-ink: #fff;
@@ -88,6 +89,7 @@
   --fill: rgba(255, 255, 255, .06);
   --fill-2: rgba(255, 255, 255, .1);
   --fill-solid: #1D1D20;
+  --night: #050507;
   --gift-wash: 16%;
   --chip: #26262C;
   --on-ink: #0F0F12;
