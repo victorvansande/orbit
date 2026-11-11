@@ -1588,7 +1588,6 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
     items.sort((p, q) => p.depth - q.depth);
     for (const it of items) {
       const { o, lv } = it;
-      if (drag?.taken && drag.id === o.id) continue;   // vlak bij het zwarte gat tekent het gat de bol zelf (als wolk, door zijn lens)
       const sp = speed.get(o.level);
       const free = !(drag?.type === 'orb' && drag.id === o.id && drag.active) && !o.blend;
       if (isHot(o)) {
@@ -1598,6 +1597,9 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
         ctx.arc(it.sx, it.sy, it.r + 4, 0, TAU);
         ctx.stroke();
       }
+      // vlak bij het zwarte gat tekent het gat de bol zelf (als wolk, door zijn lens, met zijn gloed); de greepring
+      // hierboven blijft rond je vinger staan, anders verdween ze in één beeld op de grens van het gat
+      if (drag?.taken && drag.id === o.id) continue;
       drawOrb(o, it, lv, sp, free && o.r > 1);
     }
   }
@@ -1929,7 +1931,7 @@ export function createScene(canvas, { onHover = () => {}, onReassign = () => {},
       if (drag.type === 'orb') {
         // zwart gat (src/scene/hole.js): in zijn buurt neemt het de bol over (rekt hem uit, trekt eraan), erboven
         // loslaten verwijdert de taak
-        const held = orbs.get(drag.id), hs = held && hole?.hold(e.clientX, e.clientY, colors.get(held.level), held.pr || 4);
+        const held = orbs.get(drag.id), hs = held && hole?.hold(e.clientX, e.clientY, colors.get(held.level), held.pr || 4, minimal ? 0 : theme.glow);
         drag.over = Boolean(hs?.over); drag.taken = Boolean(hs?.taken);
         const lv = drag.over ? null : nearestRing(p.x, p.y, 70);
         dropLevel = lv;

@@ -58,7 +58,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   const pair = [0, 0];
   let field = null, filled = 0, lens = null, sky = null, dragging = false, raf = 0, lastT = 0, fxDirty = false;
   let sRef = Infinity, echoT0 = 0, echoAmp = 9;   // kortste weg van het licht (nul van de reistijd), begin en sterkte van de laatste opflakkering
-  let bloat = 0, MASS = 1;   // klik: begin van het opzwellen en de massa nu (1 = gewoon)
+  let bloat = 0, MASS = 1, clock = 0;   // klik: begin van het opzwellen en de massa nu (1 = gewoon); klok van de schijf in M
   let cloud = null;       // de vastgehouden bol: { rgb, a, C, parts: [{ ox, oy, dx, dy, gone }], left, dot }
   let loose = [];         // losse deeltjes in vrije val: { x, y, ux, uy, rgb, dot }
   let trail = [];         // laatste posities van de aanwijzer, voor de snelheid bij het loslaten
@@ -211,16 +211,38 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     fxDirty = true;
     const [hx, hy, w] = center(), k = w / 2 / FOV;
     if (MASS > 1.001) {   // opgezwollen: de schaduw (straal 3√3 M) met de fotonring op haar rand
-      const R = Math.sqrt(27) * k / D * MASS * dpr, a = Math.min(1, (MASS - 1) / 0.4);
+      const R = Math.sqrt(27) * k / D * MASS * dpr, a = Math.min(1, (MASS - 1) / 0.4), pitch = 2.4 * dpr;
+      // Een vol vlak: wat erachter ligt (ook de HTML, die niet kan buigen) moet echt verdwijnen. Een rasterdruk met
+      // gaatjes liet de tekst erdoor en werd door de afronding op pixels een geweven gaas (geprobeerd, 11/11/2026).
       g.fillStyle = `rgba(${NIGHT},${a})`;
       g.beginPath(); g.arc(hx * dpr, hy * dpr, R, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = `rgba(${INK},${Math.min(0.9, (MASS - 1) / 2)})`; g.lineWidth = Math.max(1, 1.4 * dpr);
-      g.beginPath(); g.arc(hx * dpr, hy * dpr, R * 1.012, 0, Math.PI * 2); g.stroke();
+      // Fotonring als stippellijn net buiten de schaduw. Zolang er nog schijf over is, draagt hij haar doppler mee
+      // (de kant die naar je toe draait, links, helderder); is de schijf opgeslokt, dan is het enkel nog het licht van
+      // alles erachter, rondom even sterk.
+      const ring = Math.min(0.9, (MASS - 1) / 2), lop = Math.max(0, 1 - (MASS - 1) / 2.5), Rr = R + 1.6 * dpr, n = Math.ceil(Math.PI * 2 * Rr / (pitch * 0.85));
+      g.fillStyle = `rgba(${INK},${ring})`;
+      g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const th = i / n * Math.PI * 2, b = 0.62 + 0.38 * lop * -Math.cos(th), r = pitch * 0.42 * Math.sqrt(b), x = hx * dpr + Math.cos(th) * Rr, y = hy * dpr + Math.sin(th) * Rr;
+        g.moveTo(x + r, y); g.arc(x, y, r, 0, Math.PI * 2);
+      }
+      g.fill();
     }
     if (cloud) {
       stepCloud(dt);
       const c = cloud;
-      if (c) for (const p of c.parts) if (!p.gone) dotAt(g, hx, hy, k, dpr, c.C[0] + p.ox + p.dx, c.C[1] + p.oy + p.dy, 0, 0, c.rgb, c.dot);
+      // dezelfde zachte gloed als de bol in de scène, rond het midden van de wolk (door de lens), zwakker naarmate hij
+      // leegloopt
+      if (c.glow) {
+        const rc = Math.hypot(c.C[0], c.C[1]), P = lens.primary(Math.min(rc, lens.rMax));
+        if (P) {
+          const gx = (hx + c.C[0] / rc * P.tan * k) * dpr, gy = (hy + c.C[1] / rc * P.tan * k) * dpr, R = c.rpx * 3.2 * dpr, a = c.glow * c.left / N;
+          const gr = g.createRadialGradient(gx, gy, c.rpx * 0.6 * dpr, gx, gy, R);
+          gr.addColorStop(0, `rgba(${c.rgb},${a})`); gr.addColorStop(0.45, `rgba(${c.rgb},${a * 0.35})`); gr.addColorStop(1, `rgba(${c.rgb},0)`);
+          g.fillStyle = gr; g.beginPath(); g.arc(gx, gy, R, 0, Math.PI * 2); g.fill();
+        }
+      }
+      for (const p of c.parts) if (!p.gone) dotAt(g, hx, hy, k, dpr, c.C[0] + p.ox + p.dx, c.C[1] + p.oy + p.dy, 0, 0, c.rgb, c.dot);
     }
     const keep = [], now = performance.now();
     for (const p of loose) {
@@ -275,7 +297,10 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       if (t >= BLOAT) bloat = 0;
       cv.style.opacity = MASS > 1.001 ? String(Math.max(0, 1 - (MASS - 1) / 1.5)) : '';
     }
-    const live = shown(), tm = still() ? 0 : now / 1000 * TIME;
+    // klok van de schijf als opgetelde fase: rond een gat van massa M lopen alle tijdschalen M keer trager, dus bij een
+    // klik vertraagt de stroming en de echo mee terwijl de massa aanzwelt (nooit tijd x tempo: dat springt)
+    clock += dt * TIME / MASS;
+    const live = shown(), tm = still() ? 0 : clock;
     if (live) draw(tm);
     drawFx(dt);
     el.classList.toggle('is-on', shown());   // gsm: het gat blijft tot alles gevallen is
@@ -333,10 +358,12 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   }
   // px per M van het hoofdbeeld op afstand rc
   const pxPerM = (rc, k) => (lens.primary(Math.min(lens.rMax, rc + 0.5)).tan - lens.primary(Math.max(2.1, rc - 0.5)).tan) * k;
-  function newCloud(rgb, rpx, k, rc) {
-    const a = rpx / pxPerM(rc, k), parts = [];   // straal van de bol in M
-    for (let i = 0; i < N; i++) { const rr = a * Math.sqrt((i + 0.5) / N), th = i * 2.399963; parts.push({ ox: rr * Math.cos(th), oy: rr * Math.sin(th), dx: 0, dy: 0, gone: false }); }
-    return { rgb, a, C: [rc, 0], parts, left: N, grow: 0, dot: Math.max(0.7, rpx * 0.21) };
+  // De wolk is op de grens even groot als de bol: de buitenste deeltjes liggen een deeltjesstraal binnen zijn rand
+  // (vroeger erop, dan werd hij in één beeld 20 % groter).
+  function newCloud(rgb, rpx, k, rc, glow) {
+    const a = rpx / pxPerM(rc, k), dot = Math.max(0.7, rpx * 0.21), fill = a * Math.max(0.4, 1 - dot / rpx), parts = [];   // straal van de bol in M
+    for (let i = 0; i < N; i++) { const rr = fill * Math.sqrt((i + 0.5) / N), th = i * 2.399963; parts.push({ ox: rr * Math.cos(th), oy: rr * Math.sin(th), dx: 0, dy: 0, gone: false }); }
+    return { rgb, a, rpx, glow, C: [rc, 0], parts, left: N, grow: 0, dot };
   }
 
   return {
@@ -369,7 +396,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
     setDragging(on) { dragging = on; if (on) { place(); trail = []; } update(); },
     // De versleepte bol staat op (x, y), met kleur en straal op het scherm. Geeft terug of loslaten hier verwijdert
     // (`over`) en of het gat de bol nu zelf tekent (`taken`: de scène laat hem dan weg).
-    hold(x, y, rgb, rpx) {
+    hold(x, y, rgb, rpx, glow = 0) {
       if (!shown()) return { over: false, taken: false };
       const [hx, hy, w] = center(), dx = x - hx, dy = y - hy, rho = Math.hypot(dx, dy), now = performance.now();
       trail.push([now, x, y]);
@@ -378,7 +405,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       if (taken) {
         const k = w / 2 / FOV, raw = lens.radius(rho / k), held = Math.max(R_HOLD, raw);
         const rc = Math.max(R_HOLD, held - Math.min(0.35 * held, SAG * weight(held)));   // het gat zuigt de bol naar zich toe
-        if (!cloud) cloud = newCloud(rgb, rpx, k, held);
+        if (!cloud) cloud = newCloud(rgb, rpx, k, held, glow);
         const ux = rho > 0.5 ? dx / rho : 1, uy = rho > 0.5 ? dy / rho : 0;
         cloud.C = [ux * rc, uy * rc];
       } else cloud = null;
