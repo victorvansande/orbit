@@ -2021,6 +2021,11 @@ button.gift[aria-checked="true"]::before { clip-path: circle(150% at var(--x, 50
 @media (min-width: 1000px) and (min-height: 501px) {
   .hole { cursor: pointer; width: 120px; height: 74px; right: 26px; bottom: 17px; pointer-events: auto; }   /* zichtbare schijf 40 px van de rechterrand en 30 px van de onderrand, gespiegeld aan Instellingen linksonder (Victor, 11/11/2026) */
 }
+/* zandloper en gat samen: de zandloper links van het gat, 20 px lucht tot de zichtbare schijf (die 137 px van de rechterrand
+   begint), op dezelfde onderlijn (Victor, 11/11/2026: "zwarte gat en zandloper overlappen") */
+@media (min-width: 1000px) {
+  body:has(.hole.is-on) .glass { right: 157px; }
+}
 @media (prefers-reduced-motion: reduce) { .hole { transition: none; } }
 /* melding bovenaan bij een nieuwe prestatie: Komeet zonder kader (Victor, 02/11/2026, voorstel C uit vijf; de ingelaten pil
    was niet logisch boven een pagina die eronder doorscrolt). Ontstaat zacht ter plaatse (Victor, 02/11/2026: geen veeg of

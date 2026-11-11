@@ -187,17 +187,42 @@ export function createBreakout({ reducedMotion, accent, scores, run, zoom = 1 })
     }
   }
 
-  // botsing van een bal met de stenen (één steen per deelstap)
+  // Botsing van een bal met de stenen (één steen per deelstap). De bal wordt altijd uit de steen geduwd, langs de
+  // normaal van het dichtste punt (vlak of hoek), en stuitert enkel als hij er echt naartoe beweegt. Vroeger ging hij
+  // terug naar zijn vorige plek en keerde om; lag die plek zelf al in de steen (hoek, naast de muur), dan keerde hij
+  // elke deelstap opnieuw om en tikte het geluid eindeloos zonder dat er iets gebeurde (Victor, 11/11/2026).
+  const inside = b => bricks.some(br => br.hp > 0 && (b.x - clamp(b.x, br.x, br.x + BW)) ** 2 + (b.y - clamp(b.y, br.y, br.y + BH)) ** 2 < BALL * BALL - 0.01);
   function collide(b, px, py) {
+    const hit = touch(b);
+    // geklemd tussen twee stenen (een spleet smaller dan de bal): terug naar de laatste vrije plek en omkeren
+    if (hit && inside(b)) { b.x = px; b.y = py; b.vx = -b.vx; b.vy = -b.vy; }
+  }
+  function touch(b) {
     for (const br of bricks) {
       if (br.hp <= 0) continue;
       const cx = clamp(b.x, br.x, br.x + BW), cy = clamp(b.y, br.y, br.y + BH);
-      if ((b.x - cx) ** 2 + (b.y - cy) ** 2 > BALL * BALL) continue;
-      if (py + BALL <= br.y || py - BALL >= br.y + BH) b.vy = -b.vy; else b.vx = -b.vx;
-      b.x = px; b.y = py;
+      let nx = b.x - cx, ny = b.y - cy;
+      const d = Math.hypot(nx, ny);
+      if (d > BALL) continue;
+      if (d > 1e-6) { nx /= d; ny /= d; b.x = cx + nx * (BALL + 0.01); b.y = cy + ny * (BALL + 0.01); }
+      else {   // midden in de steen: langs de kortste weg eruit
+        const l = b.x - br.x, r = br.x + BW - b.x, u = b.y - br.y, o = br.y + BH - b.y, m = Math.min(l, r, u, o);
+        nx = m === l ? -1 : m === r ? 1 : 0; ny = nx ? 0 : m === u ? -1 : 1;
+        if (nx) b.x = nx < 0 ? br.x - BALL - 0.01 : br.x + BW + BALL + 0.01; else b.y = ny < 0 ? br.y - BALL - 0.01 : br.y + BH + BALL + 0.01;
+      }
+      const vn = b.vx * nx + b.vy * ny;
+      if (vn >= 0) return true;   // beweegt al weg: enkel losgemaakt, geen nieuwe tik
+      b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny;
+      // vangnet: flitst de bal tussen staal en muur of plafond heen en weer (meer dan 6 tikken op 0,25 s afstand),
+      // dan draait zijn richting een stukje zodat hij uit die klem raakt
+      if (br.steel) {
+        b.jam = t - (b.jamAt ?? -9) < 0.25 ? (b.jam || 0) + 1 : 1; b.jamAt = t;
+        if (b.jam > 6) { const a = (0.35 + Math.random() * 0.35) * (Math.random() < 0.5 ? -1 : 1), c = Math.cos(a), s = Math.sin(a); [b.vx, b.vy] = [b.vx * c - b.vy * s, b.vx * s + b.vy * c]; b.jam = 0; }
+      }
       hitBrick(br);
-      return;
+      return true;
     }
+    return false;
   }
 
   function step(dt) {
