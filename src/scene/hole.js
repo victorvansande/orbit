@@ -16,11 +16,15 @@ const TIME = 25;          // M per seconde: één klok voor de schijf en voor wa
 const N = 120;            // deeltjes per bol
 // Uitvergroot (Victor, 11/11/2026: "De effecten mogen gewoon meer uitgesproken zijn aangezien het zwarte gat al zo klein
 // is"): de vorm volgt de echte getijden (verschil in gewicht over de bol), de sterkte is opgeschroefd.
-const STIFF = 5.3e-5;     // samenhang van de bol tegen het verschil in gewicht: rek x2 op 30 M, losscheuren vanaf 22 M
-const SAG = 2500;         // hoe ver de hele bol naar het gat toe gezogen wordt per eenheid gewicht (op 50 M ongeveer 1 M)
-const TEAR = 3.2;         // een deeltje scheurt los zodra het verder dan zoveel bolstralen van zijn plek getrokken is
+// Van verder (Victor, 11/11/2026: "De bollen die ik ernaartoe sleep mogen ook al van iets verder beginnen gezogen
+// worden"): het gat grijpt nu op 300 px en trekt de bol al van ver naar zich toe (SAG x 5: op 300 px 3 px, op 120 px
+// 19 px); de getijden enkel 1,3 keer sterker, zodat losscheuren rond 24 M begint (TEAR_R). Met de getijden 1,5³ keer
+// sterker klonterde de bol op 120 px tot twee losse bolletjes en bleven losgescheurde deeltjes als spoor hangen.
+const STIFF = 5.3e-5 / 1.3;   // samenhang van de bol tegen het verschil in gewicht: rek x2 op 33 M
+const SAG = 2500 * 5;     // hoe ver de hele bol naar het gat toe gezogen wordt per eenheid gewicht (op 75 M ongeveer 2 M)
+const TEAR = 3.2, TEAR_R = 24;   // een deeltje scheurt los zodra het verder dan zoveel bolstralen van zijn plek getrokken is, en enkel binnen TEAR_R M
 const R_HOLD = 6;         // binnen de binnenste stabiele baan kan niets blijven hangen: dichter komt de bol niet
-const HIT = 0.42, REACH = 1.7;    // loslaten binnen HIT x breedte verwijdert; binnen REACH (ongeveer 200 px) grijpt het gat de bol al vast
+const HIT = 0.42, REACH = 2.55, REACH_SMALL = 2.1;   // loslaten binnen HIT x breedte verwijdert; binnen REACH (ongeveer 300 px op desktop, 200 op gsm) grijpt het gat de bol al vast
 const SECOND = 14;        // het tweede beeld is in het echt ongeveer zoveel keer zwakker dan getekend (anders zie je het niet)
 const RED = [196, 24, 52];
 const THROW = 10;          // de aanwijzer beweegt veel sneller dan het licht op deze schaal: zijn snelheid telt voor een tiende
@@ -146,13 +150,18 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       let tx = ((-x / r) * gp + ex * gc) / STIFF, ty = ((-y / r) * gp + ey * gc) / STIFF;
       const out = tx * ex + ty * ey;   // de verre kant: wordt van het gat weg getrokken, maar je vinger houdt hem tegen
       if (out > 0) { tx -= out * ex; ty -= out * ey; }
+      // buiten TEAR_R rekt de bol hooguit tot net onder het losscheuren, zacht begrensd (tanh: de volgorde van de
+      // deeltjes blijft, dus één doorlopende druppel en geen klonters aan de grens)
+      if (Math.hypot(x, y) >= TEAR_R) { const m = Math.hypot(tx, ty), L = TEAR * c.a * 0.95; if (m > 1e-9) { const f = L * Math.tanh(m / L) / m; tx *= f; ty *= f; } }
       let mx = tx - p.dx, my = ty - p.dy;
       mx *= k; my *= k;
       const m = Math.hypot(mx, my);
       if (m > cap) { mx *= cap / m; my *= cap / m; }
       p.dx += mx; p.dy += my;
       const nx = c.C[0] + p.ox + p.dx, ny = c.C[1] + p.oy + p.dy, nr = Math.hypot(nx, ny);
-      if (Math.hypot(p.dx, p.dy) > TEAR * c.a || nr < 3.4) {
+      // Losscheuren pas binnen TEAR_R: iets wat van verder valt, valt uit rust en doet daar lang over (vanaf 36 M
+      // ongeveer 10 s), en bleef zo als spoor achter je vinger hangen. Daarbuiten rekt de bol enkel.
+      if ((Math.hypot(p.dx, p.dy) > TEAR * c.a && nr < TEAR_R) || nr < 3.4) {
         p.gone = true; c.left--;
         // Losgescheurd: met de snelheid waarmee het wegliep, maar zoals bij loslaten: de aanwijzer telt voor een tiende,
         // nooit naar buiten en met weinig draaiing. Met de volle snelheid kwamen deeltjes in een vaste baan ver rond
@@ -401,7 +410,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
       const [hx, hy, w] = center(), dx = x - hx, dy = y - hy, rho = Math.hypot(dx, dy), now = performance.now();
       trail.push([now, x, y]);
       while (trail.length > 2 && now - trail[0][0] > 90) trail.shift();
-      const over = rho <= HIT * w, taken = !still() && Boolean(lens) && rho <= REACH * w;
+      const over = rho <= HIT * w, taken = !still() && Boolean(lens) && rho <= (permanent.matches ? REACH : REACH_SMALL) * w;
       if (taken) {
         const k = w / 2 / FOV, raw = lens.radius(rho / k), held = Math.max(R_HOLD, raw);
         const rc = Math.max(R_HOLD, held - Math.min(0.35 * held, SAG * weight(held)));   // het gat zuigt de bol naar zich toe
