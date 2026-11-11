@@ -1,0 +1,160 @@
+<title>Orbit zwart gat in rust</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Drie voorstellen voor het zwarte gat in rust. Zelfde straalberekening als src/scene/gravity.js (verre toeschouwer,
+   Schwarzschild), hier met de weglengte van elke straal erbij voor de lichtecho. Groot getekend (x3) en op ware grootte. */
+:root {
+  --bg: #EBE8DF; --surface: #F8F6F0; --ink: #1B1B22; --ink-2: #5E5E68; --ink-3: #7A7A83; --line: rgba(27,27,34,.1);
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1); color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0F0F12; --surface: #19191D; --ink: #ECECF1; --ink-2: #A3A3AD; --ink-3: #6E6E78; --line: rgba(255,255,255,.1); color-scheme: dark }
+* { box-sizing: border-box; }
+html { overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14.5px/1.55 var(--sans); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 32px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+.lab { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+h1 { font: 600 28px/1.2 var(--sans); margin: 6px 0 0; text-wrap: balance; }
+.lead { color: var(--ink-2); margin: 10px 0 0; max-width: 76ch; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 99px; background: none; color: var(--ink-2); font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 1100px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.col h3 { font: 500 12px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; margin: 0; }
+.col p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
+.big { width: 100%; aspect-ratio: 120 / 74; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); display: block; }
+.real { display: flex; align-items: center; gap: 14px; padding: 6px 0; }
+.real canvas { width: 120px; height: 74px; flex: none; }
+.real span { font: 500 10.5px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.why { font-size: 12.5px !important; color: var(--ink-3) !important; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="lab">Orbit · Zwart gat · in rust</p>
+    <h1>Het gat dat uit zichzelf beweegt</h1>
+    <p class="lead">Drie echte verschijnselen rond een zwart gat, elk uit dezelfde lichtbanen als het gat in Orbit. Telkens groot en op ware grootte (120 × 74 px, zoals op desktop). Alles wat je ziet omgebogen of dubbel, is lichtbuiging.</p>
+  </header>
+  <div class="seg" id="theme"><button data-v="light" aria-pressed="true">Licht</button><button data-v="dark" aria-pressed="false">Donker</button></div>
+  <div class="grid">
+    <div class="col"><h3>R1 Stroming</h3><canvas class="big" data-v="1"></canvas><div class="real"><canvas data-v="1" data-real></canvas><span>Ware grootte</span></div>
+      <p>De hele schijf stroomt rond: klonten gas die met hun eigen baansnelheid meedraaien, binnenin veel sneller dan buiten (binnenrand één omloop in 4 s, buitenrand in 18 s). De kant die naar je toe komt is helderder. Ook de omgebogen achterkant boven en onder het gat stroomt mee.</p>
+      <p class="why">Elke afstand draait met Ω = r^-1,5. Elke ring houdt zijn eigen patroon, dus het wikkelt zich niet op tot ruis.</p></div>
+    <div class="col"><h3>R2 Hete vlek</h3><canvas class="big" data-v="2"></canvas><div class="real"><canvas data-v="2" data-real></canvas><span>Ware grootte</span></div>
+      <p>Een heldere vlek draait vlak bij de binnenste stabiele baan rond, zoals de opflakkeringen die in 2018 bij het gat in het centrum van de Melkweg gemeten zijn. Ze flitst op als ze naar je toe komt en dooft als ze wegdraait; achter het gat zie je haar boven de schaduw langs gaan, en aan de overkant flitst haar tweede beeld in de fotonring.</p>
+      <p class="why">Om de paar omlopen een nieuwe vlek op een andere afstand; een rustige stroming eronder.</p></div>
+    <div class="col"><h3>R3 Lichtecho</h3><canvas class="big" data-v="3"></canvas><div class="real"><canvas data-v="3" data-real></canvas><span>Ware grootte</span></div>
+      <p>Af en toe een opflakkering aan de binnenrand die naar buiten loopt. Je ziet ze eerst aan de voorkant, dan pas aan de achterkant (dat licht moet verder), en een ogenblik later nog eens als een flits in de fotonring: licht dat eerst om het gat heen liep.</p>
+      <p class="why">Elk punt licht op op het moment van uitzenden plus zijn eigen reistijd, uit de weglengte van elke straal.</p></div>
+  </div>
+</div>
+
+<script>
+// ---- straalberekening, zoals src/scene/gravity.js, plus de weglengte s per kruising ----
+const D = 4000, PXM = 2.8, ELEV = 7.5 * Math.PI / 180, R_IN = 6, R_OUT = 17, FOV = 60 / (PXM * D);
+const CAM = [0, D * Math.sin(ELEV), D * Math.cos(ELEV)], FWD = [0, -Math.sin(ELEV), -Math.cos(ELEV)], RIGHT = [1, 0, 0], UP = [0, Math.cos(ELEV), -Math.sin(ELEV)];
+function trace(sx, sy) {
+  let px = CAM[0], py = CAM[1], pz = CAM[2], s = 0;
+  let vx = FWD[0] + FOV * (sx * RIGHT[0] + sy * UP[0]), vy = FWD[1] + FOV * (sx * RIGHT[1] + sy * UP[1]), vz = FWD[2] + FOV * (sx * RIGHT[2] + sy * UP[2]);
+  const n = Math.hypot(vx, vy, vz); vx /= n; vy /= n; vz /= n;
+  const cx = py * vz - pz * vy, cy = pz * vx - px * vz, cz = px * vy - py * vx, h2 = cx * cx + cy * cy + cz * cz;
+  const acc = (x, y, z) => { const r2 = x * x + y * y + z * z, k = -3 * h2 / (r2 * r2 * Math.sqrt(r2)); return [k * x, k * y, k * z]; };
+  const hits = [];
+  for (let i = 0; i < 3000; i++) {
+    const r = Math.hypot(px, py, pz);
+    if (r < 2.02) return hits;
+    if (r > 40 && px * vx + py * vy + pz * vz > 0) return hits;
+    const dt = Math.max(0.012, 0.06 * (r - 1.6));
+    const a1 = acc(px, py, pz);
+    const v2 = [vx + a1[0] * dt / 2, vy + a1[1] * dt / 2, vz + a1[2] * dt / 2], a2 = acc(px + vx * dt / 2, py + vy * dt / 2, pz + vz * dt / 2);
+    const v3 = [vx + a2[0] * dt / 2, vy + a2[1] * dt / 2, vz + a2[2] * dt / 2], a3 = acc(px + v2[0] * dt / 2, py + v2[1] * dt / 2, pz + v2[2] * dt / 2);
+    const v4 = [vx + a3[0] * dt, vy + a3[1] * dt, vz + a3[2] * dt], a4 = acc(px + v3[0] * dt, py + v3[1] * dt, pz + v3[2] * dt);
+    const nx = px + dt / 6 * (vx + 2 * v2[0] + 2 * v3[0] + v4[0]), ny = py + dt / 6 * (vy + 2 * v2[1] + 2 * v3[1] + v4[1]), nz = pz + dt / 6 * (vz + 2 * v2[2] + 2 * v3[2] + v4[2]);
+    const nvx = vx + dt / 6 * (a1[0] + 2 * a2[0] + 2 * a3[0] + a4[0]), nvy = vy + dt / 6 * (a1[1] + 2 * a2[1] + 2 * a3[1] + a4[1]), nvz = vz + dt / 6 * (a1[2] + 2 * a2[2] + 2 * a3[2] + a4[2]);
+    if (py * ny < 0) {
+      const f = py / (py - ny), hx = px + (nx - px) * f, hz = pz + (nz - pz) * f, rr = Math.hypot(hx, hz);
+      if (rr >= R_IN && rr <= R_OUT) {
+        const kx = -(vx + (nvx - vx) * f), kz = -(vz + (nvz - vz) * f), L = hz * kx - hx * kz;
+        hits.push({ r: rr, phi: Math.atan2(hz, hx), g: Math.sqrt(1 - 3 / rr) / (1 - Math.pow(rr, -1.5) * L), k: hits.length, s: s + dt * f });
+        if (hits.length >= 3) return hits;
+      }
+    }
+    s += dt; px = nx; py = ny; pz = nz; vx = nvx; vy = nvy; vz = nvz;
+  }
+  return hits;
+}
+const emit = r => { const x = R_IN / r; return Math.max(0, (1 - Math.sqrt(x)) * x * x * x) / 0.0255; };
+const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+const W = 120, H = 74, COLS = Math.round(W / 2.4), ROWS = Math.round(H / 2.1);
+const cells = [];
+for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
+  const x = (i + 0.5 + (j % 2 ? 0.5 : 0)) / COLS, y = (j + 0.5) / ROWS, sx = x * 2 - 1, sy = (1 - y * 2) * H / W, b = Math.hypot(sx, sy) * FOV * D;
+  const rays = [];
+  if (Math.abs(b - 5.4) < 1.5) { for (let a = -1; a <= 1; a++) for (let c = -1; c <= 1; c++) rays.push(trace(sx + c / COLS * 2 / 3, sy + a / ROWS * 2 * H / W / 3)); }
+  else rays.push(trace(sx, sy));
+  cells.push({ x, y, rays });
+}
+let sRef = Infinity;
+for (const c of cells) for (const r of c.rays) for (const h of r) sRef = Math.min(sRef, h.s);
+
+// ---- stroming: elke ring zijn eigen klonterig patroon, meedraaiend met Ω = r^-1,5 ----
+const NR = 26, RING = Array.from({ length: NR }, (_, i) => ({ r: R_IN + (R_OUT - R_IN) * i / (NR - 1), w: [0, 1, 2].map(k => ({ f: 3 + Math.floor(hash(i * 3 + k) * 7), p: hash(i * 7 + k + 50) * 6.28, a: 0.5 + hash(i * 11 + k) })) }));
+function flow(r, phi, t, contrast) {
+  const u = (r - R_IN) / (R_OUT - R_IN) * (NR - 1), i = Math.max(0, Math.min(NR - 2, Math.floor(u))), fr = u - i;
+  const at = R => { const q = phi - Math.pow(R.r, -1.5) * t; let v = 0, n = 0; for (const w of R.w) { v += w.a * Math.sin(w.f * q + w.p); n += w.a; } return v / n; };
+  return Math.max(0.04, 1 + contrast * (at(RING[i]) * (1 - fr) + at(RING[i + 1]) * fr) * 2.2);
+}
+const TIME = 25;   // M per seconde
+const dphi = a => a - Math.PI * 2 * Math.round(a / (Math.PI * 2));
+// R2: hete vlek
+let spot = null;
+function tendSpot(t) {
+  if (!spot || t - spot.t0 > spot.life) { const q = k => hash(Math.floor(t) * 1.3 + k); const r0 = 6.4 + q(1) * 2.6; spot = { r0, phi0: q(2) * 6.28, t0: t, life: 3 * 6.28 * Math.pow(r0, 1.5) }; }
+}
+function shadeOf(v, h, t) {
+  let m;
+  if (v === 1) m = flow(h.r, h.phi, t, 0.6);
+  else if (v === 2) {
+    m = 0.55 * flow(h.r, h.phi, t, 0.2);
+    const age = t - spot.t0, life = Math.sin(Math.PI * Math.min(1, age / spot.life));
+    const dr = (h.r - spot.r0) / 0.55, da = dphi(h.phi - spot.phi0 - Math.pow(spot.r0, -1.5) * age) / 0.32;
+    m += 16 * Math.pow(life, 0.5) * Math.exp(-0.5 * (dr * dr + da * da));
+  } else {
+    m = 0.55 * flow(h.r, h.phi, t, 0.2);
+    const te = t - (h.s - sRef), P = 220, ph = ((te % P) + P) % P, rf = R_IN + ph * 0.45;   // het front loopt aan 0,45 c naar buiten
+    if (ph < 40) m += 9 * Math.exp(-0.5 * ((h.r - rf) / 1.1) ** 2) * (1 - ph / 40);
+  }
+  return emit(h.r) * m * h.g ** 4 * (h.k ? 1.25 : 1);
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let ink = css('--ink');
+const canvases = [...document.querySelectorAll('canvas[data-v]')];
+function draw(cv, v, t) {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * dpr), hgt = Math.round(r.height * dpr);
+  if (cv.width !== w || cv.height !== hgt) { cv.width = w; cv.height = hgt; }
+  const g = cv.getContext('2d'); g.clearRect(0, 0, w, hgt); g.fillStyle = ink; g.beginPath();
+  const rMax = w / COLS * 0.56;
+  for (const c of cells) {
+    let val = 0; for (const ray of c.rays) { let s = 0; for (const h of ray) s += shadeOf(v, h, t); val += 1 - Math.exp(-0.32 * s); } val /= c.rays.length;
+    if (val < 0.02) continue;
+    const rr = rMax * Math.sqrt(val); g.moveTo(c.x * w + rr, c.y * hgt); g.arc(c.x * w, c.y * hgt, rr, 0, 7);
+  }
+  g.fill();
+}
+const still = matchMedia('(prefers-reduced-motion: reduce)');
+function loop(now) {
+  const t = still.matches ? 0 : now / 1000 * TIME;
+  tendSpot(t);
+  for (const cv of canvases) draw(cv, +cv.dataset.v, t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+document.getElementById('theme').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); document.documentElement.dataset.theme = b.dataset.v; ink = css('--ink'); });
+try { if (matchMedia('(prefers-color-scheme: dark)').matches) document.querySelector('#theme [data-v="dark"]').click(); } catch (e) {}
+</script>
