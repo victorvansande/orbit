@@ -23,7 +23,7 @@ let hinted = false;                  // de korte uitleg onderaan: één keer per
 
 // plekken waar de kikker graag zit (voeten), waar een blad geel kan worden, de oever
 const PERCH = [[226, 141], [84, 81], [298, 137], [238, 72]];
-const SPOTS = [[296, 40], [246, 30], [54, 40], [312, 70]];
+const SPOTS = [[296, 50], [244, 44], [318, 76], [200, 42]];   // ver genoeg onder de keuzerij (34 px)
 const BANK = [[150, 172], [176, 156], [214, 146], [262, 142], [300, 138], [334, 136]];
 const bankY = x => { for (let i = 0; i < BANK.length - 1; i++) { const [x0, y0] = BANK[i], [x1, y1] = BANK[i + 1]; if (x <= x1) return y0 + (y1 - y0) * clamp((x - x0) / (x1 - x0), 0, 1); } return BANK[BANK.length - 1][1]; };
 
@@ -87,7 +87,7 @@ export function createTerra({ reducedMotion, store, zoom = 1 }) {
       pts.forEach(([x, y], j) => { if (j % 2 || j === 0) return; const side = (j / 2) % 2 ? 1 : -1; vb.leaf(x, y, 7 + (j / pts.length) * 2, 3.4, Math.PI / 2 + side * 0.9, j % 4 ? '#4f7a3a' : '#5a8a40', { vein: true }); });
       return s;
     });
-    const yel = layer(16, 16, scale, 2, 2); createBrush(yel.c, 90).leaf(0, 0, 9, 4.2, Math.PI / 2 - 0.2, '#d8b23a', { vein: true });
+    const yel = layer(16, 16, scale, 2, 2); createBrush(yel.c, 90).leaf(0, 0, 11, 5, Math.PI / 2 - 0.2, '#d8b23a', { vein: true });
     yel.c.fillStyle = 'rgba(120,80,30,.55)'; [[1.5, 5], [-0.5, 7.5]].forEach(([x, y]) => { yel.c.beginPath(); yel.c.arc(x, y, 0.7, 0, TAU); yel.c.fill(); });
     const frogS = layer(20, 14, scale, 10, 12), fr = createBrush(frogS.c, 95);
     fr.area([[-7, 0], [-6, -3], [-3, -2], [-2, 0]], '#1f4fa0', { shade: 0.5 });
