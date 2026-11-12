@@ -337,6 +337,7 @@ export function playBreak(kind, { lv = 0, x = 0 } = {}) {
 
 // Paludarium in het bakje (Victor, 12/11/2026: geluid enkel bij acties): 'mist' plantenspuit (kort gefilterd ruisje),
 // 'snip' snoeien (droog tikje), 'plop' iets valt in het water, 'lamp' knopje, 'hop' de kikker springt weg.
+// Ook de Japanse tuin (src/focus/garden.js): 'rustle' de esdoorn schudden (lage, zachte ruis), plus plop, lamp en hop.
 // x: -1 links tot 1 rechts. Per soort nooit sneller dan om de 60 ms; enkel als het tabblad zichtbaar is.
 const TERRA_GAIN = 0.4;
 const terraLast = {};
@@ -353,6 +354,13 @@ export function playTerra(kind, { x = 0 } = {}) {
         bp.type = 'bandpass'; bp.frequency.value = 6200; bp.Q.value = 0.8;
         soft(e, t, 0.1, 0.012, 0.28);
         src.connect(bp).connect(e).connect(out); src.start(t); src.stop(t + 0.45);
+        break;
+      }
+      case 'rustle': {
+        const src = noise(a, 0.7), bp = a.createBiquadFilter(), e = a.createGain();
+        bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 0.6;
+        soft(e, t, 0.07, 0.06, 0.5);
+        src.connect(bp).connect(e).connect(out); src.start(t); src.stop(t + 0.7);
         break;
       }
       case 'snip': blip(a, out, t, 2400, { g: 0.5, dur: 0.025, lp: 5000 }); blip(a, out, t + 0.03, 1800, { g: 0.35, dur: 0.02, lp: 4000 }); break;

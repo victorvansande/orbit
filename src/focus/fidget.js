@@ -42,7 +42,7 @@ import { createLife } from './life.js';
 import { createPlasma } from './plasma.js';
 import { createBreakout } from './breakout.js';
 import { createSnake } from './snake.js';
-import { createTerra } from './terra.js';
+import { createNature } from './nature.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -701,8 +701,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
         // slang in stippen (Victor, 08/11/2026, F1): raster van de matrixklok, kleur uit de kleurkiezer
         modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT, scores: scores?.game('snake'), run: scores?.game('snakeRun'), size: { w: W, h: HH } });
       } else if (modeName === 'terra') {
-        // paludarium (Victor, 12/11/2026): geschilderd natuurvenster, vaste compositie die meezoomt; bewaart wanneer je nevelde
-        modes[modeName] = createTerra({ reducedMotion, store: scores?.game('terra'), zoom: W / BASE_W });
+        // natuurvenster (Victor, 12/11/2026): paludarium en Japanse tuin achter het pijltje, geschilderd, vaste compositie
+        // die meezoomt; het paludarium bewaart wanneer je nevelde
+        modes[modeName] = createNature({ reducedMotion, store: scores?.game('terra'), zoom: W / BASE_W, onScene: showScreen });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -720,7 +721,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
-  const hasPresets = m => [...PANELS, 'life'].includes(m);
+  const hasPresets = m => [...PANELS, 'life', 'terra'].includes(m);
   nextBtn.addEventListener('click', () => { if (hasPresets(modeName)) mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
     if (!hasPresets(modeName) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;

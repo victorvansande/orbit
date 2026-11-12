@@ -93,6 +93,13 @@ async function fetchWeather() {
   return data;
 }
 
+// Het weer van nu voor de Japanse tuin in het bakje (src/focus/garden.js): soort ('clear', 'rain', ...) uit de laatst
+// opgehaalde stand, of null als er nog niets is. Haalt zelf niets op: dat doet createWeather zolang de focusmodus aan staat.
+export function currentSky() {
+  const c = read(CACHE_KEY);
+  return c && Number.isFinite(c.code) ? { kind: KIND[c.code] || 'cloudy', code: c.code, at: c.at } : null;
+}
+
 // Vult de link; zonder internet of bij een fout blijft hij verborgen (of toont hij de laatst bekende stand)
 export function createWeather(link) {
   link.href = KWICK;
