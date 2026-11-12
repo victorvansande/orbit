@@ -10,7 +10,7 @@
 // richting, dubbeltik = lantaarn aan of uit, tik op het vogeltje = het vliegt weg; de muis geeft een beetje diepte.
 // Geluid enkel bij acties (playTerra). Geen blur, geen lichtstralen: diepte met nevel. Minder beweging: één beeld.
 
-import { createBrush, layer, mix, rng } from './brush.js';
+import { createBrush, layer, mix, rng } from './dabs.js';
 import { playTerra } from '../scene/sound.js';
 import { LANG } from '../core/i18n.js';
 import { currentSky } from './weather.js';

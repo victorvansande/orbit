@@ -825,6 +825,26 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
   body.is-focus .fidget-next:hover, body.is-focus .fidget-next:focus-visible { opacity: 1; color: var(--ink-2); }
 }
 .fidget-next svg { width: 10px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }   /* lava en gloed: echte WebGL, zoals hun bron bij React Bits */
+/* gereedschap links buiten het bakje (natuurvenster, src/focus/tools.js): lijnicoontjes, bovenrand gelijk met het bakje */
+.fidget-tools { display: none; }
+.fidget-tool { position: relative; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--ink-3); cursor: pointer; transition: color .2s var(--ease), background .2s var(--ease); }
+.fidget-tool::after { content: ''; position: absolute; inset: -3px; }
+.fidget-tool svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.fidget-tool svg .dot { stroke-width: 1.5; }
+.fidget-tool:hover, .fidget-tool:focus-visible { color: var(--ink-2); }
+.fidget-tool[aria-pressed="true"] { color: var(--ink); background: var(--well); box-shadow: 0 1px 0 var(--well-lip), inset 0 1px 2px var(--well-shade); }
+.fidget-tool[data-toggle] { margin-top: 10px; }
+.fidget-tool[data-toggle][aria-pressed="true"] { color: var(--water-hot); background: transparent; box-shadow: none; }
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 500px) {
+  .fidget-tools {
+    position: fixed; z-index: 2; right: calc(var(--pad) + var(--fidget-w, 325.6px) + 10px); bottom: 92px; height: var(--fidget-h, 226.8px);
+    display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+    opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity .6s var(--ease), transform .6s var(--ease), visibility .6s;
+  }
+  .fidget-tools[hidden] { display: none; }
+  body.is-focus .fidget-tools { opacity: 1; visibility: visible; transform: none; }
+  body.is-focus .fidget-tools .fidget-tool { pointer-events: auto; }
+}
 /* keuze bovenin: zelfde kapitaaltjes als Boven / Zijkant, klein en rustig */
 .fidget-modes { position: absolute; z-index: 10; top: 10px; left: 11px; right: 11px; display: flex; align-items: center; justify-content: space-between; font: 500 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); pointer-events: none; }
 .fidget-modes > * { pointer-events: auto; }
@@ -1782,6 +1802,15 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
     to { opacity: 1; transform: scale(var(--fidget-scale, 1)); }
   }
 
+  /* Gereedschap boven het bakje op mobiel: linkerrand gelijk met het bakje */
+  body.has-fidget-open .fidget-tools:not([hidden]) {
+    display: flex; gap: 2px; position: fixed; z-index: var(--z-sheet-btn);
+    left: calc(max(50%, 162.8px) - 162.8px * var(--fidget-scale, 1)); top: calc(50% - 113.4px * var(--fidget-scale, 1) - 52px);   /* onder 326 px breed staat het bakje tegen de linkerrand */
+    padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  }
+  body.has-fidget-open .fidget-tool { width: 36px; height: 36px; }
+  body.has-fidget-open .fidget-tool[data-toggle] { margin-top: 0; margin-left: 8px; }
+
   /* Pijltje onder het bakje op mobiel */
   body.has-fidget-open .fidget-next:not([hidden]) {
     display: grid !important;
@@ -1941,7 +1970,7 @@ html.is-veiled::after { content: ''; position: fixed; inset: 0; z-index: var(--z
 .boot-fail button { font: inherit; font-size: var(--fs-ui); color: var(--bg); background: var(--ink); border: 0; border-radius: var(--r-pill); padding: 8px 18px; min-height: 36px; cursor: pointer; }
 .boot-fail small { font: var(--fs-micro)/1.4 'Geist Mono', ui-monospace, monospace; color: var(--ink-3); word-break: break-word; }
 /* Minimaal (Instellingen → Effecten): wat in de DOM zit gaat ook weg */
-body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, body.is-minimal .wall-toggle { display: none !important; }
+body.is-minimal .warmth, body.is-minimal .fidget, body.is-minimal .fidget-next, body.is-minimal .fidget-tools, body.is-minimal .wall-toggle { display: none !important; }
 /* Typographic wall: lege lijst na het afvinken */
 .fx-wall { position: relative; height: 230px; margin-top: 14px; -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent); mask-image: radial-gradient(closest-side, #000 62%, transparent); }
 .fx-wall canvas { position: absolute; inset: 0; width: 100%; height: 100%; }

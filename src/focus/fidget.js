@@ -43,6 +43,7 @@ import { createPlasma } from './plasma.js';
 import { createBreakout } from './breakout.js';
 import { createSnake } from './snake.js';
 import { createNature } from './nature.js';
+import { createTools } from './tools.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -703,7 +704,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'terra') {
         // natuurvenster (Victor, 12/11/2026): paludarium en Japanse tuin achter het pijltje, geschilderd, vaste compositie
         // die meezoomt; het paludarium bewaart wanneer je nevelde
-        modes[modeName] = createNature({ reducedMotion, store: scores?.game('terra'), zoom: W / BASE_W, onScene: showScreen });
+        modes[modeName] = createNature({ reducedMotion, store: scores?.game('terra'), zoom: W / BASE_W, onScene: showScreen, onTools: () => tools.sync(modes[modeName]) });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -721,6 +722,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     const text = name ? `${name} (${i + 1} / ${n})` : `${label('next')} (${i + 1} / ${n})`;
     nextBtn.setAttribute('aria-label', text); nextBtn.title = text;
   }
+  // gereedschap links buiten het bakje, voor soorten die er hebben (natuurvenster)
+  const tools = createTools(box, { label });
   const hasPresets = m => [...PANELS, 'life', 'terra'].includes(m);
   nextBtn.addEventListener('click', () => { if (hasPresets(modeName)) mode().next(1); });
   nextBtn.addEventListener('keydown', e => {
@@ -912,6 +915,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     nextBtn.hidden = !hasPresets(modeName);
     // natuurvensters hebben hun eigen kleuren: geen kleurkiezer
     pick.hidden = NO_COLOR.includes(modeName); reset.hidden = !ACCENT || NO_COLOR.includes(modeName);
+    tools.sync(modeName === 'terra' ? mode() : null);
   }
   bar.addEventListener('pointerdown', e => e.stopPropagation()); // de knopjes tellen niet als tik in het bakje
   renderBar();
@@ -1065,6 +1069,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     const scale = Math.min(1, (vw - 32) / 325.6, (vh - 140) / 226.8);
     const clamped = Math.max(0.65, Math.min(1, scale));
     box.style.setProperty('--fidget-scale', clamped.toFixed(3));
+    tools.el.style.setProperty('--fidget-scale', clamped.toFixed(3));
   }
 
   function toggleMobile(open) {

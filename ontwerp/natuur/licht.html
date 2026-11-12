@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit natuurvenster: licht en uur</title>
+<style>
+  :root { --bg: #e9e6dd; --ink: #1d1d1b; --ink-3: #77746b; --line: rgba(0,0,0,.12); --well: #dedbd1; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #151514; --ink: #ecebe6; --ink-3: #8a877e; --line: rgba(255,255,255,.14); --well: #1e1e1c; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 40px; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, sans-serif; }
+  main { max-width: 700px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p { margin: 0 0 16px; color: var(--ink-3); }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; align-items: center; }
+  .row span { font: 500 10px/1 ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); width: 64px; }
+  button { font: 500 11px/1 ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer; }
+  button[aria-pressed="true"] { color: var(--ink); background: var(--well); }
+  #stage { position: relative; width: 100%; max-width: 651.2px; aspect-ratio: 325.6 / 226.8; border-radius: 16px; overflow: hidden; background: #111; margin: 16px 0 20px; touch-action: none; user-select: none; }
+  #stage canvas { display: block; width: 100% !important; height: 100% !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Natuurvenster: licht en uur</h1>
+  <p>De echte scènes uit de app, met het uur in de hand. Kies een gereedschap en tik of sleep in het beeld.</p>
+  <div class="row" id="r-scene"><span>Scène</span></div>
+  <div class="row" id="r-hour"><span>Uur</span></div>
+  <div id="stage"></div>
+  <div class="row" id="r-tool"><span>Doen</span></div>
+</main>
+<script type="module">
+const q = new URLSearchParams(location.search);
+const S = { scene: q.get('scene') || 'palu', hour: q.get('h') || 'nu', season: q.get('s') || 'nu', sky: q.get('sky') || 'nu', zoom: parseFloat(q.get('zoom')) || 2, tool: q.get('tool') || '' };
+const HOURS = [['nu', 'Nu'], ['9', 'Ochtend'], ['13', 'Middag'], ['dusk', 'Schemer'], ['eve', 'Avond'], ['1', 'Nacht']];
+const SEASONS = [['nu', 'Nu'], ['3', 'Lente'], ['6', 'Zomer'], ['9', 'Herfst'], ['0', 'Winter']];
+const SKIES = [['nu', 'Nu'], ['clear', 'Helder'], ['cloudy', 'Bewolkt'], ['rain', 'Regen'], ['snow', 'Sneeuw'], ['fog', 'Mist']];
+const TOOLS = { mist: 'Nevelen', cut: 'Snoeien', sponge: 'Spons', feed: 'Voeren', lamp: 'Lamp', wind: 'Wind', rake: 'Harken' };
+function clock() {
+  const d = new Date();
+  if (S.season !== 'nu') d.setMonth(+S.season, 15);
+  if (S.hour === 'nu') return d;
+  const doy = (d - new Date(d.getFullYear(), 0, 0)) / 864e5, c = Math.cos(2 * Math.PI * (doy - 172) / 365), set = 19.35 + 2.65 * c;
+  const h = S.hour === 'dusk' ? set - 0.1 : S.hour === 'eve' ? Math.min(22.2, set + 1.6) : +S.hour;
+  d.setHours(Math.floor(h), Math.round((h % 1) * 60), 0, 0);
+  return d;
+}
+const stage = document.getElementById('stage');
+const rm = q.get('rm') ? { matches: true } : matchMedia('(prefers-reduced-motion: reduce)');
+let scene = null, raf = 0;
+async function mount() {
+  cancelAnimationFrame(raf); scene?.unmount();
+  const opt = { reducedMotion: rm, zoom: S.zoom, now: clock, sky: S.sky === 'nu' ? null : () => ({ kind: S.sky }), onTool: tools };
+  const mod = S.scene === 'palu' ? await import('../../src/focus/terra.js') : await import('../../src/focus/garden.js');
+  scene = S.scene === 'palu' ? mod.createTerra(opt) : mod.createGarden(opt);
+  scene.init(); scene.mount(stage);
+  if (S.tool) scene.pick(S.tool);
+  window.scene = scene;
+  const loop = n => { scene.frame(n); raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
+  tools();
+}
+function row(id, list, key, after) {
+  const el = document.getElementById(id);
+  for (const [v, name] of list) { const b = document.createElement('button'); b.textContent = name; b.onclick = () => { S[key] = v; sync(); after(); }; b.dataset.v = v; b.dataset.k = key; el.append(b); }
+}
+function sync() { document.querySelectorAll('button[data-k]').forEach(b => b.setAttribute('aria-pressed', String(S[b.dataset.k] === b.dataset.v))); }
+function tools() {
+  const el = document.getElementById('r-tool'); el.querySelectorAll('button').forEach(b => b.remove());
+  for (const tl of scene?.tools || []) { const b = document.createElement('button'); b.textContent = TOOLS[tl.id] || tl.id; b.setAttribute('aria-pressed', String(tl.toggle ? Boolean(scene.lit) : scene.tool === tl.id)); b.onclick = () => scene.pick(tl.id); el.append(b); }
+}
+row('r-scene', [['palu', 'Paludarium']], 'scene', mount);   // de Japanse tuin volgt als hij herschilderd is
+row('r-hour', HOURS, 'hour', mount);
+sync(); mount();
+const local = e => { const r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 325.6, y: (e.clientY - r.top) / r.height * 226.8 }; };
+let press = null;
+stage.addEventListener('pointerdown', e => { stage.setPointerCapture(e.pointerId); press = { x0: e.clientX, y0: e.clientY, moved: false }; scene.down?.(local(e)); });
+stage.addEventListener('pointermove', e => { const p = local(e); if (press && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) >= 6) press.moved = true; scene.move?.(p); if (press?.moved) scene.drag?.(p); });
+stage.addEventListener('pointerup', e => { const p = local(e); scene.up?.(p); if (press && !press.moved) scene.tap?.(p); press = null; });
+stage.addEventListener('pointerleave', () => { if (!press) scene.leave?.(); });
+</script>
+</body>
+</html>

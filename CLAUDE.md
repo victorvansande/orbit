@@ -60,7 +60,7 @@ src/core/   config, i18n, deadline, demo, mark, badge
 src/data/   store, backup, stats, feats, recap
 src/sync/   sync, pair, keychain
 src/scene/  scene, wheel, legend, fx, matrix, greet, sound, promo, turn, hole, gravity
-src/focus/  timer, glass, fidget, panel, life, weather, quotes, plasma, breakout, snake, terra, garden, nature, brush
+src/focus/  timer, glass, fidget, panel, life, weather, quotes, plasma, breakout, snake, terra, garden, nature, brush, light, falls, dew, fauna, tools, dabs
 src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 ```
 - Eén bestand, één verantwoordelijkheid, in de map van zijn domein. Afhankelijkheden één kant op: `core` niets, `data` core, `sync` core en data, `scene` core, `focus` core en scene; enkel `app.js` importeert alles. Nieuwe functie = module met `createX(...)`, `app.js` verbindt.
@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 11/11/2026, Claude Code: Breakout-bal kan niet meer vastraken tegen een steen (eindeloos tikgeluid); zandloper staat links van het zwarte gat; zwart gat verfijnd: fotonring als stippellijn met doppler bij de klik, klok van de schijf vertraagt met de massa, geen sprong meer bij het grijpen (greepring en gloed blijven, wolk even groot als de bol). Open: Victor klikt, sleept en speelt Breakout.
 - 11/11/2026, Claude Code: zwart gat grijpt al op 300 px en trekt de bol van ver naar zich toe; groot gat bij een klik is nu G3 Halo (gekozen uit `ontwerp/zwartgat/groot.html`), schaduw in licht met papier, avondtint en korrel; bij het vastnemen van een bol wordt het gat wakker en kijkt het mee (V1 + V3 uit `ontwerp/zwartgat/vastnemen.html`). Open: Victor sleept en klikt, op pc en gsm.
 - 11/11/2026, Claude Code: grote gat ligt boven alles van de pagina (z-index 7); het raster ligt nu 80 M achter het gat en buigt daardoor al merkbaar van ver (200 px: 9 px); het gat groeit 1,25 keer als je een bol vastneemt. Open: Victor sleept en klikt.
 - 11/11/2026, Claude Code: maandwissel Z1 tot Z3: de pop op het licht was echte clipping (+2,2 dBFS, stemmen 2 tot 4 van `monthChord` speelden tot 36 ms op volle sterkte vóór hun omhullende); nu `monthSwell` in de geest van Z4 (stil inademen, openbloeien, lang uitademen), elk een eigen akkoord; draaikolk zonder wind (zachte toon die meedraait en van links naar rechts zwaait). Vergelijken op `ontwerp/maandwissel/geluiden.html` (Nieuw / Vorige). Open: Victor luistert.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 12/11/2026, Claude Code: natuurvenster bijgestuurd na vier vragenrondes (geschilderd in de geest van Ghibli, vol bakje zonder kader, paludarium en Japanse tuin; alle keuzes in `docs/kennis.md`). Stijlproeven S1 Penseel, S2 Vlakken, S3 Was in `ontwerp/natuur/stijl.html` (artifact "Orbit natuurvenster stijl"). Open: Victor kiest een stijl.
 - 12/11/2026, Claude Code: fidget Paludarium gebouwd in S1 Penseel (`src/focus/terra.js`, `src/focus/brush.js`, groep Natuur): tik = nevelen, slepen = glas vegen, dubbeltik = lamp, geel blad tikken = snoeien, kikker, slakje, springstaartjes, visjes, vuurvliegjes 's nachts; nevelen wordt bewaard en gesynchroniseerd. Open: Victor speelt op pc en gsm; daarna de Japanse tuin.
 - 12/11/2026, Claude Code: Japanse tuin als tweede scène van het Natuurvenster (pijltje, `src/focus/garden.js`, `src/focus/nature.js`): seizoen volgens de datum, licht volgens de zon, echt weer; tik in de vijver = voeren, tik in de esdoorn = schudden, slepen = wind, dubbeltik = lantaarn, vogeltje, vlinder, libel, vuurvliegjes. Open: Victor speelt op pc en gsm.
+- 12/11/2026, Claude Code: natuurvenster verfijnd, stap 1: paludarium herschilderd (mosmuur, keien, kienhout, waterval in twee trappen, lichtkaart met warme avondlamp, maanlicht en vuurvliegjes, kikker en tetra's naar het echte dier) en gereedschap links buiten het bakje (nevelen, snoeien, spons, voeren, lamp; `src/focus/tools.js`). Bekijken op elk uur: `ontwerp/natuur/licht.html`. Tuin draait tijdelijk op `dabs.js`. Open: Victor kijkt en speelt; stap 2 is de Japanse tuin.
