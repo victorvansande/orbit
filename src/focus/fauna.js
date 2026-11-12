@@ -6,7 +6,7 @@
 // boven gezien met borstvinnen en vlekken; het vogeltje is een brilvogel (mejiro). Sprites één keer geschilderd,
 // kleine dieren per beeld.
 
-import { layer } from './brush.js';
+import { layer, rng } from './brush.js';
 
 const TAU = Math.PI * 2;
 const limb = (c, pts, w, col) => { c.strokeStyle = col; c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = w; c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); };
@@ -20,16 +20,17 @@ export function frogSprite(scale, pose = 'sit') {
   if (leap) { limb(c, [[-5.5, -4.6], [-10.5, -3.6], [-15, -3.2]], 2.4, LEG2); limb(c, [[3.6, -4.6], [6.4, -2.6], [8.6, -1.6]], 1.4, LEG2); }
   else { limb(c, [[-5, -4.4], [-0.4, -5], [-5.8, -1.6], [-1.2, -0.9]], 1.9, LEG2); limb(c, [[5.2, -4.4], [4.6, -2.2], [6.2, -0.7]], 1.3, LEG2); toes(c, 6.2, -0.7, [[7.6, -1.1], [7.8, -0.3]], LEG2); }
   // lijf: rug in het licht, flank donkerder
-  const body = c.createLinearGradient(0, -10.5, 0, -1.5); body.addColorStop(0, '#5a97f2'); body.addColorStop(0.35, '#2f6fdc'); body.addColorStop(1, '#1b3f9e');
+  const body = c.createLinearGradient(0, -10.5, 0, -1.5); body.addColorStop(0, '#6f9be0'); body.addColorStop(0.38, '#3767c2'); body.addColorStop(1, '#1b3682');
   c.fillStyle = body; c.beginPath(); c.moveTo(-8.6, -3.6);
   c.bezierCurveTo(-8.2, -8, -3.2, -10.3, 1, -9.7); c.bezierCurveTo(4.2, -9.3, 7.6, -8.7, 8.9, -6.6); c.bezierCurveTo(9.3, -5.6, 8.5, -4.4, 6.8, -3.8); c.bezierCurveTo(4, -2.3, -2, -1.2, -6, -1.6); c.bezierCurveTo(-8, -1.8, -8.9, -2.6, -8.6, -3.6); c.closePath(); c.fill();
   c.save(); c.clip();
   c.fillStyle = 'rgba(126,178,240,.75)'; c.beginPath(); c.ellipse(4.6, -3.2, 4.2, 1.5, -0.25, 0, TAU); c.fill();           // lichte keel en buik
+  { const q = rng(23); for (let i = 0; i < 70; i++) { const x = -9 + q() * 18, y = -10.4 + q() * 9, l = (-6 - y) / 5 + (q() - 0.5) * 0.8; c.fillStyle = l > 0 ? `rgba(168,200,240,${0.2 * Math.min(1, l)})` : `rgba(14,26,78,${0.24 * Math.min(1, -l)})`; c.beginPath(); c.ellipse(x, y, 0.5 + q() * 0.9, 0.3 + q() * 0.4, -0.2 + (q() - 0.5) * 0.6, 0, TAU); c.fill(); } }   // toetsen zoals de rest van het beeld, geen egaal vlak
   c.fillStyle = SPOT; for (const [x, y, rx, ry, a] of [[-4.2, -7.5, 1.35, 0.85, 0.4], [-0.9, -8.5, 1.15, 0.75, 0.1], [2.5, -8.3, 0.95, 0.65, -0.1], [-6.3, -5.2, 0.95, 0.8, 0.9], [-2.2, -6, 0.85, 0.6, 0.3], [4.9, -8, 0.6, 0.45, 0], [1.1, -6.3, 0.6, 0.5, 0], [-7.4, -3.2, 0.6, 0.5, 0], [7.4, -7.6, 0.45, 0.35, 0]]) { c.beginPath(); c.ellipse(x, y, rx, ry, a, 0, TAU); c.fill(); }
   c.restore();
   // natte glans op de rug
-  c.strokeStyle = 'rgba(214,232,255,.6)'; c.lineWidth = 0.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(-5.2, -8.5); c.quadraticCurveTo(-1, -10.1, 3.2, -9.2); c.stroke();
-  c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.ellipse(-2.4, -9.2, 0.9, 0.3, -0.2, 0, TAU); c.fill();
+  c.strokeStyle = 'rgba(244,236,214,.5)'; c.lineWidth = 0.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(-5.2, -8.5); c.quadraticCurveTo(-1, -10.1, 3.2, -9.2); c.stroke();
+  c.fillStyle = 'rgba(255,250,236,.6)'; c.beginPath(); c.ellipse(-2.4, -9.2, 0.9, 0.3, -0.2, 0, TAU); c.fill();
   // voorste poten (dichtbij)
   if (leap) {
     limb(c, [[-6, -3.6], [-11.5, -1.9], [-16.5, -1.3]], 3, LEG); limb(c, [[-16.5, -1.3], [-21, -0.4]], 1.1, LEG); toes(c, -21, -0.4, [[-23.2, -1.2], [-23.6, -0.2], [-23, 0.7]], LEG);

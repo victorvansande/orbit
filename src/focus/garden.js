@@ -15,6 +15,8 @@
 //   esdoorn = schudden), harken (slepen over het grind trekt voren), lantaarns aan of uit. Tik op het vogeltje: weg.
 // - stand: de lantaarns en de voren in het grind gaan naar scores.game('garden') (mee in sync, export, import), en de
 //   scène blijft bestaan als het bakje van maat verandert (rezoom).
+// - verfijnd op 12/11/2026: slagschaduwen via de lichtkaart, spiegeling van schutting, den, theehuis en lantaarn in de
+//   vijver, gazon in korte halen, in het donker verliest alles kleur, mist per laag, ijsrand in de winter.
 // Geluid enkel bij acties. Geen blur, geen lichtstralen. Minder beweging: één beeld.
 
 import { createBrush, layer, mix, rng, smooth, clamp, tone } from './brush.js';
@@ -28,6 +30,8 @@ const W = 325.6, H = 226.8, TAU = Math.PI * 2, PAD = 10, X0 = -PAD - 2, X1 = W +
 // vijver: grillige oever met een inham bovenaan en een landtong van mos onderaan (Victor: "wat te perfect rond")
 const POND = [[100, 171], [108, 162], [126, 157], [150, 156.5], [166, 159.5], [182, 155.5], [208, 152.5], [240, 153.5], [266, 157], [290, 158], [306, 166], [309, 175], [298, 183.5], [278, 186], [258, 191.5], [236, 193], [218, 187.5], [204, 184.5], [190, 188.5], [172, 194.5], [146, 193], [122, 188], [104, 180.5]];
 const PC = [204, 173.5];
+// winter: een rand van dun ijs langs de oever, open water in het midden
+const ICE = POND.map(([x, y], i) => { const k = 0.66 + 0.1 * Math.sin(i * 2.3) + 0.05 * Math.sin(i * 5.1); return [PC[0] + (x - PC[0]) * k, PC[1] + (y - PC[1]) * k]; });
 // ligt (x, y) in de vijver; m < 1 = een eind van de oever weg
 function inPond(x, y, m = 1) {
   const px = PC[0] + (x - PC[0]) / m, py = PC[1] + (y - PC[1]) / m; let inside = false;
@@ -150,7 +154,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     c.strokeStyle = 'rgba(16,18,24,.34)'; c.lineWidth = 0.5; for (let x = 196; x < X1; x += 4.4) { const top = x < 216 ? 87 - (x - 198) / 18 * 12 : 75 - (x - 216) / 122 * 8; c.beginPath(); c.moveTo(x, 94.6); c.lineTo(x + 1.6, Math.max(67, top) + 0.6); c.stroke(); }
     c.strokeStyle = '#25272c'; c.lineWidth = 2.2; c.lineCap = 'round'; c.beginPath(); c.moveTo(188, 95.4); c.lineTo(X1, 93.6); c.stroke();
     c.fillStyle = 'rgba(150,156,166,.6)'; for (let x = 191; x < X1; x += 4.4) { c.beginPath(); c.arc(x, 95.3 - (x - 188) * 0.012, 0.75, 0, TAU); c.fill(); }
-    if (snow) b.area([[195, 89, 1], [216, 75.4], [X1, 67.4, 1], [X1, 85, 1], [206, 91]], white, { shade: 0.22, warm: 0 });
+    if (snow) { b.area([[191.5, 93.6, 1], [198.6, 87.3], [216, 75.5], [X1, 67.5, 1], [X1, 91.4, 1]], white, { shade: 0.22, warm: 0, dir: -0.1 }); c.strokeStyle = 'rgba(96,112,134,.2)'; c.lineWidth = 0.4; for (let x = 200.4; x < X1; x += 8.8) { const top = x < 216 ? 87 - (x - 198) / 18 * 12 : 75 - (x - 216) / 122 * 8; c.beginPath(); c.moveTo(x, 92.6); c.lineTo(x + 1.5, top + 1.6); c.stroke(); } }
     c.fillStyle = '#241d18'; c.fillRect(200, 96.4, X1 - 200, 3.2);
     c.fillStyle = '#b7a888'; c.fillRect(204, 99, X1 - 204, 25);                                                              // muur achter de schermen
     for (const [x, y, w, h] of SHOJI) {
@@ -179,8 +183,17 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     // dichtbij: mos met glooiing, vijver, oeverstenen, lantaarn, bekken met goot, stapstenen, grind
     b = createBrush(near.c, 77);
     const nc = near.c;
-    b.area([[X0, 130, 1], [60, 128], [140, 131], [220, 132.5], [X1, 131, 1], [X1, H + 4, 1], [X0, H + 4, 1]], mossCol, { shade: 0.55, dab: 1.3, size: 0.8, max: 5200, warm: snow ? 0 : 0.07, lum: (u, v, x, y) => (b.nz(x * 0.03, y * 0.06, 3) - 0.5) * 1.3 + 0.12 - v * 0.3 });
+    b.area([[X0, 130, 1], [60, 128], [140, 131], [220, 132.5], [X1, 131, 1], [X1, H + 4, 1], [X0, H + 4, 1]], mossCol, { shade: 0.55, dab: 1.3, size: 0.8, max: 5200, warm: snow ? 0 : 0.07, lum: (u, v, x, y) => (b.nz(x * 0.03, y * 0.06, 3) - 0.5) * 0.85 + 0.12 - v * 0.3 });
     for (let i = 0, n = 0; i < 500 && n < 38; i++) { const x = X0 + b.q() * (X1 - X0), y = 136 + b.q() * 88; if (inPond(x, y, 1.18) || (x > 160 && y > gravelY(x) - 5)) continue; n++; const k = 0.45 + (y - 136) / 88 * 1.1; b.moss(x, y, (9 + b.q() * 12) * k, (2.4 + b.q() * 2.4) * k, mix(mossCol, snow ? '#c8d2da' : '#3f6a2c', 0.05 + b.q() * 0.15), { fringe: false, lit, l0: 0.12, dense: 0.9, depth: 0.4 }); }
+    // korte halen in perspectief: fijn en dicht bij de schutting, grover vooraan (anders is het gazon één egaal vlak)
+    nc.lineCap = 'round';
+    for (let i = 0; i < 2600; i++) {
+      const v = b.q() ** 1.5, y = 132.5 + v * 96, x = X0 + b.q() * (X1 - X0), k = 0.32 + v * 1.05;
+      if (inPond(x, y, 1.06) || (x > 158 && y > gravelY(x) - 3)) continue;
+      const l = (b.nz(x * 0.05, y * 0.1, 2) - 0.5) * 1.1 + (b.q() - 0.5) * 0.5;
+      nc.strokeStyle = mix(tone(mossCol, l * 0.5), l > 0.2 ? lit : '#2f5a30', snow ? 0 : Math.abs(l) * 0.3) + (snow ? '55' : 'b0'); nc.lineWidth = 0.34 * k;
+      nc.beginPath(); nc.moveTo(x, y); nc.lineTo(x + (b.q() - 0.5) * 1.5 * k, y - (0.9 + b.q() * 1.7) * k); nc.stroke();
+    }
     b.area(GRAVEL, snow ? '#eaeef1' : '#d6d0c0', { shade: 0.3, dab: 1.6, size: 0.5, warm: 0.04 });
     for (let x = 174; x < X1; x += 5 + b.q() * 5) b.moss(x, gravelY(x) + 0.4, 5 + b.q() * 4, 1.5 + b.q(), mix(mossCol, '#3f6a2c', snow ? 0 : 0.2), { fringe: !snow, lit });
     for (let y = 208; y < H + 4; y += 3 + b.q() * 2.5) b.moss(170 - (y - 208) * 0.5 + (b.q() - 0.5) * 2, y, 5 + b.q() * 3, 1.8 + b.q(), mix(mossCol, '#3f6a2c', snow ? 0 : 0.2), { fringe: !snow, lit });   // ook de linkerrand van het grind loopt uit in mos
@@ -228,14 +241,28 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
 
     // esdoorn: sprite die van linksboven inhangt en wiegt rond zijn aanhechting
     const tree = layer(196, 104, scale, 14, 14), tb = createBrush(tree.c, 79), limbs = [];
-    limbs.push(tb.branch([[-12, 4], [26, 16], [66, 26], [108, 30], [150, 26], [174, 30]], '#3e2e26', 7.4, 1.5));
-    for (const [pts, w] of [[[[60, 25], [84, 42], [102, 58]], 3], [[[26, 16], [42, 0], [52, -8]], 3], [[[108, 30], [132, 46], [142, 58]], 2.4], [[[150, 26], [164, 12]], 1.8], [[[84, 42], [72, 56]], 1.4]]) limbs.push(tb.branch(pts, '#3e2e26', w, 0.9));
+    const limb = (pts, w0, w1) => { const S = tb.branch(pts, '#3e2e26', w0, w1); S.w0 = w0; S.w1 = w1; limbs.push(S); return S; };
+    limb([[-12, 4], [26, 16], [66, 26], [108, 30], [150, 26], [174, 30]], 7.4, 1.5);
+    for (const [pts, w] of [[[[60, 25], [84, 42], [102, 58]], 3], [[[26, 16], [42, 0], [52, -8]], 3], [[[108, 30], [132, 46], [142, 58]], 2.4], [[[150, 26], [164, 12]], 1.8], [[[84, 42], [72, 56]], 1.4]]) limb(pts, w, 0.9);
     if (mapleCols) {
       const leaves = [];
       for (const S of limbs) for (let i = 2; i < S.length; i += 2) for (let k = 0; k < 4; k++) leaves.push([S[i][0] + (tb.q() - 0.5) * 26, S[i][1] + (tb.q() - 0.32) * 20, tb.q()]);
       leaves.sort((p, r) => p[2] - r[2]);
       for (const [x, y, z] of leaves) mapleLeaf(tree.c, x, y, 3.3 + tb.q() * 1.9, Math.PI / 2 + (tb.q() - 0.5) * 1.5, tone(mapleCols[Math.floor(tb.q() * mapleCols.length)], (z - 0.62) * 1.1 + (tb.nz(x * 0.05, y * 0.05, 2) - 0.5) * 0.5));
-    } else for (const S of limbs) { tree.c.strokeStyle = white; tree.c.lineWidth = 1.3; tree.c.lineCap = 'round'; tree.c.beginPath(); S.forEach(([x, y], i) => (i ? tree.c.lineTo(x, y - 1.6) : tree.c.moveTo(x, y - 1.6))); tree.c.stroke(); }
+    } else {
+      // kale boom: twijgen die zich nog eens vertakken, knoppen aan de toppen, sneeuw in hoopjes bovenop het hout
+      for (const S of limbs.slice()) for (let i = 5, side = 1; i < S.length - 2; i += 5 + Math.floor(tb.q() * 4), side = -side) {
+        const [x, y, a] = S[i], ta = a + side * (0.55 + tb.q() * 0.6), len = 9 + tb.q() * 11, mx = x + Math.cos(ta) * len * 0.55, my = y + Math.sin(ta) * len * 0.55 + 1;
+        const ex = x + Math.cos(ta - side * 0.25) * len, ey = y + Math.sin(ta - side * 0.25) * len + 2.4;
+        limb([[x, y], [mx, my], [ex, ey]], 1.1, 0.35); limb([[mx, my], [mx + Math.cos(ta + side * 0.7) * len * 0.4, my + Math.sin(ta + side * 0.7) * len * 0.4 + 0.8]], 0.6, 0.3);
+        tb.dab(ex, ey, '#6a4a3a', 0.9, 0.55, 0.4, ta);
+      }
+      for (const S of limbs) for (let i = 0; i < S.length; i++) {
+        const [x, y, a] = S[i], w = (S.w0 + (S.w1 - S.w0) * (i / (S.length - 1))) / 2;
+        if (Math.abs(Math.cos(a)) < 0.45 || tb.nz(x * 0.09, y * 0.09 + S.w0, 2) < 0.42) continue;
+        tb.dab(x, y - w - 0.2, white, 0.95, 1.5 + w * 0.2, 0.5 + w * 0.22, a); tb.dab(x, y - w + 0.35, '#c4d0dc', 0.5, 1.3 + w * 0.2, 0.3, a);
+      }
+    }
     const clouds = [0, 1, 2].map(i => { const l = layer(110, 36, scale, 0, 0), q = rng(100 + i); for (let k = 0; k < 46; k++) { const u = q(), x = 12 + u * 86, y = 20 - Math.sin(u * Math.PI) * 9 * q() + q() * 6, r = 5 + q() * 9 * Math.sin(u * Math.PI); const gr = l.c.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,.2)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); l.c.fillStyle = gr; l.c.fillRect(x - r, y - r, r * 2, r * 2); } return l; });
     built = { far, midL, near, shore, rake, frame, tree, clouds, mapleCols, snow, gravelCol: snow ? '#eaeef1' : '#d6d0c0', cloudX: built?.cloudX || [10, 130, 240] };
     rakeAll();
@@ -245,7 +272,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
   function seed() {
     const q = rng(9);
     koi = [['#e8742c', [[0.25, 0, 0.5, '#f4efe4'], [0.6, 0.2, 0.4, '#f4efe4']]], ['#f4efe4', [[0.12, 0, 0.42, '#e04a26'], [0.5, -0.2, 0.5, '#e04a26'], [0.78, 0.1, 0.3, '#1c1c20']]], ['#e8b84a', []], ['#f4efe4', [[0.35, 0.1, 0.6, '#1c1c20'], [0.7, -0.1, 0.35, '#e8742c']]]]
-      .map(([col, marks], i) => ({ x: 150 + i * 34, y: 168 + q() * 12, a: q() * TAU, v: 6, turn: 0, col, marks, fin: 'rgba(250,240,225,.55)', size: 2.6 + q() * 0.9, ph: q() * TAU, sp: Array.from({ length: 8 }, () => [150 + i * 34, 172]) }));
+      .map(([col, marks], i) => ({ x: 150 + i * 34, y: 168 + q() * 12, a: q() * TAU, v: 6, turn: 0, col, marks, fin: 'rgba(250,240,225,.55)', size: 3.3 + q() * 1.1, ph: q() * TAU, sp: Array.from({ length: 8 }, () => [150 + i * 34, 172]) }));
     flies = Array.from({ length: 6 }, () => ({ x: 60 + q() * 250, y: 120 + q() * 60, a: q() * TAU, ph: q() * 9, per: 3.2 + q() * 2.6, on: 0 }));
     falls = []; ripples = []; rain = []; flakes = []; food = []; bird = null; butterfly = null; dragon = null;
   }
@@ -295,9 +322,9 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     falls = falls.filter(f => f.life > 0 && f.x < W + 20 && f.y < H + 10).slice(-140);
     // regen en sneeuw uit de lucht
     const rn = wet(), sn = snowing();
-    if (rn > 0) { while (rain.length < 90 * rn) rain.push({ x: Math.random() * (W + 40), y: Math.random() * H, v: 160 + Math.random() * 60 }); }
-    rain.length = Math.min(rain.length, Math.round(90 * rn));
-    for (const r of rain) { r.y += r.v * dt; r.x -= r.v * dt * (0.15 + w * 0.3); if (r.y > H) { if (Math.random() < 0.5) { const rx = 110 + Math.random() * 190, ry = 156 + Math.random() * 36; if (inPond(rx, ry, 0.95)) ripples.push({ x: rx, y: ry, at: t, rain: true }); } r.y = -10; r.x = Math.random() * (W + 40); } }
+    if (rn > 0) { while (rain.length < 140 * rn) { const z = 0.45 + Math.random() * 0.55; rain.push({ x: Math.random() * (W + 40), y: Math.random() * H, v: (130 + Math.random() * 60) * z + 40, z }); } }
+    rain.length = Math.min(rain.length, Math.round(140 * rn));
+    for (const r of rain) { r.y += r.v * dt; r.x -= r.v * dt * (0.15 + w * 0.3); if (r.y > H) { if (Math.random() < 0.9) { const rx = 110 + Math.random() * 190, ry = 156 + Math.random() * 36; if (inPond(rx, ry, 0.95)) ripples.push({ x: rx, y: ry, at: t, rain: true }); } r.y = -10; r.x = Math.random() * (W + 40); } }
     if (sn > 0) { while (flakes.length < 80 * sn) flakes.push({ x: Math.random() * W, y: Math.random() * H, v: 9 + Math.random() * 12, k: Math.random() * 9, r: 0.5 + Math.random() * 0.7 }); }
     flakes.length = Math.min(flakes.length, Math.round(80 * sn));
     for (const s of flakes) { s.y += s.v * dt; s.x += (Math.sin(t + s.k) * 6 + w * 10) * dt; if (s.y > H) { s.y = -4; s.x = Math.random() * W; } if (s.x > W) s.x = 0; }
@@ -342,13 +369,26 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     const amb = lerp3(lerp3([0.2, 0.26, 0.41], [0.29, 0.35, 0.5], mf), [0.86 - cl * 0.2, 0.88 - cl * 0.18, 0.86 - cl * 0.14], L);
     light.begin([Math.min(1, amb[0] + warm * 0.12), amb[1] + warm * 0.02, Math.max(0, amb[2] - warm * 0.08)]);
     if (L > 0.05 && cl < 0.8 && built.mapleCols) light.dapple(0, 132, W, H, t * 0.6 + maple.a * 300 + px * 6, Math.sin(t * 0.17) * 4, 0.3 * L * (1 - cl), 170, 80);     // bladschaduw van de esdoorn
+    // slagschaduw: weg van de zon (of de maan), langer naarmate ze lager staat; bij bewolking blijft enkel de contactschaduw
+    const su = L > 0.05 ? day.sun : lune.up >= 0 ? lune.up : 0.5, dx = (0.5 - su) * 2, len = 1 + (1 - Math.sin(su * Math.PI)) * 1.2;
+    const S = L * (0.16 + 0.4 * (1 - cl)) + (1 - L) * mf * 0.24;
+    if (S > 0.01) {
+      const sh = (x, y, rx, ry, k, far) => light.shadow(x + ox + dx * far, y + oy + (len - 1) * ry * 0.5, rx * (1 + Math.abs(dx) * 0.25), ry * len, S * k);
+      sh(172, 141, 36, 6.5, 0.9, 26);                                                                // den
+      for (const [x, rx] of [[26, 27], [74, 21], [112, 17], [196, 12]]) sh(x, 133.5, rx, 3.2, 0.8, 6);  // struiken
+      sh(270, 134.5, 84, 4.4, 0.9, 10);                                                              // veranda
+      sh(LX, 161, 14, 3.2, 0.8, 9); sh(186, 148.6, 10.5, 2.4, 0.8, 5);                               // lantaarn, bekken
+      for (const [x, y, rx] of [[22, 217.6, 17], [57, 208, 14.5], [93, 215, 14], [129, 207.8, 13]]) sh(x, y, rx, 2.6, 0.7, 4);
+      sh(272, 217.5, 17, 3.6, 0.8, 6);                                                               // steen in het grind
+    }
+    light.shade(0, 127 + oy, W, 141 + oy, 'rgba(34,48,76,.24)', 'rgba(34,48,76,0)');                  // de voet van schutting en struiken ligt altijd wat donkerder
     const N = (1 - L) * lampLv;
     if (N > 0.01) {
       const fl = 0.94 + 0.06 * Math.sin(t * 7.3) * Math.sin(t * 2.9);
-      light.spot(LX + ox, 150 + oy, 86, [1, 0.7, 0.36], N * fl, 44);
+      light.spot(LX + ox, 153 + oy, 58, [0.92, 0.6, 0.3], N * fl * 0.85, 25);
       light.spot(LX + ox, 142 + oy, 30, [0.9, 0.62, 0.3], N * fl);
-      light.spot(262 + ox * 0.6, 110 + oy * 0.6, 100, [1, 0.76, 0.46], N * 0.9, 56);
-      light.spot(250 + ox * 0.6, 142 + oy * 0.6, 120, [0.7, 0.48, 0.24], N * 0.8, 30);
+      light.spot(262 + ox * 0.6, 124 + oy * 0.6, 100, [1, 0.76, 0.46], N * 0.8, 36);
+      light.spot(250 + ox * 0.6, 142 + oy * 0.6, 120, [0.7, 0.48, 0.24], N * 0.6, 30);
     }
     const fa = sz === 1 ? clamp(1 - L * 2.2, 0, 1) : 0;
     if (fa > 0.01) for (const f of flies) if (f.on > 0.02) light.spot(f.x + ox, f.y + oy, 26, [0.86, 0.84, 0.36], fa * f.on);
@@ -365,8 +405,13 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     top = mix(top, '#c9849a', warm * 0.4); bot = mix(bot, '#f6b678', warm * 0.75);
     top = mix(top, L > 0.3 ? '#a6aeb4' : '#2a2f3c', cl * 0.75); bot = mix(bot, L > 0.3 ? '#cfd3d2' : '#3a3f4c', cl * 0.7);
     if (kind() === 'fog') { top = mix(top, '#d7dad6', 0.6 * L + 0.2); bot = mix(bot, '#e2e3de', 0.6 * L + 0.2); }
+    // sluier over wat al getekend is (mist per laag: hoe verder, hoe meer; nat; schemer), nooit over de lege lucht
+    const veil = (col, y0 = 0) => { g.globalCompositeOperation = 'source-atop'; g.fillStyle = col; g.fillRect(0, y0, W, H - y0); g.globalCompositeOperation = 'source-over'; };
+    const fog = kind() === 'fog';
     g.drawImage(far.cv, -PAD - px * 1.5, -py * 0.6, W + PAD * 2, H);
+    if (fog) veil('rgba(223,227,223,.56)');
     g.drawImage(midL.cv, -PAD - px * 3.5, -py * 1.2, W + PAD * 2, H);
+    if (fog) veil('rgba(223,227,223,.36)');
     const nx = -PAD - px * 6, ny = -py * 2, ox = nx + PAD, oy = ny;
     g.drawImage(near.cv, nx, ny, W + PAD * 2, H);
     g.drawImage(rake.cv, nx, ny, W + PAD * 2, H);
@@ -374,11 +419,17 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     // vijver: koi onder het water, de lucht in het oppervlak, lelieblad, kringen
     g.save(); g.beginPath(); smooth(g, POND); g.clip();
     for (const k of koi) drawKoi(g, k, 0.38, sz === 3 ? 0.55 : 0.92);
-    { const gr = g.createLinearGradient(0, 152, 0, 196); gr.addColorStop(0, mix(bot, '#ffffff', 0.1) + 'd8'); gr.addColorStop(0.5, mix(top, '#3f6a72', 0.3) + 'a0'); gr.addColorStop(1, mix(top, '#2a4a50', 0.5) + '66'); g.fillStyle = gr; g.fillRect(96, 150, 216, 48); }
+    { const gr = g.createLinearGradient(0, 152, 0, 196); gr.addColorStop(0, mix(bot, '#ffffff', 0.1) + 'b4'); gr.addColorStop(0.5, mix(top, '#3f6a72', 0.3) + '80'); gr.addColorStop(1, mix(top, '#2a4a50', 0.5) + '55'); g.fillStyle = gr; g.fillRect(96, 150, 216, 48); }
+    // spiegeling: wat achter de vijver staat (schutting, den, theehuis) en de lantaarn, omgekeerd en in stroken die licht deinen
+    g.globalAlpha = fog ? 0.12 : 0.24;
+    for (let y = 152; y < 196; y += 3.6) { g.save(); g.beginPath(); g.rect(96, y, 216, 3.6); g.clip(); g.transform(1, 0, 0, -0.7, Math.sin(t * 1.1 + y * 0.9) * 1.1 * (1 + wind) * (0.4 + (y - 152) / 44), 243.7); g.drawImage(midL.cv, -PAD + px * 2.5, 0, W + PAD * 2, H); g.restore(); }
+    g.save(); g.beginPath(); g.rect(LX - 20, 160.6, 40, 34); g.clip(); g.transform(1, 0, 0, -0.8, Math.sin(t * 1.3) * 0.5, 288); g.drawImage(shore.cv, -PAD, 0, W + PAD * 2, H); g.restore();
+    g.globalAlpha = 1;
+    if (sz === 3) { g.fillStyle = 'rgba(226,236,242,.6)'; g.beginPath(); smooth(g, POND); smooth(g, ICE); g.fill('evenodd'); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 0.5; g.beginPath(); smooth(g, ICE); g.stroke(); }
     g.lineWidth = 0.5; g.strokeStyle = 'rgba(255,255,255,.34)'; for (let i = 0; i < 12; i++) { const x = 112 + ((i * 41 + t * (2 + i % 3)) % 184), y = 158 + (i * 7 % 32), wl = 5 + (i % 4) * 4; if (!inPond(x, y, 0.9)) continue; g.beginPath(); g.moveTo(x, y); g.lineTo(x + wl, y); g.stroke(); }
     if (sz !== 3) for (const [x, y, r, a] of [[244, 178, 5, 0.4], [254, 183, 4, 2.1], [236, 184.5, 3.4, 4], [152, 168, 4.4, 1.2], [143, 173, 3.2, 5]]) { const bx = x + Math.sin(t * 0.4 + x) * 0.5; g.fillStyle = sz === 2 ? '#6f8a44' : '#4f8f48'; g.beginPath(); g.ellipse(bx, y, r, r * 0.4, 0, a, a + TAU - 0.5); g.lineTo(bx, y); g.closePath(); g.fill(); g.fillStyle = 'rgba(200,230,150,.3)'; g.beginPath(); g.ellipse(bx - r * 0.2, y - r * 0.08, r * 0.5, r * 0.16, 0, 0, TAU); g.fill(); }
     for (const f of food) if (t >= f.at) { g.fillStyle = '#b8793a'; g.beginPath(); g.ellipse(f.x, f.y, 0.75, 0.42, 0, 0, TAU); g.fill(); }
-    for (const r of ripples) { if (r.tiny) continue; const u = (t - r.at) / (r.rain ? 0.9 : 2.2), R = (r.rain ? 5 : r.big ? 20 : 11) * u + 1; g.strokeStyle = `rgba(255,255,255,${(r.rain ? 0.4 : 0.55) * (1 - u)})`; g.beginPath(); g.ellipse(r.x, r.y, R, R * 0.32, 0, 0, TAU); g.stroke(); }
+    for (const r of ripples) { if (r.tiny) continue; const u = (t - r.at) / (r.rain ? 0.9 : 2.2), R = (r.rain ? 5 : r.big ? 20 : 11) * u + 1; g.strokeStyle = `rgba(255,255,255,${(r.rain ? 0.6 : 0.55) * (1 - u)})`; g.beginPath(); g.ellipse(r.x, r.y, R, R * 0.32, 0, 0, TAU); g.stroke(); }
     g.restore();
     g.drawImage(shore.cv, -PAD, 0, W + PAD * 2, H);
     // bekken: straaltje uit de bamboegoot, kringen
@@ -398,18 +449,37 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
       g.strokeStyle = '#8a6a44'; g.lineWidth = 1.2 * k; g.beginPath(); g.moveTo(hx, hy - 1.6 * k); g.lineTo(hx + 20 * k, hy + 12 * k); g.stroke();
     }
     g.restore();
+    if (fog) { const fg = g.createLinearGradient(0, 128, 0, H); fg.addColorStop(0, 'rgba(223,227,223,.34)'); fg.addColorStop(1, 'rgba(223,227,223,.06)'); veil(fg, 126); }
     // esdoorn en omlijsting op de voorgrond
     g.save(); g.translate(-14 - px * 8, -14 - py * 2.5); g.rotate(maple.a + 0.006 * Math.sin(t * 0.8)); g.drawImage(tree.cv, 0, 0, 196, 104); g.restore();
     g.drawImage(frame.cv, -PAD - px * 9, -py * 3, W + PAD * 2, H);
-    // licht over wat getekend is
+    if (wet() > 0) veil(`rgba(22,34,40,${0.17 * wet()})`);                                          // nat: alles een tint donkerder
+    if (L < 1) veil(`rgba(98,106,114,${0.42 * (1 - L)})`);                                          // in het donker verliest alles kleur, zo wordt het mos onder de lantaarn niet gifgroen
+    // licht over wat getekend is, de lucht erachter: verloop, sterren, maan, zon, wolken
     const { N, fa } = lighting(L, warm, cl, ox, oy);
-    light.applyDrawn(g);
+    light.applyUnder(g, c => {
+      const sg = c.createLinearGradient(0, 0, 0, 140); sg.addColorStop(0, top); sg.addColorStop(1, bot); c.fillStyle = sg; c.fillRect(0, 0, W, H);
+      if (L < 0.6 && cl < 0.7) { const q = rng(5); for (let i = 0; i < 46; i++) { const x = q() * W, y = q() * 100, s = 0.5 + q() * 0.6; c.fillStyle = `rgba(255,255,240,${(0.6 - L) * 1.4 * (1 - cl) * (0.5 + 0.5 * Math.sin(t * (0.6 + q()) + i))})`; c.fillRect(x, y, s, s); } }
+      // de maan in haar echte schijngestalte: verlichte kant naar de zon (wassend rechts), de rest in aardlicht; overdag
+      // blijft enkel het verlichte deel bleek zichtbaar (de donkere schijf stond als een blauwe bol in de daglucht)
+      if (lune.up >= 0) {
+        const [sx, sy] = moonAt(), a = (1 - cl * 0.9) * (0.3 + 0.7 * (1 - L)), R = 5.6, wax = lune.phase < 0.5, k = Math.cos((wax ? lune.phase : 1 - lune.phase) * TAU);
+        const gr = c.createRadialGradient(sx, sy, 0, sx, sy, 40); gr.addColorStop(0, `rgba(238,240,232,${0.42 * a * (0.25 + 0.75 * lune.lit) * (1 - L)})`); gr.addColorStop(1, 'rgba(238,240,232,0)'); c.fillStyle = gr; c.fillRect(sx - 40, sy - 40, 80, 80);
+        c.save(); c.translate(sx, sy); c.rotate(-0.38); if (!wax) c.scale(-1, 1);
+        c.globalAlpha = clamp(1 - L * 1.8, 0, 1); c.fillStyle = mix(top, '#93a0b4', 0.16); c.beginPath(); c.arc(0, 0, R - 0.1, 0, TAU); c.fill(); c.globalAlpha = 1;
+        c.fillStyle = `rgba(246,243,226,${0.96 * a})`; c.beginPath(); c.arc(0, 0, R, -Math.PI / 2, Math.PI / 2); c.ellipse(0, 0, Math.abs(k) * R, R, 0, Math.PI / 2, -Math.PI / 2, k > 0); c.closePath(); c.fill();
+        c.restore();
+      }
+      if (L > 0.02) { const sx = 40 + day.sun * (W - 80) - px * 1.5, sy = 92 - Math.sin(day.sun * Math.PI) * 70, a = (1 - cl * 0.9) * L, gr = c.createRadialGradient(sx, sy, 0, sx, sy, 44); gr.addColorStop(0, `rgba(255,248,225,${0.5 * a})`); gr.addColorStop(1, 'rgba(255,248,225,0)'); c.fillStyle = gr; c.fillRect(sx - 44, sy - 44, 88, 88); c.fillStyle = `rgba(255,250,232,${0.95 * a})`; c.beginPath(); c.arc(sx, sy, 7, 0, TAU); c.fill(); }
+      built.cloudX.forEach((x, i) => { c.globalAlpha = clamp(cl * 1.4 + 0.3, 0, 1) * (0.35 + 0.65 * L); c.drawImage(clouds[i].cv, x - px * 2, 10 + i * 12, 110, 36); });
+      c.globalAlpha = 1;
+    });
     // wat zelf licht geeft: het venster van de lantaarn, de shoji, hun weerschijn in de vijver, vuurvliegjes
     g.globalCompositeOperation = 'lighter';
     if (N > 0.01) {
       const fl = 0.9 + 0.1 * Math.sin(t * 7.3) * Math.sin(t * 2.9), lx = LX + ox, ly = 142.8 + oy;
       g.fillStyle = `rgba(255,214,140,${0.85 * N * fl})`; g.fillRect(lx - 3.6, ly - 2.6, 7.2, 5.2);
-      let gr = g.createRadialGradient(lx, ly, 0, lx, ly, 30); gr.addColorStop(0, `rgba(255,190,110,${0.34 * N * fl})`); gr.addColorStop(1, 'rgba(255,190,110,0)'); g.fillStyle = gr; g.fillRect(lx - 30, ly - 30, 60, 60);
+      let gr = g.createRadialGradient(lx, ly, 0, lx, ly, 15); gr.addColorStop(0, `rgba(255,190,110,${0.26 * N * fl})`); gr.addColorStop(1, 'rgba(255,190,110,0)'); g.fillStyle = gr; g.fillRect(lx - 15, ly - 15, 30, 30);
       const mx = -px * 3.5, my = -py * 1.2;
       for (const [x, y, w, h] of SHOJI) { g.fillStyle = `rgba(255,196,120,${0.3 * N})`; g.fillRect(x + mx, y + my, w, h); }
       gr = g.createRadialGradient(262 + mx, 110 + my, 0, 262 + mx, 110 + my, 78); gr.addColorStop(0, `rgba(255,186,104,${0.2 * N})`); gr.addColorStop(1, 'rgba(255,186,104,0)'); g.fillStyle = gr; g.fillRect(170, 40, 170, 150);
@@ -425,26 +495,10 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
       g.restore();
     }
     if (fa > 0.01) for (const f of flies) { if (f.on < 0.02) continue; const a = fa * f.on, x = f.x + ox, y = f.y + oy, gr = g.createRadialGradient(x, y, 0, x, y, 6); gr.addColorStop(0, `rgba(240,255,150,${0.95 * a})`); gr.addColorStop(0.2, `rgba(215,245,110,${0.4 * a})`); gr.addColorStop(1, 'rgba(200,240,110,0)'); g.fillStyle = gr; g.fillRect(x - 6, y - 6, 12, 12); }
-    // de lucht erachter: wolken, zon of maan, sterren, verloop
-    g.globalCompositeOperation = 'destination-over';
-    built.cloudX.forEach((x, i) => { const y = 10 + i * 12, wa = clamp(cl * 1.4 + 0.3, 0, 1) * (0.35 + 0.65 * L); g.globalAlpha = wa; g.drawImage(clouds[i].cv, x - px * 2, y, 110, 36); g.globalAlpha = 1; });
-    if (L > 0.02) { const sx = 40 + day.sun * (W - 80) - px * 1.5, sy = 92 - Math.sin(day.sun * Math.PI) * 70, a = (1 - cl * 0.9) * L; g.fillStyle = `rgba(255,250,232,${0.95 * a})`; g.beginPath(); g.arc(sx, sy, 7, 0, TAU); g.fill(); const gr = g.createRadialGradient(sx, sy, 0, sx, sy, 44); gr.addColorStop(0, `rgba(255,248,225,${0.5 * a})`); gr.addColorStop(1, 'rgba(255,248,225,0)'); g.fillStyle = gr; g.fillRect(sx - 44, sy - 44, 88, 88); }
-    // de maan in haar echte schijngestalte: verlichte kant naar de zon (wassend rechts), de rest in aardlicht
-    if (lune.up >= 0) {
-      const [sx, sy] = moonAt(), a = (1 - cl * 0.9) * (0.3 + 0.7 * (1 - L)), R = 5.6, wax = lune.phase < 0.5, k = Math.cos((wax ? lune.phase : 1 - lune.phase) * TAU);
-      g.save(); g.translate(sx, sy); g.rotate(-0.38); if (!wax) g.scale(-1, 1);
-      g.fillStyle = `rgba(246,243,226,${0.96 * a})`; g.beginPath(); g.arc(0, 0, R, -Math.PI / 2, Math.PI / 2); g.ellipse(0, 0, Math.abs(k) * R, R, 0, Math.PI / 2, -Math.PI / 2, k > 0); g.closePath(); g.fill();
-      g.fillStyle = mix(top, '#93a0b4', 0.16 * (1 - L)); g.beginPath(); g.arc(0, 0, R - 0.1, 0, TAU); g.fill();
-      g.restore();
-      const gr = g.createRadialGradient(sx, sy, 0, sx, sy, 40); gr.addColorStop(0, `rgba(238,240,232,${0.42 * a * (0.25 + 0.75 * lune.lit)})`); gr.addColorStop(1, 'rgba(238,240,232,0)'); g.fillStyle = gr; g.fillRect(sx - 40, sy - 40, 80, 80);
-    }
-    if (L < 0.6 && cl < 0.7) { const q = rng(5); for (let i = 0; i < 46; i++) { const x = q() * W, y = q() * 100, s = 0.5 + q() * 0.6; g.fillStyle = `rgba(255,255,240,${(0.6 - L) * 1.4 * (1 - cl) * (0.5 + 0.5 * Math.sin(t * (0.6 + q()) + i))})`; g.fillRect(x, y, s, s); } }
-    { const sg = g.createLinearGradient(0, 0, 0, 140); sg.addColorStop(0, top); sg.addColorStop(1, bot); g.fillStyle = sg; g.fillRect(0, 0, W, H); }
     g.globalCompositeOperation = 'source-over';
     // neerslag, mist, een verre flits
-    if (rain.length) { g.strokeStyle = `rgba(220,230,240,${0.16 + 0.2 * L})`; g.lineWidth = 0.6; g.beginPath(); for (const r of rain) { g.moveTo(r.x, r.y); g.lineTo(r.x + 1.6, r.y - 7); } g.stroke(); }
+    if (rain.length) for (const near of [false, true]) { g.strokeStyle = `rgba(220,230,240,${(near ? 0.2 : 0.11) + 0.2 * L})`; g.lineWidth = near ? 0.6 : 0.4; g.beginPath(); for (const r of rain) { if ((r.z > 0.72) !== near) continue; g.moveTo(r.x, r.y); g.lineTo(r.x + 1.7 * r.z, r.y - 8 * r.z); } g.stroke(); }
     if (flakes.length) { g.fillStyle = `rgba(255,255,255,${0.5 + 0.4 * L})`; for (const s of flakes) { g.beginPath(); g.arc(s.x, s.y, s.r, 0, TAU); g.fill(); } }
-    if (kind() === 'fog') { const fg = g.createLinearGradient(0, 70, 0, H), fc = mix('#2a3040', '#e6e8e4', L); fg.addColorStop(0, fc + '00'); fg.addColorStop(0.4, fc + '66'); fg.addColorStop(1, fc + '2a'); g.fillStyle = fg; g.fillRect(0, 0, W, H); }
     if (flash > 0) { g.fillStyle = `rgba(230,235,255,${0.18 * flash})`; g.fillRect(0, 0, W, H); }
   }
 
@@ -505,7 +559,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     up() { if (ptr?.raked) { strokes = strokes.filter(st => st.length > 1); trim(); rakeAll(); save(); } ptr = null; },   // na de haal alles netjes opnieuw, dan bewaren
     tap(p) {
       if (bird && !bird.fly && bird.sit && Math.hypot(p.x - bird.x, p.y - bird.y + 3) < 14) { bird.fly = { at: t }; playTerra('hop', { x: -0.3 }); return; }
-      if (tool === 'feed' && inPond(p.x, p.y, 1.08)) feed(clamp(p.x, 118, 290), clamp(p.y, 160, 187));
+      if (tool === 'feed' && inPond(p.x, p.y, sz === 3 ? 0.66 : 1.08)) feed(clamp(p.x, 118, 290), clamp(p.y, 160, 187));
       else if (tool === 'wind') { if (p.y < 84 && p.x < 190) shake(); else wind = clamp(wind + 0.5, -1.2, 1.6); }
     },
     leave() { ptr = null; hover.at = -99; },

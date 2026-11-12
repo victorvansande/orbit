@@ -32,7 +32,7 @@ export function moon(d = new Date()) {
 export function createLight(w, h, res = 0.5) {
   const cv = document.createElement('canvas'); cv.width = Math.ceil(w * res); cv.height = Math.ceil(h * res);
   const c = cv.getContext('2d');
-  let tmp = null;
+  let tmp = null, sky = null;
   // vlekkenlicht (zon door blad): zachte lichte plekken op een donkerdere grond, herhaalbaar
   const dap = document.createElement('canvas'); dap.width = dap.height = 96;
   { const d = dap.getContext('2d'), im = d.createImageData(96, 96), nz = noise(31);
@@ -70,15 +70,26 @@ export function createLight(w, h, res = 0.5) {
     shade(x0, y0, x1, y1, top, bot) { c.globalCompositeOperation = 'source-over'; const gr = c.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, top); gr.addColorStop(1, bot); c.fillStyle = gr; c.fillRect(x0, y0, x1 - x0, y1 - y0); },
     // leg de kaart over het beeld: elke pixel maal het licht op die plek
     apply(g) { g.save(); g.globalCompositeOperation = 'multiply'; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(cv, 0, 0, w, h); g.restore(); },
-    // idem, maar enkel over wat al getekend is (de lucht komt er daarna achter met 'destination-over'): de kaart
-    // wordt eerst op het beeld geknipt, want vermenigvuldigen kleurt anders ook de lege plekken
-    applyDrawn(g) {
-      const src = g.canvas;
-      if (!tmp || tmp.width !== src.width || tmp.height !== src.height) { tmp = document.createElement('canvas'); tmp.width = src.width; tmp.height = src.height; }
-      const tc = tmp.getContext('2d');
-      tc.globalCompositeOperation = 'copy'; tc.imageSmoothingEnabled = true; tc.imageSmoothingQuality = 'high'; tc.drawImage(cv, 0, 0, src.width, src.height);
-      tc.globalCompositeOperation = 'destination-in'; tc.drawImage(src, 0, 0);
-      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'multiply'; g.drawImage(tmp, 0, 0); g.restore();
+    // slagschaduw of contactschaduw op de grond: een zacht ovaal dat het licht op die plek tempert (koel, nooit zwart)
+    shadow(x, y, rx, ry, a = 0.5) {
+      c.save(); c.globalCompositeOperation = 'multiply'; c.translate(x, y); c.scale(1, ry / rx);
+      const gr = c.createRadialGradient(0, 0, 0, 0, 0, rx), col = k => `rgba(52,64,98,${a * k})`;
+      gr.addColorStop(0, col(1)); gr.addColorStop(0.5, col(0.82)); gr.addColorStop(1, col(0));
+      c.fillStyle = gr; c.fillRect(-rx, -rx, rx * 2, rx * 2); c.restore();
+    },
+    // idem voor een beeld met een lucht erachter: de kaart verlicht enkel wat al getekend is, daarna komt de lucht
+    // (paintSky tekent ze in gewone volgorde) op de lege plekken. Exact aan de randen: vermenigvuldigen op half
+    // doorzichtige randpixels liet daar onverlichte kleur staan (een lichte lijn langs heuvelkam en blad in het donker),
+    // dus eerst het beeld op zwart maal het licht, dan de lucht maal wat het beeld vrijlaat erbij opgeteld.
+    applyUnder(g, paintSky) {
+      const src = g.canvas, fit = k => { if (!k || k.width !== src.width || k.height !== src.height) { k = document.createElement('canvas'); k.width = src.width; k.height = src.height; } return k; };
+      tmp = fit(tmp); sky = fit(sky);
+      const tc = tmp.getContext('2d'), sc = sky.getContext('2d'), m = g.getTransform();
+      tc.globalCompositeOperation = 'source-over'; tc.fillStyle = '#000'; tc.fillRect(0, 0, src.width, src.height); tc.drawImage(src, 0, 0);
+      tc.globalCompositeOperation = 'multiply'; tc.imageSmoothingEnabled = true; tc.imageSmoothingQuality = 'high'; tc.drawImage(cv, 0, 0, src.width, src.height);
+      sc.save(); sc.setTransform(m); sc.globalCompositeOperation = 'source-over'; sc.globalAlpha = 1; paintSky(sc); sc.restore();
+      sc.globalCompositeOperation = 'destination-out'; sc.globalAlpha = 1; sc.drawImage(src, 0, 0);
+      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'copy'; g.drawImage(tmp, 0, 0); g.globalCompositeOperation = 'lighter'; g.drawImage(sky, 0, 0); g.restore();
     },
   };
 }

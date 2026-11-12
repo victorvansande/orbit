@@ -45,7 +45,7 @@ export const TERRA_TOOLS = [{ id: 'mist' }, { id: 'cut' }, { id: 'sponge' }, { i
 export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Date(), onTool = () => {} }) {
   let cv = null, g = null, scale = 1, built = null, dew = null, light = null, started = false, dirty = false, seenAt = 0, pending = null, nextYellowAt = Date.now() + 40e3;
   let t = 0, lastNow = 0, px = 0, py = 0, hover = { x: W / 2, y: H / 2, at: -99 }, ptr = null;
-  let tool = 'mist', userLamp = null, lampLv = 1, dayLv = 1, day = daylight(now()), dayAt = -99, mistAt = 0, savedAt = 0, sprayAt = -9;
+  let tool = 'mist', userLamp = null, lampLv = 1, dayLv = 1, day = daylight(now()), dayAt = -99, mistAt = 0, savedAt = 0, sprayAt = -9, damp = 0;
   let spray = [], haze = [], glints = [], rings = [], flies = [], springs = [], fish = [], bubbles = [], flakes = [], yellows = [], fallen = [];
   let frog = null, snail = null;
   const ferns = FERN.map(([a0, len], i) => ({ x: 40 + i * 1.2, y: 52, len, a0, a: 0, v: 0, k: i * 2.1 }));
@@ -147,11 +147,20 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
       for (let i = 0; i < 60; i++) { const x = pts[0][0] - 4 + b.q() * 36, y = pts[0][1] + b.q() * 56; mid.c.strokeStyle = `rgba(190,214,214,${0.05 + b.q() * 0.12})`; mid.c.lineWidth = 0.3 + b.q() * 0.5; mid.c.beginPath(); mid.c.moveTo(x, y); mid.c.lineTo(x + (b.q() - 0.5), y + 3 + b.q() * 7); mid.c.stroke(); }
       mid.c.restore();
     }
+    // bron van de bovenste val (Victor, 12/11/2026: "lijkt uit het nergens te ontspringen"): een donkere spleet tussen
+    // de keien waar het water uit opwelt; de dekkei erboven staat in de voorgrondlaag, zodat de val eronder vandaan komt
+    mid.c.fillStyle = '#0b1113'; mid.c.beginPath(); smooth(mid.c, [[72, 73.5], [77, 68], [86, 66.5], [94, 68.5], [97, 74], [92, 78.4], [77, 78.6]]); mid.c.fill();
+    mid.c.strokeStyle = 'rgba(176,214,210,.4)'; mid.c.lineWidth = 0.4; mid.c.lineCap = 'round'; for (const [x, y, w] of [[80, 75.2, 4], [86, 74.4, 5], [84, 76.6, 6.5], [89, 76, 3]]) { mid.c.beginPath(); mid.c.moveTo(x - w / 2, y); mid.c.lineTo(x + w / 2, y); mid.c.stroke(); }
     mid.c.fillStyle = '#2a4442'; mid.c.beginPath(); mid.c.ellipse(106, 110.4, 23, 3.2, 0, 0, TAU); mid.c.fill();
     // bodem: zand dat naar de oever oploopt, kiezels, een paar stenen
     b.area([[X0, SAND[0][1], 1], ...SAND.slice(1, -1), [X1, 176, 1], [X1, H + 2, 1], [X0, H + 2, 1]], '#a8946a', { shade: 0.5, dab: 1.5, size: 0.6, lum: (u, v, x, y) => 0.25 - (y - sandY(x)) * 0.03 });
     for (let i = 0; i < 54; i++) { const x = X0 + b.q() * (X1 - X0), y = sandY(x) + 0.5 + b.q() * b.q() * 22; stone(x, y, 1 + b.q() * 2.6, ['#8a8273', '#b0a690', '#6a6458', '#7a6a58', '#9a9486'][i % 5]); }
+    for (let i = 0; i < 900; i++) { const x = X0 + b.q() * (X1 - X0), y = sandY(x) + 1 + b.q() * 26, l = b.q(); b.dab(x, y, l < 0.4 ? '#6e6048' : l < 0.75 ? '#d2c39a' : '#8c8470', 0.6, 0.25 + b.q() * 0.45, 0.2 + b.q() * 0.25, b.q() * 3); }   // korrel
+    mid.c.lineCap = 'round'; for (let i = 0; i < 26; i++) { const x = X0 + b.q() * (X1 - X0), y = sandY(x) + 5 + b.q() * 18, w = 7 + b.q() * 12, sl = (sandY(x + 10) - sandY(x)) / 10; for (const [o, col] of [[0, 'rgba(60,50,34,.26)'], [0.7, 'rgba(244,232,196,.2)']]) { mid.c.strokeStyle = col; mid.c.lineWidth = 0.45; mid.c.beginPath(); mid.c.moveTo(x, y + o); mid.c.quadraticCurveTo(x + w / 2, y + o - 1 + sl * w / 2, x + w, y + o + sl * w); mid.c.stroke(); } }   // ribbels in het zand
     stone(190, 199, 8, '#4a524b', { cracks: 1 }); stone(150, 203, 6, '#434c46');
+    for (const [x, y, rx, ry] of [[84, 171.5, 9, 2.4], [124, 171, 10, 2.6], [144, 178, 6, 2.2], [108, 190, 7, 2]]) b.moss(x, y, rx, ry, '#3a6a40', { l0: -0.12, fringe: false });
+    b.tuft(128, 172, 7, 11, 3.4, '#2f6240', { kind: 'round', spread: 2.3, l: -0.08 });
+    for (const [x, r] of [[66, 3.4], [84, 2.2], [100, 4], [118, 2.6], [136, 3.2], [158, 2.4]]) stone(x, sandY(x) + 2 + b.q() * 4, r, ['#5a5e56', '#6f6a5c', '#4a504a'][Math.floor(b.q() * 3)]);
     for (const [x, y, rx, ry] of [[96, 170, 13, 3], [188, 192.5, 6, 2]]) b.moss(x, y, rx, ry, '#3f7040', { l0: -0.1, fringe: false });
     b.tuft(104, 170, 6, 10, 3.6, '#2f5e3c', { kind: 'round', spread: 2.2, l: -0.1 });
     // kienhout: poten in het water, stam, twee vorken, twijgen
@@ -196,7 +205,9 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     b.rock([[111.5, 141.5], [113.5, 137.6], [118, 136.4], [122, 138.6], [122.6, 143.6], [116.5, 145.6]], '#4a4a46', { cracks: 0, wet: 1 });
     b.rock([[131, 112], [140, 108.5], [150, 114], [155, 132], [153, 152], [156, SURF + 2, 1], [140, SURF + 2, 1], [135.5, 146], [136.5, 126]], '#716e65', { wet: 0.25 });
     b.moss(84, 106.5, 7, 2.4, '#6ea33a', { l0: 0.15 }); b.moss(136, 110, 7, 2.8, '#5f9434', { l0: 0.1 });
-    b.moss(74, 72, 7, 2.8, '#6ea33a', { l0: 0.15 }); b.moss(94, 75, 5, 2.4, '#5f9434', { l0: 0.1 });
+    b.rock([[68.5, 71.5], [72, 64], [80, 60.6], [90, 61.4], [97.5, 65.5], [100, 72], [93, 73.6], [77, 73.4]], '#69665e', { cracks: 0, wet: 0.3 });
+    b.moss(82, 61.6, 9, 2.6, '#6ea33a', { l0: 0.16 }); b.moss(95, 66.4, 4.6, 2, '#5f9434', { l0: 0.1 });
+    b.moss(73, 73.4, 5.4, 2.4, '#6ea33a', { l0: 0.12 }); b.moss(96, 75.6, 4.4, 2.2, '#5f9434', { l0: 0.1 });
     b.tuft(96, 77, 7, 8, 1.8, '#5a9a40', { spread: 2.2, a0: -1.1, l: 0.1 });
     b.tuft(102, 113, 6, 6, 1.5, '#4f8f3a', { spread: 2, a0: -1.9, l: 0 }); b.tuft(137, 111, 6, 7, 1.6, '#5a9a40', { spread: 2, a0: -1.2, l: 0.1 });
     for (const [x, y, rx, ry] of [[14, 53, 14, 4.6], [44, 51, 15, 4.4], [70, 60, 9, 3.6], [22, 94, 12, 3.4], [50, 99, 8, 2.8], [66, 103.5, 7, 2.4], [146, 114.5, 5, 2.4]]) b.moss(x, y, rx, ry, MOSS[Math.floor(b.q() * 4)], { l0: 0.14 });
@@ -208,11 +219,16 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     for (const [x, y, rx, ry] of [[6, 122, 12, 3.8], [32, 123.5, 12, 3.6], [53, 135, 6, 3]]) b.moss(x, y, rx, ry, MOSS[Math.floor(b.q() * 4)], { l0: 0.16 });
     for (const [x, y, r] of [[95, 161.5, 4.4], [141, 162, 3.4], [100, 164, 2.4], [68, 163, 3]]) stoneF(b, x, y, r);
     b.tuft(60, 122, 7, 9, 2, '#4f8f3a', { spread: 2.4, l: 0 });
+    // de grote kei onder water: mos in de plooien, een anubias aan de voet, kiezels ertegen
+    for (const [x, y, rx, ry] of [[30, 172, 12, 3.2], [62, 188, 8, 2.6], [20, 196, 10, 2.8], [72, 200, 6, 2.2]]) b.moss(x, y, rx, ry, '#3f7040', { l0: -0.1, fringe: false });
+    b.tuft(44, 207, 7, 12, 4, '#2f6a3c', { kind: 'round', spread: 2.4, l: -0.05 });
+    for (const [x, y, r] of [[14, 211.5, 3.6], [30, 213, 2.4], [62, 212.5, 3], [78, 209, 2.2], [90, 207.5, 3.2]]) stoneF(b, x, y, r);
 
     // omlijsting dichtbij: groot donker blad in de hoeken (boven land, onder water)
     b = createBrush(near.c, 53);
     for (const [x, y, len, wd, a, col] of [[-8, -6, 40, 15, 0.62, '#1f4028'], [-10, 6, 34, 13, 1.12, '#254a2c'], [6, -10, 30, 12, 0.22, '#1b3a26'], [X1 - 2, -8, 34, 13, 2.5, '#1f4028'], [X1, 10, 28, 11, 2.05, '#254a2c']]) { b.stem([[x, y], [x + Math.cos(a) * 4, y + Math.sin(a) * 4]], '#2a4a2c', 1.6, 1.2); b.leaf(x + Math.cos(a) * 3, y + Math.sin(a) * 3, len, wd, a, col, { kind: 'heart', l: -0.25 }); }
-    for (const [x, y, len, wd, a, col] of [[-6, H + 4, 36, 9, -1.05, '#1c3a30'], [-10, H - 6, 28, 8, -0.55, '#22443a'], [4, H + 6, 26, 7, -1.5, '#18342c'], [X1 - 4, H + 4, 34, 6, -2.0, '#1c3a30'], [X1, H - 2, 30, 5.4, -2.5, '#22443a'], [X1 - 12, H + 6, 28, 5, -1.65, '#18342c']]) b.leaf(x, y, len, wd, a, col, { kind: 'lance', l: -0.2 });
+    for (const [x, y, len, wd, a, col] of [[-6, H + 4, 36, 9, -1.05, '#2f6248'], [-10, H - 6, 28, 8, -0.55, '#386e50'], [4, H + 6, 26, 7, -1.5, '#2a5842'], [X1 - 4, H + 4, 34, 6, -2.0, '#2f6248'], [X1, H - 2, 30, 5.4, -2.5, '#386e50'], [X1 - 12, H + 6, 28, 5, -1.65, '#2a5842']]) b.leaf(x, y, len, wd, a, col, { kind: 'lance', l: 0.05 });
+    for (const [x0, dir] of [[2, 1], [X1 - 6, -1]]) for (let i = 0; i < 8; i++) b.leaf(x0 + dir * i * 2.6, H + 4, 14 + b.q() * 16, 0.9 + b.q() * 0.5, -Math.PI / 2 + dir * (0.1 + b.q() * 0.6), i % 2 ? '#3f7a52' : '#4a8a58', { vein: false, l: 0 });
 
     // sprites: varenbladen op de rots, ranken van boven, geel blad, kikker
     const fernS = ferns.map((f, i) => { const s = layer(140, 96, scale, 70, 74); createBrush(s.c, 60 + i).frond(0, 0, f.len, f.a0, ['#4f9038', '#5aa040', '#468432'][i % 3], { pin: 9.5, wd: 1.7, bend: 0.03, droop: 0.02, l: i % 2 ? 0.08 : -0.06 }); return s; });
@@ -241,6 +257,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     for (const fe of ferns) fe.v += (Math.random() - 0.5) * 0.4;
     springs.forEach(s => { s.lively = t + 4; });
     if (Math.random() < 0.2 * burst) hopFrog();
+    damp = Math.min(1, damp + 0.22 * burst);
     mistAt = Date.now(); save();
     if (t - sprayAt > 0.22) { sprayAt = t; playTerra('mist', { x: x / W * 2 - 1 }); }
   }
@@ -278,7 +295,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     // nevelen zolang de vernevelaar ingedrukt blijft
     if (ptr && ptr.tool === 'mist' && ptr.held && t - ptr.sprayed > 0.16) { ptr.sprayed = t; mist(ptr.x, ptr.y, 0.45); }
     for (const s of spray) { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 26 * dt; s.vx *= 1 - dt * 2.4; s.vy *= 1 - dt * 1.2; s.life -= dt; }
-    spray = spray.filter(s => s.life > 0); haze = haze.filter(h => t - h.at < h.life);
+    spray = spray.filter(s => s.life > 0); haze = haze.filter(h => t - h.at < h.life); damp *= Math.exp(-dt / 30);
     glints = glints.filter(s => t - s.at < s.life); rings = rings.filter(r => t - r.at < 1.8);
     // planten: veer terug, de aanwijzer duwt
     const push = (o, x, y, r) => { if (ptr && Math.hypot(ptr.x - x, ptr.y - y) < r) o.v += ptr.dx * 0.02; else if (live && Math.hypot(hover.x - x, hover.y - y) < r) o.v += (hover.dx || 0) * 0.008; };
@@ -327,7 +344,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     for (const bb of bubbles) { bb.vy -= (26 + bb.r * 18) * dt; bb.y += bb.vy * dt; bb.x += Math.sin(t * 6 + bb.k) * dt * 4; if (bb.y < WATER + 0.5 && bb.vy < 0) bb.dead = true; }
     bubbles = bubbles.filter(bb => !bb.dead);
     // vuurvliegjes: lichten af en toe op, stijgen dan even
-    for (const fl of flies) { fl.a += (Math.random() - 0.5) * dt * 3; const on = Math.max(0, Math.sin((t + fl.ph) / fl.per * TAU)) ** 3; fl.on = on; fl.x += Math.cos(fl.a) * dt * 6; fl.y += Math.sin(fl.a) * dt * 4 - on * dt * 5; if (fl.x < 20 || fl.x > W - 20 || fl.y < 22 || fl.y > 150) fl.a += Math.PI * dt * 2; fl.y = clamp(fl.y, 14, 154); }
+    for (const fl of flies) { fl.a += (Math.random() - 0.5) * dt * 3; const on = Math.max(0, Math.sin((t + fl.ph) / fl.per * TAU)) ** 1.6; fl.on = on; fl.x += Math.cos(fl.a) * dt * 6; fl.y += Math.sin(fl.a) * dt * 4 - on * dt * 5; if (fl.x < 20 || fl.x > W - 20 || fl.y < 22 || fl.y > 150) fl.a += Math.PI * dt * 2; fl.y = clamp(fl.y, 14, 154); }
     // snoeien: af en toe wordt een blad aan een rank geel
     if (Date.now() > nextYellowAt && yellows.length < 3) { const free = vines.map((_, i) => i).filter(i => !yellows.some(y => y.vine === i)); yellows.push({ vine: free[Math.floor(Math.random() * free.length)] }); nextYellowAt = Math.max(nextYellowAt, Date.now() - 600e3) + (240 + Math.random() * 360) * 1000; dirty = true; }
     else if (yellows.length >= 3 && Date.now() > nextYellowAt) nextYellowAt = Date.now() + 300e3;
@@ -341,11 +358,13 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
   /* ---- licht ---- */
   function lighting() {
     const L = lampLv, D = dayLv;
-    const amb = lerp3([0.26, 0.33, 0.48], lerp3([0.34, 0.26, 0.24], [0.76, 0.8, 0.78], D), L);
+    // schemer (gouden uur): het omgevingslicht zakt en koelt, de lamp kleurt amber, zo verschilt de schemer van de middag.
+    // Avond: geen bruine waas over alles maar een lamp als bron, warm waar ze schijnt, koel en donker in de hoeken.
+    const G = day.warm * D, amb = lerp3([0.26, 0.33, 0.48], lerp3([0.23, 0.25, 0.34], lerp3([0.76, 0.8, 0.78], [0.46, 0.45, 0.54], G), D), L);
     light.begin(amb);
     if (L > 0.01) {
-      const key = lerp3([1, 0.72, 0.4], [0.6, 0.54, 0.4], D);
-      light.spot(140 - px * 6, lerp(6, -34, D), lerp(290, 330, D), key, L, lerp(250, 300, D));
+      const key = lerp3(lerp3([1, 0.78, 0.5], [0.6, 0.54, 0.4], D), [0.86, 0.56, 0.26], G);
+      light.spot(lerp(150, 140, D) - px * 6, lerp(-4, -34, D), lerp(205, 330, D), key, L, 300);
       light.spot(124, 150, 70, lerp3([0.34, 0.2, 0.08], [0.1, 0.1, 0.08], D), L, 30);        // de val vangt licht
       if (D > 0.02) light.dapple(0, 0, W, SURF, t * 1.1 + px * 4, Math.sin(t * 0.21) * 5, 0.3 * D * L, 190);
     }
@@ -355,8 +374,9 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
       for (const [x, y] of SHROOM) light.spot(x - px * 5, y - 1, 9, [0.12, 0.36, 0.3], N * 0.7, 7);
     }
     const fa = clamp(1.15 - D * 1.6, 0, 1) * (0.45 + 0.55 * (1 - L));
-    if (fa > 0.01) for (const fl of flies) if (fl.on > 0.02) light.spot(fl.x, fl.y, 30, [0.86, 0.84, 0.36], fa * fl.on);
+    if (fa > 0.01) for (const fl of flies) if (fl.on > 0.02) light.spot(fl.x, fl.y, 34, [0.9, 0.88, 0.4], fa * fl.on);
     if (L > 0.01) light.dapple(0, 186, W, H, t * 2.2, Math.sin(t * 0.4) * 3, 0.24 * L * (0.5 + 0.5 * D), 150, 52);                 // lichtspel op de bodem
+    if (!frog.hop) light.shadow(frog.x - px * 5, frog.y - py * 1.6 + 0.4, 10, 2.2, 0.5);                                       // de kikker staat op zijn steen, niet erop geplakt
     light.shade(0, WATER, W, H, 'rgba(0,14,18,0)', 'rgba(0,14,18,.3)');
     return fa;
   }
@@ -372,6 +392,8 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     g.save(); g.translate(mx + PAD, my);
     // wateroppervlak: de strook tussen de overkant en het glas
     { const gr = g.createLinearGradient(0, SURF, 0, WATER); gr.addColorStop(0, 'rgba(58,104,98,.9)'); gr.addColorStop(1, 'rgba(86,140,132,.92)'); g.fillStyle = gr; g.beginPath(); g.moveTo(-PAD, WATER); for (let x = -PAD; x <= W + PAD; x += 8) g.lineTo(x, SURF + Math.sin(x * 0.13) * 0.5 + (x < 150 ? 0.4 : 0)); g.lineTo(W + PAD, WATER); g.closePath(); g.fill(); }
+    // de oever en het hout spiegelen in de strook, in elkaar gedrukt (je kijkt er bijna vlak over)
+    g.save(); g.beginPath(); g.rect(-PAD, SURF + 0.4, W + PAD * 2, WATER - SURF - 0.4); g.clip(); g.globalAlpha = 0.3; g.transform(1, 0, 0, -0.32, 0, SURF * 1.32); g.drawImage(mid.cv, -PAD, 0, W + PAD * 2, H); g.restore();
     g.lineWidth = 0.4;
     for (let i = 0; i < 5; i++) { const u = (t * 0.42 + i / 5) % 1; g.strokeStyle = `rgba(232,248,244,${0.5 * (1 - u)})`; g.beginPath(); g.ellipse(119, 162.6, 12 + u * 62, 0.9 + u * 2.4, 0, 0, TAU); g.stroke(); }
     for (const r of rings) { const u = (t - r.at) / 1.8, s = r.s || 1; g.strokeStyle = `rgba(232,248,244,${0.55 * (1 - u)})`; g.beginPath(); g.ellipse(r.x, r.y, (2 + u * 30) * s, (0.4 + u * 2.2) * s + 0.3, 0, 0, TAU); g.stroke(); }
@@ -403,7 +425,9 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     for (const f of fish) drawTetra(g, f.x, f.y, f.side, clamp(f.vy * 0.03, -0.4, 0.4), f.ph, 0.5 + 0.5 * Math.sin(t * 1.7 + f.k), f.s * 1.05);
     // waterlijn tegen het glas: lichte rand, deint, onrustiger bij de val
     { const gr = g.createLinearGradient(0, WATER, 0, WATER + 5); gr.addColorStop(0, 'rgba(206,240,232,.32)'); gr.addColorStop(1, 'rgba(206,240,232,0)'); g.fillStyle = gr; g.fillRect(-PAD, WATER, W + PAD * 2, 5); }
-    g.strokeStyle = 'rgba(236,250,246,.75)'; g.lineWidth = 0.6; g.beginPath(); for (let x = -PAD; x <= W + PAD; x += 3) { const near2 = Math.exp(-(((x - 119) / 46) ** 2)), y = WATER + Math.sin(x * 0.21 - t * 2.1) * (0.22 + near2 * 0.5) + Math.sin(x * 0.07 + t * 0.8) * 0.2; x === -PAD ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke();
+    // meniscus: een lichte rand die deint, eronder de donkere onderkant van het oppervlak, en het water kruipt op in de hoeken
+    const wl = x => WATER + Math.sin(x * 0.21 - t * 2.1) * (0.28 + Math.exp(-(((x - 119) / 46) ** 2)) * 0.5) + Math.sin(x * 0.07 + t * 0.8) * 0.3 - 2.2 * (Math.exp(-(x + 1) / 5) + Math.exp(-(W + 1 - x) / 5));
+    for (const [o, col, lw] of [[1.1, 'rgba(6,34,36,.34)', 1.3], [0, 'rgba(236,250,246,.78)', 0.7], [-0.8, 'rgba(236,250,246,.22)', 0.4]]) { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); for (let x = -PAD; x <= W + PAD; x += 2) { const y = wl(x) + o; x === -PAD ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
     g.restore();
     // omlijsting en ranken dichtbij
     g.save(); g.translate(-px * 7.5, -py * 2.4);
@@ -422,12 +446,13 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
       for (let i = 0; i < 12; i++) { const x = 20 + ((i * 53 + t * (1.5 + i % 3)) % 290), y = SURF + 1 + (i * 1.37 % 3.6), wl = (2 + (i % 4) * 2.2) * (0.6 + 0.4 * Math.sin(t * 1.4 + i)); g.beginPath(); g.moveTo(x - wl, y); g.lineTo(x + wl, y); g.stroke(); }
     }
     if (L < 0.99) for (const [x, y] of SHROOM) { const sx = x + mx + PAD + 0.2, sy = y + my - 0.3, gr = g.createRadialGradient(sx, sy, 0, sx, sy, 2.6); gr.addColorStop(0, `rgba(150,255,210,${0.3 * (1 - L)})`); gr.addColorStop(1, 'rgba(120,255,200,0)'); g.fillStyle = gr; g.fillRect(sx - 2.6, sy - 2.6, 5.2, 5.2); }
-    if (fa > 0.01) for (const fl of flies) { if (fl.on < 0.02) continue; const a = fa * fl.on, gr = g.createRadialGradient(fl.x, fl.y, 0, fl.x, fl.y, 7); gr.addColorStop(0, `rgba(240,255,150,${0.95 * a})`); gr.addColorStop(0.2, `rgba(215,245,110,${0.4 * a})`); gr.addColorStop(1, 'rgba(200,240,110,0)'); g.fillStyle = gr; g.fillRect(fl.x - 7, fl.y - 7, 14, 14); }
+    if (fa > 0.01) for (const fl of flies) { if (fl.on < 0.02) continue; const a = fa * fl.on, gr = g.createRadialGradient(fl.x, fl.y, 0, fl.x, fl.y, 10); gr.addColorStop(0, `rgba(240,255,150,${a})`); gr.addColorStop(0.16, `rgba(225,250,120,${0.6 * a})`); gr.addColorStop(1, 'rgba(200,240,110,0)'); g.fillStyle = gr; g.fillRect(fl.x - 10, fl.y - 10, 20, 20); g.fillStyle = `rgba(250,255,200,${a})`; g.beginPath(); g.arc(fl.x, fl.y, 0.8, 0, TAU); g.fill(); }
     // glinstering op nat blad na het nevelen
     for (const s of glints) { const u = (t - s.at) / s.life; if (u < 0) continue; const a = Math.sin(Math.min(1, u * 5) * Math.PI / 2) * (1 - u) * (0.5 + 0.5 * Math.sin(t * 5 + s.x)); g.fillStyle = `rgba(255,250,235,${0.7 * a})`; g.beginPath(); g.arc(s.x, s.y, 0.55, 0, TAU); g.fill(); }
     g.globalCompositeOperation = 'source-over';
-    // nevel van de vernevelaar
-    for (const h of haze) { const u = (t - h.at) / h.life, x = h.x + h.vx * (t - h.at), y = h.y + u * 5, r = h.r * (1 + u * 0.8), a = (0.02 + 0.04 * (L * (0.45 + 0.55 * D))) * Math.sin(Math.min(1, u * 4) * Math.PI / 2) * (1 - u), gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(232,240,236,${a})`); gr.addColorStop(1, 'rgba(232,240,236,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+    // nevel van de vernevelaar: wolkjes waar je spuit, en de lucht boven het water blijft een halve minuut vochtig
+    if (damp > 0.01) { const a = damp * (0.05 + 0.1 * (L * (0.45 + 0.55 * D))), gr = g.createLinearGradient(0, 0, 0, SURF); gr.addColorStop(0, `rgba(232,240,236,${a})`); gr.addColorStop(0.6, `rgba(232,240,236,${a * 0.8})`); gr.addColorStop(1, 'rgba(232,240,236,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, SURF); }
+    for (const h of haze) { const u = (t - h.at) / h.life, x = h.x + h.vx * (t - h.at), y = h.y + u * 5, r = h.r * (1 + u * 0.8), a = (0.05 + 0.08 * (L * (0.45 + 0.55 * D))) * Math.sin(Math.min(1, u * 4) * Math.PI / 2) * (1 - u), gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(232,240,236,${a})`); gr.addColorStop(1, 'rgba(232,240,236,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
     g.fillStyle = `rgba(244,250,248,${0.25 + 0.35 * L})`; for (const s of spray) { g.globalAlpha = Math.min(1, s.life * 2.5); g.beginPath(); g.arc(s.x, s.y, s.r, 0, TAU); g.fill(); } g.globalAlpha = 1;
     dew.draw(g, L * (0.45 + 0.55 * D) + (1 - L) * 0.12);
     // de spons zolang je veegt
