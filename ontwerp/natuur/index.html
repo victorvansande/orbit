@@ -1,0 +1,614 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit natuurvenster</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Natuurvenster (12/11/2026): vier lezingen van "een venster op natuur" als fidget, op ware grootte van het bakje (326 x 227). */
+:root { --bg:#EBE8DF; --well:#E0DDD3; --surface:#F8F6F0; --ink:#1B1B22; --ink2:#5E5E68; --ink3:#9A9AA3; --line:rgba(27,27,34,.12); --core:#E70049; --shade:rgba(27,27,34,.12); --dark:0;
+  --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:400 15px/1.5 var(--sans); }
+.wrap { max-width:1060px; margin:0 auto; padding-block:36px 64px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+.k { font:500 11px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink3); }
+h1 { font:500 28px/1.2 var(--sans); margin:10px 0 0; text-wrap:balance; }
+.lede { color:var(--ink2); max-width:64ch; margin:8px 0 0; }
+.top { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; margin-top:20px; }
+.seg { display:inline-flex; border-radius:999px; box-shadow:inset 0 0 0 1px var(--line); padding:2px; }
+.seg button { font:500 10.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); background:none; border:0; border-radius:999px; padding:9px 11px; cursor:pointer; }
+.seg button[aria-pressed="true"] { color:var(--ink); background:var(--surface); box-shadow:0 0 0 1px var(--line); }
+.sw { display:inline-flex; gap:10px; align-items:center; }
+.sw button { width:22px; height:22px; border-radius:50%; border:0; cursor:pointer; box-shadow:inset 0 0 0 1px var(--line); position:relative; }
+.sw button[aria-pressed="true"]::after { content:''; position:absolute; inset:-4px; border-radius:50%; box-shadow:0 0 0 1px var(--ink3); }
+.sw button.std { background:var(--ink); }
+button:focus-visible { outline:1px solid var(--ink3); outline-offset:2px; }
+.row { display:grid; grid-template-columns:326px minmax(0,1fr); gap:20px 40px; margin-top:36px; padding-top:28px; border-top:1px solid var(--line); }
+.side h2 { font:500 20px/1.2 var(--sans); margin:0; } .side h2 span { font:500 11px var(--mono); color:var(--ink3); margin-right:10px; letter-spacing:.14em; }
+.side p { color:var(--ink2); margin:8px 0 0; max-width:58ch; font-size:14px; }
+.side ul { margin:14px 0 0; padding:0; list-style:none; display:grid; gap:8px; max-width:60ch; }
+.side li { font-size:13.5px; color:var(--ink2); display:grid; grid-template-columns:92px minmax(0,1fr); gap:12px; }
+.side li b { font:500 10.5px/1.9 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); font-weight:500; }
+.stage { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
+.well { width:100%; max-width:326px; aspect-ratio:326/227; border-radius:14px; background:var(--well); position:relative; overflow:hidden; box-shadow:inset 0 1.5px 3px var(--shade); }
+canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+.next { display:flex; align-items:center; gap:4px; font:500 10px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); }
+.next span { min-width:96px; text-align:center; }
+.next button { width:36px; height:32px; border:0; background:none; cursor:pointer; color:var(--ink3); display:grid; place-items:center; }
+.next button:hover { color:var(--ink); }
+.next svg { width:10px; height:12px; fill:none; stroke:currentColor; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; }
+.next .prev svg { transform:scaleX(-1); }
+.cmp { margin-top:36px; padding-top:28px; border-top:1px solid var(--line); }
+.cmp h2 { font:500 20px/1.2 var(--sans); margin:0; }
+.tbl { overflow-x:auto; margin-top:14px; }
+table { border-collapse:collapse; font-size:13.5px; color:var(--ink2); min-width:640px; width:100%; }
+th { font:500 10.5px/1.4 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); text-align:left; font-weight:500; padding:0 16px 8px 0; }
+td { padding:9px 16px 9px 0; border-top:1px solid var(--line); vertical-align:top; }
+td:first-child { color:var(--ink); white-space:nowrap; }
+@media (max-width:760px) { .row { grid-template-columns:minmax(0,1fr); } .side li { grid-template-columns:80px minmax(0,1fr); } }
+</style>
+<div class="wrap">
+  <div class="k">Orbit · fidgets · natuur</div>
+  <h1>Vier vensters op natuur</h1>
+  <p class="lede">Vier lezingen van dezelfde vraag, elk op ware grootte van het bakje: iets om te verzorgen, iets om naar buiten te kijken, iets om in te raken en iets dat met je werk meegroeit. Alles is echt aan te raken.</p>
+  <div class="top">
+    <div class="seg" id="theme"><button data-t="auto" aria-pressed="true">Auto</button><button data-t="light" aria-pressed="false">Licht</button><button data-t="dark" aria-pressed="false">Donker</button></div>
+    <div class="sw" id="accent"><span class="k">Kleurkiezer</span><button class="std" data-c="" aria-pressed="true" title="Standaard" aria-label="Standaard"></button><button data-c="#0FAE69" style="background:#0FAE69" aria-pressed="false" aria-label="Groen"></button><button data-c="#1F78B4" style="background:#1F78B4" aria-pressed="false" aria-label="Blauw"></button><button data-c="#E08600" style="background:#E08600" aria-pressed="false" aria-label="Oranje"></button></div>
+  </div>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="terra"></canvas></div>
+      <div class="next"><button class="prev" data-for="terra" data-d="-1" aria-label="Vorige beplanting"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button><span id="terra-name">Varen</span><button data-for="terra" data-d="1" aria-label="Volgende beplanting"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button></div></div>
+    <div class="side"><h2><span>N1</span>Stolp</h2>
+      <p>Een gesloten terrarium onder een glazen stolp: het kleine ecosysteem dat je verzorgt. De bodem is opgebouwd zoals een echt terrarium (drainagekorrels, een laagje houtskool, aarde, mos), in rasterpunten. Warme, vochtige lucht condenseert bovenaan het glas: het beslaat, druppels groeien, smelten samen en lopen naar beneden, met een helder spoor erachter dat traag weer dichtslaat.</p>
+      <ul>
+        <li><b>Aanraken</b>Slepen veegt het glas schoon; het water dat je wegveegt, verzamelt zich aan de rand van je spoor en loopt af. Tikken is een pufje uit de plantenspuit. Over de varen strijken laat hem wiegen.</li>
+        <li><b>Vanzelf</b>De stolp beslaat in een halve minuut weer. Druppels vallen in het mos en verdwijnen.</li>
+        <li><b>Beplanting</b>Varen, Mos (met sporenkapsels op dunne steeltjes), Spiraalbies (<i>Juncus effusus</i> 'Spiralis').</li>
+        <li><b>Kleur</b>Glas, bodem en water in inkt; het groen (mos, varen, bies) volgt de kleurkiezer.</li>
+        <li><b>Rust</b>Minder beweging: een beslagen stolp met stilstaande druppels, één schoongeveegde baan.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="raam"></canvas></div>
+      <div class="next"><button class="prev" data-for="raam" data-d="-1" aria-label="Vorig landschap"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button><span id="raam-name">Heuvels</span><button data-for="raam" data-d="1" aria-label="Volgend landschap"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button></div></div>
+    <div class="side"><h2><span>N2</span>Raam</h2>
+      <p>Letterlijk een raam: het bakje wordt een muur met een venster op een landschap in risolagen. Hoe verder weg, hoe fijner het raster, met nevel in de dalen. De zon staat waar ze nu echt staat (rood, het enige accent), 's nachts een maansikkel en sterren. Op de vensterbank een pannenkoekplant.</p>
+      <ul>
+        <li><b>Aanraken</b>De muis of vinger bewegen is je hoofd bewegen: de lagen schuiven tegen elkaar (parallax). Tikken stuurt een windvlaag door het gras. Dubbeltikken laat het regenen of opklaren.</li>
+        <li><b>Vanzelf</b>Wolken drijven, af en toe een vlaag, soms vliegen drie vogels over de verste heuvel.</li>
+        <li><b>Landschap</b>Heuvels, Meer (met weerspiegeling die rimpelt), Bergen (met sneeuwkappen).</li>
+        <li><b>In Orbit</b>Regen en wolken kunnen het echte weer volgen (<code>weather.js</code> bestaat al); de zon volgt de klok.</li>
+        <li><b>Rust</b>Minder beweging: het landschap staat stil, op het uur van nu.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="vijver"></canvas></div>
+      <div class="next"><button class="prev" data-for="vijver" data-d="-1" aria-label="Vorig weer"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button><span id="vijver-name">Vijver</span><button data-for="vijver" data-d="1" aria-label="Volgend weer"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button></div></div>
+    <div class="side"><h2><span>N3</span>Vijver</h2>
+      <p>Niet naar buiten maar naar beneden kijken: het bakje is een stukje vijver van bovenaf. Het wateroppervlak is een zeshoekig raster waarin de grootte van elk punt de helling van het water toont, zodat golven als reliëf zichtbaar worden. Onder water zwemmen slanke, taps toelopende vissen (de vorm van de bollen), één rode. Bovenop drijven waterlelieblaren en schaatst een schaatsenrijder.</p>
+      <ul>
+        <li><b>Aanraken</b>Tikken laat een kring uitdijen en de vissen schieten weg. Slepen trekt een vinger door het water. Stil blijven houden: na een moment komen de vissen nieuwsgierig kijken en happen aan je vinger.</li>
+        <li><b>Vanzelf</b>De schaatsenrijder schaatst in stoten, elke stoot laat vier kleine kuiltjes na. Blaren drijven mee op de golven.</li>
+        <li><b>Weer</b>Vijver (af en toe een druppel), Regen (vissen dieper, overal kringen).</li>
+        <li><b>Kleur</b>Water in inkt; vissen en blaren volgen de kleurkiezer, de rode vis blijft rood.</li>
+        <li><b>Rust</b>Minder beweging: stil water, vissen en blaren op hun plaats.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="groei"></canvas></div>
+      <div class="next"><button class="prev" data-for="groei" data-d="-1" aria-label="Vorige plant"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button><span id="groei-name">Varen</span><button data-for="groei" data-d="1" aria-label="Volgende plant"><svg viewBox="0 0 10 12"><path d="M3.5 2.5 7 6 3.5 9.5"/></svg></button></div></div>
+    <div class="side"><h2><span>N4</span>Kweek</h2>
+      <p>Natuur als traag gezelschap: één plant die meegroeit met je werk. Elke afgeronde focusronde geeft een nieuw blad. Bij de varen komt het blad op als een behaarde krul die zich langzaam ontrolt, de deelblaadjes gaan pas open als de krul voorbij is. Het oudste blad verkleurt en valt af als de pot vol is, zodat hij nooit overwoekert. Hier versneld: een blad om de zeven seconden.</p>
+      <ul>
+        <li><b>Aanraken</b>Door de bladeren strijken laat ze veren en terugwiegen. Bij de klimop zijn de ranken echte touwtjes: je kunt ze opzij duwen en ze slingeren uit.</li>
+        <li><b>Plant</b>Varen (krulvaren in een pot), Klimop (hangpot met touw, ranken die groeien en bladeren die openvouwen).</li>
+        <li><b>In Orbit</b>Groei aan focusrondes of afgevinkte taken; nooit verwelken als straf, enkel trager groeien.</li>
+        <li><b>Gegevens</b>De stand (aantal bladen, leeftijd) moet mee in sync, export en import, via <code>scores.game</code>.</li>
+        <li><b>Rust</b>Minder beweging: de plant zoals hij nu is, zonder wiegen.</li>
+      </ul></div>
+  </section>
+
+  <section class="cmp">
+    <h2>Naast elkaar</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Voorstel</th><th>Natuur als</th><th>Wat je doet</th><th>Tempo</th><th>Bouwen</th></tr></thead>
+      <tbody>
+        <tr><td>N1 Stolp</td><td>iets om te verzorgen</td><td>glas schoonvegen, besproeien</td><td>traag, beslaat in 30 s</td><td>middel; druppels met rooster, licht</td></tr>
+        <tr><td>N2 Raam</td><td>uitzicht, ver kijken</td><td>rondkijken, wind, regen</td><td>heel traag, volgt de klok</td><td>middel; lagen op voorhand getekend</td></tr>
+        <tr><td>N3 Vijver</td><td>iets om in te raken</td><td>rimpelen, vissen lokken</td><td>levendig, reageert direct</td><td>hoger; golfrooster van 5000 punten per beeld, op gsm meten</td></tr>
+        <tr><td>N4 Kweek</td><td>gezelschap over weken</td><td>strijken, laten groeien</td><td>dagen; nieuw blad per ronde</td><td>middel; plus opslag en sync</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>
+<script>
+(() => {
+const W = 326, H = 227, TAU = Math.PI * 2, root = document.documentElement;
+let T = {}, ACCENT = '';
+const resets = [];
+const theme = () => { const s = getComputedStyle(root); T = { well: s.getPropertyValue('--well').trim(), ink: s.getPropertyValue('--ink').trim(), core: s.getPropertyValue('--core').trim(), surface: s.getPropertyValue('--surface').trim(), dark: s.getPropertyValue('--dark').trim() === '1' }; resets.forEach(f => f()); };
+theme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+document.querySelectorAll('#theme button').forEach(b => b.onclick = () => { document.querySelectorAll('#theme button').forEach(x => x.setAttribute('aria-pressed', x === b)); if (b.dataset.t === 'auto') delete root.dataset.theme; else root.dataset.theme = b.dataset.t; theme(); });
+document.querySelectorAll('#accent button').forEach(b => b.onclick = () => { document.querySelectorAll('#accent button').forEach(x => x.setAttribute('aria-pressed', x === b)); ACCENT = b.dataset.c; resets.forEach(f => f()); });
+const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+const rgba = (h, a) => `rgba(${rgb(h).join(',')},${a})`;
+const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const pen = () => ACCENT || T.ink;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+const rng = seed => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
+const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const presets = {};
+document.querySelectorAll('.next button').forEach(b => b.onclick = () => presets[b.dataset.for]?.(Number(b.dataset.d)));
+const label = (id, text) => { document.getElementById(id).textContent = text; };
+// korrel van het papier: één keer gemaakt, niet per beeld
+const grain = document.createElement('canvas'); grain.width = W; grain.height = H;
+{ const gg = grain.getContext('2d'), id = gg.createImageData(W, H); for (let i = 0; i < W * H; i++) { const v = Math.random(); id.data[i * 4 + 3] = v > .9 ? 16 : v > .7 ? 6 : 0; } gg.putImageData(id, 0, 0); }
+const paper = g => { g.globalAlpha = T.dark ? .45 : 1; g.drawImage(grain, 0, 0); g.globalAlpha = 1; };
+const DPR = Math.min(2, devicePixelRatio || 1);
+const layer = (w = W, h = H) => { const c = document.createElement('canvas'); c.width = w * DPR; c.height = h * DPR; const x = c.getContext('2d'); x.scale(DPR, DPR); return [c, x]; };
+
+function setup(id) {
+  const c = document.getElementById(id), g = c.getContext('2d');
+  c.width = W * DPR; c.height = H * DPR; g.scale(DPR, DPR);
+  const p = { x: W / 2, y: H / 2, down: false, drag: false, t: -1e9, tap: false, dbl: false, lastTap: -1e9, dx: 0, dy: 0, downAt: 0, over: false };
+  const pos = e => { const r = c.getBoundingClientRect(); const x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height; p.dx += x - p.x; p.dy += y - p.y; p.x = x; p.y = y; p.t = performance.now(); };
+  c.addEventListener('pointerdown', e => { pos(e); p.dx = p.dy = 0; p.down = true; p.downAt = performance.now(); p.sx = p.x; p.sy = p.y; c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', e => { p.over = true; if (!p.down && e.pointerType !== 'mouse') return; pos(e); if (p.down && Math.hypot(p.x - p.sx, p.y - p.sy) > 6) p.drag = true; if (!p.down) p.dx = p.dy = 0; });
+  c.addEventListener('pointerleave', () => { p.over = false; });
+  c.addEventListener('pointerup', e => { pos(e); p.down = false; const wasDrag = p.drag; p.drag = false; if (!wasDrag) { const n = performance.now(); if (n - p.lastTap < 320) { p.dbl = true; p.tap = false; } else p.tap = true; p.lastTap = n; } });
+  return { g, p };
+}
+function loop(step, still) {
+  if (reduced) { still(); return; }
+  let last = performance.now();
+  const f = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; step(dt); requestAnimationFrame(f); };
+  requestAnimationFrame(f);
+}
+
+/* ---------- N1 Stolp ---------- */
+(() => {
+  const { g, p } = setup('terra');
+  const [fog, f] = layer(), [gnd, gc] = layer();
+  const FORMS = ['Varen', 'Mos', 'Spiraalbies'];
+  const cx = 163, r = 62, L = cx - r, R = cx + r, cy = 86, B = 196;
+  let form = 0, t = 0, drops = [], acc = 0, last = null, wet = 0;
+  let fronds = [], hairs = [], stems = [];
+  const glass = (c, i = 0) => { c.beginPath(); c.moveTo(L + i, B); c.lineTo(L + i, cy); c.arc(cx, cy, r - i, Math.PI, 0); c.lineTo(R - i, B); c.closePath(); };
+  const inside = (x, y) => y < B - 1 && (y < cy ? Math.hypot(x - cx, y - cy) < r - 3 : x > L + 3 && x < R - 3);
+  const top = x => form === 1 ? 150 + 7 * Math.max(0, Math.sin(x * .06 + .4)) + 3 * Math.sin(x * .19) - 6 * Math.exp(-(((x - 140) / 18) ** 2)) : 161 + 3.5 * Math.sin(x * .075 + 1) + 2 * Math.sin(x * .21);
+  const fogGrad = f.createLinearGradient(0, 24, 0, B); fogGrad.addColorStop(0, 'rgba(255,255,255,1)'); fogGrad.addColorStop(.7, 'rgba(255,255,255,.75)'); fogGrad.addColorStop(1, 'rgba(255,255,255,.35)');
+  function hex(c, y0, y1, sp, fn) { for (let j = 0; ; j++) { const y = y1 - j * sp * .866; if (y < y0) break; for (let x = L + (j % 2) * sp / 2; x < R; x += sp) fn(x, y); } }
+  function build() {
+    gc.clearRect(0, 0, W, H); gc.save(); glass(gc, 1.5); gc.clip();
+    const q = rng(7), ink = T.ink, green = pen();
+    gc.fillStyle = rgba(ink, .3); gc.beginPath(); hex(gc, 182, B, 4.4, (x, y) => { const rr = 1 + q() * .9; gc.moveTo(x + rr, y); gc.arc(x, y, rr, 0, TAU); }); gc.fill();
+    gc.fillStyle = rgba(ink, .62); gc.beginPath(); hex(gc, 178.5, 181.5, 1.8, (x, y) => { const rr = .45 + q() * .3; gc.moveTo(x + rr, y); gc.arc(x, y, rr, 0, TAU); }); gc.fill();
+    gc.fillStyle = rgba(ink, .5); gc.beginPath(); hex(gc, 140, 178, 2.6, (x, y) => { if (y < top(x) + 4) return; const rr = .5 + q() * .35; gc.moveTo(x + rr, y); gc.arc(x, y, rr, 0, TAU); }); gc.fill();
+    gc.fillStyle = rgba(green, .88); gc.beginPath(); hex(gc, 136, 178, 2.7, (x, y) => { const tp = top(x); if (y < tp - 1 || y > tp + 5) return; const rr = (y < tp + 1 ? .55 : .85) + q() * .55; gc.moveTo(x + rr, y); gc.arc(x, y, rr, 0, TAU); }); gc.fill();
+    if (form === 1) { // twee stenen
+      for (const [sx, sw, sh] of [[196, 15, 11], [118, 10, 7]]) {
+        const sy = top(sx) + 3; gc.beginPath(); gc.ellipse(sx, sy - sh / 2, sw, sh, 0, Math.PI, 0); gc.closePath(); gc.fillStyle = T.well; gc.fill(); gc.strokeStyle = rgba(ink, .5); gc.lineWidth = 1; gc.stroke();
+        gc.save(); gc.clip(); gc.fillStyle = rgba(ink, .22); gc.beginPath(); for (let y = sy - sh; y < sy; y += 2.2) for (let x = sx - sw; x < sx + sw; x += 2.5) { const rr = .35 + (y - sy + sh) / sh * .5; gc.moveTo(x + rr + (y * 7 % 1.2), y); gc.arc(x + (y * 7 % 1.2), y, rr, 0, TAU); } gc.fill(); gc.restore();
+      }
+    }
+    gc.restore();
+  }
+  function plant() {
+    const q = rng(11 + form);
+    fronds = []; hairs = []; stems = [];
+    if (form === 0) for (const [a, len, bend] of [[-.95, 74, .55], [-.3, 92, .2], [.35, 84, -.3], [1.0, 66, -.6], [-.62, 52, .7]]) fronds.push({ a0: a, len, bend, a: 0, v: 0, k: q() * 9 });
+    if (form === 1) for (let i = 0; i < 16; i++) { const x = 106 + q() * 112; hairs.push({ x, h: 6 + q() * 7, lean: (q() - .5) * .5, k: q() * 9 }); }
+    if (form === 2) for (let i = 0; i < 9; i++) stems.push({ x: 150 + (q() - .5) * 18, a0: (q() - .5) * 1.5, len: 44 + q() * 50, A: 2.2 + q() * 1.6, kk: .32 + q() * .18, ph: q() * TAU, a: 0, v: 0, k: q() * 9 });
+  }
+  function spawn(x, y, rr) { drops.push({ x, y, r: rr, gr: .04 + Math.random() * .1, slide: false, vy: 0, k: Math.random() * 9, dead: false }); }
+  function mist(x, y) {
+    for (let i = 0; i < 80; i++) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * 34, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d * .8; if (inside(px, py) && py < top(px) - 3) spawn(px, py, .4 + Math.random() * .5); }
+    f.globalCompositeOperation = 'source-over'; const rg = f.createRadialGradient(x, y, 0, x, y, 40); rg.addColorStop(0, 'rgba(255,255,255,.5)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); f.save(); glass(f, 1); f.clip(); f.fillStyle = rg; f.fillRect(x - 40, y - 40, 80, 80); f.restore();
+    fronds.forEach(fr => fr.v += (Math.random() - .5) * .6); stems.forEach(s => s.v += (Math.random() - .5) * .6);
+  }
+  function merge() {
+    const cell = 8, cols = Math.ceil(W / cell), grid = new Map();
+    for (const d of drops) { if (d.dead) continue; const key = ((d.y / cell) | 0) * cols + ((d.x / cell) | 0); let b = grid.get(key); if (!b) grid.set(key, b = []); b.push(d); }
+    for (const d of drops) {
+      if (d.dead) continue; const gx = (d.x / cell) | 0, gy = (d.y / cell) | 0;
+      for (let j = gy - 1; j <= gy + 1; j++) for (let i = gx - 1; i <= gx + 1; i++) { const b = grid.get(j * cols + i); if (!b) continue;
+        for (const e of b) { if (e === d || e.dead || d.dead) continue; const dx = e.x - d.x, dy = e.y - d.y, rr = (d.r + e.r) * .82; if (dx * dx + dy * dy < rr * rr) { const [big, sm] = d.r >= e.r ? [d, e] : [e, d]; const A = big.r * big.r, a = sm.r * sm.r; big.x = (big.x * A + sm.x * a) / (A + a); big.y = (big.y * A + sm.y * a) / (A + a); big.r = Math.sqrt(A + a); sm.dead = true; } } }
+    }
+    drops = drops.filter(d => !d.dead);
+  }
+  function wipe(x0, y0, x1, y1) {
+    f.globalCompositeOperation = 'destination-out'; f.lineCap = 'round'; f.lineWidth = 13; f.beginPath(); f.moveTo(x0, y0); f.lineTo(x1, y1); f.stroke();
+    const vx = x1 - x0, vy = y1 - y0, l2 = vx * vx + vy * vy || 1, nl = Math.sqrt(l2);
+    for (const d of drops) { const s = clamp(((d.x - x0) * vx + (d.y - y0) * vy) / l2, 0, 1); if (Math.hypot(d.x - x0 - vx * s, d.y - y0 - vy * s) < 7) { wet += d.r * d.r; d.dead = true; } }
+    if (wet > 5) { const side = Math.random() < .5 ? -1 : 1, ex = x1 - vy / nl * 7.5 * side, ey = y1 + vx / nl * 7.5 * side; if (inside(ex, ey)) spawn(ex, ey, Math.min(2.9, Math.sqrt(wet))); wet = 0; }
+    drops = drops.filter(d => !d.dead);
+  }
+  function step(dt) {
+    t += dt;
+    f.globalCompositeOperation = 'source-over'; f.save(); glass(f, 1); f.clip(); f.globalAlpha = dt * .07; f.fillStyle = fogGrad; f.fillRect(L, 20, R - L, B - 20); f.restore(); f.globalAlpha = 1;
+    acc += dt * 26;
+    while (acc > 1) { acc--; if (drops.length > 420) { acc = 0; break; } const x = L + Math.random() * (R - L), y = 26 + Math.pow(Math.random(), 1.7) * (B - 70); if (inside(x, y) && y < top(x) - 4) spawn(x, y, .45 + Math.random() * .5); }
+    for (const d of drops) {
+      if (!d.slide) { d.r += dt * d.gr * .3; if (d.r > 2.4 && Math.random() < dt * .9) { d.slide = true; d.vy = 0; } }
+      else {
+        d.vy = Math.min(d.vy + dt * 50, 12 + d.r * 7); const ny = d.y + d.vy * dt, nx = d.x + Math.sin(t * 2.3 + d.k) * dt * 3;
+        f.globalCompositeOperation = 'destination-out'; f.lineCap = 'round'; f.lineWidth = d.r * 1.5; f.beginPath(); f.moveTo(d.x, d.y); f.lineTo(nx, ny); f.stroke();
+        d.x = nx; d.y = ny; d.r -= dt * .22; if (d.r < 1.5) d.slide = false;
+        if (d.y > top(d.x) - 2 || !inside(d.x, d.y)) d.dead = true;
+      }
+    }
+    merge();
+    if (p.down && p.drag) { if (last) wipe(last.x, last.y, p.x, p.y); last = { x: p.x, y: p.y }; } else { last = null; wet = 0; }
+    if (p.tap) { p.tap = false; if (inside(p.x, p.y)) mist(p.x, p.y); }
+    p.dbl = false;
+    const push = (o, px, py) => { if (p.down && Math.hypot(p.x - px, p.y - py) < 22) o.v += p.dx * .02; };
+    for (const fr of fronds) { const bx = 158 + fr.a0 * 6; push(fr, bx + Math.sin(fr.a0) * fr.len * .6, top(bx) - Math.cos(fr.a0) * fr.len * .6); fr.v += (-fr.a * 9 - fr.v * 2.4) * dt; fr.a += fr.v * dt; }
+    for (const s of stems) { push(s, s.x + Math.sin(s.a0) * s.len * .6, top(s.x) - s.len * .5); s.v += (-s.a * 9 - s.v * 2.4) * dt; s.a += s.v * dt; }
+    p.dx = p.dy = 0;
+  }
+  function frond(c, fr) {
+    const bx = 158 + fr.a0 * 6, by = top(bx) + 2, ds = 2, n = fr.len / ds, sway = .025 * Math.sin(t * .7 + fr.k);
+    let th = fr.a0 + fr.a + sway, x = bx, y = by; const pts = [];
+    for (let i = 0; i <= n; i++) { pts.push([x, y, th]); th += fr.bend / n * 1.6 * (i / n + .3); x += Math.sin(th) * ds; y -= Math.cos(th) * ds; }
+    c.strokeStyle = c.fillStyle = pen(); c.lineWidth = 1.1; c.beginPath(); pts.forEach(([px, py], i) => i ? c.lineTo(px, py) : c.moveTo(px, py)); c.stroke();
+    c.beginPath();
+    for (let i = 5; i < pts.length; i += 2) {
+      const [px, py, a] = pts[i], s = i / pts.length, pl = fr.len * .17 * Math.pow(Math.sin(Math.PI * Math.min(1, s * 1.02)), .85) * (1 - .3 * s);
+      for (const sd of [-1, 1]) { const da = a + sd * 1.0, tx = px + Math.sin(da) * pl, ty = py - Math.cos(da) * pl, w = pl * .16 + .3, nx = Math.cos(da) * w, ny = Math.sin(da) * w, mx = (px + tx) / 2, my = (py + ty) / 2;
+        c.moveTo(px, py); c.quadraticCurveTo(mx + nx, my + ny, tx, ty); c.quadraticCurveTo(mx - nx, my - ny, px, py); }
+    }
+    c.fill();
+  }
+  function stem(c, s) {
+    let th = s.a0 + s.a + .03 * Math.sin(t * .8 + s.k), x = s.x, y = top(s.x) + 2; const ds = 1.2, n = s.len / ds, col = pen();
+    for (let i = 0; i < n; i++) {
+      const u = i * ds, ph = u * s.kk + s.ph, lat = Math.sin(ph) * s.A, front = Math.cos(ph);
+      const nx = x + Math.sin(th) * ds, ny = y - Math.cos(th) * ds; th += .012 * Math.sign(s.a0 || 1);
+      const ax = x + Math.cos(th) * Math.sin(ph - s.kk * ds) * s.A, ay = y + Math.sin(th) * Math.sin(ph - s.kk * ds) * s.A, bx = nx + Math.cos(th) * lat, by = ny + Math.sin(th) * lat;
+      c.strokeStyle = rgba(col, front > 0 ? .95 : .4); c.lineWidth = (front > 0 ? 1.25 : .8) * (1 - i / n * .4); c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      x = nx; y = ny;
+    }
+  }
+  function draw() {
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    g.save(); glass(g, 1); g.fillStyle = T.dark ? rgba(T.ink, .025) : 'rgba(255,255,255,.18)'; g.fill(); g.restore();
+    g.drawImage(gnd, 0, 0, W, H);
+    g.save(); glass(g, 1.5); g.clip();
+    g.lineCap = 'round';
+    fronds.forEach(fr => frond(g, fr));
+    stems.forEach(s => stem(g, s));
+    if (hairs.length) { g.lineWidth = .6; for (const hh of hairs) { const bx = hh.x, by = top(bx) + 1, a = hh.lean + .05 * Math.sin(t * 1.1 + hh.k), tx = bx + Math.sin(a) * hh.h, ty = by - Math.cos(a) * hh.h; g.strokeStyle = rgba(pen(), .7); g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(bx + Math.sin(a) * hh.h * .3, by - hh.h * .6, tx, ty); g.stroke(); g.fillStyle = rgba(T.ink, .7); g.beginPath(); g.ellipse(tx, ty, .9, 1.6, a, 0, TAU); g.fill(); } }
+    g.restore();
+    g.globalAlpha = T.dark ? .12 : .42; g.drawImage(fog, 0, 0, W, H); g.globalAlpha = 1;
+    // druppels: een lensje, rand onderaan, glimlicht linksboven
+    f.globalCompositeOperation = 'destination-out'; f.fillStyle = '#000'; f.beginPath();
+    for (const d of drops) { f.moveTo(d.x + d.r, d.y); f.arc(d.x, d.y, d.r * 1.05, 0, TAU); } f.fill();
+    g.lineWidth = .8; g.strokeStyle = rgba(T.ink, T.dark ? .35 : .4); g.beginPath();
+    for (const d of drops) { if (d.r < .9) continue; g.moveTo(d.x + Math.cos(.15 * Math.PI) * d.r, d.y + Math.sin(.15 * Math.PI) * d.r); g.arc(d.x, d.y, d.r, .15 * Math.PI, .95 * Math.PI); } g.stroke();
+    g.fillStyle = rgba(T.ink, .2); g.beginPath(); for (const d of drops) { if (d.r >= .9) continue; g.moveTo(d.x + d.r * .7, d.y); g.arc(d.x, d.y, d.r * .7, 0, TAU); } g.fill();
+    g.fillStyle = T.dark ? rgba(T.ink, .55) : 'rgba(255,255,255,.95)'; g.beginPath(); for (const d of drops) { if (d.r < 1.2) continue; const hr = d.r * .28; g.moveTo(d.x - d.r * .35 + hr, d.y - d.r * .38); g.arc(d.x - d.r * .35, d.y - d.r * .38, hr, 0, TAU); } g.fill();
+    // glas en voet
+    g.lineWidth = 1.2; g.strokeStyle = rgba(T.ink, .5); glass(g); g.stroke();
+    g.strokeStyle = T.dark ? rgba(T.ink, .14) : 'rgba(255,255,255,.85)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(L + 7, B - 34); g.lineTo(L + 7, cy); g.arc(cx, cy, r - 7, Math.PI, Math.PI * 1.32); g.stroke();
+    g.beginPath(); g.moveTo(cx + Math.cos(-.42) * (r - 6), cy + Math.sin(-.42) * (r - 6)); g.arc(cx, cy, r - 6, -.42, -.28); g.stroke();
+    g.fillStyle = T.well; g.fillRect(L - 9, B, R - L + 18, 9); g.fillStyle = rgba(T.ink, .07); g.fillRect(L - 9, B, R - L + 18, 9);
+    g.strokeStyle = rgba(T.ink, .5); g.lineWidth = 1.2; g.strokeRect(L - 9, B, R - L + 18, 9);
+    g.strokeStyle = rgba(T.ink, .15); g.lineWidth = 1; g.beginPath(); g.moveTo(L - 4, B + 12.5); g.lineTo(R + 4, B + 12.5); g.stroke();
+    paper(g);
+  }
+  presets.terra = d => { form = (form + d + FORMS.length) % FORMS.length; label('terra-name', FORMS[form]); build(); plant(); drops = drops.filter(dd => dd.y < top(dd.x) - 4); };
+  resets.push(() => { build(); });
+  build(); plant();
+  // begin half beslagen, zodat het eerste beeld al leeft
+  for (let i = 0; i < 260; i++) step(1 / 30);
+  loop(dt => { step(dt); draw(); }, () => { for (let i = 0; i < 400; i++) step(1 / 30); wipe(L + 14, 70, R - 14, 104); draw(); });
+})();
+
+/* ---------- N2 Raam ---------- */
+(() => {
+  const { g, p } = setup('raam');
+  const X0 = 44, X1 = 282, Y0 = 16, Y1 = 170, MX = 163, TY = 68, PAD = 34;
+  const FORMS = ['Heuvels', 'Meer', 'Bergen'];
+  let form = 0, t = 0, px = 0, py = 0, rain = 0, rainOn = false, gusts = [], leaves = [], birds = null, nextBird = 4, nextGust = 9, layers = [], blades = [], streaks = [], clouds = [], lake = 0;
+  const sky = () => T.dark ? mix(T.well, T.ink, .045) : mix(T.well, '#ffffff', .38);
+  function ridge(fn) { const a = new Float32Array(W + PAD * 2 + 2); for (let i = 0; i < a.length; i++) a[i] = fn(i - PAD); return a; }
+  function trees(base, q, from, to, gap, hmin, hmax) { const a = base.slice(); for (let x = from; x < to; x += gap * (.6 + q() * .8)) { const h = hmin + q() * (hmax - hmin), w = h * (.5 + q() * .2); for (let i = Math.floor(x - w); i <= x + w; i++) { const k = i + PAD; if (k < 0 || k >= a.length) continue; const yy = base[k] - h * (1 - Math.abs(i - x) / w); if (yy < a[k]) a[k] = yy; } } return a; }
+  function build() {
+    const q = rng(5 + form * 13), s = sky(), col = pen();
+    const defs = [];
+    if (form === 0) {
+      defs.push({ top: ridge(x => 90 + 9 * Math.sin(x * .018 + 1) + 5 * Math.sin(x * .047 + 2)), d: .1, sp: 3.1, r: .8, a: .6, fade: 22 });
+      defs.push({ top: trees(ridge(x => 112 + 8 * Math.sin(x * .026 + 4) + 3.5 * Math.sin(x * .07)), q, X0 - PAD, 150, 6, 5, 12), d: .28, sp: 2.8, r: .9, a: .72, fade: 30 });
+      defs.push({ top: ridge(x => 140 + 6 * Math.sin(x * .03 + 1.5) + 2 * Math.sin(x * .11)), d: .55, sp: 2.4, r: 1, a: .88, fade: 70 });
+      lake = 0;
+    } else if (form === 1) {
+      defs.push({ top: ridge(x => 98 - 26 * Math.pow(Math.abs(Math.sin(x * .016 + .5)), 1.4) - 5 * Math.sin(x * .06)), d: .1, sp: 3.1, r: .8, a: .6, fade: 24 });
+      defs.push({ top: trees(ridge(x => 118 + 2 * Math.sin(x * .04)), q, X0 - PAD, X1 + PAD, 4.5, 6, 15), d: .26, sp: 2.7, r: .9, a: .78, fade: 14, bottom: 122 });
+      lake = 122;
+    } else {
+      defs.push({ top: ridge(x => { const u = x * .021 + 1; return 104 - 44 * Math.abs(Math.sin(u)) * (.65 + .35 * Math.abs(Math.sin(u * 2.7))) - 4 * Math.sin(x * .13); }), d: .1, sp: 3, r: .8, a: .55, fade: 34, snow: 8 });
+      defs.push({ top: trees(ridge(x => 122 + 5 * Math.sin(x * .03 + 2)), q, X0 - PAD, X1 + PAD, 5, 5, 13), d: .3, sp: 2.7, r: .9, a: .76, fade: 26 });
+      defs.push({ top: ridge(x => 148 + 4 * Math.sin(x * .04 + .5) + 2.5 * Math.sin(x * .17)), d: .58, sp: 2.4, r: 1, a: .88, fade: 70 });
+      lake = 0;
+    }
+    layers = defs.map(L => {
+      const [c, x] = layer(W + PAD * 2, H); x.translate(PAD, 0);
+      const bottom = L.bottom || Y1 + 6;
+      x.fillStyle = s; x.beginPath(); x.moveTo(-PAD, bottom); for (let i = 0; i < L.top.length; i++) x.lineTo(i - PAD, L.top[i]); x.lineTo(W + PAD, bottom); x.closePath(); x.fill();
+      x.fillStyle = rgba(col, L.a); x.beginPath();
+      for (let j = 0; ; j++) { const y = 10 + j * L.sp * .866; if (y > bottom) break; for (let xx = -PAD + (j % 2) * L.sp / 2; xx < W + PAD; xx += L.sp) { const tp = L.top[Math.round(xx) + PAD]; if (tp === undefined || y < tp) continue; const dd = y - tp; let k = clamp(1 - dd / L.fade, .28, 1); if (L.snow && tp < 74 && dd < L.snow) k *= .25; const rr = L.r * k; x.moveTo(xx + rr, y); x.arc(xx, y, rr, 0, TAU); } }
+      x.fill();
+      return { c, d: L.d };
+    });
+    clouds = [0, 1, 2].map(i => { const [c, x] = layer(70, 30), cq = rng(30 + i), blobs = [[18, 18, 9], [30, 13, 11], [44, 17, 9], [54, 20, 6]]; x.fillStyle = s; x.beginPath(); blobs.forEach(([a, b, rr]) => { x.moveTo(a + rr, b); x.arc(a, b, rr, 0, TAU); }); x.fill(); x.fillStyle = rgba(col, .3); x.beginPath(); for (let yy = 2; yy < 30; yy += 2.6) for (let xx = (yy * 3 % 2.6); xx < 70; xx += 2.6) if (blobs.some(([a, b, rr]) => Math.hypot(xx - a, yy - b) < rr - .5)) { const rr = .45 + (yy / 30) * .45; x.moveTo(xx + rr, yy); x.arc(xx, yy, rr, 0, TAU); } x.fill(); return { c, x: X0 - 30 + i * 95 + cq() * 30, y: 24 + cq() * 22, s: .8 + cq() * .4 }; });
+    blades = []; for (let i = 0; i < (lake ? 34 : 95); i++) { const x = X0 - 4 + q() * (X1 - X0 + 8); blades.push(lake ? { x, h: 18 + q() * 30, lean: (q() - .5) * .2, k: q() * 9, head: q() < .45 } : { x, h: 7 + q() * 18, lean: (q() - .5) * .5, k: q() * 9 }); }
+    streaks = []; for (let i = 0; i < 70; i++) streaks.push({ x: X0 + q() * (X1 - X0 + 40), y: Y0 + q() * (Y1 - Y0), l: 5 + q() * 6, v: 150 + q() * 60 });
+  }
+  const wind = x => { let w = .1 + .05 * Math.sin(t * .9 + x * .05) + rain * .15; for (const gg of gusts) { const gx = gg.x + gg.t * 110; w += gg.s * Math.exp(-(((x - gx) / 38) ** 2)) * Math.exp(-gg.t / 2.4); } return w; };
+  function step(dt) {
+    t += dt;
+    const live = p.over || performance.now() - p.t < 2500;
+    const tx = live ? clamp(p.x / W - .5, -.5, .5) : .28 * Math.sin(t * .07), ty = live ? clamp(p.y / H - .5, -.5, .5) : .1 * Math.sin(t * .05);
+    const k = 1 - Math.exp(-dt * 2.5); px += (tx - px) * k; py += (ty - py) * k;
+    if (p.tap) { p.tap = false; gusts.push({ x: p.x - 90, t: 0, s: .9 }); for (let i = 0; i < 4; i++) leaves.push({ x: p.x - 40 - Math.random() * 30, y: 120 + Math.random() * 40, vx: 70 + Math.random() * 40, vy: -20 - Math.random() * 20, a: Math.random() * TAU, life: 1 }); }
+    if (p.dbl) { p.dbl = false; rainOn = !rainOn; }
+    p.dx = p.dy = 0;
+    if ((nextGust -= dt) < 0) { nextGust = 12 + Math.random() * 10; gusts.push({ x: X0 - 120, t: 0, s: .45 }); }
+    gusts.forEach(gg => gg.t += dt); gusts = gusts.filter(gg => gg.t < 6);
+    leaves.forEach(l => { l.x += l.vx * dt; l.y += l.vy * dt; l.vy += 18 * dt; l.vx *= 1 - dt * .3; l.a += dt * 5; l.life -= dt * .3; }); leaves = leaves.filter(l => l.life > 0 && l.x < X1 + 10);
+    rain += ((rainOn ? 1 : 0) - rain) * (1 - Math.exp(-dt * .8));
+    clouds.forEach(c => { c.x += dt * (2.5 + rain * 4) * c.s; if (c.x > X1 + 10) c.x = X0 - 80; });
+    if ((nextBird -= dt) < 0 && !birds) { birds = { x: X0 - 20, y: 52 + Math.random() * 18, t: 0 }; nextBird = 25 + Math.random() * 25; }
+    if (birds) { birds.t += dt; birds.x += dt * 20; birds.y += Math.sin(birds.t * .8) * dt * 2; if (birds.x > X1 + 30) birds = null; }
+    streaks.forEach(s => { s.y += s.v * dt; s.x -= s.v * dt * .22; if (s.y > Y1 + 4) { s.y = Y0 - 10; s.x = X0 + Math.random() * (X1 - X0 + 40); } });
+  }
+  function draw() {
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    g.save(); g.beginPath(); g.rect(X0, Y0, X1 - X0, Y1 - Y0); g.clip();
+    g.fillStyle = sky(); g.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
+    // zon of maan op het uur van nu
+    const now = new Date(), h = now.getHours() + now.getMinutes() / 60, day = h > 6.5 && h < 19.5, u = day ? (h - 6.5) / 13 : ((h + 24 - 19.5) % 24) / 11;
+    const bx = X0 + 26 + u * (X1 - X0 - 52) - px * 3, by = 92 - Math.sin(u * Math.PI) * 62 - py * 2;
+    if (day) { g.fillStyle = rgba(T.core, .85 * (1 - rain * .8)); g.beginPath(); for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) { const xx = bx + i * 2.2 + (j % 2 ? 1.1 : 0), yy = by + j * 1.9, d = Math.hypot(xx - bx, yy - by); if (d < 10) { const rr = .95 - d / 10 * .35; g.moveTo(xx + rr, yy); g.arc(xx, yy, rr, 0, TAU); } } g.fill(); }
+    else { const sq = rng(99); g.fillStyle = rgba(T.ink, .5); g.beginPath(); for (let i = 0; i < 24; i++) { const xx = X0 + sq() * (X1 - X0), yy = Y0 + sq() * 70, tw = .45 + .35 * Math.sin(t * 1.3 + i * 2.1); g.moveTo(xx + tw, yy); g.arc(xx, yy, tw, 0, TAU); } g.fill();
+      g.fillStyle = pen(); g.beginPath(); g.arc(bx, by, 7, 0, TAU); g.fill(); g.fillStyle = sky(); g.beginPath(); g.arc(bx + 3.2, by - 1.6, 6.2, 0, TAU); g.fill(); }
+    clouds.forEach(c => { g.globalAlpha = .75 + rain * .25; g.drawImage(c.c, c.x - px * 2, c.y - py * 1.5, 70, 30); g.globalAlpha = 1; });
+    if (birds) { g.strokeStyle = rgba(T.ink, .6); g.lineWidth = .8; g.beginPath(); [[0, 0], [-7, 3], [-12, -2]].forEach(([ox, oy], i) => { const x = birds.x + ox - px * 4, y = birds.y + oy, fl = Math.sin(birds.t * 7 + i * 1.7) * 1.6; g.moveTo(x - 2.6, y - fl); g.lineTo(x, y + .6); g.lineTo(x + 2.6, y - fl); }); g.stroke(); }
+    layers.forEach((L, i) => {
+      const ox = -PAD - px * 26 * L.d, oy = -py * 8 * L.d;
+      g.drawImage(L.c, ox, oy, W + PAD * 2, H);
+      if (lake && i === 1) {
+        // weerspiegeling in het meer: rij per rij gespiegeld, met rimpeling
+        g.fillStyle = sky(); g.fillRect(X0, lake + oy, X1 - X0, Y1 - lake);
+        for (let y = lake; y < Y1 + 4; y += 2) { const src = 2 * lake - y - 2, wob = Math.sin(y * .9 + t * 1.6) * (.6 + (y - lake) * .05) * (1 + rain * 2); g.globalAlpha = .32 * (1 - (y - lake) / 70); g.drawImage(L.c, 0, src * DPR, (W + PAD * 2) * DPR, 2 * DPR, ox + wob, y + oy, W + PAD * 2, 2); }
+        g.globalAlpha = 1;
+        g.strokeStyle = rgba(T.ink, .14); g.lineWidth = .8; g.beginPath(); for (let i2 = 0; i2 < 7; i2++) { const yy = lake + 6 + i2 * 6.5, xx = X0 + ((i2 * 53 + t * (4 + i2)) % (X1 - X0)), w = 8 + (i2 % 3) * 6; g.moveTo(xx, yy); g.lineTo(xx + w, yy); } g.stroke();
+      }
+    });
+    // gras of riet: wiegt in de wind, vlagen lopen van links naar rechts
+    g.strokeStyle = pen(); g.lineCap = 'round';
+    const ox = -px * 30, oy = -py * 6;
+    for (const b of blades) { const x = b.x + ox, w = wind(x), lean = b.lean + w * (b.h / 22) + Math.sin(t * 5 + b.k) * .025 * (1 + w * 3), base = Y1 + 4 + oy, tx = x + Math.sin(lean) * b.h, ty = base - Math.cos(lean) * b.h;
+      g.lineWidth = b.head !== undefined ? .9 : 1; g.globalAlpha = .9; g.beginPath(); g.moveTo(x, base); g.quadraticCurveTo(x + Math.sin(lean * .4) * b.h * .5, base - b.h * .55, tx, ty); g.stroke();
+      if (b.head) { g.fillStyle = pen(); g.beginPath(); const hx = x + Math.sin(lean * .85) * b.h * .78, hy = base - Math.cos(lean * .85) * b.h * .78; g.ellipse(hx, hy, 1.5, 3.6, lean * .85, 0, TAU); g.fill(); } }
+    g.globalAlpha = 1;
+    leaves.forEach(l => { g.fillStyle = rgba(pen(), .8 * l.life); g.beginPath(); g.ellipse(l.x, l.y, 2.4, 1, l.a, 0, TAU); g.fill(); });
+    if (rain > .02) { g.strokeStyle = rgba(T.ink, .28 * rain); g.lineWidth = .7; g.beginPath(); streaks.forEach(s => { g.moveTo(s.x, s.y); g.lineTo(s.x + s.l * .22, s.y - s.l); }); g.stroke(); }
+    g.restore();
+    // raamkozijn, stijl en dorpel, ruitglans, vensterbank met plant
+    g.fillStyle = T.well; g.strokeStyle = rgba(T.ink, .45); g.lineWidth = 1.1;
+    g.fillRect(MX - 2.5, Y0, 5, Y1 - Y0); g.fillRect(X0, TY - 2.5, X1 - X0, 5);
+    g.beginPath(); g.moveTo(MX - 2.5, TY + 2.5); g.lineTo(MX - 2.5, Y1); g.moveTo(MX + 2.5, TY + 2.5); g.lineTo(MX + 2.5, Y1); g.moveTo(MX - 2.5, Y0); g.lineTo(MX - 2.5, TY - 2.5); g.moveTo(MX + 2.5, Y0); g.lineTo(MX + 2.5, TY - 2.5); g.moveTo(X0, TY - 2.5); g.lineTo(X1, TY - 2.5); g.moveTo(X0, TY + 2.5); g.lineTo(X1, TY + 2.5); g.stroke();
+    g.strokeRect(X0, Y0, X1 - X0, Y1 - Y0); g.strokeStyle = rgba(T.ink, .22); g.strokeRect(X0 - 5, Y0 - 5, X1 - X0 + 10, Y1 - Y0 + 5);
+    g.strokeStyle = T.dark ? rgba(T.ink, .07) : 'rgba(255,255,255,.55)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(X0 + 14, Y1 - 10); g.lineTo(X0 + 44, TY + 12); g.moveTo(X0 + 24, Y1 - 6); g.lineTo(X0 + 38, Y1 - 30); g.moveTo(MX + 16, Y1 - 10); g.lineTo(MX + 46, TY + 12); g.stroke();
+    g.fillStyle = T.well; g.fillRect(X0 - 12, Y1, X1 - X0 + 24, 7); g.strokeStyle = rgba(T.ink, .45); g.lineWidth = 1.1; g.strokeRect(X0 - 12, Y1, X1 - X0 + 24, 7);
+    g.strokeStyle = rgba(T.ink, .14); g.beginPath(); g.moveTo(X0 - 8, Y1 + 10); g.lineTo(X1 + 8, Y1 + 10); g.stroke();
+    const pxp = 252, pyb = Y1; g.fillStyle = T.well; g.beginPath(); g.moveTo(pxp - 9, pyb - 13); g.lineTo(pxp + 9, pyb - 13); g.lineTo(pxp + 7, pyb); g.lineTo(pxp - 7, pyb); g.closePath(); g.fill(); g.strokeStyle = rgba(T.ink, .5); g.stroke();
+    g.strokeStyle = pen(); g.fillStyle = pen(); g.lineWidth = .8;
+    for (const [a, l, rr] of [[-.9, 15, 3.6], [-.35, 20, 4.4], [.15, 17, 4], [.7, 13, 3.4], [1.15, 10, 3]]) { const sx = pxp, sy = pyb - 13, ex = sx + Math.sin(a) * l, ey = sy - Math.cos(a) * l * .9; g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(sx + Math.sin(a) * l * .3, sy - l * .6, ex, ey); g.stroke(); g.beginPath(); g.ellipse(ex, ey - rr * .25, rr, rr * .82, a * .4, 0, TAU); g.fill(); }
+    paper(g);
+  }
+  presets.raam = d => { form = (form + d + FORMS.length) % FORMS.length; label('raam-name', FORMS[form]); build(); };
+  resets.push(build);
+  build();
+  loop(dt => { step(dt); draw(); }, () => { draw(); });
+})();
+
+/* ---------- N3 Vijver ---------- */
+(() => {
+  const { g, p } = setup('vijver');
+  const FORMS = ['Vijver', 'Regen'];
+  const S = 4, RY = S * .866, C = Math.ceil(W / S) + 3, RW = Math.ceil(H / RY) + 3;
+  let cur = new Float32Array(C * RW), prev = new Float32Array(C * RW);
+  let form = 0, t = 0, acc = 0, nextDrop = 2, held = 0, scare = { x: 0, y: 0, t: -9 };
+  const cellOf = (x, y) => { const j = Math.round(y / RY); return [Math.round((x - (j % 2) * S / 2) / S), j]; };
+  function poke(x, y, amt, rad = 1) { const [ci, cj] = cellOf(x, y); for (let j = cj - rad; j <= cj + rad; j++) for (let i = ci - rad; i <= ci + rad; i++) { if (i < 1 || j < 1 || i >= C - 1 || j >= RW - 1) continue; const d = Math.hypot(i - ci, j - cj); if (d <= rad + .01) cur[j * C + i] += amt * (1 - d / (rad + 1)); } }
+  function sim() { for (let j = 1; j < RW - 1; j++) for (let i = 1; i < C - 1; i++) { const k = j * C + i; prev[k] = (2 * cur[k] - prev[k] + .2 * (cur[k - 1] + cur[k + 1] + cur[k - C] + cur[k + C] - 4 * cur[k])) * .993; } const tmp = prev; prev = cur; cur = tmp; }
+  const slope = (x, y) => { const [i, j] = cellOf(x, y); if (i < 1 || j < 1 || i >= C - 1 || j >= RW - 1) return [0, 0]; const k = j * C + i; return [cur[k + 1] - cur[k - 1], cur[k + C] - cur[k - C]]; };
+  const q = rng(21);
+  const fish = [0, 1, 2, 3].map(i => { const len = 34 + q() * 9, x = 60 + q() * 200, y = 50 + q() * 130, a = q() * TAU; return { x, y, a, v: 12, turn: 0, len, w: 3.1 + q() * .7, ph: q() * TAU, red: i === 0, flee: 0, sp: Array.from({ length: 10 }, (_, k) => [x - Math.cos(a) * k * len / 9, y - Math.sin(a) * k * len / 9]), nib: 0 }; });
+  const pads = [[86, 64, 19], [236, 150, 23], [262, 52, 14], [120, 178, 15]].map(([x, y, r]) => ({ x, y, r, vx: 0, vy: 0, rot: q() * TAU, vr: (q() - .5) * .04 }));
+  const strider = { x: 190, y: 96, a: 0, vx: 0, vy: 0, next: 1 };
+  function step(dt) {
+    t += dt; acc += dt;
+    while (acc > 1 / 60) { acc -= 1 / 60; sim(); }
+    if ((nextDrop -= dt) < 0) { nextDrop = form ? .08 + Math.random() * .2 : 2.5 + Math.random() * 4; poke(10 + Math.random() * (W - 20), 10 + Math.random() * (H - 20), form ? -2.2 : -3, 0); }
+    if (p.tap) { p.tap = false; poke(p.x, p.y, -14, 1); scare = { x: p.x, y: p.y, t }; }
+    p.dbl = false;
+    if (p.down && p.drag) { const sp = Math.hypot(p.dx, p.dy); if (sp > .5) poke(p.x, p.y, -Math.min(4, sp * .5), 1); scare = { x: p.x, y: p.y, t }; held = 0; }
+    else if (p.down) held += dt; else held = 0;
+    p.dx = p.dy = 0;
+    for (const f of fish) {
+      f.turn += (Math.random() - .5) * dt * 4; f.turn *= 1 - dt * .8; f.a += f.turn * dt;
+      const m = 30; if (f.x < m || f.x > W - m || f.y < m || f.y > H - m) f.a += angDiff(f.a, Math.atan2(H / 2 - f.y, W / 2 - f.x)) * dt * 1.6;
+      const sd = Math.hypot(f.x - scare.x, f.y - scare.y);
+      if (t - scare.t < .3 && sd < 80) { f.flee = 1; f.a += angDiff(f.a, Math.atan2(f.y - scare.y, f.x - scare.x)) * Math.min(1, dt * 14); }
+      let want = form ? 9 : 12;
+      if (held > .9 && Math.hypot(p.x - f.x, p.y - f.y) < 150) { const dd = Math.hypot(p.x - f.x, p.y - f.y); f.a += angDiff(f.a, Math.atan2(p.y - f.y, p.x - f.x)) * dt * 1.2; want = dd < 16 ? 2 : 7; if (dd < 18 && (f.nib -= dt) < 0) { f.nib = .6 + Math.random() * .8; poke(f.x + Math.cos(f.a) * 3, f.y + Math.sin(f.a) * 3, -1.4, 0); } }
+      f.flee *= Math.exp(-dt * 1.4); f.v += (want + f.flee * 70 - f.v) * (1 - Math.exp(-dt * 3));
+      f.x += Math.cos(f.a) * f.v * dt; f.y += Math.sin(f.a) * f.v * dt; f.ph += dt * (3 + f.v * .3);
+      f.sp[0] = [f.x, f.y]; const seg = f.len / 9;
+      for (let k = 1; k < 10; k++) { const [ax, ay] = f.sp[k - 1], [bx, by] = f.sp[k], dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy) || 1; f.sp[k] = [ax + dx / l * seg, ay + dy / l * seg]; }
+    }
+    for (const pd of pads) {
+      const [sx, sy] = slope(pd.x, pd.y); pd.vx += (-sx * 9 + Math.sin(t * .1 + pd.r) * .4) * dt; pd.vy += (-sy * 9) * dt; pd.vx *= 1 - dt * .6; pd.vy *= 1 - dt * .6;
+      pd.x += pd.vx * dt; pd.y += pd.vy * dt; pd.rot += pd.vr * dt;
+      if (pd.x < pd.r * .4) pd.vx = Math.abs(pd.vx); if (pd.x > W - pd.r * .4) pd.vx = -Math.abs(pd.vx); if (pd.y < pd.r * .4) pd.vy = Math.abs(pd.vy); if (pd.y > H - pd.r * .4) pd.vy = -Math.abs(pd.vy);
+    }
+    // schaatsenrijder: stoot, glijden, vier kuiltjes
+    const st = strider; st.next -= dt;
+    const near = Math.hypot(p.x - st.x, p.y - st.y) < 50 && (p.down || t - scare.t < .3);
+    if (st.next < 0 || near) { st.next = 1 + Math.random() * 2.2; let a = near ? Math.atan2(st.y - p.y, st.x - p.x) + (Math.random() - .5) : Math.random() * TAU; if (st.x < 40 || st.x > W - 40 || st.y < 40 || st.y > H - 40) a = Math.atan2(H / 2 - st.y, W / 2 - st.x); const v = 45 + Math.random() * 30; st.vx = Math.cos(a) * v; st.vy = Math.sin(a) * v; st.a = a; for (const [lx, ly] of [[5, 4], [5, -4], [-5, 5], [-5, -5]]) poke(st.x + Math.cos(a) * lx - Math.sin(a) * ly, st.y + Math.sin(a) * lx + Math.cos(a) * ly, -1.1, 0); }
+    st.x += st.vx * dt; st.y += st.vy * dt; st.vx *= Math.exp(-dt * 2.6); st.vy *= Math.exp(-dt * 2.6);
+  }
+  function drawFish(f) {
+    const [sx, sy] = slope(f.x, f.y), ox = sx * 1.6, oy = sy * 1.6, Lp = [], Rp = [];
+    for (let k = 0; k < 10; k++) {
+      const s = k / 9, [x, y] = f.sp[k], [nx0, ny0] = f.sp[Math.min(9, k + 1)], [px0, py0] = f.sp[Math.max(0, k - 1)], dx = px0 - nx0, dy = py0 - ny0, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
+      const wig = Math.sin(f.ph - k * .55) * 2.2 * Math.pow(s, 1.6), w = f.w * (s < .2 ? .55 + .45 * Math.sin(s / .2 * Math.PI / 2) : 1 - (s - .2) / .8 * .85);
+      Lp.push([x + nx * (w + wig) + ox, y + ny * (w + wig) + oy]); Rp.push([x - nx * (w - wig) + ox, y - ny * (w - wig) + oy]);
+    }
+    const col = f.red ? T.core : pen(), [tx, ty] = f.sp[9], [ux, uy] = f.sp[8], ta = Math.atan2(ty - uy, tx - ux) + Math.sin(f.ph - 5) * .35;
+    g.fillStyle = rgba(col, form ? .38 : .58); g.beginPath(); g.moveTo(...Lp[0]); for (let k = 1; k < 10; k++) g.lineTo(...Lp[k]); for (let k = 9; k >= 0; k--) g.lineTo(...Rp[k]); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(tx + ox, ty + oy); g.lineTo(tx + ox + Math.cos(ta + .5) * 7.5, ty + oy + Math.sin(ta + .5) * 7.5); g.lineTo(tx + ox + Math.cos(ta) * 4, ty + oy + Math.sin(ta) * 4); g.lineTo(tx + ox + Math.cos(ta - .5) * 7.5, ty + oy + Math.sin(ta - .5) * 7.5); g.closePath(); g.fill();
+    const [hx, hy] = f.sp[2], [gx, gy] = f.sp[3], ba = Math.atan2(hy - gy, hx - gx); for (const sd of [-1, 1]) { g.beginPath(); g.ellipse(hx + ox + Math.cos(ba + sd * 1.9) * f.w * 1.1, hy + oy + Math.sin(ba + sd * 1.9) * f.w * 1.1, 2.6, 1, ba + sd * 2.3, 0, TAU); g.fill(); }
+  }
+  function draw() {
+    g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+    fish.forEach(drawFish);
+    // wateroppervlak: grootte van elk punt = helling
+    g.fillStyle = rgba(T.ink, T.dark ? .42 : .34); g.beginPath();
+    for (let j = 1; j < RW - 1; j++) { const y = j * RY; if (y > H + 3) break; for (let i = 1; i < C - 1; i++) { const x = i * S + (j % 2) * S / 2; if (x > W + 3) break; const k = j * C + i, l = (cur[k + 1] - cur[k - 1]) * .7 + (cur[k + C] - cur[k - C]) * .7, rr = .45 + clamp(l * 1.1, -.4, 1.4); if (rr < .14) continue; g.moveTo(x + rr, y); g.arc(x, y, rr, 0, TAU); } }
+    g.fill();
+    const padFill = T.dark ? mix(T.well, pen(), .16) : mix(mix(T.well, '#ffffff', .45), pen(), .14);
+    for (const pd of pads) {
+      g.fillStyle = padFill; g.beginPath(); g.moveTo(pd.x, pd.y); g.arc(pd.x, pd.y, pd.r, pd.rot + .22, pd.rot + TAU - .22); g.closePath(); g.fill();
+      g.strokeStyle = rgba(T.ink, .42); g.lineWidth = 1; g.stroke();
+      g.strokeStyle = rgba(T.ink, .14); g.lineWidth = .7; g.beginPath(); for (let i = 1; i < 8; i++) { const a = pd.rot + .22 + i / 8 * (TAU - .44); g.moveTo(pd.x, pd.y); g.lineTo(pd.x + Math.cos(a) * pd.r * .86, pd.y + Math.sin(a) * pd.r * .86); } g.stroke();
+    }
+    const st = strider, ca = Math.cos(st.a), sa = Math.sin(st.a), P = (lx, ly) => [st.x + ca * lx - sa * ly, st.y + sa * lx + ca * ly];
+    g.strokeStyle = rgba(T.ink, .75); g.lineWidth = .6; g.beginPath();
+    for (const [a1, b1, a2, b2] of [[1, 1, 5, 4], [1, -1, 5, -4], [0, 1, 2, 7], [0, -1, 2, -7], [-1, 1, -6, 6], [-1, -1, -6, -6]]) { g.moveTo(...P(a1, b1)); g.lineTo(...P(a2, b2)); } g.stroke();
+    g.strokeStyle = rgba(T.ink, .2); g.lineWidth = .6; g.beginPath(); for (const [lx, ly] of [[2, 7], [2, -7], [-6, 6], [-6, -6]]) { const [x, y] = P(lx, ly); g.moveTo(x + 1.3, y); g.arc(x, y, 1.3, 0, TAU); } g.stroke();
+    g.fillStyle = rgba(T.ink, .85); g.beginPath(); g.ellipse(st.x, st.y, 3.2, 1, st.a, 0, TAU); g.fill();
+    paper(g);
+  }
+  presets.vijver = d => { form = (form + d + FORMS.length) % FORMS.length; label('vijver-name', FORMS[form]); nextDrop = .2; };
+  for (let i = 0; i < 120; i++) step(1 / 60);
+  loop(dt => { step(dt); draw(); }, () => { draw(); });
+})();
+
+/* ---------- N4 Kweek ---------- */
+(() => {
+  const { g, p } = setup('groei');
+  const FORMS = ['Varen', 'Klimop'];
+  const GAP = 7, DUR = 10, MAX = 7;
+  let form = 0, t = 0, fronds = [], next = 0, vines = [], nextNode = 0;
+  const potX = 163, rim = 176;
+  function newFrond(born) { const used = fronds.map(f => f.ang); let ang = 0; for (let k = 0; k < 12; k++) { const c = (Math.random() - .5) * 2.1; if (used.every(u => Math.abs(u - c) > .28)) { ang = c; break; } ang = c; } fronds.push({ born, ang, len: 82 + Math.random() * 46 - Math.abs(ang) * 18, a: 0, v: 0, k: Math.random() * 9, die: -1, bx: potX + ang * 9 }); }
+  function seedFern() { fronds = []; for (let i = 0; i < 5; i++) newFrond(t - DUR - 4 - (5 - i) * GAP); next = 2; }
+  function seedVine() {
+    vines = [[128, 46], [148, 48]].map(([x, y], vi) => { const n = vi ? 9 : 14, nodes = []; for (let i = 0; i < n; i++) { const nx = x + i * (vi ? 3 : -1.2), ny = y + i * 6.5; nodes.push({ x: nx, y: ny, ox: nx, oy: ny, born: t - 40 + i }); } return { nodes, side: vi ? 1 : -1 }; });
+    nextNode = 1.5;
+  }
+  function geom(f) {
+    const age = t - f.born, gr = clamp(age / DUR, 0, 1), L = f.len * (.16 + .84 * ease(Math.min(1, gr * 1.15))), u = ease(clamp((gr - .08) / .92, 0, 1)), uL = u * L, sg = Math.sign(f.ang) || 1;
+    const droop = f.die >= 0 ? clamp((t - f.die) / 4, 0, 1) : 0;
+    let th = f.ang * .9 + f.a + .03 * Math.sin(t * .6 + f.k) + droop * sg * .7, x = f.bx, y = rim + 2; const ds = 1.5, pts = [];
+    for (let s = 0; s <= L; s += ds) {
+      pts.push([x, y, th, s]);
+      let kap;
+      if (s < uL) kap = sg * (.0035 + .009 * s / f.len);
+      else { const c = (s - uL) / Math.max(1, L - uL); kap = sg / (1.4 + 7.5 * (1 - c * .8)); }
+      th += kap * ds; x += Math.sin(th) * ds; y -= Math.cos(th) * ds;
+    }
+    return { pts, L, uL, droop };
+  }
+  function step(dt) {
+    t += dt;
+    if (form === 0) {
+      if ((next -= dt) < 0) { next = GAP; newFrond(t); const alive = fronds.filter(f => f.die < 0); if (alive.length > MAX) alive[0].die = t; }
+      fronds = fronds.filter(f => f.die < 0 || t - f.die < 5);
+      for (const f of fronds) {
+        if (p.down || p.over) { const { pts } = geom(f); for (let i = 0; i < pts.length; i += 6) { const [x, y] = pts[i]; if (Math.hypot(p.x - x, p.y - y) < 14) { f.v += p.dx * .012 * (1 - i / pts.length * .5); break; } } }
+        f.v += (-f.a * 7 - f.v * 1.8) * dt; f.a += f.v * dt;
+      }
+    } else {
+      if ((nextNode -= dt) < 0) { nextNode = 2.2; const v = vines.reduce((a, b) => a.nodes.length < b.nodes.length ? a : b); if (v.nodes.length < 26) { const a = v.nodes[v.nodes.length - 1], b = v.nodes[v.nodes.length - 2]; const nx = a.x + (a.x - b.x) * .3, ny = a.y + 3; v.nodes.push({ x: nx, y: ny, ox: nx, oy: ny, born: t }); } }
+      const seg = 6.5, sub = 2, h = dt / sub;
+      for (let s = 0; s < sub; s++) for (const v of vines) {
+        const n = v.nodes;
+        for (let i = 1; i < n.length; i++) { const d = n[i], vx = (d.x - d.ox) * .985, vy = (d.y - d.oy) * .985; d.ox = d.x; d.oy = d.y; d.x += vx + Math.sin(t * .5 + i * .3) * .004; d.y += vy + 70 * h * h; if (p.down && Math.hypot(p.x - d.x, p.y - d.y) < 14) { d.x += p.dx * .35 / sub; d.y += p.dy * .2 / sub; } }
+        for (let it = 0; it < 6; it++) for (let i = 1; i < n.length; i++) { const a = n[i - 1], b = n[i], dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1, df = (l - seg) / l; if (i === 1) { b.x -= dx * df; b.y -= dy * df; } else { a.x += dx * df * .5; a.y += dy * df * .5; b.x -= dx * df * .5; b.y -= dy * df * .5; } }
+        for (const d of n) { if (d.x < 6) d.x = 6; if (d.x > W - 6) d.x = W - 6; if (d.y > H - 6) d.y = H - 6; }
+      }
+    }
+    p.tap = p.dbl = false; p.dx = p.dy = 0;
+  }
+  function pot(c) {
+    const tw = 31, bw = 23, hh = 32;
+    c.fillStyle = T.well; c.beginPath(); c.moveTo(potX - tw, rim); c.lineTo(potX + tw, rim); c.lineTo(potX + bw, rim + hh); c.lineTo(potX - bw, rim + hh); c.closePath(); c.fill();
+    c.save(); c.clip(); c.fillStyle = rgba(T.ink, .2); c.beginPath(); for (let j = 0; j < 14; j++) { const y = rim + 7 + j * 2.3; for (let x = potX - tw + (j % 2) * 1.35; x < potX + tw; x += 2.7) { const rr = .35 + (x - potX + tw) / (2 * tw) * .55; c.moveTo(x + rr, y); c.arc(x, y, rr, 0, TAU); } } c.fill(); c.restore();
+    c.strokeStyle = rgba(T.ink, .5); c.lineWidth = 1.1; c.stroke();
+    c.fillStyle = T.well; c.fillRect(potX - tw - 3, rim - 1, tw * 2 + 6, 7); c.strokeRect(potX - tw - 3, rim - 1, tw * 2 + 6, 7);
+    c.strokeStyle = rgba(T.ink, .15); c.beginPath(); c.moveTo(potX - 40, rim + hh + 3.5); c.lineTo(potX + 40, rim + hh + 3.5); c.stroke();
+  }
+  function drawFern() {
+    const col = pen();
+    for (const f of fronds) {
+      const { pts, L, uL, droop } = geom(f), alpha = 1 - droop * .85, ink = droop > 0 ? mix(col, T.dark ? '#6E6E78' : '#9A9AA3', droop) : col;
+      g.globalAlpha = alpha; g.strokeStyle = g.fillStyle = ink; g.lineCap = 'round';
+      for (let c0 = 0; c0 < 4; c0++) { const a = Math.floor(pts.length * c0 / 4), b = Math.floor(pts.length * (c0 + 1) / 4) + 1; g.lineWidth = 1.7 - c0 * .3; g.beginPath(); for (let i = a; i < Math.min(b, pts.length); i++) i === a ? g.moveTo(pts[i][0], pts[i][1]) : g.lineTo(pts[i][0], pts[i][1]); g.stroke(); }
+      g.beginPath();
+      for (let i = 6; i < pts.length; i += 3) {
+        const [x, y, th, s] = pts[i]; const o = clamp((uL - s) / 20, 0, 1); if (o <= 0) continue;
+        const qq = s / L, pl = f.len * .15 * Math.pow(Math.sin(Math.PI * Math.min(1, qq * 1.04)), .75) * (1 - .3 * qq) * o * (L / f.len);
+        for (const sd of [-1, 1]) { const da = th + sd * (.2 + 1.0 * o), tx = x + Math.sin(da) * pl, ty = y - Math.cos(da) * pl, w = pl * .15 + .3, nx = Math.cos(da) * w, ny = Math.sin(da) * w, mx = (x + tx) / 2, my = (y + ty) / 2;
+          g.moveTo(x, y); g.quadraticCurveTo(mx + nx, my + ny, tx, ty); g.quadraticCurveTo(mx - nx, my - ny, x, y); }
+      }
+      g.fill();
+      // de krul is behaard: korte haartjes op het nog opgerolde stuk
+      g.lineWidth = .5; g.globalAlpha = alpha * .55; g.beginPath();
+      for (let i = 0; i < pts.length; i += 2) { const [x, y, th, s] = pts[i]; if (s < uL - 4) continue; for (const sd of [-1, 1]) { const a = th + sd * 1.5; g.moveTo(x + Math.sin(a) * 1, y - Math.cos(a) * 1); g.lineTo(x + Math.sin(a) * 2.3, y - Math.cos(a) * 2.3); } }
+      g.stroke(); g.globalAlpha = 1;
+    }
+    pot(g);
+  }
+  function drawVine() {
+    const col = pen();
+    // hangpot aan drie touwtjes
+    const hx = 138, hy = 40; g.strokeStyle = rgba(T.ink, .45); g.lineWidth = .8; g.beginPath(); for (const ox of [-17, 0, 17]) { g.moveTo(hx, 4); g.lineTo(hx + ox, hy - 2); } g.stroke();
+    g.fillStyle = rgba(T.ink, .5); g.beginPath(); g.arc(hx, 4, 1.6, 0, TAU); g.fill();
+    for (const v of vines) {
+      const n = v.nodes; g.strokeStyle = col; g.lineWidth = 1; g.lineCap = 'round'; g.beginPath(); g.moveTo(n[0].x, n[0].y); for (let i = 1; i < n.length - 1; i++) g.quadraticCurveTo(n[i].x, n[i].y, (n[i].x + n[i + 1].x) / 2, (n[i].y + n[i + 1].y) / 2); g.lineTo(n[n.length - 1].x, n[n.length - 1].y); g.stroke();
+      for (let i = 2; i < n.length; i += 2) {
+        const d = n[i], a = n[i - 1], age = t - d.born, sc = ease(clamp(age / 6, 0, 1)), unf = ease(clamp((age - 1) / 5, 0, 1)); if (sc <= 0) continue;
+        const tang = Math.atan2(d.y - a.y, d.x - a.x), side = (i / 2) % 2 ? 1 : -1, ang = tang - Math.PI / 2 + side * 1.0 * (.4 + .6 * unf) + .15, Lf = 9.5 * sc;
+        const px0 = d.x + Math.cos(ang + Math.PI / 2) * 3 * sc, py0 = d.y + Math.sin(ang + Math.PI / 2) * 3 * sc;
+        g.strokeStyle = col; g.lineWidth = .7; g.beginPath(); g.moveTo(d.x, d.y); g.lineTo(px0, py0); g.stroke();
+        g.save(); g.translate(px0, py0); g.rotate(ang); g.scale(.25 + .75 * unf, 1);
+        g.fillStyle = rgba(col, .9); g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(-.62 * Lf, -.22 * Lf, -.68 * Lf, .52 * Lf, 0, Lf); g.bezierCurveTo(.68 * Lf, .52 * Lf, .62 * Lf, -.22 * Lf, 0, 0); g.fill();
+        g.strokeStyle = rgba(T.well, .7); g.lineWidth = .6; g.beginPath(); g.moveTo(0, Lf * .08); g.lineTo(0, Lf * .82); g.stroke(); g.restore();
+      }
+    }
+    g.fillStyle = T.well; g.beginPath(); g.moveTo(hx - 21, hy - 2); g.lineTo(hx + 21, hy - 2); g.quadraticCurveTo(hx + 19, hy + 16, hx, hy + 17); g.quadraticCurveTo(hx - 19, hy + 16, hx - 21, hy - 2); g.closePath(); g.fill();
+    g.save(); g.clip(); g.fillStyle = rgba(T.ink, .2); g.beginPath(); for (let j = 0; j < 9; j++) { const y = hy + j * 2.3; for (let x = hx - 21 + (j % 2) * 1.35; x < hx + 21; x += 2.7) { const rr = .35 + (x - hx + 21) / 42 * .5; g.moveTo(x + rr, y); g.arc(x, y, rr, 0, TAU); } } g.fill(); g.restore();
+    g.strokeStyle = rgba(T.ink, .5); g.lineWidth = 1.1; g.stroke();
+  }
+  function draw() { g.fillStyle = T.well; g.fillRect(0, 0, W, H); form ? drawVine() : drawFern(); paper(g); }
+  presets.groei = d => { form = (form + d + FORMS.length) % FORMS.length; label('groei-name', FORMS[form]); form ? seedVine() : seedFern(); };
+  seedFern();
+  loop(dt => { step(dt); draw(); }, () => { draw(); });
+})();
+})();
+</script>
