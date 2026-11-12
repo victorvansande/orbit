@@ -16,10 +16,12 @@ export function createFall({ x0, x1, y0, x2, x3, y1, time = 0.55, seed = 1, stra
   const V = Array.from({ length: veils }, (_, i) => ({ u: (i + 0.5 + (q() - 0.5) * 0.6) / veils, w: (0.7 + q() * 0.9) / veils, a: 0.1 + q() * 0.16, k: q() * 20, k0: i === 0 || i === veils - 1 ? 0.05 + q() * 0.1 : 0 }));
   let drops = [], puffs = [], acc = 0, pacc = 0;
   // plaats van een draad: u dwars (0 tot 1), k langs de val (0 tot 1); versmalt onder de lip, waaiert dan uit, wijkt voor de steen
-  const xAt = (u, k, t) => {
+  // uc = het midden van het stukje water waar dit punt bij hoort: een sluier schuift als geheel opzij (beide randen
+  // dezelfde kant op), anders rekt hij op tot een brede wig onder de steen die van beeld tot beeld verspringt
+  const xAt = (u, k, t, uc = u) => {
     const uu = 0.5 + (u - 0.5) * (1 - 0.2 * Math.exp(-(((k - 0.2) / 0.16) ** 2)));
     let x = x0 + (x1 - x0) * uu + ((x2 + (x3 - x2) * uu) - (x0 + (x1 - x0) * uu)) * k + (nz(u * 7 + seed, t * 0.5 + k * 2.4) - 0.5) * 2.2 * k;
-    if (split && k > split.k) { const d = u - split.u, near = Math.max(0, 1 - Math.abs(d) / split.w); x += Math.sign(d || 1) * near * Math.min(1, (k - split.k) * 7) * (x3 - x2) * split.w * 0.55 * (1 - (k - split.k) * 0.5); }
+    if (split && k > split.k) { const d = uc - split.u, near = Math.max(0, 1 - Math.abs(d) / split.w); x += Math.sign(d || 1) * near * Math.min(1, (k - split.k) * 7) * (x3 - x2) * split.w * 0.55 * (1 - (k - split.k) * 0.5); }
     return x;
   };
   return {
@@ -41,7 +43,7 @@ export function createFall({ x0, x1, y0, x2, x3, y1, time = 0.55, seed = 1, stra
         const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, `rgba(170,208,212,${v.a * 1.5})`); gr.addColorStop(0.3, `rgba(206,230,232,${v.a})`); gr.addColorStop(1, `rgba(244,250,250,${v.a * 2.3})`);
         g.fillStyle = gr; g.beginPath();
         const L = [], R = [];
-        for (let k = v.k0; k <= 1.001; k += 0.1) { const wd = v.w * (0.75 + k * 0.6) * (0.8 + 0.4 * nz(v.k, k * 3 - t * 1.1)), wob = (nz(v.k + 9, k * 2.2 - t * 0.9) - 0.5) * 0.08 * k; L.push([xAt(v.u - wd / 2 + wob, k, t), y0 + h * k]); R.push([xAt(v.u + wd / 2 + wob, k, t), y0 + h * k]); }
+        for (let k = v.k0; k <= 1.001; k += 0.1) { const wd = v.w * (0.75 + k * 0.6) * (0.8 + 0.4 * nz(v.k, k * 3 - t * 1.1)), wob = (nz(v.k + 9, k * 2.2 - t * 0.9) - 0.5) * 0.08 * k; L.push([xAt(v.u - wd / 2 + wob, k, t, v.u), y0 + h * k]); R.push([xAt(v.u + wd / 2 + wob, k, t, v.u), y0 + h * k]); }
         g.moveTo(...L[0]); L.forEach(p => g.lineTo(...p)); for (let i = R.length - 1; i >= 0; i--) g.lineTo(...R[i]); g.closePath(); g.fill();
       }
       // draden: streepjes in vrije val; onderaan vallen ze uiteen in druppels
