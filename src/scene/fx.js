@@ -376,30 +376,72 @@ export function smallNight({ star, stars = [], scene = null, onOpen = () => {}, 
 
 
 /* ---- Gloed uit het vlammetje (dagen op rij) ---- */
-// Victor, 11/11/2026: "kan er dan eenzelfde gloed uitkomen als uit een nieuwe ster die aan de hemel verschijnt, maar dan
-// in het rood van orbit, vertrekkende vanuit het vlammetje dat ook rood wordt?" Zelfde vorm en tijdsverloop als de gloed
-// rond een nieuwe ster in smallNight (radiaal verloop, bloeit in 0,35 s open met overschot, zakt in 1,6 s terug), in
-// --core, vanuit het midden van het vlammetje; daarna dooft hij zacht uit.
-export function emberGlow(el) {
-  if (!el) return;
+// Victor, 11/11/2026: eerst een rode gloed zoals rond een nieuwe ster, daarna "minder gradient, en meer zoals de vollere
+// witte en zwarte cirkels die rond nieuwe sterren aan de hemel komen, maar dan orbit rood" en "laat [de gensters] er wat
+// meer zijn en laat ze iets meer opvallen (bv. wat hoger laten opstijgen)". Dus de kleine nacht van smallNight (zelfde
+// cover en tijden NIGHT) in --core rond het vlammetje: een volle schijf met een zachte rand die opbloeit, daarna een gat
+// vanuit het midden. De stippen van de teller staan erin in papierkleur (zoals de sterren in de kleine nacht), zodat het
+// vlammetje en het rollende getal leesbaar blijven. Elf vonkjes stijgen 40 tot 74 px op, wiegend en flakkerend, in
+// papierkleur zolang ze in de schijf zitten en rood erbuiten. root: de stippenteller (#stat-total).
+const EMBER = { delay: 0.45, sparks: 11 };
+export function emberGlow(root) {
+  const flame = root?.querySelector('.dm-flame');
+  if (!flame) return;
   const ov = overlay('fx-night'), probe = document.createElement('canvas').getContext('2d');
-  probe.fillStyle = css('--core');
-  const red = [1, 3, 5].map(i => parseInt(probe.fillStyle.slice(i, i + 2), 16)).join(',');
+  const rgb = name => { probe.fillStyle = css(name); const h = probe.fillStyle.slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(','); };
+  let red = rgb('--core'), paper = rgb('--bg'), theme = ov.theme;
+  const easeIO = x => (x = Math.min(1, Math.max(0, x)), x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   const easeOut = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
-  const t0 = performance.now(), END = 2.4;
-  let b = el.getBoundingClientRect();   // het getal slaat om terwijl de gloed loopt: dan verdwijnt dit vlammetje, de plek blijft
+  let fb = flame.getBoundingClientRect();
+  const R = Math.max(32, fb.height * 1.85), PEAK = 0.95;
+  const cover = (r, t) => {
+    if (t <= 0) return 0;
+    const fall = easeIO(t / NIGHT.fall), size = R * (0.75 + 0.25 * fall);
+    const disc = 1 - smoothstep(size * 0.5, size, r);
+    const hole = t < NIGHT.open ? 0 : R * 1.3 * easeIO((t - NIGHT.open) / (NIGHT.end - NIGHT.open));
+    return PEAK * fall * disc * smoothstep(hole - R * 0.45, hole, r);
+  };
+  // vaste getallen per vonkje: vertrekplek bovenaan het vlammetje, start, hoogte, duur, wiegen, grootte
+  const rnd = k => { const v = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+  const sparks = Array.from({ length: EMBER.sparks }, (_, i) => ({
+    fx: 0.15 + 0.7 * rnd(i + 1), t: 0.3 + i * 0.08 + 0.06 * rnd(i + 7), h: 40 + 34 * rnd(i + 3), d: 1.4 + 0.7 * rnd(i + 5),
+    sw: (2 + 2.5 * rnd(i + 9)) * (rnd(i + 11) < 0.5 ? -1 : 1), ph: 6.28 * rnd(i + 13), s: 1.5 + 0.8 * rnd(i + 15),
+  }));
+  const END = Math.max(EMBER.delay + NIGHT.end, ...sparks.map(p => p.t + p.d));
+  const t0 = performance.now();
   function frame(now) {
-    ov.fresh();
-    const g = ov.g, u = (now - t0) / 1000;
-    if (el.isConnected) b = el.getBoundingClientRect();
+    if (ov.fresh() === 'theme' || ov.theme !== theme) { theme = ov.theme; red = rgb('--core'); paper = rgb('--bg'); }
+    const g = ov.g, u = (now - t0) / 1000, t = u - EMBER.delay;
     g.clearRect(0, 0, ov.W, ov.H);
-    if (u >= END || !b.width) { ov.cv.remove(); return; }
-    const x = b.left + b.width / 2, y = b.top + b.height / 2, r0 = Math.max(b.width, b.height) / 2;
-    const k = easeOut(u / 0.35) * (1 + 1.8 * (1 - easeOut(u / 1.6))), R = 8 + r0 * 4 * k;
-    const a = (document.documentElement.dataset.theme === 'dark' ? 0.46 : 0.34) * (1 - smoothstep(1.6, END, u));   // rood op donker leest zwakker
-    const glow = g.createRadialGradient(x, y, 0, x, y, R);
-    glow.addColorStop(0, `rgba(${red},${a})`); glow.addColorStop(0.45, `rgba(${red},${a * 0.35})`); glow.addColorStop(1, `rgba(${red},0)`);
-    g.fillStyle = glow; g.fillRect(x - R, y - R, R * 2, R * 2);
+    if (u >= END) { ov.cv.remove(); return; }
+    if (flame.isConnected) fb = flame.getBoundingClientRect();
+    const cx = fb.left + fb.width / 2, cy = fb.top + fb.height / 2;
+    if (t > 0) {
+      const N = 32, grad = g.createRadialGradient(cx, cy, 0, cx, cy, R * 1.3);
+      for (let i = 0; i <= N; i++) grad.addColorStop(i / N, `rgba(${red},${cover(R * 1.3 * i / N, t).toFixed(4)})`);
+      g.fillStyle = grad; g.fillRect(cx - R * 1.4, cy - R * 1.4, R * 2.8, R * 2.8);
+      g.fillStyle = `rgb(${paper})`;
+      for (const svg of root.querySelectorAll('svg')) {   // de teller in papierkleur in de schijf (ook een cijfer dat wegrolt)
+        const op = Number(getComputedStyle(svg).opacity);
+        for (const c of svg.querySelectorAll('circle.o')) {
+          const b = c.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top + b.height / 2;
+          const a = cover(Math.hypot(x - cx, y - cy), t) * op;
+          if (a < 0.02) continue;
+          g.globalAlpha = Math.min(1, a / PEAK); g.beginPath(); g.arc(x, y, b.width / 2, 0, Math.PI * 2); g.fill();
+        }
+      }
+      g.globalAlpha = 1;
+    }
+    for (const p of sparks) {
+      const v = (u - p.t) / p.d;
+      if (v <= 0 || v >= 1) continue;
+      const rise = easeOut(v), x = fb.left + fb.width * p.fx + p.sw * Math.sin(p.ph + v * 5.5) * rise, y = fb.top + fb.height * 0.1 - p.h * rise;
+      const a = smoothstep(0, 0.08, v) * (1 - smoothstep(0.55, 1, v)) * (0.75 + 0.25 * Math.sin(p.ph + u * 31)), r = p.s * (1 - 0.45 * v);
+      const k = Math.min(1, cover(Math.hypot(x - cx, y - cy), t) / PEAK);
+      g.globalAlpha = a; g.fillStyle = `rgb(${red})`; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+      if (k > 0.02) { g.globalAlpha = a * k; g.fillStyle = `rgb(${paper})`; g.fill(); }
+    }
+    g.globalAlpha = 1;
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

@@ -9,7 +9,7 @@ import { createStreak } from './scene/streak.js';
 import { isDue, levelForDue, dueLabel, isOverdue, toDue, nextDue } from './core/deadline.js';
 import { createSync, newCode, normalizeCode, savedCode, mergeStates, sameState } from './sync/sync.js';
 import { mirror, readMirror } from './data/backup.js';
-import { setMatrix, morphMatrix, twinkleDot, igniteFlame, liveFlame } from './scene/matrix.js';
+import { setMatrix, morphMatrix, rollMatrix, twinkleDot, igniteFlame, liveFlame } from './scene/matrix.js';
 import { loadDone, saveDone, cleanDone, isFiller, totalDone, doneSummary, loadReset, saveReset, loadStars, syncStars, placeStar, removeStar, dayKey, STATS_KEYS,
   loadCuts, saveCuts, cleanCuts, loadSkyView, saveSkyView, skyPeriods, inView, streakInfo } from './data/stats.js';
 import { QUOTES } from './focus/quotes.js';
@@ -610,7 +610,7 @@ function playStreakUp() {
       else sayLine(tx('streak.line', { n }), 0, true);
       return;
     }
-    const give = takeStage(3200);
+    const give = takeStage(4600);
     clearTimeout(statSwapT);
     const toFlame = statMode !== 'streak';
     statMode = 'streak';
@@ -618,11 +618,16 @@ function playStreakUp() {
     const ignite = () => {
       streakHold = null;
       igniteFlame(dm, statHot);
-      setTimeout(() => emberGlow(dm.querySelector('.dm-flame')), 450);   // gloed zodra het vlammetje helemaal rood is (de stippen kleuren in 0,45 s)
-      setTimeout(() => {
-        morphMatrix(dm, statText(), { only: true, ms: 900, onSwap: () => { label.textContent = statLabel(); statAria(); } });
-      }, 650);
-      setTimeout(() => { give(); statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS); }, 1800);
+      emberGlow(dm);   // rode schijf rond het vlammetje (vanaf 0,45 s, als de stippen rood zijn) en de vonkjes
+      setTimeout(() => {   // S2 Eén erbij: het getal rolt één op, het label zegt even "+1 today"
+        rollMatrix(dm, statText(), { hold: 2100, onSwap: statAria });
+        label.textContent = tx('stats.plus'); label.classList.add('is-plus');
+        setTimeout(() => {
+          label.classList.add('is-swap');
+          setTimeout(() => { label.textContent = statLabel(); label.classList.remove('is-swap', 'is-plus'); }, 300);
+        }, 2300);
+      }, 700);
+      setTimeout(() => { give(); statSwapT = setTimeout(swapStatDm, STAT_SWAP_MS); }, 3300);
     };
     if (toFlame) {
       label.classList.add('is-swap');

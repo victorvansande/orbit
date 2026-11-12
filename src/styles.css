@@ -450,10 +450,11 @@ body.is-focus .controls > .focus-exit { display: inline-flex; }
 .stat-dm .dm-flame .o { transition: fill .35s var(--ease); transition-delay: var(--fd, 0ms); }
 .stat-dm .dm-flame.is-ignite .o { animation: flame-pop .55s var(--ease) both; animation-delay: var(--fd, 0ms); transform-box: fill-box; transform-origin: center; }
 @keyframes flame-pop { 45% { transform: scale(1.7); } }
-.dm-spark { position: absolute; width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: var(--core); pointer-events: none; opacity: 0; animation: dm-spark .9s var(--ease) both; }
-@keyframes dm-spark { 15% { opacity: 1; } to { opacity: 0; transform: translateY(-18px) scale(.5); } }
+/* telwerk (S2 Eén erbij): het nieuwe cijfer eerst rood, dan inkt; het label zegt even "+1 today" in rood */
+.stat-dm .dm.is-new { color: var(--core); }
+#stat-stars-label.is-plus { color: var(--core); }
 .stat-dm .dm { display: block; flex: none; height: 100%; width: calc(var(--dm-h) * 5 / 7); overflow: visible;
-  transition: width .45s var(--ease), margin .45s var(--ease), opacity .35s var(--ease); }
+  transition: width .45s var(--ease), margin .45s var(--ease), opacity .35s var(--ease), color 1s var(--ease); }
 /* een vakje dat erbij komt of wegvalt (100 sterren of meer), schuift open of dicht */
 .stat-dm .dm.is-gone { width: 0; margin-right: calc(var(--dm-h) / -7); opacity: 0; }
 .stats-total > span:last-child { padding-bottom: 2px; transition: opacity .3s var(--ease); }
@@ -1888,7 +1889,6 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .stat-dm .dm { transition: none; }
   .stat-dm .dm-flame .o { transition: none; }
   .stat-dm .dm-flame.is-ignite .o, .sc.is-open path { animation: none; }
-  .dm-spark { display: none; }
 }
 
 /* ---- Effecten (src/scene/fx.js) ---- */

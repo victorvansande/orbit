@@ -185,17 +185,33 @@ export function igniteFlame(root, hot) {
   }
   flame.classList.remove('is-ignite'); flame.getBoundingClientRect(); flame.classList.add('is-ignite');
   hot();
-  const box = root.getBoundingClientRect(), f = flame.getBoundingClientRect();
-  for (let i = 0; i < 3; i++) {
-    const s = document.createElement('span');
-    s.className = 'dm-spark';
-    s.style.left = `${f.left - box.left + f.width * (0.3 + 0.2 * i)}px`;
-    s.style.top = `${f.top - box.top + f.height * 0.15}px`;
-    s.style.animationDelay = `${520 + i * 140}ms`;
-    root.append(s);
-    s.addEventListener('animationend', () => s.remove());
-  }
+  // de vonkjes tekent emberGlow (fx.js) mee in de rode schijf
   setTimeout(() => flame.classList.remove('is-ignite'), 1600);
+}
+
+// Telwerk (S2 "Eén erbij", Victor 11/11/2026: de ruis verborg dat 12 een 13 werd): enkel de tekens die veranderen rollen;
+// het oude schuift omhoog weg, het nieuwe komt van onder, eerst rood (is-new, tot hold ms) en dan inkt. Een andere
+// lengte (9 naar 10) gaat met de gewone wissel.
+export function rollMatrix(root, text, { ms = 620, hold = 2000, onSwap } = {}) {
+  const from = root._chars || [], to = [...text].filter(ch => GLYPHS[ch]);
+  if (root._morphT || from.length !== to.length) { morphMatrix(root, text, { only: true, onSwap }); return; }
+  const o = { duration: ms, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'both' }, fresh = [];
+  to.forEach((ch, i) => {
+    if (from[i] === ch) return;
+    const old = root.children[i], node = glyph(ch);
+    for (const c of node.querySelectorAll('.o')) c.classList.add('n');   // zonder de oplicht-animatie van een gewoon cijfer
+    node.classList.add('is-new');
+    const left = old.getBoundingClientRect().left - root.getBoundingClientRect().left;
+    old.replaceWith(node);
+    old.style.cssText = `position: absolute; top: 0; left: ${left}px;`;
+    root.append(old);
+    old.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-40%)', opacity: 0, offset: 0.55 }, { transform: 'translateY(-50%)', opacity: 0 }], o).onfinish = () => old.remove();
+    node.animate([{ transform: 'translateY(70%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], o);
+    fresh.push(node);
+  });
+  root._chars = to;
+  onSwap?.();
+  setTimeout(() => fresh.forEach(n => n.classList.remove('is-new')), hold);
 }
 
 // Knipoog naar de sterrenhemel: één verlichte stip fonkelt even uit als dezelfde vierpuntige ster (holle zijden)
