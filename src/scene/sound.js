@@ -335,6 +335,34 @@ export function playBreak(kind, { lv = 0, x = 0 } = {}) {
   }, false, BREAK_GAIN);
 }
 
+// Paludarium in het bakje (Victor, 12/11/2026: geluid enkel bij acties): 'mist' plantenspuit (kort gefilterd ruisje),
+// 'snip' snoeien (droog tikje), 'plop' iets valt in het water, 'lamp' knopje, 'hop' de kikker springt weg.
+// x: -1 links tot 1 rechts. Per soort nooit sneller dan om de 60 ms; enkel als het tabblad zichtbaar is.
+const TERRA_GAIN = 0.4;
+const terraLast = {};
+export function playTerra(kind, { x = 0 } = {}) {
+  if (document.hidden) return;
+  const now = performance.now();
+  if (now - (terraLast[kind] || 0) < 60) return;
+  terraLast[kind] = now;
+  cue((a, o, t) => {
+    const out = panned(a, o, Math.max(-0.6, Math.min(0.6, x * 0.6)));
+    switch (kind) {
+      case 'mist': {
+        const src = noise(a, 0.45), bp = a.createBiquadFilter(), e = a.createGain();
+        bp.type = 'bandpass'; bp.frequency.value = 6200; bp.Q.value = 0.8;
+        soft(e, t, 0.1, 0.012, 0.28);
+        src.connect(bp).connect(e).connect(out); src.start(t); src.stop(t + 0.45);
+        break;
+      }
+      case 'snip': blip(a, out, t, 2400, { g: 0.5, dur: 0.025, lp: 5000 }); blip(a, out, t + 0.03, 1800, { g: 0.35, dur: 0.02, lp: 4000 }); break;
+      case 'plop': blip(a, out, t, 620, { type: 'sine', g: 0.7, dur: 0.12, glide: 0.5, lp: 1800 }); break;
+      case 'lamp': blip(a, out, t, 1200, { g: 0.4, dur: 0.02, lp: 3000 }); blip(a, out, t + 0.05, 900, { g: 0.3, dur: 0.02, lp: 2600 }); break;
+      case 'hop': blip(a, out, t, 380, { type: 'sine', g: 0.5, dur: 0.07, glide: 1.6, lp: 2000 }); break;
+    }
+  }, false, TERRA_GAIN);
+}
+
 // hoeveel ms het beeld moet wachten zodat geluid en beeld samen uit het toestel komen (luidspreker of Bluetooth)
 export function audioLead() {
   if (!soundOn() || !ctx) return 60;

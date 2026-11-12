@@ -33,7 +33,7 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'life', 'breakout', 'snake', 'panel', 'ink'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'life', 'breakout', 'snake', 'terra', 'panel', 'ink'];
 const PANELS = ['panel', 'ink'];   // paneel in twee soorten (Victor, 10/11/2026): Fosfor (CRT) en Inkt (vlak, stijl van Orbit)
 
 import { DESKTOP_MQ } from '../core/config.js';
@@ -42,6 +42,7 @@ import { createLife } from './life.js';
 import { createPlasma } from './plasma.js';
 import { createBreakout } from './breakout.js';
 import { createSnake } from './snake.js';
+import { createTerra } from './terra.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -638,7 +639,8 @@ const hasGL2 = () => {
 };
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
-const ZOOMED = ['breakout', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
+const ZOOMED = ['breakout', 'terra', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
+const NO_COLOR = ['terra'];   // eigen kleuren, geen kleurkiezer
 
 // scores: opslag per spel (src/data/scores.js, createScoreStore), zodat highscores mee synchroniseren
 // fits(w, h): past een bakje van die maat op het scherm (niet over de scène, ruimte voor de zandloper erboven); van app.js
@@ -698,6 +700,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'snake') {
         // slang in stippen (Victor, 08/11/2026, F1): raster van de matrixklok, kleur uit de kleurkiezer
         modes[modeName] = createSnake({ reducedMotion, accent: () => ACCENT, scores: scores?.game('snake'), run: scores?.game('snakeRun'), size: { w: W, h: HH } });
+      } else if (modeName === 'terra') {
+        // paludarium (Victor, 12/11/2026): geschilderd natuurvenster, vaste compositie die meezoomt; bewaart wanneer je nevelde
+        modes[modeName] = createTerra({ reducedMotion, store: scores?.game('terra'), zoom: W / BASE_W });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }
@@ -731,6 +736,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   const GROUPS = [
     { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma'] },
     { key: 'groupPlay', modes: ['life', 'breakout', 'snake'] },
+    { key: 'groupNature', modes: ['terra'] },
     { key: 'groupPanel', modes: PANELS }
   ];
 
@@ -903,6 +909,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
 
     bar.replaceChildren(menuWrap, rightBar);
     nextBtn.hidden = !hasPresets(modeName);
+    // natuurvensters hebben hun eigen kleuren: geen kleurkiezer
+    pick.hidden = NO_COLOR.includes(modeName); reset.hidden = !ACCENT || NO_COLOR.includes(modeName);
   }
   bar.addEventListener('pointerdown', e => e.stopPropagation()); // de knopjes tellen niet als tik in het bakje
   renderBar();
