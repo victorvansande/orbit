@@ -23,24 +23,27 @@
 <body>
 <main>
   <h1>Natuurvenster: licht en uur</h1>
-  <p>De echte scènes uit de app, met het uur, het seizoen en het weer in de hand (seizoen en weer gelden voor de tuin). Kies een gereedschap en tik of sleep in het beeld.</p>
+  <p>De echte scènes uit de app, met het uur, het seizoen en het weer in de hand (seizoen, weer en maan gelden voor de tuin; een gekozen maan zet de datum op november 2026). Kies een gereedschap en tik of sleep in het beeld.</p>
   <div class="row" id="r-scene"><span>Scène</span></div>
   <div class="row" id="r-hour"><span>Uur</span></div>
   <div class="row" id="r-season"><span>Seizoen</span></div>
   <div class="row" id="r-sky"><span>Weer</span></div>
+  <div class="row" id="r-moon"><span>Maan</span></div>
   <div id="stage"></div>
   <div class="row" id="r-tool"><span>Doen</span></div>
 </main>
 <script type="module">
 const q = new URLSearchParams(location.search);
-const S = { scene: q.get('scene') || 'palu', hour: q.get('h') || 'nu', season: q.get('s') || 'nu', sky: q.get('sky') || 'nu', zoom: parseFloat(q.get('zoom')) || 2, tool: q.get('tool') || '' };
+const S = { scene: q.get('scene') || 'palu', hour: q.get('h') || 'nu', season: q.get('s') || 'nu', sky: q.get('sky') || 'nu', moon: q.get('m') || 'nu', zoom: parseFloat(q.get('zoom')) || 2, tool: q.get('tool') || '' };
 const HOURS = [['nu', 'Nu'], ['9', 'Ochtend'], ['13', 'Middag'], ['dusk', 'Schemer'], ['eve', 'Avond'], ['1', 'Nacht']];
 const SEASONS = [['nu', 'Nu'], ['3', 'Lente'], ['6', 'Zomer'], ['9', 'Herfst'], ['0', 'Winter']];
 const SKIES = [['nu', 'Nu'], ['clear', 'Helder'], ['cloudy', 'Bewolkt'], ['rain', 'Regen'], ['snow', 'Sneeuw'], ['fog', 'Mist']];
+const MOONS = [['nu', 'Nu'], ['2026-11-13', 'Sikkel'], ['2026-11-17', 'Half'], ['2026-11-24', 'Vol']];
 const TOOLS = { mist: 'Nevelen', cut: 'Snoeien', sponge: 'Spons', feed: 'Voeren', lamp: 'Lamp', wind: 'Wind', rake: 'Harken', lantern: 'Lantaarns' };
 function clock() {
   const d = new Date();
   if (S.season !== 'nu') d.setMonth(+S.season, 15);
+  if (S.moon !== 'nu') { const [y, m, dd] = S.moon.split('-').map(Number); d.setFullYear(y, m - 1, dd); }   // een vaste datum in november 2026
   if (S.hour === 'nu') return d;
   const doy = (d - new Date(d.getFullYear(), 0, 0)) / 864e5, c = Math.cos(2 * Math.PI * (doy - 172) / 365), set = 19.35 + 2.65 * c;
   const h = S.hour === 'dusk' ? set - 0.1 : S.hour === 'eve' ? Math.min(22.2, set + 1.6) : +S.hour;
@@ -71,7 +74,7 @@ function tools() {
   for (const tl of scene?.tools || []) { const b = document.createElement('button'); b.textContent = TOOLS[tl.id] || tl.id; b.setAttribute('aria-pressed', String(tl.toggle ? Boolean(scene.lit) : scene.tool === tl.id)); b.onclick = () => scene.pick(tl.id); el.append(b); }
 }
 row('r-scene', [['palu', 'Paludarium'], ['garden', 'Japanse tuin']], 'scene', mount);
-row('r-hour', HOURS, 'hour', mount); row('r-season', SEASONS, 'season', mount); row('r-sky', SKIES, 'sky', mount);
+row('r-hour', HOURS, 'hour', mount); row('r-season', SEASONS, 'season', mount); row('r-sky', SKIES, 'sky', mount); row('r-moon', MOONS, 'moon', mount);
 sync(); mount();
 const local = e => { const r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 325.6, y: (e.clientY - r.top) / r.height * 226.8 }; };
 let press = null;

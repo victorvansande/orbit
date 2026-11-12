@@ -19,6 +19,15 @@ export function daylight(d = new Date()) {
   return { light, warm, sun: clamp((h - rise) / (set - rise), 0, 1), moon: clamp(night, 0, 1), h, rise, set };
 }
 
+// de maan volgens de echte schijngestalte (Victor, 12/11/2026): phase 0 = nieuwe maan, 0,5 = volle maan; lit = verlicht
+// deel van de schijf; up = waar ze aan de hemel staat (0 = komt op, 1 = gaat onder, -1 = onder de horizon). Opkomst
+// benaderd: de maan staat het hoogst om 12 uur plus een etmaal maal de fase (nieuwe maan 's middags, volle om middernacht).
+export function moon(d = new Date()) {
+  const syn = 29.530588853, phase = ((((d - Date.UTC(2000, 0, 6, 18, 14)) / 864e5) % syn) + syn) % syn / syn;
+  const h = d.getHours() + d.getMinutes() / 60, since = (((h - (6 + 24 * phase)) % 24) + 24) % 24;
+  return { phase, lit: (1 - Math.cos(phase * TAU)) / 2, up: since < 12 ? since / 12 : -1 };
+}
+
 // lichtkaart over een vlak van w x h eenheden
 export function createLight(w, h, res = 0.5) {
   const cv = document.createElement('canvas'); cv.width = Math.ceil(w * res); cv.height = Math.ceil(h * res);

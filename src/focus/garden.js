@@ -18,15 +18,24 @@
 // Geluid enkel bij acties. Geen blur, geen lichtstralen. Minder beweging: één beeld.
 
 import { createBrush, layer, mix, rng, smooth, clamp, tone } from './brush.js';
-import { createLight, daylight } from './light.js';
+import { createLight, daylight, moon } from './light.js';
 import { createFall } from './falls.js';
 import { drawKoi, drawBird } from './fauna.js';
 import { playTerra } from '../scene/sound.js';
 import { currentSky } from './weather.js';
 
 const W = 325.6, H = 226.8, TAU = Math.PI * 2, PAD = 10, X0 = -PAD - 2, X1 = W + PAD + 2;
-const POND = [[104, 169], [128, 158.5], [168, 154.5], [214, 153.5], [258, 156], [292, 163], [304, 174], [286, 186], [240, 193], [186, 194], [136, 190], [108, 181]];
-const inPond = (x, y, m = 1) => ((x - 204) / (98 * m)) ** 2 + ((y - 173.5) / (19.5 * m)) ** 2 < 1;
+// vijver: grillige oever met een inham bovenaan en een landtong van mos onderaan (Victor: "wat te perfect rond")
+const POND = [[100, 171], [108, 162], [126, 157], [150, 156.5], [166, 159.5], [182, 155.5], [208, 152.5], [240, 153.5], [266, 157], [290, 158], [306, 166], [309, 175], [298, 183.5], [278, 186], [258, 191.5], [236, 193], [218, 187.5], [204, 184.5], [190, 188.5], [172, 194.5], [146, 193], [122, 188], [104, 180.5]];
+const PC = [204, 173.5];
+// ligt (x, y) in de vijver; m < 1 = een eind van de oever weg
+function inPond(x, y, m = 1) {
+  const px = PC[0] + (x - PC[0]) / m, py = PC[1] + (y - PC[1]) / m; let inside = false;
+  for (let i = 0, j = POND.length - 1; i < POND.length; j = i++) { const [xi, yi] = POND[i], [xj, yj] = POND[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside; }
+  return inside;
+}
+// perspectief in het grind: verder weg is alles fijner
+const persp = y => 0.72 + (y - 198) / 30 * 0.62;
 const GRAVEL = [[170, 208, 1], [212, 201.5], [268, 199.5], [X1, 197.5, 1], [X1, H + 4, 1], [160, H + 4, 1]];
 const gravelY = x => (x < 212 ? 208 - (x - 170) / 42 * 6.5 : 201.5 - (x - 212) / 130 * 4);
 const LX = 116, ROOF = [116, 128.4], SHOJI = [[209, 99, 51, 21], [266, 99, 51, 21]];
@@ -47,41 +56,70 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
   let t = 0, lastNow = 0, px = 0, py = 0, hover = { x: W / 2, y: H / 2, at: -99 }, ptr = null;
   let tool = 'feed', wind = 0, maple = { a: 0, v: 0 }, userLamp = null, lampLv = 0, day = daylight(now()), rustleAt = -9;
   let koi = [], food = [], ripples = [], falls = [], rain = [], flakes = [], flies = [], bird = null, nextBird = 40, butterfly = null, nextFly = 20, dragon = null, flash = 0;
-  let strokes = [];                                                                               // voren die je zelf trok: [x0, y0, x1, y1]
+  let strokes = [], lune = moon(now());                                                           // voren die je zelf trok: elk een lijn van punten [x, y]
   const spout = createFall({ x0: 183.2, x1: 184.4, y0: 137.4, x2: 183.8, x3: 185, y1: 141.4, time: 0.2, seed: 11, strands: 3, veils: 1, foam: false });
 
   /* ---- stand ---- */
   const autoLamp = () => day.light < 0.4;
   const lampOn = () => userLamp ?? autoLamp();
-  function save() { const n = Date.now(); seenAt = n; store?.save?.({ run: { lamp: userLamp, rake: strokes.flat().map(v => Math.round(v)) }, at: n }); }
+  function save() { const n = Date.now(); seenAt = n; store?.save?.({ run: { lamp: userLamp, rake: strokes.map(s => s.flat().map(v => Math.round(v * 2))) }, at: n }); }
   function restore() {
     const v = store?.load?.(), r = v?.run;
     if (!r || !(v.at > seenAt)) return;
     seenAt = v.at;
     userLamp = typeof r.lamp === 'boolean' ? r.lamp : null;
-    if (Array.isArray(r.rake)) { strokes = []; for (let i = 0; i + 3 < r.rake.length && strokes.length < 160; i += 4) strokes.push(r.rake.slice(i, i + 4).map(Number)); if (built) rakeAll(); }
+    if (Array.isArray(r.rake)) {
+      // lijnen van punten in halve eenheden; een eerdere versie bewaarde losse stukken [x0, y0, x1, y1] in hele eenheden
+      if (typeof r.rake[0] === 'number') { strokes = []; for (let i = 0; i + 3 < r.rake.length; i += 4) { const [a, b2, c2, d] = r.rake.slice(i, i + 4).map(Number), last = strokes[strokes.length - 1], e = last?.[last.length - 1]; if (e && e[0] === a && e[1] === b2) last.push([c2, d]); else strokes.push([[a, b2], [c2, d]]); } }
+      else strokes = r.rake.filter(Array.isArray).map(f => { const pts = []; for (let i = 0; i + 1 < f.length; i += 2) pts.push([f[i] / 2, f[i + 1] / 2]); return pts; }).filter(pts => pts.length > 1);
+      trim(); if (built) rakeAll();
+    }
   }
 
-  /* ---- schilderen: één keer per seizoen en maat ---- */
-  function groove(c, x0, y0, x1, y1) {
-    const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l * 0.5;
-    c.lineCap = 'round';
-    c.strokeStyle = built.gravelCol; c.lineWidth = 12; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
-    for (let k = -2; k <= 2; k++) for (const [oy, col, lw] of [[0, built.snow ? 'rgba(120,140,160,.5)' : 'rgba(96,88,74,.5)', 0.7], [0.55, 'rgba(255,255,255,.5)', 0.45]]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(x0 + nx * k * 2.3, y0 + ny * k * 2.3 + oy); c.lineTo(x1 + nx * k * 2.3, y1 + ny * k * 2.3 + oy); c.stroke(); }
+  /* ---- harken ---- */
+  // Victor (12/11/2026): "het harken is leuk maar mag ook wat verfijnd worden". Een haal is een vloeiende lijn van punten;
+  // de vijf tanden lopen ernaast mee, dichter bij elkaar naarmate het grind verder weg ligt, elk als een donkere voor
+  // met een lichte rug. De hark wist wat er lag (het patroon van de tuinman of een eerdere haal), niet het grind zelf.
+  const INK = () => (built.snow ? 'rgba(112,132,154,.5)' : 'rgba(92,84,70,.5)');
+  const trim = () => { let n = strokes.reduce((a, st) => a + st.length, 0); while (n > 400 && strokes.length > 1) n -= strokes.shift().length; };
+  // de banen van de tanden naast punt i van een haal
+  function tines(pts, i) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], dx = b[0] - a[0], dy = (b[1] - a[1]) / 0.5, l = Math.hypot(dx, dy) || 1, k = persp(pts[i][1]) * 2.1;
+    return [-2, -1, 0, 1, 2].map(j => [pts[i][0] - dy / l * j * k, pts[i][1] + dx / l * j * k * 0.5]);
   }
-  // het grind zoals de tuinman het achterliet, daarover je eigen voren; de steen blijft vrij
+  // teken een haal van punt `from` af: eerst wissen wat er lag, dan de voren
+  function groove(c, pts, from = 0) {
+    if (pts.length < 2) return;
+    const T = pts.map((_, i) => tines(pts, i)), i0 = Math.max(0, from - 1);
+    c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+    c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000'; c.beginPath();
+    for (let i = i0; i < pts.length; i++) { const p = T[i][0], q = T[i][1]; c.lineTo(p[0] * 1.5 - q[0] * 0.5, p[1] * 1.5 - q[1] * 0.5); }
+    for (let i = pts.length - 1; i >= i0; i--) { const p = T[i][4], q = T[i][3]; c.lineTo(p[0] * 1.5 - q[0] * 0.5, p[1] * 1.5 - q[1] * 0.5); }
+    c.closePath(); c.fill();
+    c.globalCompositeOperation = 'source-over';
+    for (const [oy, col, lw] of [[0, INK(), 0.75], [0.6, 'rgba(255,255,255,.55)', 0.5]]) {
+      c.strokeStyle = col;
+      for (let j = 0; j < 5; j++) for (let i = Math.max(1, i0 + 1); i < pts.length; i++) { const k = persp(pts[i][1]); c.lineWidth = lw * k; c.beginPath(); c.moveTo(T[i - 1][j][0], T[i - 1][j][1] + oy * k); c.lineTo(T[i][j][0], T[i][j][1] + oy * k); c.stroke(); }
+    }
+    c.restore();
+  }
+  // het grind zoals de tuinman het achterliet (rechte voren, kringen rond de steen), daarover je eigen halen
   function rakeAll() {
     const c = built.rake.c;
     c.clearRect(X0, 190, X1 - X0, H);
-    c.strokeStyle = built.snow ? 'rgba(120,140,160,.4)' : 'rgba(96,88,74,.4)'; c.lineWidth = 0.6;
-    for (let y = 203; y < H + 6; y += 2.5) { c.beginPath(); for (let x = 158; x <= X1; x += 6) { const yy = y - (x - 158) * 0.035 + Math.sin(x * 0.03 + y * 0.1) * 0.7; x === 158 ? c.moveTo(x, yy) : c.lineTo(x, yy); } c.stroke(); }
-    for (const s of strokes) groove(c, ...s);
+    const rut = (path, y) => { const k = persp(y); for (const [oy, col, lw] of [[0, INK(), 0.7], [0.55, 'rgba(255,255,255,.5)', 0.45]]) { c.strokeStyle = col; c.lineWidth = lw * k; c.beginPath(); path(oy * k); c.stroke(); } };
+    for (let y = 201.5, i = 0; y < H + 6; y += 1.9 + i * 0.13, i++) rut(o => { c.moveTo(156, y + o + 1.6); c.lineTo(X1, y + o - 3.6); }, y);
+    c.save(); c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.ellipse(272, 213.5, 34, 13, 0, 0, TAU); c.fill(); c.restore();
+    for (let k = 0; k < 5; k++) rut(o => c.ellipse(272, 213.5 + o, 20.5 + k * 3.1, 8 + k * 1.2, 0, 0, TAU), 213);
+    for (const st of strokes) groove(c, st);
     clearRock();
   }
   function clearRock() { const c = built.rake.c; c.save(); c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.ellipse(272, 213.5, 19, 7.5, 0, 0, TAU); c.fill(); c.restore(); }
+
+  /* ---- schilderen: één keer per seizoen en maat ---- */
   function build() {
     const snow = sz === 3, full = () => layer(W + PAD * 2, H, scale, PAD, 0);
-    const far = full(), midL = full(), near = full(), rake = full(), frame = full();
+    const far = full(), midL = full(), near = full(), shore = full(), rake = full(), frame = full();
     const mossCol = snow ? '#e3e9ed' : ['#6a9a42', '#4f8a38', '#5f8a3c'][sz], hedge = snow ? '#4a6a52' : ['#4f8a44', '#3a7438', '#55803e'][sz], lit = snow ? '#ffffff' : '#c8d24a';
     const mapleCols = [['#a8d468', '#c6e486', '#8cc458'], ['#3f8a3a', '#57a044', '#2f7434'], ['#c8322a', '#e8662c', '#e0902e', '#a82424'], null][sz];
     const haze = '#dfe6e2', white = '#eef2f5';
@@ -95,7 +133,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     for (let i = 0; i < 20; i++) {
       // bomen achter de schutting: kruinen in lagen, hoe verder hoe neveliger
       const x = X0 + i * 18 + b.q() * 14, h = 26 + b.q() * 26, wd = 7 + b.q() * 5, col = mix(snow ? '#5a7468' : sz === 2 && b.q() < 0.3 ? '#8a7a3a' : '#2f5a44', haze, 0.3 + b.q() * 0.22), tall = b.q() < 0.6;
-      for (let k = 0; k < (tall ? 4 : 2); k++) { const u = k / (tall ? 4 : 2); b.moss(x + (b.q() - 0.5) * 3, 130 - h * (tall ? u : u * 0.5) - 4, wd * (1 - u * (tall ? 0.6 : 0.2)), h * (tall ? 0.2 : 0.3), col, { fringe: false, depth: 0.55, lit: snow ? '#ffffff' : '#c8d6b0' }); }
+      for (let k = 0, n = tall ? 7 : 3; k < n; k++) { const u = k / n; b.moss(x + (b.q() - 0.5) * 2.4, 130 - h * (tall ? u * 0.9 : u * 0.5) - 4, wd * (1 - u * (tall ? 0.66 : 0.25)), h * (tall ? 0.15 : 0.26), col, { fringe: false, depth: 0.32, lit: snow ? '#ffffff' : '#c8d6b0' }); }
     }
     if (sz === 0) for (const [x, y, rx, ry] of [[56, 104, 22, 12], [78, 110, 14, 8], [150, 108, 16, 9]]) b.moss(x, y, rx, ry, '#eeb6c8', { fringe: false, lit: '#fff0f4' });
     if (sz === 2) for (const [x, y, rx, ry] of [[92, 100, 16, 13], [100, 110, 12, 8]]) b.moss(x, y, rx, ry, '#e2b23a', { fringe: false, lit: '#ffe9a0' });
@@ -135,7 +173,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     }
     // den: schuine stam, takken met kussens van naalden
     b.branch([[172, 132], [168, 112], [160, 96], [164, 78], [158, 62]], '#5e4636', 6, 2.6);
-    for (const pts of [[[166, 104], [146, 98], [132, 100]], [[162, 88], [184, 80], [196, 82]], [[162, 72], [142, 66]]]) b.branch(pts, '#5e4636', 2.4, 1.1);
+    for (const pts of [[[166, 104], [146, 98], [132, 100]], [[162, 88], [184, 80], [196, 82]], [[162, 72], [142, 66]], [[163, 77], [171, 70.5], [178, 68.4]], [[161, 93], [155, 87.6], [149, 85.4]]]) b.branch(pts, '#5e4636', 2.4, 1.1);   // elk kussen aan een eigen tak
     for (const [x, y, rx, ry] of [[132, 97.5, 14, 5], [196, 80, 13, 4.6], [140, 64, 13, 5], [160, 55.5, 15, 5.6], [177, 66, 10, 4], [150, 83, 9, 3.6]]) { b.moss(x, y, rx, ry, snow ? '#3a6250' : '#2f6240', { dense: 1.3, lit: '#9ac07a' }); if (snow) cap(b, x, y - ry * 0.5, rx * 0.85, ry * 0.55); }
 
     // dichtbij: mos met glooiing, vijver, oeverstenen, lantaarn, bekken met goot, stapstenen, grind
@@ -145,11 +183,16 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     for (let i = 0, n = 0; i < 500 && n < 38; i++) { const x = X0 + b.q() * (X1 - X0), y = 136 + b.q() * 88; if (inPond(x, y, 1.18) || (x > 160 && y > gravelY(x) - 5)) continue; n++; const k = 0.45 + (y - 136) / 88 * 1.1; b.moss(x, y, (9 + b.q() * 12) * k, (2.4 + b.q() * 2.4) * k, mix(mossCol, snow ? '#c8d2da' : '#3f6a2c', 0.05 + b.q() * 0.15), { fringe: false, lit, l0: 0.12, dense: 0.9, depth: 0.4 }); }
     b.area(GRAVEL, snow ? '#eaeef1' : '#d6d0c0', { shade: 0.3, dab: 1.6, size: 0.5, warm: 0.04 });
     for (let x = 174; x < X1; x += 5 + b.q() * 5) b.moss(x, gravelY(x) + 0.4, 5 + b.q() * 4, 1.5 + b.q(), mix(mossCol, '#3f6a2c', snow ? 0 : 0.2), { fringe: !snow, lit });
+    for (let y = 208; y < H + 4; y += 3 + b.q() * 2.5) b.moss(170 - (y - 208) * 0.5 + (b.q() - 0.5) * 2, y, 5 + b.q() * 3, 1.8 + b.q(), mix(mossCol, '#3f6a2c', snow ? 0 : 0.2), { fringe: !snow, lit });   // ook de linkerrand van het grind loopt uit in mos
     nc.fillStyle = '#2f5458'; nc.beginPath(); smooth(nc, POND); nc.fill();
     nc.save(); nc.clip(); for (let i = 0; i < 120; i++) { const x = 100 + b.q() * 210, y = 152 + b.q() * 44; b.dab(x, y, b.q() < 0.5 ? '#26464a' : '#3f666a', 0.4, 3 + b.q() * 6, 0.8 + b.q() * 1.4, 0); } nc.restore();
     nc.strokeStyle = 'rgba(30,24,18,.5)'; nc.lineWidth = 1.2; nc.beginPath(); smooth(nc, POND); nc.stroke();
-    for (const [x, y, rx, ry] of [[101, 172, 9, 6], [140, 156.5, 7, 4.2], [214, 151.6, 6, 3.4], [270, 155, 7, 4], [301, 169, 9, 6], [264, 192.5, 11, 5], [150, 193, 9, 4.4], [206, 196, 7, 3.4]]) stone(b, x, y, rx, ry, ['#8d8a82', '#7e7b74', '#99958b'][Math.floor(b.q() * 3)]);
-    for (const [x, y] of [[126, 163], [240, 155], [288, 181], [170, 195], [112, 187]]) b.tuft(x, y, 6, 6 + b.q() * 4, 0.9, snow ? '#9aa890' : '#5c9440', { spread: 1.6, vein: false });
+    // oever in een eigen laag bóven het water (anders lag de waterfilm over de stenen: "half transparant")
+    b = createBrush(shore.c, 85);
+    for (let i = 0; i < POND.length; i++) { const [x0, y0] = POND[i], [x1, y1] = POND[(i + 1) % POND.length]; for (let k = 0; k < 2; k++) { if (b.q() < 0.35) continue; const u = b.q(), r = 1.6 + b.q() * 2.6; stone(b, x0 + (x1 - x0) * u + (b.q() - 0.5) * 2, y0 + (y1 - y0) * u + (b.q() - 0.5) * 1.6, r, r * 0.56, ['#8d8a82', '#7e7b74', '#99958b', '#6f6c66'][Math.floor(b.q() * 4)]); } }
+    for (const [x, y, rx, ry] of [[98, 173, 9, 6], [127, 155.6, 7, 4.2], [167, 158.4, 5.4, 3.2], [208, 150.8, 6, 3.4], [268, 155.4, 7, 4], [307, 169.5, 9, 6], [262, 192.6, 10.5, 4.8], [147, 194.4, 9, 4.4], [204, 186.6, 7.4, 3.8]]) stone(b, x, y, rx, ry, ['#8d8a82', '#7e7b74', '#99958b'][Math.floor(b.q() * 3)]);
+    b.moss(206, 189.6, 13, 3, mix(mossCol, '#3f6a2c', snow ? 0 : 0.15), { lit, fringe: !snow, depth: 0.6 });
+    for (const [x, y] of [[118, 160.6], [240, 154.6], [292, 182.5], [180, 193.5], [110, 186.5], [224, 190.5], [176, 157.4]]) b.tuft(x, y, 6, 6 + b.q() * 4, 0.9, snow ? '#9aa890' : '#5c9440', { spread: 1.6, vein: false });
     // irissen aan de rechteroever
     b.tuft(297, 163.5, 10, 17, 1.4, snow ? '#7f8f78' : '#4f8f4c', { kind: 'strap', spread: 1.25, vein: false, l: 0.05 });
     if (sz < 2) for (const [x, y] of [[293, 148.5], [299, 146.5], [304, 150]]) { for (const [dx, dy, a] of [[-1.6, 0.9, 0.5], [1.6, 0.9, -0.5], [0, -1.2, Math.PI / 2]]) b.dab(x + dx, y + dy, '#7a5cc8', 0.95, 1.9, 0.9, a); b.dab(x, y + 0.3, '#f0d24a', 1, 0.45, 0.45, 0); }
@@ -160,10 +203,11 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     b.rock([[LX - 1, 158, 1], [LX - 1.2, 149, 1], [LX + 1.2, 149, 1], [LX + 1, 158, 1]], tone(ST, -0.3), { cracks: 0 });
     b.rock([[LX - 9.4, 149.2, 1], [LX + 9.4, 149.2, 1], [LX + 8.6, 146.6, 1], [LX - 8.6, 146.6, 1]], ST, { cracks: 0 });
     b.rock([[LX - 6.2, 146.8, 1], [LX + 6.2, 146.8, 1], [LX + 6.2, 138.6, 1], [LX - 6.2, 138.6, 1]], ST, { cracks: 0 });
-    nc.fillStyle = '#2c2a28'; nc.fillRect(LX - 3.6, 140.2, 7.2, 5.2); nc.fillStyle = ST; nc.fillRect(LX - 0.35, 140.2, 0.7, 5.2);
+    shore.c.fillStyle = '#2c2a28'; shore.c.fillRect(LX - 3.6, 140.2, 7.2, 5.2); shore.c.fillStyle = ST; shore.c.fillRect(LX - 0.35, 140.2, 0.7, 5.2);
     b.rock([[LX - 18, 139.6, 1], [LX - 11, 134.6], [LX, 131.4], [LX + 11, 134.6], [LX + 18, 139.6, 1], [LX, 138.2]], tone(ST, -0.12), { cracks: 0 });
     b.rock([[LX - 2.4, 132], [LX, 128.4], [LX + 2.4, 132]], ST, { cracks: 0 });
     if (snow) { cap(b, LX, 133.4, 15, 3); cap(b, LX, 128.9, 2.2, 1); }
+    b = createBrush(near.c, 78);
     // waterbekken met bamboegoot
     stone(b, 186, 145, 9, 4.6, '#7a7770');
     nc.fillStyle = '#24383a'; nc.beginPath(); nc.ellipse(186, 142, 5, 1.5, 0, 0, TAU); nc.fill();
@@ -193,7 +237,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
       for (const [x, y, z] of leaves) mapleLeaf(tree.c, x, y, 3.3 + tb.q() * 1.9, Math.PI / 2 + (tb.q() - 0.5) * 1.5, tone(mapleCols[Math.floor(tb.q() * mapleCols.length)], (z - 0.62) * 1.1 + (tb.nz(x * 0.05, y * 0.05, 2) - 0.5) * 0.5));
     } else for (const S of limbs) { tree.c.strokeStyle = white; tree.c.lineWidth = 1.3; tree.c.lineCap = 'round'; tree.c.beginPath(); S.forEach(([x, y], i) => (i ? tree.c.lineTo(x, y - 1.6) : tree.c.moveTo(x, y - 1.6))); tree.c.stroke(); }
     const clouds = [0, 1, 2].map(i => { const l = layer(110, 36, scale, 0, 0), q = rng(100 + i); for (let k = 0; k < 46; k++) { const u = q(), x = 12 + u * 86, y = 20 - Math.sin(u * Math.PI) * 9 * q() + q() * 6, r = 5 + q() * 9 * Math.sin(u * Math.PI); const gr = l.c.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,.2)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); l.c.fillStyle = gr; l.c.fillRect(x - r, y - r, r * 2, r * 2); } return l; });
-    built = { far, midL, near, rake, frame, tree, clouds, mapleCols, snow, gravelCol: snow ? '#eaeef1' : '#d6d0c0', cloudX: built?.cloudX || [10, 130, 240] };
+    built = { far, midL, near, shore, rake, frame, tree, clouds, mapleCols, snow, gravelCol: snow ? '#eaeef1' : '#d6d0c0', cloudX: built?.cloudX || [10, 130, 240] };
     rakeAll();
   }
 
@@ -227,7 +271,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
 
   function step(dt) {
     t += dt;
-    if (t - skyAt > 20) { skyAt = t; sky = skyOf ? skyOf() : currentSky(); day = daylight(now()); if (userLamp !== null && userLamp === autoLamp()) userLamp = null; const s = season(now()); if (s !== sz) { sz = s; build(); } }
+    if (t - skyAt > 20) { skyAt = t; sky = skyOf ? skyOf() : currentSky(); day = daylight(now()); lune = moon(now()); if (userLamp !== null && userLamp === autoLamp()) userLamp = null; const s = season(now()); if (s !== sz) { sz = s; build(); } }
     const live = t - hover.at < 2.5;
     const tx = live ? clamp(hover.x / W - 0.5, -0.5, 0.5) * 2 : 0.35 * Math.sin(t * 0.05), ty = live ? clamp(hover.y / H - 0.5, -0.5, 0.5) * 2 : 0.2 * Math.sin(t * 0.037);
     const kk = 1 - Math.exp(-dt * 2.2); px += (tx - px) * kk; py += (ty - py) * kk;
@@ -290,9 +334,12 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     for (const f of flies) { f.a += (Math.random() - 0.5) * dt * 3; f.on = Math.max(0, Math.sin((t + f.ph) / f.per * TAU)) ** 3; f.x += Math.cos(f.a) * dt * 6; f.y += Math.sin(f.a) * dt * 4 - f.on * dt * 4; if (f.x < 30 || f.x > W - 10 || f.y < 110 || f.y > 196) f.a += Math.PI * dt * 2; f.y = clamp(f.y, 100, 200); }
   }
 
+  const moonAt = () => [40 + lune.up * (W - 80) - px * 1.5, 96 - Math.sin(lune.up * Math.PI) * 72];
+
   /* ---- licht ---- */
   function lighting(L, warm, cl, ox, oy) {
-    const amb = lerp3([0.24, 0.3, 0.46], [0.86 - cl * 0.2, 0.88 - cl * 0.18, 0.86 - cl * 0.14], L);
+    const mf = lune.up >= 0 ? lune.lit * Math.sin(lune.up * Math.PI) * (1 - cl * 0.6) : 0;                // maanlicht: meer bij volle maan, hoog aan de hemel
+    const amb = lerp3(lerp3([0.2, 0.26, 0.41], [0.29, 0.35, 0.5], mf), [0.86 - cl * 0.2, 0.88 - cl * 0.18, 0.86 - cl * 0.14], L);
     light.begin([Math.min(1, amb[0] + warm * 0.12), amb[1] + warm * 0.02, Math.max(0, amb[2] - warm * 0.08)]);
     if (L > 0.05 && cl < 0.8 && built.mapleCols) light.dapple(0, 132, W, H, t * 0.6 + maple.a * 300 + px * 6, Math.sin(t * 0.17) * 4, 0.3 * L * (1 - cl), 170, 80);     // bladschaduw van de esdoorn
     const N = (1 - L) * lampLv;
@@ -310,7 +357,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
 
   /* ---- tekenen ---- */
   function draw() {
-    const { far, midL, near, rake, frame, tree, clouds } = built, L = day.light, warm = day.warm, cl = cloudy();
+    const { far, midL, near, shore, rake, frame, tree, clouds } = built, L = day.light, warm = day.warm, cl = cloudy();
     g.setTransform(scale, 0, 0, scale, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     g.clearRect(0, 0, W, H);
     // kleuren van de lucht volgens uur en weer (de lucht zelf komt er straks achter)
@@ -328,12 +375,12 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     g.save(); g.beginPath(); smooth(g, POND); g.clip();
     for (const k of koi) drawKoi(g, k, 0.38, sz === 3 ? 0.55 : 0.92);
     { const gr = g.createLinearGradient(0, 152, 0, 196); gr.addColorStop(0, mix(bot, '#ffffff', 0.1) + 'd8'); gr.addColorStop(0.5, mix(top, '#3f6a72', 0.3) + 'a0'); gr.addColorStop(1, mix(top, '#2a4a50', 0.5) + '66'); g.fillStyle = gr; g.fillRect(96, 150, 216, 48); }
-    g.fillStyle = 'rgba(20,34,30,.3)'; g.beginPath(); g.ellipse(250, 155.5, 44, 4.6, 0, 0, TAU); g.ellipse(150, 156, 26, 3.4, 0, 0, TAU); g.fill();        // het theehuis en de den in het water
     g.lineWidth = 0.5; g.strokeStyle = 'rgba(255,255,255,.34)'; for (let i = 0; i < 12; i++) { const x = 112 + ((i * 41 + t * (2 + i % 3)) % 184), y = 158 + (i * 7 % 32), wl = 5 + (i % 4) * 4; if (!inPond(x, y, 0.9)) continue; g.beginPath(); g.moveTo(x, y); g.lineTo(x + wl, y); g.stroke(); }
-    if (sz !== 3) for (const [x, y, r, a] of [[236, 180, 5, 0.4], [246, 184.5, 4, 2.1], [226, 185, 3.4, 4], [160, 166, 4.4, 1.2], [152, 170, 3.2, 5]]) { const bx = x + Math.sin(t * 0.4 + x) * 0.5; g.fillStyle = sz === 2 ? '#6f8a44' : '#4f8f48'; g.beginPath(); g.ellipse(bx, y, r, r * 0.4, 0, a, a + TAU - 0.5); g.lineTo(bx, y); g.closePath(); g.fill(); g.fillStyle = 'rgba(200,230,150,.3)'; g.beginPath(); g.ellipse(bx - r * 0.2, y - r * 0.08, r * 0.5, r * 0.16, 0, 0, TAU); g.fill(); }
+    if (sz !== 3) for (const [x, y, r, a] of [[244, 178, 5, 0.4], [254, 183, 4, 2.1], [236, 184.5, 3.4, 4], [152, 168, 4.4, 1.2], [143, 173, 3.2, 5]]) { const bx = x + Math.sin(t * 0.4 + x) * 0.5; g.fillStyle = sz === 2 ? '#6f8a44' : '#4f8f48'; g.beginPath(); g.ellipse(bx, y, r, r * 0.4, 0, a, a + TAU - 0.5); g.lineTo(bx, y); g.closePath(); g.fill(); g.fillStyle = 'rgba(200,230,150,.3)'; g.beginPath(); g.ellipse(bx - r * 0.2, y - r * 0.08, r * 0.5, r * 0.16, 0, 0, TAU); g.fill(); }
     for (const f of food) if (t >= f.at) { g.fillStyle = '#b8793a'; g.beginPath(); g.ellipse(f.x, f.y, 0.75, 0.42, 0, 0, TAU); g.fill(); }
     for (const r of ripples) { if (r.tiny) continue; const u = (t - r.at) / (r.rain ? 0.9 : 2.2), R = (r.rain ? 5 : r.big ? 20 : 11) * u + 1; g.strokeStyle = `rgba(255,255,255,${(r.rain ? 0.4 : 0.55) * (1 - u)})`; g.beginPath(); g.ellipse(r.x, r.y, R, R * 0.32, 0, 0, TAU); g.stroke(); }
     g.restore();
+    g.drawImage(shore.cv, -PAD, 0, W + PAD * 2, H);
     // bekken: straaltje uit de bamboegoot, kringen
     spout.draw(g, t);
     for (const r of ripples) { if (!r.tiny) continue; const u = (t - r.at) / 2.2; g.strokeStyle = `rgba(255,255,255,${0.5 * (1 - u)})`; g.lineWidth = 0.35; g.beginPath(); g.ellipse(r.x, r.y, 0.8 + u * 3.6, 0.3 + u * 1, 0, 0, TAU); g.stroke(); }
@@ -343,6 +390,13 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
     if (bird) drawBird(g, { ...bird, fly: bird.fly || bird.sit === 0 ? 1 : null }, t);
     if (butterfly) { const f = Math.abs(Math.sin(butterfly.ph * 13)); g.fillStyle = butterfly.col; for (const s of [-1, 1]) { g.beginPath(); g.ellipse(butterfly.x + s * 1.5 * f, butterfly.y - 0.4, 1.7 * f + 0.3, 2.1, s * 0.35, 0, TAU); g.fill(); g.beginPath(); g.ellipse(butterfly.x + s * 1.1 * f, butterfly.y + 1.5, 1.1 * f + 0.2, 1.3, s * 0.5, 0, TAU); g.fill(); } g.fillStyle = '#3a3428'; g.fillRect(butterfly.x - 0.25, butterfly.y - 1.4, 0.5, 3.2); }
     if (dragon) { g.save(); g.translate(dragon.x, dragon.y); g.rotate(dragon.a); g.strokeStyle = '#2c7f9a'; g.lineWidth = 0.8; g.lineCap = 'round'; g.beginPath(); g.moveTo(-6, 0); g.lineTo(1.6, 0); g.stroke(); g.fillStyle = '#2a5a4a'; g.beginPath(); g.arc(2.4, 0, 0.9, 0, TAU); g.fill(); g.fillStyle = `rgba(232,242,246,${0.42 + 0.2 * Math.sin(t * 46)})`; for (const [dx, a] of [[0.6, -1.25], [0.6, 1.25], [-0.6, -1.5], [-0.6, 1.5]]) { g.save(); g.translate(dx, 0); g.rotate(a); g.beginPath(); g.ellipse(2.6, 0, 2.9, 0.7, 0, 0, TAU); g.fill(); g.restore(); } g.restore(); }
+    // de hark zolang je harkt: kop dwars op de haal, steel naar je toe
+    if (ptr?.stroke && ptr.stroke.length > 1) {
+      const st = ptr.stroke, T = tines(st, st.length - 1), [hx, hy] = st[st.length - 1], k = persp(hy);
+      g.lineCap = 'round'; g.strokeStyle = '#6a4e32'; g.lineWidth = 1.5 * k; g.beginPath(); g.moveTo(T[0][0], T[0][1] - 1.6 * k); g.lineTo(T[4][0], T[4][1] - 1.6 * k); g.stroke();
+      g.lineWidth = 0.6 * k; g.beginPath(); for (const [x, y] of T) { g.moveTo(x, y - 1.6 * k); g.lineTo(x, y); } g.stroke();
+      g.strokeStyle = '#8a6a44'; g.lineWidth = 1.2 * k; g.beginPath(); g.moveTo(hx, hy - 1.6 * k); g.lineTo(hx + 20 * k, hy + 12 * k); g.stroke();
+    }
     g.restore();
     // esdoorn en omlijsting op de voorgrond
     g.save(); g.translate(-14 - px * 8, -14 - py * 2.5); g.rotate(maple.a + 0.006 * Math.sin(t * 0.8)); g.drawImage(tree.cv, 0, 0, 196, 104); g.restore();
@@ -364,12 +418,26 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
       for (let j = 0; j < 16; j++) { const x = 216 + (j * 37 % 80), y = 156.5 + (j * 3.1 % 9), wl = 2 + (j % 3) * 1.6; g.strokeStyle = `rgba(255,196,120,${0.34 * N * (0.5 + 0.5 * Math.sin(t * 1.1 + j * 2.3))})`; g.lineWidth = 0.6; g.beginPath(); g.moveTo(x - wl, y); g.lineTo(x + wl, y); g.stroke(); }
       g.restore();
     }
+    if (lune.up >= 0 && L < 0.6 && cl < 0.7) {
+      const [sx] = moonAt(), a = (1 - L / 0.6) * (1 - cl) * (0.2 + 0.8 * lune.lit);
+      g.save(); g.translate(ox, oy); g.beginPath(); smooth(g, POND); g.clip(); g.lineCap = 'round'; g.lineWidth = 0.6;
+      for (let j = 0; j < 9; j++) { const y = 157 + j * 2.6, x = clamp(sx - ox, 112, 296) + Math.sin(t * 1.1 + j * 1.3) * (1 + j * 0.35), wl = 1.6 + j * 0.45; g.strokeStyle = `rgba(236,240,232,${0.5 * a * (1 - j / 10)})`; g.beginPath(); g.moveTo(x - wl, y); g.lineTo(x + wl, y); g.stroke(); }
+      g.restore();
+    }
     if (fa > 0.01) for (const f of flies) { if (f.on < 0.02) continue; const a = fa * f.on, x = f.x + ox, y = f.y + oy, gr = g.createRadialGradient(x, y, 0, x, y, 6); gr.addColorStop(0, `rgba(240,255,150,${0.95 * a})`); gr.addColorStop(0.2, `rgba(215,245,110,${0.4 * a})`); gr.addColorStop(1, 'rgba(200,240,110,0)'); g.fillStyle = gr; g.fillRect(x - 6, y - 6, 12, 12); }
     // de lucht erachter: wolken, zon of maan, sterren, verloop
     g.globalCompositeOperation = 'destination-over';
     built.cloudX.forEach((x, i) => { const y = 10 + i * 12, wa = clamp(cl * 1.4 + 0.3, 0, 1) * (0.35 + 0.65 * L); g.globalAlpha = wa; g.drawImage(clouds[i].cv, x - px * 2, y, 110, 36); g.globalAlpha = 1; });
-    { const moon = L < 0.5, u = moon ? day.moon : day.sun, sx = 40 + u * (W - 80) - px * 1.5, sy = 92 - Math.sin(u * Math.PI) * 70, a = (1 - cl * 0.9) * (moon ? 1 - L : L);
-      if (a > 0.02) { g.fillStyle = moon ? `rgba(244,242,226,${0.95 * a})` : `rgba(255,250,232,${0.95 * a})`; g.beginPath(); g.arc(sx, sy, moon ? 5.5 : 7, 0, TAU); g.fill(); const gr = g.createRadialGradient(sx, sy, 0, sx, sy, 44); gr.addColorStop(0, `rgba(255,248,225,${0.5 * a})`); gr.addColorStop(1, 'rgba(255,248,225,0)'); g.fillStyle = gr; g.fillRect(sx - 44, sy - 44, 88, 88); } }
+    if (L > 0.02) { const sx = 40 + day.sun * (W - 80) - px * 1.5, sy = 92 - Math.sin(day.sun * Math.PI) * 70, a = (1 - cl * 0.9) * L; g.fillStyle = `rgba(255,250,232,${0.95 * a})`; g.beginPath(); g.arc(sx, sy, 7, 0, TAU); g.fill(); const gr = g.createRadialGradient(sx, sy, 0, sx, sy, 44); gr.addColorStop(0, `rgba(255,248,225,${0.5 * a})`); gr.addColorStop(1, 'rgba(255,248,225,0)'); g.fillStyle = gr; g.fillRect(sx - 44, sy - 44, 88, 88); }
+    // de maan in haar echte schijngestalte: verlichte kant naar de zon (wassend rechts), de rest in aardlicht
+    if (lune.up >= 0) {
+      const [sx, sy] = moonAt(), a = (1 - cl * 0.9) * (0.3 + 0.7 * (1 - L)), R = 5.6, wax = lune.phase < 0.5, k = Math.cos((wax ? lune.phase : 1 - lune.phase) * TAU);
+      g.save(); g.translate(sx, sy); g.rotate(-0.38); if (!wax) g.scale(-1, 1);
+      g.fillStyle = `rgba(246,243,226,${0.96 * a})`; g.beginPath(); g.arc(0, 0, R, -Math.PI / 2, Math.PI / 2); g.ellipse(0, 0, Math.abs(k) * R, R, 0, Math.PI / 2, -Math.PI / 2, k > 0); g.closePath(); g.fill();
+      g.fillStyle = mix(top, '#93a0b4', 0.16 * (1 - L)); g.beginPath(); g.arc(0, 0, R - 0.1, 0, TAU); g.fill();
+      g.restore();
+      const gr = g.createRadialGradient(sx, sy, 0, sx, sy, 40); gr.addColorStop(0, `rgba(238,240,232,${0.42 * a * (0.25 + 0.75 * lune.lit)})`); gr.addColorStop(1, 'rgba(238,240,232,0)'); g.fillStyle = gr; g.fillRect(sx - 40, sy - 40, 80, 80);
+    }
     if (L < 0.6 && cl < 0.7) { const q = rng(5); for (let i = 0; i < 46; i++) { const x = q() * W, y = q() * 100, s = 0.5 + q() * 0.6; g.fillStyle = `rgba(255,255,240,${(0.6 - L) * 1.4 * (1 - cl) * (0.5 + 0.5 * Math.sin(t * (0.6 + q()) + i))})`; g.fillRect(x, y, s, s); } }
     { const sg = g.createLinearGradient(0, 0, 0, 140); sg.addColorStop(0, top); sg.addColorStop(1, bot); g.fillStyle = sg; g.fillRect(0, 0, W, H); }
     g.globalCompositeOperation = 'source-over';
@@ -400,7 +468,7 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
       cv.style.width = `${W * zoom}px`; cv.style.height = `${H * zoom}px`;
       el.append(cv);
       g = cv.getContext('2d');
-      sz = season(now()); sky = skyOf ? skyOf() : currentSky(); day = daylight(now()); skyAt = t;
+      sz = season(now()); sky = skyOf ? skyOf() : currentSky(); day = daylight(now()); lune = moon(now()); skyAt = t;
       build(); light = createLight(W, H);
       lastNow = 0;
       if (!started) { started = true; lampLv = lampOn() ? 1 : 0; for (let i = 0; i < 90; i++) step(1 / 30); }
@@ -415,21 +483,26 @@ export function createGarden({ reducedMotion, store, zoom = 1, now = () => new D
       draw();
     },
     move(p) { hover = { x: p.x, y: p.y, at: t }; },
-    down(p) { ptr = { x: p.x, y: p.y, tool, inTree: p.y < 84 && p.x < 190, raked: false }; },
+    down(p) { ptr = { x: p.x, y: p.y, sx: p.x, sy: p.y, tool, inTree: p.y < 84 && p.x < 190, stroke: null, raked: false }; },
     drag(p) {
       if (!ptr) return;
-      const dx = p.x - ptr.x, x0 = ptr.x, y0 = ptr.y;
+      const dx = p.x - ptr.x;
       if (ptr.tool === 'rake') {
-        // harken: voren langs de sleep, enkel in het grind; korte stukjes worden samengenomen
-        if (Math.hypot(p.x - x0, p.y - y0) < 2.5) return;
-        ptr.x = p.x; ptr.y = p.y;
-        if (p.x > 164 && p.y > gravelY(p.x) && y0 > gravelY(x0)) { const s = [x0, y0, p.x, p.y]; strokes.push(s); if (strokes.length > 160) { strokes.shift(); rakeAll(); } else { groove(built.rake.c, ...s); clearRock(); } ptr.raked = true; if (t - rustleAt > 0.45) { rustleAt = t; playTerra('rustle', { x: p.x / W * 2 - 1 }); } }
+        // harken: de hark volgt met wat traagheid (vloeiende bochten); een haal loopt zolang je in het grind blijft
+        ptr.sx += (p.x - ptr.sx) * 0.45; ptr.sy += (p.y - ptr.sy) * 0.45; ptr.x = p.x; ptr.y = p.y;
+        const inG = ptr.sx > 166 && ptr.sx < W + 4 && ptr.sy > gravelY(ptr.sx) + 2.5 && ptr.sy < H + 2;
+        if (!inG) { ptr.stroke = null; return; }
+        if (!ptr.stroke) { ptr.stroke = [[ptr.sx, ptr.sy]]; strokes.push(ptr.stroke); return; }
+        const last = ptr.stroke[ptr.stroke.length - 1];
+        if (Math.hypot(ptr.sx - last[0], (ptr.sy - last[1]) * 2) < 2.6) return;
+        ptr.stroke.push([ptr.sx, ptr.sy]); groove(built.rake.c, ptr.stroke, ptr.stroke.length - 1); clearRock(); ptr.raked = true;
+        if (t - rustleAt > 0.45) { rustleAt = t; playTerra('rustle', { x: p.x / W * 2 - 1 }); }
         return;
       }
       ptr.x = p.x; ptr.y = p.y;
       if (ptr.tool === 'wind') { wind = clamp(wind + dx * 0.01, -1.2, 1.6); maple.v += dx * 0.0008; if (ptr.inTree && Math.abs(dx) > 3 && t - rustleAt > 0.5) shake(); }
     },
-    up() { if (ptr?.raked) save(); ptr = null; },
+    up() { if (ptr?.raked) { strokes = strokes.filter(st => st.length > 1); trim(); rakeAll(); save(); } ptr = null; },   // na de haal alles netjes opnieuw, dan bewaren
     tap(p) {
       if (bird && !bird.fly && bird.sit && Math.hypot(p.x - bird.x, p.y - bird.y + 3) < 14) { bird.fly = { at: t }; playTerra('hop', { x: -0.3 }); return; }
       if (tool === 'feed' && inPond(p.x, p.y, 1.08)) feed(clamp(p.x, 118, 290), clamp(p.y, 160, 187));
