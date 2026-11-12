@@ -427,9 +427,9 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     for (const s of glints) { const u = (t - s.at) / s.life; if (u < 0) continue; const a = Math.sin(Math.min(1, u * 5) * Math.PI / 2) * (1 - u) * (0.5 + 0.5 * Math.sin(t * 5 + s.x)); g.fillStyle = `rgba(255,250,235,${0.7 * a})`; g.beginPath(); g.arc(s.x, s.y, 0.55, 0, TAU); g.fill(); }
     g.globalCompositeOperation = 'source-over';
     // nevel van de vernevelaar
-    for (const h of haze) { const u = (t - h.at) / h.life, x = h.x + h.vx * (t - h.at), y = h.y + u * 5, r = h.r * (1 + u * 0.8), a = 0.07 * Math.sin(Math.min(1, u * 4) * Math.PI / 2) * (1 - u), gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(232,240,236,${a})`); gr.addColorStop(1, 'rgba(232,240,236,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
-    g.fillStyle = 'rgba(244,250,248,.6)'; for (const s of spray) { g.globalAlpha = Math.min(1, s.life * 2.5); g.beginPath(); g.arc(s.x, s.y, s.r, 0, TAU); g.fill(); } g.globalAlpha = 1;
-    dew.draw(g);
+    for (const h of haze) { const u = (t - h.at) / h.life, x = h.x + h.vx * (t - h.at), y = h.y + u * 5, r = h.r * (1 + u * 0.8), a = (0.02 + 0.04 * (L * (0.45 + 0.55 * D))) * Math.sin(Math.min(1, u * 4) * Math.PI / 2) * (1 - u), gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(232,240,236,${a})`); gr.addColorStop(1, 'rgba(232,240,236,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+    g.fillStyle = `rgba(244,250,248,${0.25 + 0.35 * L})`; for (const s of spray) { g.globalAlpha = Math.min(1, s.life * 2.5); g.beginPath(); g.arc(s.x, s.y, s.r, 0, TAU); g.fill(); } g.globalAlpha = 1;
+    dew.draw(g, L * (0.45 + 0.55 * D) + (1 - L) * 0.12);
     // de spons zolang je veegt
     if (ptr && ptr.tool === 'sponge' && ptr.wipe) { g.save(); g.translate(ptr.x, ptr.y); g.rotate(-0.12); g.fillStyle = '#e9c95c'; g.beginPath(); g.roundRect(-9, -6, 18, 12, 3); g.fill(); g.fillStyle = 'rgba(150,110,30,.35)'; for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(-6.5 + (i * 4.7 % 13), -3.5 + (i * 3.1 % 7), 0.55 + (i % 3) * 0.25, 0, TAU); g.fill(); } g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(-8, -5.4, 16, 1.4); g.restore(); }
   }

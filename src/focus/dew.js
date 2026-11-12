@@ -4,6 +4,9 @@
 // (bovenaan half, lager minder) in plaats van dicht te slibben; wat je nevelt, trekt in een paar minuten weg. Aangroei
 // in stappen van 2 s: per beeld is ze kleiner dan één kleurtrap en ging ze verloren. Druppels groeien, smelten samen
 // (rooster van 8 px) en lopen af met een helder spoor. Vegen (spons) wist een baan en duwt het water als één druppel naar de rand van het spoor.
+// De aanslag is matglas, geen wit vlak (Victor, 12/11/2026: "de witte waas is misschien iets te wit"): waar het glas
+// beslagen is, zie je het beeld erachter wazig (een kleine kopie, opgeschaald) en een tikje lichter, dus in het licht
+// van het moment; een druppel is een helder lensje in die waas.
 // Nevelen legt er een waas en fijne druppels bij. `m` (0 tot 1) is hoe vochtig het bakje is: droog glas beslaat amper.
 // Het glas beslaat aan de binnenkant, dus enkel boven de waterlijn (`floor`): een druppel die het water bereikt, gaat
 // erin op (`onDrip`). De stand blijft behouden (Victor, 12/11/2026: "resizen reset de mist"): een nieuwe maat neemt de
@@ -28,6 +31,8 @@ export function createDew(W, H, scale, { floor = H, onDrip = () => {}, prev = nu
   if (prev) fog.c.drawImage(prev.canvas, 0, 0, W, H);
   const small = document.createElement('canvas'); small.width = GW; small.height = GH;
   const sc = small.getContext('2d', { willReadFrequently: true });
+  const blur = document.createElement('canvas'); blur.width = Math.ceil(W / 7); blur.height = Math.ceil(H / 7);
+  const bc = blur.getContext('2d'), frost = layer(W, H, scale);
   function spawn(x, y, r) { drops.push({ x, y, r, gr: 0.012 + Math.random() * 0.03, slide: false, vy: 0, k: Math.random() * 9, dead: false }); }
   function merge() {
     const cell = 8, cols = Math.ceil(W / cell) + 1, grid = new Map();
@@ -103,13 +108,18 @@ export function createDew(W, H, scale, { floor = H, onDrip = () => {}, prev = nu
       if (Array.isArray(v.drops)) for (let i = 0; i + 2 < v.drops.length; i += 3) if (v.drops[i + 1] < floor) spawn(v.drops[i], v.drops[i + 1], clamp(v.drops[i + 2] / 10, 0.3, 3));
       return true;
     },
-    draw(g) {
-      g.globalAlpha = 0.42; g.drawImage(fog.cv, 0, 0, W, H); g.globalAlpha = 1;
+    // lum = hoe licht het in het bakje is (0 tot 1): bepaalt hoeveel de waas oplicht
+    draw(g, lum = 1) {
+      bc.globalCompositeOperation = 'copy'; bc.imageSmoothingQuality = 'high'; bc.drawImage(g.canvas, 0, 0, blur.width, blur.height);
+      const fr = frost.c; fr.imageSmoothingQuality = 'high';
+      fr.globalCompositeOperation = 'copy'; fr.drawImage(blur, 0, 0, W, H);
+      fr.globalCompositeOperation = 'source-atop'; fr.fillStyle = `rgba(222,232,228,${0.07 + 0.15 * lum})`; fr.fillRect(0, 0, W, H);
+      fr.globalCompositeOperation = 'destination-in'; fr.drawImage(fog.cv, 0, 0, W, H);
+      g.globalAlpha = 0.9; g.drawImage(frost.cv, 0, 0, W, H); g.globalAlpha = 1;
       const fc = fog.c; fc.globalCompositeOperation = 'destination-out'; fc.fillStyle = '#000'; fc.beginPath(); for (const d of drops) { fc.moveTo(d.x + d.r, d.y); fc.arc(d.x, d.y, d.r * 1.05, 0, TAU); } fc.fill(); fc.globalCompositeOperation = 'source-over';
-      g.fillStyle = 'rgba(255,255,255,.1)'; g.beginPath(); for (const d of drops) { if (d.r < 1.3) continue; g.moveTo(d.x + d.r, d.y); g.arc(d.x, d.y, d.r, 0, TAU); } g.fill();
       g.lineWidth = 0.6; g.strokeStyle = 'rgba(20,30,30,.16)'; g.beginPath(); for (const d of drops) { if (d.r < 1.3) continue; g.moveTo(d.x + Math.cos(0.15 * Math.PI) * d.r, d.y + Math.sin(0.15 * Math.PI) * d.r); g.arc(d.x, d.y, d.r, 0.15 * Math.PI, 0.95 * Math.PI); } g.stroke();
-      g.fillStyle = 'rgba(255,255,255,.26)'; g.beginPath(); for (const d of drops) { if (d.r >= 1.3) continue; g.moveTo(d.x + d.r * 0.7, d.y); g.arc(d.x, d.y, d.r * 0.7, 0, TAU); } g.fill();
-      g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); for (const d of drops) { if (d.r < 1.2) continue; const hr = d.r * 0.28; g.moveTo(d.x - d.r * 0.35 + hr, d.y - d.r * 0.38); g.arc(d.x - d.r * 0.35, d.y - d.r * 0.38, hr, 0, TAU); } g.fill();
+      g.fillStyle = `rgba(255,255,255,${0.1 + 0.14 * lum})`; g.beginPath(); for (const d of drops) { if (d.r >= 1.3) continue; g.moveTo(d.x + d.r * 0.7, d.y); g.arc(d.x, d.y, d.r * 0.7, 0, TAU); } g.fill();
+      g.fillStyle = `rgba(255,255,255,${0.35 + 0.5 * lum})`; g.beginPath(); for (const d of drops) { if (d.r < 1.2) continue; const hr = d.r * 0.28; g.moveTo(d.x - d.r * 0.35 + hr, d.y - d.r * 0.38); g.arc(d.x - d.r * 0.35, d.y - d.r * 0.38, hr, 0, TAU); } g.fill();
     },
   };
 }

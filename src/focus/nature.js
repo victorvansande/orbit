@@ -11,13 +11,13 @@ import { tx } from '../core/i18n.js';
 const SCENE_KEY = 'priority-orbit.nature.v1';
 const SCENES = ['palu', 'garden'];
 
-export function createNature({ reducedMotion, store, zoom = 1, onScene = () => {}, onTools = () => {} }) {
+export function createNature({ reducedMotion, store, gardenStore, zoom = 1, onScene = () => {}, onTools = () => {} }) {
   const made = {};
   let i = 0, host = null;
   try { const v = SCENES.indexOf(localStorage.getItem(SCENE_KEY)); if (v >= 0) i = v; } catch { /* geen opslag */ }
   const scene = () => {
     const k = SCENES[i];
-    if (!made[k]) { made[k] = k === 'palu' ? createTerra({ reducedMotion, store, zoom, onTool: onTools }) : createGarden({ reducedMotion, zoom, onTool: onTools }); made[k].init(); }
+    if (!made[k]) { made[k] = k === 'palu' ? createTerra({ reducedMotion, store, zoom, onTool: onTools }) : createGarden({ reducedMotion, store: gardenStore, zoom, onTool: onTools }); made[k].init(); }
     return made[k];
   };
   const announce = () => { onScene(i, SCENES.length, tx(`nature.${SCENES[i]}`)); onTools(); };
@@ -30,7 +30,7 @@ export function createNature({ reducedMotion, store, zoom = 1, onScene = () => {
     get lit() { return scene().lit; },
     pick(id) { scene().pick(id); },
     init() { scene(); announce(); },
-    reload() { made.palu?.reload?.(); },
+    reload() { made.palu?.reload?.(); made.garden?.reload?.(); },
     // nieuwe maat van het bakje: de scènes blijven bestaan en houden hun stand
     rezoom(z) { zoom = z; for (const k of SCENES) { if (made[k]?.rezoom) made[k].rezoom(z); else delete made[k]; } },
     mount(el) { host = el; scene().mount(el); announce(); },

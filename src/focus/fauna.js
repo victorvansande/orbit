@@ -2,8 +2,9 @@
 // Victor (12/11/2026): "laat diertjes er net iets realistischer uitzien, geen uncanny valley, het mag getekend blijven".
 // Elk dier volgt de bouw van zijn soort: de blauwe pijlgifkikker (Dendrobates tinctorius 'azureus') zit ineengedoken
 // met gevouwen achterpoten en tenen met hechtschijfjes, zijn keel pulseert; de neontetra heeft een olijfgroene rug,
-// zilveren buik, de lichtgevende streep van oog tot vetvin en het rood naar de staart; de slak rekt en trekt samen.
-// Sprites één keer geschilderd, kleine dieren per beeld.
+// zilveren buik, de lichtgevende streep van oog tot vetvin en het rood naar de staart; de slak rekt en trekt samen; de koi is van
+// boven gezien met borstvinnen en vlekken; het vogeltje is een brilvogel (mejiro). Sprites één keer geschilderd,
+// kleine dieren per beeld.
 
 import { layer } from './brush.js';
 
@@ -95,5 +96,54 @@ export function drawSnail(g, x, y, d, u, slope = 0) {
   g.fillStyle = sh; g.beginPath(); g.ellipse(-0.6, -2.5, 3, 2.7, -0.2, 0, TAU); g.fill();
   g.strokeStyle = 'rgba(60,34,18,.7)'; g.lineWidth = 0.4; g.beginPath(); for (let a = 0; a < 9.5; a += 0.3) { const r = 0.25 + a * 0.26, px = -0.5 + Math.cos(a + 2.4) * r, py = -2.5 + Math.sin(a + 2.4) * r * 0.9; a ? g.lineTo(px, py) : g.moveTo(px, py); } g.stroke();
   g.fillStyle = 'rgba(255,240,210,.5)'; g.beginPath(); g.ellipse(-1.6, -3.9, 0.9, 0.4, -0.5, 0, TAU); g.fill();
+  g.restore();
+}
+
+// koi van boven, in een vijver die schuin gezien wordt: ruggengraat sp (kop eerst), kleurpatroon, vy = verkorting
+export function drawKoi(g, k, vy = 0.5, alpha = 0.9) {
+  const sp = k.sp, n = sp.length, Lp = [], Rp = [], N = [];
+  for (let i = 0; i < n; i++) {
+    const s = i / (n - 1), [x, y] = sp[i], [ax, ay] = sp[Math.max(0, i - 1)], [bx, by] = sp[Math.min(n - 1, i + 1)], dx = ax - bx, dy = (ay - by) / vy, l = Math.hypot(dx, dy) || 1;
+    const wd = k.size * (s < 0.22 ? 0.55 + 0.45 * Math.sin(s / 0.22 * Math.PI / 2) : 1 - ((s - 0.22) / 0.78) ** 1.25 * 0.86), nx = -dy / l, ny = dx / l * vy;
+    Lp.push([x + nx * wd, y + ny * wd]); Rp.push([x - nx * wd, y - ny * wd]); N.push([nx, ny, wd]);
+  }
+  g.globalAlpha = alpha;
+  // borstvinnen en staart, doorschijnend
+  g.fillStyle = k.fin;
+  for (const sgn of [1, -1]) { const [x, y] = sp[2], [nx, ny, wd] = N[2], fl = 0.5 + 0.3 * Math.sin(k.ph * 0.8 + sgn), ex = x + nx * sgn * wd * (1.6 + fl) + (sp[4][0] - sp[2][0]) * 0.55, ey = y + ny * sgn * wd * (1.6 + fl) + (sp[4][1] - sp[2][1]) * 0.55; g.beginPath(); g.moveTo(x + nx * sgn * wd * 0.8, y + ny * sgn * wd * 0.8); g.quadraticCurveTo(x + nx * sgn * wd * 2.2, y + ny * sgn * wd * 2.2, ex, ey); g.quadraticCurveTo((x + ex) / 2, (y + ey) / 2, x + nx * sgn * wd * 0.8, y + ny * sgn * wd * 0.8); g.fill(); }
+  { const [tx, ty] = sp[n - 1], [ux, uy] = sp[n - 2], ta = Math.atan2((ty - uy) / vy, tx - ux) + Math.sin(k.ph) * 0.35, L = k.size * 2.3; g.beginPath(); g.moveTo(tx, ty); g.quadraticCurveTo(tx + Math.cos(ta + 0.25) * L * 0.6, ty + Math.sin(ta + 0.25) * L * 0.6 * vy, tx + Math.cos(ta + 0.62) * L, ty + Math.sin(ta + 0.62) * L * vy); g.quadraticCurveTo(tx + Math.cos(ta) * L * 0.55, ty + Math.sin(ta) * L * 0.55 * vy, tx + Math.cos(ta - 0.62) * L, ty + Math.sin(ta - 0.62) * L * vy); g.quadraticCurveTo(tx + Math.cos(ta - 0.25) * L * 0.6, ty + Math.sin(ta - 0.25) * L * 0.6 * vy, tx, ty); g.fill(); }
+  // lijf met vlekken
+  const path = () => { g.beginPath(); g.moveTo(...Lp[0]); for (let i = 1; i < n; i++) g.lineTo(...Lp[i]); for (let i = n - 1; i >= 0; i--) g.lineTo(...Rp[i]); g.closePath(); };
+  path(); g.fillStyle = k.col; g.fill();
+  g.save(); path(); g.clip();
+  for (const [s, off, r, col] of k.marks) { const i = Math.min(n - 1, Math.round(s * (n - 1))), [x, y] = sp[i], [nx, ny, wd] = N[i]; g.fillStyle = col; g.beginPath(); g.ellipse(x + nx * off * wd, y + ny * off * wd, r * k.size * 1.5, r * k.size * 1.5 * vy + 0.3, 0, 0, TAU); g.fill(); }
+  // rug iets donkerder, een lichte lijn langs de ruggengraat
+  g.strokeStyle = 'rgba(20,24,30,.16)'; g.lineWidth = k.size * 0.9; g.lineCap = 'round'; g.beginPath(); sp.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+  g.restore();
+  g.fillStyle = 'rgba(14,16,20,.8)'; for (const sgn of [1, -1]) { const [x, y] = sp[0], [nx, ny, wd] = N[1]; g.beginPath(); g.arc(x + nx * sgn * wd * 0.62 + (sp[1][0] - x) * 0.4, y + ny * sgn * wd * 0.62 + (sp[1][1] - y) * 0.4, 0.34, 0, TAU); g.fill(); }
+  g.globalAlpha = 1;
+}
+
+// brilvogel (mejiro): olijfgroen, gele keel, witte oogring; b = { x, y, face, hop, look, fly (0 tot 1 vleugelslag) }
+export function drawBird(g, b, t) {
+  g.save(); g.translate(b.x, b.y - (b.hop || 0)); g.scale(b.face || 1, 1);
+  const fly = b.fly != null;
+  if (fly) g.rotate(-0.25);
+  // staart, lijf, kop
+  g.fillStyle = '#4a5a2c'; g.beginPath(); g.moveTo(-3, -2.6); g.lineTo(-7.6, -1.2); g.lineTo(-7.2, -0.2); g.lineTo(-2.6, -1.4); g.closePath(); g.fill();
+  const body = g.createLinearGradient(0, -6, 0, 0); body.addColorStop(0, '#7f9a3a'); body.addColorStop(0.55, '#8a9a54'); body.addColorStop(1, '#d8d4c2');
+  g.fillStyle = body; g.beginPath(); g.ellipse(-0.4, -2.9, 3.6, 2.6, -0.25, 0, TAU); g.fill();
+  g.fillStyle = '#d9cf5a'; g.beginPath(); g.ellipse(2.3, -3.6, 1.5, 1.2, 0.3, 0, TAU); g.fill();
+  const hx = 2.6 + (b.look || 0) * 0.4, hy = -5.2;
+  g.fillStyle = '#86a03c'; g.beginPath(); g.arc(hx, hy, 2.05, 0, TAU); g.fill();
+  g.fillStyle = '#d9cf5a'; g.beginPath(); g.ellipse(hx + 0.7, hy + 1.1, 1.3, 0.8, 0.4, 0, TAU); g.fill();
+  g.fillStyle = '#2a2a26'; g.beginPath(); g.moveTo(hx + 1.7, hy - 0.4); g.lineTo(hx + 3.7 + (b.look || 0) * 0.3, hy + 0.1); g.lineTo(hx + 1.7, hy + 0.5); g.closePath(); g.fill();
+  g.fillStyle = '#f6f6f0'; g.beginPath(); g.arc(hx + 0.75, hy - 0.35, 0.82, 0, TAU); g.fill();
+  g.fillStyle = '#101010'; g.beginPath(); g.arc(hx + 0.8, hy - 0.35, 0.46, 0, TAU); g.fill();
+  // vleugel: dicht tegen het lijf, of slaand
+  g.fillStyle = '#5a6a30';
+  if (fly) { const f = Math.sin(t * 34), up = f * 5; g.beginPath(); g.moveTo(1.4, -3.6); g.quadraticCurveTo(-1, -5 - up, -5, -4 - up * 1.4); g.quadraticCurveTo(-2.4, -3, -1.6, -2.2); g.closePath(); g.fill(); }
+  else { g.beginPath(); g.moveTo(1.2, -3.8); g.quadraticCurveTo(-1.6, -4.6, -4.4, -2); g.quadraticCurveTo(-1.6, -1.4, 0.8, -2.2); g.closePath(); g.fill(); g.strokeStyle = 'rgba(40,50,20,.5)'; g.lineWidth = 0.3; g.beginPath(); g.moveTo(-0.2, -3); g.lineTo(-3.6, -2.2); g.stroke(); }
+  if (!fly) { g.strokeStyle = '#3a3428'; g.lineWidth = 0.4; g.beginPath(); g.moveTo(0.2, -0.6); g.lineTo(0.4, 0.4); g.moveTo(-1, -0.6); g.lineTo(-1, 0.4); g.stroke(); }
   g.restore();
 }

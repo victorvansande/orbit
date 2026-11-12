@@ -18,6 +18,8 @@ export const GAMES = {
   // paludarium: de hele stand ({ run: { mist, lamp, yellow, nextY, frog, snail, fog, drops, fogAt }, at }), zodat het op elk
   // toestel en na elke sluiting hetzelfde is; een oudere versie bewaarde enkel { mist }
   terra: { key: 'priority-orbit.terra.v1' },
+  // Japanse tuin: de lantaarns en de voren die je in het grind harkte ({ run: { lamp, rake }, at })
+  garden: { key: 'priority-orbit.garden.v1' },
 };
 const EXTRA_KEY = 'priority-orbit.games.v1';   // spellen die enkel een nieuwere versie kent: bewaren en doorgeven
 const TOP_N = 5;

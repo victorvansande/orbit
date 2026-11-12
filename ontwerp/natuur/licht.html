@@ -23,9 +23,11 @@
 <body>
 <main>
   <h1>Natuurvenster: licht en uur</h1>
-  <p>De echte scènes uit de app, met het uur in de hand. Kies een gereedschap en tik of sleep in het beeld.</p>
+  <p>De echte scènes uit de app, met het uur, het seizoen en het weer in de hand (seizoen en weer gelden voor de tuin). Kies een gereedschap en tik of sleep in het beeld.</p>
   <div class="row" id="r-scene"><span>Scène</span></div>
   <div class="row" id="r-hour"><span>Uur</span></div>
+  <div class="row" id="r-season"><span>Seizoen</span></div>
+  <div class="row" id="r-sky"><span>Weer</span></div>
   <div id="stage"></div>
   <div class="row" id="r-tool"><span>Doen</span></div>
 </main>
@@ -35,7 +37,7 @@ const S = { scene: q.get('scene') || 'palu', hour: q.get('h') || 'nu', season: q
 const HOURS = [['nu', 'Nu'], ['9', 'Ochtend'], ['13', 'Middag'], ['dusk', 'Schemer'], ['eve', 'Avond'], ['1', 'Nacht']];
 const SEASONS = [['nu', 'Nu'], ['3', 'Lente'], ['6', 'Zomer'], ['9', 'Herfst'], ['0', 'Winter']];
 const SKIES = [['nu', 'Nu'], ['clear', 'Helder'], ['cloudy', 'Bewolkt'], ['rain', 'Regen'], ['snow', 'Sneeuw'], ['fog', 'Mist']];
-const TOOLS = { mist: 'Nevelen', cut: 'Snoeien', sponge: 'Spons', feed: 'Voeren', lamp: 'Lamp', wind: 'Wind', rake: 'Harken' };
+const TOOLS = { mist: 'Nevelen', cut: 'Snoeien', sponge: 'Spons', feed: 'Voeren', lamp: 'Lamp', wind: 'Wind', rake: 'Harken', lantern: 'Lantaarns' };
 function clock() {
   const d = new Date();
   if (S.season !== 'nu') d.setMonth(+S.season, 15);
@@ -68,8 +70,8 @@ function tools() {
   const el = document.getElementById('r-tool'); el.querySelectorAll('button').forEach(b => b.remove());
   for (const tl of scene?.tools || []) { const b = document.createElement('button'); b.textContent = TOOLS[tl.id] || tl.id; b.setAttribute('aria-pressed', String(tl.toggle ? Boolean(scene.lit) : scene.tool === tl.id)); b.onclick = () => scene.pick(tl.id); el.append(b); }
 }
-row('r-scene', [['palu', 'Paludarium']], 'scene', mount);   // de Japanse tuin volgt als hij herschilderd is
-row('r-hour', HOURS, 'hour', mount);
+row('r-scene', [['palu', 'Paludarium'], ['garden', 'Japanse tuin']], 'scene', mount);
+row('r-hour', HOURS, 'hour', mount); row('r-season', SEASONS, 'season', mount); row('r-sky', SKIES, 'sky', mount);
 sync(); mount();
 const local = e => { const r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 325.6, y: (e.clientY - r.top) / r.height * 226.8 }; };
 let press = null;

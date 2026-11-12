@@ -704,7 +704,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'terra') {
         // natuurvenster (Victor, 12/11/2026): paludarium en Japanse tuin achter het pijltje, geschilderd, vaste compositie
         // die meezoomt; het paludarium bewaart wanneer je nevelde
-        modes[modeName] = createNature({ reducedMotion, store: scores?.game('terra'), zoom: W / BASE_W, onScene: showScreen, onTools: () => tools.sync(modes[modeName]) });
+        modes[modeName] = createNature({ reducedMotion, store: scores?.game('terra'), gardenStore: scores?.game('garden'), zoom: W / BASE_W, onScene: showScreen, onTools: () => tools.sync(modes[modeName]) });
       } else {
         modes[modeName] = FACTORIES[modeName]();
       }

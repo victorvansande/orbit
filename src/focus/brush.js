@@ -130,16 +130,16 @@ export function createBrush(c, seed) {
       c.strokeStyle = rim; c.lineWidth = 2.2; c.beginPath(); smooth(c, pts); c.stroke();
       c.restore();
     },
-    // moskussen: grillige rand, donker van onderen, stippen die oplichten waar het licht valt
-    moss(cx, cy, rx, ry, col, { dense = 1, fringe = true, l0 = 0 } = {}) {
+    // moskussen (ook struik, kruin, naaldkussen): grillige rand, donker van onderen, stippen die oplichten naar `lit`; `depth` < 1 maakt het vlakker (glooiing in een mosveld)
+    moss(cx, cy, rx, ry, col, { dense = 1, fringe = true, l0 = 0, lit = '#c8d24a', depth = 1 } = {}) {
       const k = q() * 20, pts = [];
       for (let i = 0; i < 14; i++) { const a = i / 14 * TAU, r = 0.82 + nz(Math.cos(a) * 1.4 + k, Math.sin(a) * 1.4 + k, 2) * 0.4; pts.push([cx + Math.cos(a) * rx * r, cy + Math.sin(a) * ry * r]); }
-      c.beginPath(); smooth(c, pts); c.fillStyle = tone(col, -0.42 + l0); c.fill();
+      c.beginPath(); smooth(c, pts); c.fillStyle = tone(col, -0.42 * depth + l0); c.fill();
       const n = rx * ry * 2.6 * dense;
       for (let i = 0; i < n; i++) {
         const a = q() * TAU, d = Math.sqrt(q()) * 0.96, nx = Math.cos(a) * d, ny = Math.sin(a) * d, x = cx + nx * rx, y = cy + ny * ry;
-        const l = l0 - ny * 0.62 - nx * 0.22 + (nz(x * 0.3, y * 0.3) - 0.5) * 0.7 + (q() - 0.5) * 0.25 - 0.05;
-        dab(x, y, mix(tone(col, l * 0.9), '#c8d24a', l > 0.2 ? (l - 0.2) * 0.5 : 0), 0.85, 0.45 + q() * 0.7, 0.35 + q() * 0.45, q() * TAU);
+        const l = l0 + (-ny * 0.62 - nx * 0.22 + (nz(x * 0.3, y * 0.3) - 0.5) * 0.7 + (q() - 0.5) * 0.25 - 0.05) * depth;
+        dab(x, y, mix(tone(col, l * 0.9), lit, l > 0.2 ? (l - 0.2) * 0.5 : 0), 0.85, 0.45 + q() * 0.7, 0.35 + q() * 0.45, q() * TAU);
       }
       if (fringe) { c.lineCap = 'round'; for (let i = 0; i < rx * 1.2; i++) { const u = q() * 2 - 1, x = cx + u * rx * 0.9, y = cy - Math.sqrt(Math.max(0, 1 - u * u)) * ry * 0.92; c.strokeStyle = rgba(tone(col, 0.25 + q() * 0.4 + l0), 0.8); c.lineWidth = 0.3; c.beginPath(); c.moveTo(x, y + 0.6); c.lineTo(x + (q() - 0.5) * 0.9, y - 0.5 - q() * 1.1); c.stroke(); } }
     },
