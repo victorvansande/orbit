@@ -1,0 +1,294 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit natuurvenster stijl</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Stijlproeven natuurvenster (12/11/2026): drie schilderstijlen per scène, stilstaand, over het hele bakje (326 x 227). */
+:root { --bg:#EBE8DF; --well:#E0DDD3; --surface:#F8F6F0; --ink:#1B1B22; --ink2:#5E5E68; --ink3:#9A9AA3; --line:rgba(27,27,34,.12); --shade:rgba(27,27,34,.12);
+  --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --shade:rgba(0,0,0,.5); color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --shade:rgba(0,0,0,.5); color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:400 15px/1.5 var(--sans); }
+.wrap { max-width:1100px; margin:0 auto; padding-block:36px 64px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+.k { font:500 11px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink3); }
+h1 { font:500 28px/1.2 var(--sans); margin:10px 0 0; text-wrap:balance; }
+h2 { font:500 20px/1.2 var(--sans); margin:0; }
+.lede { color:var(--ink2); max-width:66ch; margin:8px 0 0; }
+.top { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; margin-top:20px; }
+.seg { display:inline-flex; border-radius:999px; box-shadow:inset 0 0 0 1px var(--line); padding:2px; }
+.seg button { font:500 10.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); background:none; border:0; border-radius:999px; padding:9px 11px; cursor:pointer; }
+.seg button[aria-pressed="true"] { color:var(--ink); background:var(--surface); box-shadow:0 0 0 1px var(--line); }
+button:focus-visible { outline:1px solid var(--ink3); outline-offset:2px; }
+.spec { margin:24px 0 0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px 24px; max-width:900px; }
+.spec li { font-size:13.5px; color:var(--ink2); }
+.spec b { display:block; font:500 10.5px/1.6 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); font-weight:500; }
+.scene { margin-top:36px; padding-top:28px; border-top:1px solid var(--line); }
+.scene-head { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; justify-content:space-between; }
+.scene > p { color:var(--ink2); margin:8px 0 0; max-width:66ch; font-size:14px; }
+.grid { display:flex; flex-wrap:wrap; gap:24px; margin-top:20px; }
+figure { margin:0; width:326px; max-width:100%; display:flex; flex-direction:column; gap:10px; }
+body.big figure { width:652px; }
+.well { width:100%; aspect-ratio:326/227; border-radius:14px; background:var(--well); position:relative; overflow:hidden; box-shadow:inset 0 1.5px 3px var(--shade); }
+canvas { position:absolute; inset:0; width:100%; height:100%; }
+figcaption { font-size:13.5px; color:var(--ink2); }
+figcaption b { font:500 10.5px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); margin-right:8px; font-weight:500; }
+</style>
+<div class="wrap">
+  <div class="k">Orbit · fidgets · natuur · stijlproeven</div>
+  <h1>Drie manieren om het te schilderen</h1>
+  <p class="lede">Stilstaande proeven over het hele bakje, zonder kader: per scène dezelfde compositie in drie schilderstijlen. Kies er een (of een mengvorm), dan komt er leven, licht en aanraking bij. Alles is in code geschilderd, er zijn geen afbeeldingen.</p>
+  <div class="top">
+    <div class="seg" id="theme"><button data-t="auto" aria-pressed="true">Auto</button><button data-t="light" aria-pressed="false">Licht</button><button data-t="dark" aria-pressed="false">Donker</button></div>
+    <div class="seg" id="size"><button data-s="1" aria-pressed="true">Ware grootte</button><button data-s="2" aria-pressed="false">Dubbel</button></div>
+  </div>
+  <ul class="spec">
+    <li><b>Look</b>Geschilderd, in de geest van Ghibli; recht vooruit; volle natuurkleur, enkel in dit bakje.</li>
+    <li><b>Scènes</b>Paludarium met watervalletje, Japanse tuin in vier seizoenen; wisselen met het pijltje.</li>
+    <li><b>Leven</b>Wind, water, kikker, vlinder en libel, slakje en springstaartjes, verschuivend licht.</li>
+    <li><b>Doen</b>Nevelen, glas vegen, snoeien, lamp aan en uit, aanraken, een beetje parallax.</li>
+    <li><b>Tijd</b>Echte klok, echt weer, seizoenen. Diepte met nevel, geen blur, geen lichtstralen.</li>
+    <li><b>Zorg</b>Niet verzorgen geeft een zacht signaal (droger, hangend), nooit dood. Geluid enkel bij acties.</li>
+  </ul>
+
+  <section class="scene">
+    <div class="scene-head"><h2>Paludarium</h2></div>
+    <p>Een rots met mos en varen links, een watervalletje in een poel, een tak met een bromelia (rood hart), een pijlgifkikker op de oever, onder water grind, vallisneria en neontetra's. De lamp schijnt van boven; in de bovenhoeken slaat het glas wat aan.</p>
+    <div class="grid">
+      <figure><div class="well"><canvas data-scene="palu" data-style="0"></canvas></div><figcaption><b>S1 Penseel</b>Weelderig, duizenden korte toetsen, warm licht. Het dichtst bij een geschilderde filmachtergrond.</figcaption></figure>
+      <figure><div class="well"><canvas data-scene="palu" data-style="1"></canvas></div><figcaption><b>S2 Vlakken</b>Heldere vormen in drie tonen (schaduw, kleur, licht), scherpe randen. Rustig en leesbaar op klein formaat.</figcaption></figure>
+      <figure><div class="well"><canvas data-scene="palu" data-style="2"></canvas></div><figcaption><b>S3 Was</b>Transparante lagen die over elkaar vloeien, donkere randjes waar de verf opdroogt, papierkorrel. Lichter en luchtiger.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="scene">
+    <div class="scene-head"><h2>Japanse tuin</h2><div class="seg" id="season"><button data-v="0">Lente</button><button data-v="1">Zomer</button><button data-v="2">Herfst</button><button data-v="3">Winter</button></div></div>
+    <p>Een esdoorn die van bovenaf in beeld hangt, een stenen lantaarn op mos, een vijver met koi, gesnoeide struiken, een den met wolkvormige kussens, een tuinmuur en verre heuvels in nevel. Het seizoen volgt de datum; hier kun je ze naast elkaar leggen.</p>
+    <div class="grid">
+      <figure><div class="well"><canvas data-scene="tuin" data-style="0"></canvas></div><figcaption><b>S1 Penseel</b></figcaption></figure>
+      <figure><div class="well"><canvas data-scene="tuin" data-style="1"></canvas></div><figcaption><b>S2 Vlakken</b></figcaption></figure>
+      <figure><div class="well"><canvas data-scene="tuin" data-style="2"></canvas></div><figcaption><b>S3 Was</b></figcaption></figure>
+    </div>
+  </section>
+</div>
+<script>
+(() => {
+const W = 326, H = 227, TAU = Math.PI * 2, root = document.documentElement;
+const DPR = Math.min(2, devicePixelRatio || 1), S = 2 * DPR;
+const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+const rgba = (h, a) => `rgba(${rgb(h).join(',')},${a})`;
+const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); t = Math.max(0, Math.min(1, t)); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const rng = seed => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
+const m = new Date().getMonth();
+let season = m >= 2 && m <= 4 ? 0 : m >= 5 && m <= 7 ? 1 : m >= 8 && m <= 10 ? 2 : 3;
+
+/* ---------- schilder: dezelfde vormen, drie handschriften ---------- */
+function painter(c, st, seed) {
+  const q = rng(seed), LIGHT = '#fff2d2', SHADE = '#1c2433';
+  const lit = (col, t) => mix(col, LIGHT, t), drk = (col, t) => mix(col, SHADE, t);
+  const pale = col => st === 2 ? mix(col, '#f5efe0', .2) : col;
+  function path(pts, dx = 0, dy = 0, j = 0) {
+    const n = pts.length, P = pts.map(([x, y, k]) => [x + dx + (j ? (q() - .5) * j : 0), y + dy + (j ? (q() - .5) * j : 0), k]);
+    if (P[0][2]) c.moveTo(P[0][0], P[0][1]); else c.moveTo((P[n - 1][0] + P[0][0]) / 2, (P[n - 1][1] + P[0][1]) / 2);
+    for (let i = P[0][2] ? 1 : 0; i <= n - (P[0][2] ? 0 : 1); i++) { const a = P[i % n], b = P[(i + 1) % n]; if (a[2]) c.lineTo(a[0], a[1]); else c.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); }
+    c.closePath();
+  }
+  const box = pts => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } return [x0, y0, x1, y1]; };
+  function grainIn(x0, y0, x1, y1, col, a, n) { c.fillStyle = rgba(col, a); for (let i = 0; i < n; i++) { const x = x0 + q() * (x1 - x0), y = y0 + q() * (y1 - y0); c.fillRect(x, y, .5, .5); } }
+  const P = {
+    lit, drk, pale, q,
+    area(pts, col, o = {}) {
+      col = pale(col); const sh = o.shade ?? .6, [x0, y0, x1, y1] = box(pts);
+      if (st === 1) {
+        c.save(); c.beginPath(); path(pts); c.clip();
+        c.fillStyle = drk(col, .28 * sh + .04); c.fillRect(x0 - 9, y0 - 9, x1 - x0 + 18, y1 - y0 + 18);
+        c.beginPath(); path(pts, -2.6 * sh - .4, -3 * sh - .4); c.fillStyle = col; c.fill();
+        if (o.light !== 0) { c.beginPath(); c.rect(x0 - 9, y0 - 9, x1 - x0 + 18, y1 - y0 + 18); path(pts, 1.8 * sh + .4, 2.2 * sh + .4); c.fillStyle = lit(col, .3 * sh + .04); c.fill('evenodd'); }
+        c.restore();
+      } else if (st === 0) {
+        c.beginPath(); path(pts); c.fillStyle = col; c.fill();
+        c.save(); c.clip(); const n = Math.min(1400, (x1 - x0) * (y1 - y0) / 7 * (o.dab ?? 1));
+        for (let i = 0; i < n; i++) { const x = x0 + q() * (x1 - x0), y = y0 + q() * (y1 - y0), u = (x - x0) / (x1 - x0 + 1), v = (y - y0) / (y1 - y0 + 1), l = (1 - u) * .35 + (1 - v) * .65 + (q() - .5) * .3;
+          let cc = l > .55 ? lit(col, (l - .55) * .8 * sh) : drk(col, (.55 - l) * .7 * sh); cc = mix(cc, q() < .5 ? '#c9a86a' : '#4f6f7a', .07);
+          c.fillStyle = rgba(cc, .55); c.beginPath(); c.ellipse(x, y, 1 + q() * 2.2, .6 + q() * 1, (o.dir ?? -.5) + (q() - .5) * .6, 0, TAU); c.fill(); }
+        c.restore();
+      } else {
+        for (let k = 0; k < 3; k++) { c.beginPath(); path(pts, 0, 0, 2.4); c.fillStyle = rgba(col, .42); c.fill(); }
+        c.save(); c.beginPath(); path(pts); c.clip();
+        const gr = c.createLinearGradient(x0, y0, x1 * .3 + x0 * .7, y1); gr.addColorStop(0, rgba(lit(col, .6), .35 * sh)); gr.addColorStop(1, rgba(drk(col, .4), .25 * sh)); c.fillStyle = gr; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+        grainIn(x0, y0, x1, y1, drk(col, .5), .25, (x1 - x0) * (y1 - y0) / 6);
+        c.restore();
+        c.beginPath(); path(pts, 0, 0, 1.2); c.strokeStyle = rgba(drk(col, .3), .4); c.lineWidth = .7; c.stroke();
+      }
+    },
+    blobs(cx, cy, rx, ry, col, o = {}) {
+      col = pale(col); const n = o.n || Math.max(4, Math.round(rx * ry / 28)), rr = o.r || Math.min(rx, ry) * .5, B = [];
+      for (let i = 0; i < n; i++) { const a = q() * TAU, d = Math.sqrt(q()); B.push([cx + Math.cos(a) * d * rx, cy + Math.sin(a) * d * ry, rr * (.6 + q() * .55)]); }
+      B.sort((a, b) => b[1] - a[1]);
+      const hl = (x, y) => ((cx - x) / rx * .4 + (cy - y) / ry * .6);
+      if (st === 1) {
+        c.fillStyle = drk(col, .38); c.beginPath(); B.forEach(([x, y, r]) => { c.moveTo(x + r + 1, y + 1.8); c.arc(x + 1, y + 1.8, r, 0, TAU); }); c.fill();
+        for (const [x, y, r] of B) { c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); if (hl(x, y) > -.1 && o.light !== 0) { c.fillStyle = lit(col, .32); c.beginPath(); c.arc(x - r * .22, y - r * .28, r * .62, 0, TAU); c.fill(); } }
+      } else if (st === 0) {
+        for (const [x, y, r] of B) { const l0 = hl(x, y); c.fillStyle = rgba(drk(col, .25), .9); c.beginPath(); c.arc(x, y, r * .85, 0, TAU); c.fill();
+          for (let i = 0; i < r * r * .9; i++) { const a = q() * TAU, d = Math.sqrt(q()) * r, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d, l = l0 + (x - px) / r * .25 + (y - py) / r * .45 + (q() - .5) * .3;
+            const cc = l > 0 ? lit(col, l * .45) : drk(col, -l * .45); c.fillStyle = rgba(cc, .7); c.beginPath(); c.ellipse(px, py, .9 + q() * 1.6, .6 + q() * .8, q() * TAU, 0, TAU); c.fill(); } }
+      } else {
+        for (const [x, y, r] of B) for (let k = 0; k < 3; k++) { const px = x + (q() - .5) * r, py = y + (q() - .5) * r, l = hl(px, py); c.fillStyle = rgba(l > 0 ? lit(col, l * .35) : drk(col, -l * .3), .22); c.beginPath(); c.ellipse(px, py, r * (.55 + q() * .3), r * (.45 + q() * .3), q() * TAU, 0, TAU); c.fill(); }
+        c.fillStyle = rgba(drk(col, .35), .18); B.slice(0, n / 2).forEach(([x, y, r]) => { c.beginPath(); c.arc(x + r * .2, y + r * .3, r * .5, 0, TAU); c.fill(); });
+      }
+    },
+    line(pts, col, w0, w1 = w0, o = {}) {
+      col = pale(col);
+      const seg = (dx, dy, cc, a, sc = 1, j = 0) => { for (let i = 0; i < pts.length - 1; i++) { const t = i / (pts.length - 1); c.strokeStyle = rgba(cc, a); c.lineWidth = (w0 + (w1 - w0) * t) * sc; c.beginPath(); c.moveTo(pts[i][0] + dx + (j ? (q() - .5) * j : 0), pts[i][1] + dy); c.lineTo(pts[i + 1][0] + dx + (j ? (q() - .5) * j : 0), pts[i + 1][1] + dy); c.stroke(); } };
+      c.lineCap = 'round';
+      if (st === 1) { seg(0, 0, drk(col, .3), 1); seg(-w0 * .15, -w0 * .15, col, 1, .7); if (o.light !== 0) seg(-w0 * .3, -w0 * .3, lit(col, .3), 1, .25); }
+      else if (st === 0) { seg(0, 0, drk(col, .2), .9); for (let k = 0; k < 3; k++) seg((q() - .5) * w0 * .4, (q() - .5) * w0 * .4, k ? lit(col, .15 * k) : col, .6, .55, .6); }
+      else { seg(0, 0, col, .45, 1, .8); seg(0, 0, col, .4, .7, .8); seg(w0 * .2, w0 * .2, drk(col, .35), .25, .3); }
+    },
+    leaf(x, y, len, wd, ang, col, o = {}) {
+      col = pale(col); const ca = Math.cos(ang), sa = Math.sin(ang), tx = x + ca * len, ty = y + sa * len, mx = (x + tx) / 2, my = (y + ty) / 2, nx = -sa * wd, ny = ca * wd;
+      const half = side => { c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(mx + nx * side, my + ny * side, tx, ty); c.lineTo(x, y); };
+      if (st === 1) { half(1); c.fillStyle = col; c.fill(); half(-1); c.fillStyle = drk(col, .22); c.fill(); if (o.vein) { c.strokeStyle = rgba(lit(col, .6), .9); c.lineWidth = .4; c.beginPath(); c.moveTo(x, y); c.lineTo(tx, ty); c.stroke(); } }
+      else if (st === 0) { c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(mx + nx, my + ny, tx, ty); c.quadraticCurveTo(mx - nx, my - ny, x, y); c.fillStyle = drk(col, .1); c.fill(); for (let i = 0; i < 3; i++) { const u = .3 + q() * .5; c.fillStyle = rgba(lit(col, .15 + q() * .2), .6); c.beginPath(); c.ellipse(x + ca * len * u, y + sa * len * u, len * .14, wd * .35, ang, 0, TAU); c.fill(); } if (o.vein) { c.strokeStyle = rgba(lit(col, .55), .7); c.lineWidth = .35; c.beginPath(); c.moveTo(x, y); c.lineTo(tx, ty); c.stroke(); } }
+      else { for (let k = 0; k < 2; k++) { c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(mx + nx * (1 + (q() - .5) * .3), my + ny, tx + (q() - .5), ty); c.quadraticCurveTo(mx - nx, my - ny * (1 + (q() - .5) * .3), x, y); c.fillStyle = rgba(col, .5); c.fill(); } if (o.vein) { c.strokeStyle = rgba(lit(col, .5), .5); c.lineWidth = .35; c.beginPath(); c.moveTo(x, y); c.lineTo(tx, ty); c.stroke(); } }
+    },
+    star(x, y, r, a, col) {
+      col = pale(col); c.beginPath(); for (let i = 0; i < 10; i++) { const rr = i % 2 ? r * .42 : r, aa = a + i / 10 * TAU; i ? c.lineTo(x + Math.cos(aa) * rr, y + Math.sin(aa) * rr) : c.moveTo(x + Math.cos(aa) * rr, y + Math.sin(aa) * rr); } c.closePath();
+      c.fillStyle = st === 2 ? rgba(col, .6) : col; c.fill();
+    },
+    glow(x, y, r, col, a) { const gr = c.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, rgba(col, a)); gr.addColorStop(1, rgba(col, 0)); c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2); },
+    wash(y0, y1, top, bot) { const gr = c.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, pale(top)); gr.addColorStop(1, pale(bot)); c.fillStyle = gr; c.fillRect(0, y0, W, y1 - y0); },
+    finish() {
+      // papier of doek: korrel per stijl
+      if (st === 0) { for (let i = 0; i < 2200; i++) { const x = q() * W, y = q() * H; c.fillStyle = rgba(q() < .5 ? '#ffffff' : '#000000', .05); c.fillRect(x, y, 1.2, .5); } }
+      if (st === 2) { grainIn(0, 0, W, H, '#5a4a30', .1, 9000); for (let i = 0; i < 1500; i++) { c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(q() * W, q() * H, .7, .7); } }
+    },
+  };
+  return P;
+}
+
+/* ---------- Paludarium ---------- */
+function palu(c, st) {
+  const P = painter(c, st, 41), q = P.q;
+  // achterwand van kurk, lamp van boven
+  P.wash(0, H, '#6b5c40', '#2f2a22');
+  for (let i = 0; i < 40; i++) { const x = q() * W, y = q() * 150; P.line([[x, y], [x + 4 + q() * 8, y + (q() - .5) * 3]], P.drk('#5a4c35', .15 + q() * .2), 1.4, .8); }
+  P.glow(170, -30, 240, '#fff0c8', st === 2 ? .3 : .42);
+  // hangend groen tegen de wand, wat verder weg
+  const far = '#3f5a33';
+  P.blobs(250, 18, 44, 16, P.lit(far, .05)); P.blobs(40, 30, 34, 14, far); P.blobs(300, 60, 26, 16, P.drk(far, .05));
+  for (let i = 0; i < 4; i++) { const x = 190 + q() * 120, l = 30 + q() * 40; P.line([[x, 0], [x + 3, l * .5], [x + (q() - .5) * 6, l]], '#4a5a2e', 1.6, .9); }
+  for (let i = 0; i < 7; i++) { const x = 205 + q() * 110, y = 22 + q() * 40; P.leaf(x, y, 9, 4, 1.2 + (q() - .5), '#4f7a3a'); }
+  // tak met bromelia
+  P.line([[186, 52], [220, 70], [262, 92], [300, 104], [330, 112]], '#6a4a30', 9, 7);
+  P.line([[232, 76], [246, 58], [252, 44]], '#6a4a30', 4, 2.2);
+  const bx = 262, by = 88;
+  for (let i = 0; i < 9; i++) { const a = -Math.PI / 2 + (i - 4) * .3; P.leaf(bx, by, 20 - Math.abs(i - 4) * 1.4, 3.2, a + (i - 4) * .05, i % 2 ? '#3f7a45' : '#4f8c4e'); }
+  for (let i = 0; i < 4; i++) P.leaf(bx, by, 9, 2.6, -Math.PI / 2 + (i - 1.5) * .45, '#d33a36');
+  // rots met mos en varen
+  const rock = '#77726a';
+  P.area([[-4, 84, 1], [26, 74], [64, 76], [100, 86], [118, 100], [122, 132], [128, 176], [80, 186], [-4, 190, 1]], rock, { shade: .8 });
+  P.blobs(26, 78, 26, 7, '#6e9a3e'); P.blobs(68, 80, 26, 7, '#7aa645'); P.blobs(104, 92, 12, 6, '#6e9a3e'); P.blobs(18, 118, 14, 6, '#5f8a38');
+  const fern = (x, y, len, a0, bend) => { let a = a0, px = x, py = y; const pts = [[x, y]]; for (let s = 0; s < len; s += 3) { a += bend; px += Math.cos(a) * 3; py += Math.sin(a) * 3; pts.push([px, py]); } P.line(pts, '#3f6f30', 1, .5); pts.forEach(([xx, yy], i) => { if (i < 2) return; const f = 1 - i / pts.length, l = 9 * Math.sin(Math.PI * Math.min(1, i / pts.length * 1.05)) * (.5 + f * .5); const ta = Math.atan2(yy - pts[i - 1][1], xx - pts[i - 1][0]); P.leaf(xx, yy, l, 1.6, ta - 1.1, '#5c9a3e'); P.leaf(xx, yy, l, 1.6, ta + 1.1, '#4e8a36'); }); };
+  fern(54, 78, 52, -2.1, .04); fern(58, 78, 60, -1.3, .045); fern(62, 80, 44, -.6, .05);
+  // oever rechts met mos en fittonia
+  P.area([[150, 172], [176, 156], [214, 146], [262, 142], [300, 138], [334, 136, 1], [334, 176, 1]], '#4c3d2c', { shade: .5 });
+  P.blobs(232, 146, 30, 6, '#7aa645'); P.blobs(300, 140, 30, 6, '#6e9a3e'); P.blobs(180, 158, 18, 5, '#7aa645');
+  for (let i = 0; i < 12; i++) { const x = 282 + q() * 34, y = 128 + q() * 10; P.leaf(x, y, 7, 3.6, -Math.PI / 2 + (q() - .5) * 2, '#3e6e3c', { vein: 1 }); }
+  // pijlgifkikker op de oever
+  const fx = 226, fy = 140; P.area([[fx - 6, fy], [fx - 4, fy - 4], [fx + 3, fy - 5], [fx + 7, fy - 2], [fx + 6, fy + 1], [fx - 4, fy + 1.5]], '#2f72d6', { shade: .5 });
+  c.fillStyle = '#121620'; [[fx - 2, fy - 2.5], [fx + 2, fy - 1.5], [fx + 4.5, fy - 3]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, .8, 0, TAU); c.fill(); });
+  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(fx + 5.2, fy - 3.4, .35, 0, TAU); c.fill();
+  // watervalletje
+  for (let i = 0; i < 14; i++) { const x0 = 114 + q() * 8; P.line([[x0, 100], [x0 + 2 + q() * 2, 120], [x0 + 6 + q() * 3, 166]], i % 3 ? '#cfe6ea' : '#ffffff', .9, .6, { light: 0 }); }
+  P.blobs(126, 166, 10, 3, '#eef6f4', { light: 0 });
+  // water: poel, onder het oppervlak alles wat blauwgroener
+  c.fillStyle = rgba(P.pale('#2f6a68'), st === 2 ? .45 : .58); c.fillRect(0, 168, W, H - 168);
+  const sg = c.createLinearGradient(0, 168, 0, H); sg.addColorStop(0, 'rgba(160,220,215,.18)'); sg.addColorStop(1, 'rgba(10,40,45,.35)'); c.fillStyle = sg; c.fillRect(0, 168, W, H - 168);
+  for (let i = 0; i < 9; i++) { const x = 150 + q() * 170; const pts = [[x, H]]; for (let y = H - 6; y > 172; y -= 6) pts.push([x + Math.sin(y * .12 + i) * 3, y]); P.line(pts, '#4f8a4a', 1.4, .8); }
+  for (let i = 0; i < 46; i++) { const x = q() * W, y = 214 + q() * 13, r = 1.2 + q() * 2.2; P.blobs(x, y, r, r * .7, ['#8a8273', '#a69d8a', '#6a6458'][i % 3], { n: 1, r }); }
+  [[200, 196], [214, 190], [236, 200]].forEach(([x, y], i) => { c.fillStyle = P.pale('#b9c4c8'); c.beginPath(); c.ellipse(x, y, 4, 1.4, 0, 0, TAU); c.fill(); c.fillStyle = P.pale('#3fa4e0'); c.fillRect(x - 3, y - .8, 4.5, .7); c.fillStyle = P.pale('#d5383a'); c.fillRect(x - 3.5, y + .1, 3, .6); });
+  c.strokeStyle = 'rgba(235,250,248,.55)'; c.lineWidth = .7; c.beginPath(); c.moveTo(0, 168.5); c.lineTo(W, 168.5); c.stroke();
+  c.strokeStyle = 'rgba(235,250,248,.45)'; for (let i = 1; i < 4; i++) { c.beginPath(); c.ellipse(127, 169, 6 * i, 1.4 * i, 0, 0, TAU); c.stroke(); }
+  // condens in de bovenhoeken
+  for (let i = 0; i < 160; i++) { const left = q() < .5, x = left ? Math.pow(q(), 2.2) * 70 : W - Math.pow(q(), 2.2) * 70, y = Math.pow(q(), 2.2) * 50, r = .3 + q() * .8; c.fillStyle = 'rgba(255,255,255,.28)'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }
+  P.finish();
+}
+
+/* ---------- Japanse tuin ---------- */
+function tuin(c, st, sz) {
+  const P = painter(c, st, 77), q = P.q, winter = sz === 3;
+  const maple = [['#9ccf62', '#cfe58a'], ['#3f8a3a', '#62a548'], ['#c42e28', '#e8692c'], null][sz];
+  const green = winter ? '#5c7a5e' : sz === 1 ? '#3f7d3c' : '#5c8f45', moss = winter ? '#e9eef0' : sz === 1 ? '#5f9a3a' : '#7aa64a';
+  P.wash(0, 150, winter ? '#b9c9d6' : '#8fbbe0', winter ? '#eef0ee' : '#f6e8c8');
+  P.blobs(80, 26, 34, 5, '#ffffff', { light: 0, n: 12, r: 6 }); P.blobs(236, 16, 44, 6, '#fbf6ec', { light: 0, n: 14, r: 6.5 });
+  P.area([[-4, 98, 1], [60, 76], [120, 90], [180, 70], [250, 86], [334, 72, 1], [334, 150, 1], [-4, 150, 1]], mix('#7f9fa8', '#e8eadf', winter ? .55 : .45), { shade: .2 });
+  P.area([[-4, 108, 1], [70, 94], [150, 104], [230, 92], [334, 102, 1], [334, 150, 1], [-4, 150, 1]], mix('#5f8a80', '#e8eadf', winter ? .45 : .3), { shade: .25 });
+  // tuinmuur met pannendak
+  P.area([[150, 112, 1], [334, 110, 1], [334, 140, 1], [150, 140, 1]], winter ? '#e9e4d8' : '#e6dcc4', { shade: .3 });
+  P.area([[144, 108, 1], [334, 105, 1], [334, 113, 1], [146, 115, 1]], '#4a4c52', { shade: .5 });
+  if (winter) P.area([[144, 106, 1], [334, 103, 1], [334, 107, 1], [146, 109, 1]], '#ffffff', { shade: .2 });
+  // den met wolkvormige kussens
+  P.line([[268, 160], [262, 130], [254, 104], [262, 78]], '#5a4434', 6, 3);
+  P.line([[258, 118], [232, 104]], '#5a4434', 2.4, 1.2); P.line([[262, 98], [292, 88]], '#5a4434', 2.2, 1.2); P.line([[256, 108], [300, 112]], '#5a4434', 2, 1);
+  [[262, 74, 18, 7], [230, 100, 16, 6], [294, 86, 16, 6], [302, 110, 15, 5.5], [262, 96, 12, 5]].forEach(([x, y, rx, ry]) => { P.blobs(x, y, rx, ry, '#2f5a3c'); if (winter) P.area([[x - rx * .9, y - ry * .3], [x, y - ry - 1.5], [x + rx * .9, y - ry * .3], [x, y - ry * .2]], '#ffffff', { shade: .15 }); });
+  // gesnoeide struiken
+  [[196, 140, 22, 11], [224, 146, 16, 8], [120, 142, 18, 9], [306, 146, 22, 10]].forEach(([x, y, rx, ry]) => { P.blobs(x, y, rx, ry, green, { r: ry * .9 }); if (winter) P.area([[x - rx * .85, y - ry * .2], [x - rx * .3, y - ry - 1], [x + rx * .4, y - ry - .5], [x + rx * .85, y - ry * .1], [x, y - ry * .5]], '#ffffff', { shade: .15 }); });
+  // grond met mos
+  P.area([[-4, 142, 1], [80, 136], [160, 146], [334, 142, 1], [334, 234, 1], [-4, 234, 1]], moss, { shade: .4, dab: .8 });
+  // vijver
+  const pond = [[96, 166], [130, 154], [190, 152], [250, 156], [300, 166], [290, 186], [230, 196], [150, 196], [104, 186]];
+  P.area(pond, winter ? '#7f98a6' : '#6aa2b8', { shade: .35, light: 0 });
+  c.save(); c.beginPath(); { const n = pond.length; c.moveTo((pond[n - 1][0] + pond[0][0]) / 2, (pond[n - 1][1] + pond[0][1]) / 2); for (let i = 0; i < n; i++) { const a = pond[i], b = pond[(i + 1) % n]; c.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } } c.clip();
+  c.fillStyle = 'rgba(20,50,45,.2)'; [[230, 160, 18, 4], [262, 158, 14, 3.5], [252, 166, 10, 3]].forEach(([x, y, rx, ry]) => { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, TAU); c.fill(); }); c.fillRect(264, 152, 4, 10);
+  c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = .7; for (let i = 0; i < 12; i++) { const x = 110 + q() * 180, y = 160 + q() * 32, w = 6 + q() * 14; c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y); c.stroke(); }
+  if (!winter) [[170, 176, .3, '#e8742c'], [212, 184, 2.8, '#f2efe6'], [244, 170, -.4, '#e45a2a']].forEach(([x, y, a, col]) => { const ca = Math.cos(a), sa = Math.sin(a); P.leaf(x - ca * 6, y - sa * 6, 12, 2.6, a, col); c.fillStyle = P.pale('#e8742c'); if (col === '#f2efe6') { c.beginPath(); c.arc(x - ca * 1, y - sa * 1, 1.4, 0, TAU); c.fill(); } });
+  if (sz === 2) for (let i = 0; i < 9; i++) P.star(120 + q() * 160, 160 + q() * 30, 2, q() * TAU, i % 2 ? '#c42e28' : '#e8692c');
+  c.restore();
+  [[96, 170, 10, 6], [128, 156, 9, 5], [292, 172, 11, 6], [254, 194, 12, 5], [150, 198, 10, 4]].forEach(([x, y, rx, ry]) => { P.area([[x - rx, y + ry * .4], [x - rx * .6, y - ry], [x + rx * .5, y - ry * .9], [x + rx, y + ry * .2], [x + rx * .3, y + ry]], '#8a8780', { shade: .8 }); if (winter) P.area([[x - rx * .8, y - ry * .3], [x - rx * .4, y - ry * 1.05], [x + rx * .5, y - ry * .95], [x + rx * .8, y - ry * .2]], '#ffffff', { shade: .15 }); });
+  // stenen lantaarn op een mosheuvel
+  P.blobs(64, 172, 34, 9, moss, { r: 8 });
+  const lx = 64, stone = '#9a968c';
+  P.area([[lx - 10, 170, 1], [lx + 10, 170, 1], [lx + 8, 164, 1], [lx - 8, 164, 1]], stone);
+  P.area([[lx - 4, 165, 1], [lx + 4, 165, 1], [lx + 3.5, 146, 1], [lx - 3.5, 146, 1]], stone);
+  P.area([[lx - 9, 147, 1], [lx + 9, 147, 1], [lx + 8, 143, 1], [lx - 8, 143, 1]], stone);
+  P.area([[lx - 7, 143, 1], [lx + 7, 143, 1], [lx + 7, 131, 1], [lx - 7, 131, 1]], stone);
+  c.fillStyle = P.pale(winter || sz === 2 ? '#f2c46a' : '#3a3a3c'); c.fillRect(lx - 3, 134.5, 6, 5);
+  P.area([[lx - 18, 131, 1], [lx - 9, 125], [lx, 122], [lx + 9, 125], [lx + 18, 131, 1], [lx, 129]], P.drk(stone, .08), { shade: .9 });
+  P.area([[lx - 3, 123], [lx, 117], [lx + 3, 123]], stone);
+  if (winter) { P.area([[lx - 18, 130], [lx - 9, 123.5], [lx, 120.5], [lx + 9, 123.5], [lx + 18, 130], [lx, 126]], '#ffffff', { shade: .2 }); }
+  // trapstenen
+  [[38, 220, 15, 5], [74, 204, 13, 4.5], [104, 214, 12, 4]].forEach(([x, y, rx, ry]) => P.area([[x - rx, y], [x - rx * .5, y - ry], [x + rx * .6, y - ry], [x + rx, y], [x + rx * .4, y + ry], [x - rx * .6, y + ry]], winter ? '#d8dee2' : '#a39e94', { shade: .6 }));
+  // esdoorn van bovenaf
+  P.line([[-6, 6], [30, 18], [70, 28], [112, 30], [150, 26]], '#3e2e26', 7, 2.4);
+  P.line([[60, 26], [84, 44], [100, 58]], '#3e2e26', 3, 1); P.line([[30, 18], [44, 2]], '#3e2e26', 3, 1.4); P.line([[112, 30], [134, 46]], '#3e2e26', 2.4, 1);
+  if (maple) {
+    const cl = [[20, 10, 26, 12], [62, 20, 28, 12], [104, 30, 26, 11], [146, 22, 18, 9], [92, 52, 16, 9], [134, 46, 14, 8], [40, 28, 18, 8]];
+    for (const [x, y, rx, ry] of cl) {
+      if (st === 1) { for (let i = 0; i < rx * ry / 5; i++) { const a = q() * TAU, d = Math.sqrt(q()), px = x + Math.cos(a) * d * rx, py = y + Math.sin(a) * d * ry; P.star(px, py, 2.6 + q(), q() * TAU, py < y ? maple[1] : P.drk(maple[0], .2)); } }
+      else P.blobs(x, y, rx, ry, maple[0], { r: ry * .7 });
+    }
+    if (st !== 1) for (let i = 0; i < 40; i++) { const [x, y, rx, ry] = cl[i % cl.length]; P.star(x + (q() - .5) * rx * 2, y + (q() - .5) * ry * 2, 2.2, q() * TAU, q() < .5 ? maple[1] : maple[0]); }
+    for (let i = 0; i < 5; i++) P.star(150 + q() * 150, 60 + q() * 70, 2, q() * TAU, maple[1]);
+  } else { P.line([[-6, 4], [30, 16], [70, 26], [112, 28], [150, 24]], '#ffffff', 2, .8, { light: 0 }); for (let i = 0; i < 70; i++) { c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.arc(q() * W, q() * H, .5 + q() * .7, 0, TAU); c.fill(); } }
+  P.finish();
+}
+
+const canvases = [...document.querySelectorAll('canvas[data-scene]')];
+function render() {
+  for (const el of canvases) {
+    el.width = W * S; el.height = H * S; const c = el.getContext('2d'); c.setTransform(S, 0, 0, S, 0, 0); c.clearRect(0, 0, W, H);
+    const st = +el.dataset.style; el.dataset.scene === 'palu' ? palu(c, st) : tuin(c, st, season);
+  }
+  document.querySelectorAll('#season button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === season));
+}
+document.querySelectorAll('#season button').forEach(b => b.onclick = () => { season = +b.dataset.v; render(); });
+document.querySelectorAll('#theme button').forEach(b => b.onclick = () => { document.querySelectorAll('#theme button').forEach(x => x.setAttribute('aria-pressed', x === b)); if (b.dataset.t === 'auto') delete root.dataset.theme; else root.dataset.theme = b.dataset.t; });
+document.querySelectorAll('#size button').forEach(b => b.onclick = () => { document.querySelectorAll('#size button').forEach(x => x.setAttribute('aria-pressed', x === b)); document.body.classList.toggle('big', b.dataset.s === '2'); });
+render();
+})();
+</script>
