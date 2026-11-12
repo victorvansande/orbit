@@ -29,7 +29,7 @@ export function createTools(box, { label }) {
     sync(m) {
       mode = m?.tools?.length ? m : null;
       rail.hidden = !mode;
-      if (!mode) { rail.replaceChildren(); return; }
+      if (!mode) { rail.replaceChildren(); rail.dataset.sig = ''; return; }   // anders bleef de rij leeg als hetzelfde gereedschap terugkwam
       const sig = mode.tools.map(t => t.id).join(' ');
       if (rail.dataset.sig !== sig) {
         rail.dataset.sig = sig;

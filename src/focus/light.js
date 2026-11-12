@@ -45,11 +45,15 @@ export function createLight(w, h, res = 0.5) {
       gr.addColorStop(0, col(1)); gr.addColorStop(0.25, col(0.62)); gr.addColorStop(0.55, col(0.24)); gr.addColorStop(1, col(0));
       c.fillStyle = gr; c.fillRect(-r, -r, r * 2, r * 2); c.restore();
     },
-    // schaduwvlekken van blad binnen een rechthoek, schuivend met (dx, dy); a = diepte van de schaduw
-    dapple(x0, y0, x1, y1, dx, dy, a, size = 70) {
-      c.save(); c.globalCompositeOperation = 'source-over'; c.beginPath(); c.rect(x0, y0, x1 - x0, y1 - y0); c.clip(); c.globalAlpha = a;
-      const ox = ((dx % size) + size) % size - size, oy = ((dy % size) + size) % size - size;
-      for (let y = y0 + oy; y < y1; y += size) for (let x = x0 + ox; x < x1; x += size) c.drawImage(dap, x, y, size, size);
+    // schaduwvlekken (blad, lichtspel op zand) binnen een rechthoek, schuivend met (dx, dy); a = diepte van de schaduw.
+    // Twee lagen van verschillende maat die tegen elkaar in schuiven: één laag herhaalt zichtbaar (Victor, 12/11/2026:
+    // "een herhalend patroon op de bodem dat de immersion breekt"), twee samen niet. sx, sy = maat van één tegel.
+    dapple(x0, y0, x1, y1, dx, dy, a, sx = 190, sy = sx) {
+      c.save(); c.globalCompositeOperation = 'source-over'; c.beginPath(); c.rect(x0, y0, x1 - x0, y1 - y0); c.clip(); c.globalAlpha = a * 0.62;
+      for (const [w, h, ox, oy] of [[sx, sy, dx, dy], [sx * 0.647, sy * 0.71, -dx * 0.73 + sx * 0.31, dy * 1.3 + sy * 0.43]]) {
+        const fx = ((ox % w) + w) % w - w, fy = ((oy % h) + h) % h - h;
+        for (let y = y0 + fy; y < y1; y += h) for (let x = x0 + fx; x < x1; x += w) c.drawImage(dap, x, y, w, h);
+      }
       c.restore();
     },
     // verloop van boven naar onder dat het licht tempert (dieper = donkerder), kleur als rgba-tekst

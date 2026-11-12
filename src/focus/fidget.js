@@ -1141,7 +1141,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     cvGL.width = cv.width; cvGL.height = cv.height; cvGL.style.width = cv.style.width; cvGL.style.height = cv.style.height;
     own.style.width = cv.style.width; own.style.height = cv.style.height;
     chr = new Array(CELLS).fill(''); want = new Float32Array(CELLS); agit = new Float32Array(CELLS); pos = new Float32Array(CELLS * 2);
-    for (const m of Object.keys(modes)) delete modes[m];   // elke soort opnieuw op de nieuwe maat
+    // elke soort opnieuw op de nieuwe maat; een soort met `rezoom` blijft bestaan en houdt zo haar stand (natuurvenster)
+    for (const m of Object.keys(modes)) { if (modes[m].rezoom) modes[m].rezoom(W / BASE_W); else delete modes[m]; }
     sizeVars();
     if (running) render(performance.now());
   }

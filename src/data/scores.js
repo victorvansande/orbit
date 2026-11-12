@@ -15,7 +15,8 @@ export const GAMES = {
   // lopend spel, zodat draaien, een andere maat van het bakje of herladen het niet wist (Victor, 10/11/2026)
   breakoutRun: { key: 'priority-orbit.breakoutrun.v1' },
   snakeRun: { key: 'priority-orbit.snakerun.v1' },
-  // paludarium: wanneer het laatst geneveld ({ run: { mist }, at }), zodat het glas op elk toestel even nat is
+  // paludarium: de hele stand ({ run: { mist, lamp, yellow, nextY, frog, snail, fog, drops, fogAt }, at }), zodat het op elk
+  // toestel en na elke sluiting hetzelfde is; een oudere versie bewaarde enkel { mist }
   terra: { key: 'priority-orbit.terra.v1' },
 };
 const EXTRA_KEY = 'priority-orbit.games.v1';   // spellen die enkel een nieuwere versie kent: bewaren en doorgeven

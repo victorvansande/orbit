@@ -31,6 +31,8 @@ export function createNature({ reducedMotion, store, zoom = 1, onScene = () => {
     pick(id) { scene().pick(id); },
     init() { scene(); announce(); },
     reload() { made.palu?.reload?.(); },
+    // nieuwe maat van het bakje: de scènes blijven bestaan en houden hun stand
+    rezoom(z) { zoom = z; for (const k of SCENES) { if (made[k]?.rezoom) made[k].rezoom(z); else delete made[k]; } },
     mount(el) { host = el; scene().mount(el); announce(); },
     unmount() { scene().unmount(); host = null; },
     frame(now) { scene().frame(now); },

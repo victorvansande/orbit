@@ -10,8 +10,12 @@
 //   en paddenstoeltjes die zacht gloeien. De lamp volgt de zon en de klok (uit van 23 tot 6.30 uur), niet het thema.
 // - gereedschap (links van het bakje): nevelen (tik of ingedrukt houden), snoeien (tik op een geel blad), spons
 //   (slepen veegt het glas), voeren (tik: vlokken, de visjes komen), lamp aan of uit.
-// Zorg: hoe lang geleden je nevelde, wordt bewaard (scores.game('terra'), gaat mee in sync); na drie dagen is het glas
-// droog en hangen de varens wat, nooit meer dan dat. Geluid enkel bij acties. Minder beweging: één beeld.
+// Zorg: na drie dagen zonder nevelen is het glas droog en hangen de varens wat, nooit meer dan dat.
+// Stand (Victor, 12/11/2026: "laat de stand volledig behouden blijven, in elke window size, op elk gesyncd device, na
+// elke sluiting"): de scène blijft bestaan als het bakje van maat verandert (`rezoom`), en alles wat ertoe doet gaat
+// naar scores.game('terra') als { run, at } (mee in sync, export en import): wanneer geneveld, de lamp, gele bladeren
+// en wanneer het volgende komt, waar de kikker en de slak zitten, de aanslag en de druppels op het glas (dew.pack).
+// Geluid enkel bij acties. Minder beweging: één beeld.
 
 import { createBrush, layer, rng, smooth, clamp } from './brush.js';
 import { createLight, daylight } from './light.js';
@@ -39,23 +43,49 @@ const FERN = [[-2.55, 38], [-2.15, 50], [-1.8, 58], [-1.45, 60], [-1.1, 56], [-0
 export const TERRA_TOOLS = [{ id: 'mist' }, { id: 'cut' }, { id: 'sponge' }, { id: 'feed' }, { id: 'lamp', toggle: true }];
 
 export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Date(), onTool = () => {} }) {
-  let cv = null, g = null, scale = 1, built = null, dew = null, light = null;
+  let cv = null, g = null, scale = 1, built = null, dew = null, light = null, started = false, dirty = false, seenAt = 0, pending = null, nextYellowAt = Date.now() + 40e3;
   let t = 0, lastNow = 0, px = 0, py = 0, hover = { x: W / 2, y: H / 2, at: -99 }, ptr = null;
   let tool = 'mist', userLamp = null, lampLv = 1, dayLv = 1, day = daylight(now()), dayAt = -99, mistAt = 0, savedAt = 0, sprayAt = -9;
   let spray = [], haze = [], glints = [], rings = [], flies = [], springs = [], fish = [], bubbles = [], flakes = [], yellows = [], fallen = [];
-  let frog = null, snail = null, nextYellow = 40;
+  let frog = null, snail = null;
   const ferns = FERN.map(([a0, len], i) => ({ x: 40 + i * 1.2, y: 52, len, a0, a: 0, v: 0, k: i * 2.1 }));
   const vines = VINES.map(([x, len], i) => ({ x, y: -3, len, a: 0, v: 0, k: i * 1.7 }));
   const weeds = [172, 186, 205, 224, 246, 281, 300, 314].map((x, i) => ({ x, base: sandY(x) + 2, top: 170 + (i * 13 % 9), k: i * 1.3, w: 1.5 + (i % 3) * 0.4 }));
   const fallA = createFall({ x0: 80, x1: 89, y0: 76, x2: 79, x3: 91, y1: 108.5, time: 0.42, seed: 3, strands: 14, veils: 5, mist: 0.3 });
   const fallB = createFall({ x0: 109, x1: 129, y0: 113, x2: 105.5, x3: 133, y1: 162.5, time: 0.56, seed: 5, strands: 34, veils: 11, split: { u: 0.43, k: 0.5, w: 0.28 } });
 
-  /* ---- zorg: wanneer het laatst geneveld ---- */
-  function loadMist() { const v = store?.load?.(); const m = v?.run?.mist; if (Number.isFinite(m) && m > mistAt) mistAt = m; if (!mistAt) mistAt = Date.now(); }
+  /* ---- zorg en stand ---- */
   const moist = () => clamp(1 - (Date.now() - mistAt) / DRY_MS, 0, 1);
-  function misted() { const n = Date.now(); mistAt = n; if (n - savedAt > 60000) { savedAt = n; store?.save?.({ run: { mist: n }, at: n }); } }
   const clockLamp = () => day.h >= 6.5 && day.h < 23;
   const lampOn = () => userLamp ?? clockLamp();
+  // alles wat de stand uitmaakt; het glas enkel als het er staat (anders blijft wat bewaard was)
+  function snapshot() {
+    const glass = dew ? dew.pack() : pending ? { fog: pending.fog, drops: pending.drops } : {};
+    return { mist: mistAt, lamp: userLamp, yellow: yellows.map(y => y.vine), nextY: Math.round(nextYellowAt), frog: frog.hop ? frog.hop.to : frog.p, snail: [Math.round(snail.u * 1000) / 1000, snail.dir], ...glass, fogAt: Date.now() };
+  }
+  // bewaren: meteen na een daad (force), anders hooguit om de 15 s
+  function save(force) {
+    const n = Date.now();
+    if (!force && n - savedAt < 15000) { dirty = true; return; }
+    savedAt = n; dirty = false; seenAt = n;
+    store?.save?.({ run: snapshot(), at: n });
+  }
+  // de bewaarde stand overnemen (bij het laden, of als een ander toestel iets deed)
+  function restore() {
+    const v = store?.load?.(), r = v?.run;
+    if (!r || !(v.at > seenAt)) return;
+    seenAt = v.at;
+    if (Number.isFinite(r.mist)) mistAt = r.mist;
+    if ('lamp' in r) userLamp = typeof r.lamp === 'boolean' ? r.lamp : null;
+    if (Array.isArray(r.yellow)) yellows = [...new Set(r.yellow)].filter(i => Number.isInteger(i) && i >= 0 && i < VINES.length).slice(0, 3).map(vine => ({ vine }));
+    if (Number.isFinite(r.nextY)) nextYellowAt = r.nextY;
+    if (Number.isInteger(r.frog) && PERCH[r.frog] && frog && !frog.hop && r.frog !== frog.p) { frog.p = r.frog; [frog.x, frog.y] = PERCH[r.frog]; }
+    if (Array.isArray(r.snail) && snail) { snail.u = clamp(+r.snail[0] || 0, 0, 1); snail.dir = r.snail[1] < 0 ? -1 : 1; }
+    if (typeof r.fog === 'string') { pending = { fog: r.fog, drops: r.drops, at: r.fogAt }; if (dew) glassFrom(); }
+  }
+  // het glas zoals het bewaard was, met de aanslag van de tijd ertussen
+  function glassFrom() { if (pending && dew.unpack(pending, (Date.now() - (pending.at || Date.now())) / 1000, moist())) started = true; pending = null; }
+  const flush = () => { if (document.hidden && dirty) save(true); };
 
   /* ---- schilderen: één keer per opbouw ---- */
   function build() {
@@ -201,7 +231,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     fish = Array.from({ length: 7 }, (_, i) => ({ x: 180 + q() * 90, y: 176 + q() * 14, dir: q() < 0.5 ? -1 : 1, side: 1, vy: 0, sp: 7 + q() * 3, ph: q() * TAU, k: i * 3.7, flee: 0, s: 0.92 + q() * 0.22 }));
     fish.forEach(f => { f.side = f.dir; });
     flies = Array.from({ length: 7 }, () => ({ x: 60 + q() * 220, y: 30 + q() * 100, a: q() * TAU, ph: q() * 9, per: 3.2 + q() * 2.6 }));
-    spray = []; haze = []; glints = []; rings = []; bubbles = []; flakes = []; yellows = []; fallen = [];
+    spray = []; haze = []; glints = []; rings = []; bubbles = []; flakes = []; fallen = [];
   }
   function mist(x, y, burst = 1) {
     for (let i = 0; i < 34 * burst; i++) { const a = Math.random() * TAU, v = 14 + Math.random() * 44; spray.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.8 - 8, life: 0.7 + Math.random() * 0.6, r: 0.3 + Math.random() * 0.5 }); }
@@ -211,7 +241,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     for (const fe of ferns) fe.v += (Math.random() - 0.5) * 0.4;
     springs.forEach(s => { s.lively = t + 4; });
     if (Math.random() < 0.2 * burst) hopFrog();
-    misted();
+    mistAt = Date.now(); save();
     if (t - sprayAt > 0.22) { sprayAt = t; playTerra('mist', { x: x / W * 2 - 1 }); }
   }
   function hopFrog(away) {
@@ -219,7 +249,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     let to = (frog.p + 1 + Math.floor(Math.random() * (PERCH.length - 1))) % PERCH.length;
     if (away) { const far = PERCH.map((p, i) => [Math.hypot(p[0] - away.x, p[1] - away.y), i]).filter(([, i]) => i !== frog.p).sort((a, b) => b[0] - a[0]); to = far[Math.random() < 0.7 ? 0 : 1][1]; }
     const [x, y] = PERCH[to], d = Math.hypot(x - frog.x, y - frog.y);
-    frog.hop = { x0: frog.x, y0: frog.y, x1: x, y1: y, at: t + 0.14, dur: 0.42 + d / 380, h: 14 + d * 0.2, to };
+    frog.hop = { x0: frog.x, y0: frog.y, x1: x, y1: y, at: t + 0.14, dur: 0.42 + d / 380, h: 14 + d * 0.2, to, user: Boolean(away) };
     frog.face = x >= frog.x ? 1 : -1; frog.squash = 1;                                           // eerst door de knieën
   }
   function feed(x) {
@@ -229,14 +259,15 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
   }
   const vineTip = (i, u = 0.84) => { const v = vines[i], a = v.a + 0.04 * Math.sin(t * 0.5 + v.k); return { x: v.x - Math.sin(a) * v.len * u, y: v.y + Math.cos(a) * v.len * u, a }; };
   function cut(p) {
-    for (const yl of yellows) { const tp = vineTip(yl.vine); if (Math.hypot(p.x - tp.x, p.y - tp.y - 5) < 13) { yellows = yellows.filter(o => o !== yl); fallen.push({ x: tp.x, y: tp.y + 4, vy: 0, a: tp.a, k: Math.random() * 9, fy: SURF + 1 + Math.random() * 3 }); nextYellow = t + 240 + Math.random() * 240; playTerra('snip', { x: p.x / W * 2 - 1 }); return true; } }
+    for (const yl of yellows) { const tp = vineTip(yl.vine); if (Math.hypot(p.x - tp.x, p.y - tp.y - 5) < 13) { yellows = yellows.filter(o => o !== yl); fallen.push({ x: tp.x, y: tp.y + 4, vy: 0, a: tp.a, k: Math.random() * 9, fy: SURF + 1 + Math.random() * 3 }); nextYellowAt = Date.now() + (240 + Math.random() * 240) * 1000; save(true); playTerra('snip', { x: p.x / W * 2 - 1 }); return true; } }
     return false;
   }
 
   function step(dt) {
     t += dt;
     const m = moist();
-    if (t - dayAt > 20) { dayAt = t; day = daylight(now()); }
+    if (t - dayAt > 20) { dayAt = t; day = daylight(now()); if (userLamp !== null && userLamp === clockLamp()) userLamp = null; }   // de klok haalt je keuze in: weer vanzelf
+    if (dirty && Date.now() - savedAt > 15000) save();
     const live = t - hover.at < 2.5;
     const tx = live ? clamp(hover.x / W - 0.5, -0.5, 0.5) * 2 : 0.35 * Math.sin(t * 0.05), ty = live ? clamp(hover.y / H - 0.5, -0.5, 0.5) * 2 : 0.2 * Math.sin(t * 0.037);
     const k = 1 - Math.exp(-dt * 2.2); px += (tx - px) * k; py += (ty - py) * k;
@@ -259,7 +290,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     if (frog.hop) {
       const u = (t - frog.hop.at) / frog.hop.dur;
       if (u < 0) frog.squash = 1 + u / 0.14 * 0.2;
-      else if (u >= 1) { frog.x = frog.hop.x1; frog.y = frog.hop.y1; frog.p = frog.hop.to; frog.hop = null; frog.air = 0; frog.squash = 1; }
+      else if (u >= 1) { frog.x = frog.hop.x1; frog.y = frog.hop.y1; frog.p = frog.hop.to; if (frog.hop.user) dirty = true; frog.hop = null; frog.air = 0; frog.squash = 1; }
       else { const h = frog.hop, vy = (h.y1 - h.y0) - Math.cos(u * Math.PI) * Math.PI * h.h; frog.x = h.x0 + (h.x1 - h.x0) * u; frog.y = h.y0 + (h.y1 - h.y0) * u - Math.sin(u * Math.PI) * h.h; frog.air = 1; frog.squash = 0; frog.tilt = Math.atan2(vy, Math.abs(h.x1 - h.x0) + 1) * 0.8; }
     } else { frog.squash = Math.max(0, frog.squash - dt * 4); if ((frog.next -= dt) < 0) { frog.next = 45 + Math.random() * 75; hopFrog(); } }
     snail.u += snail.dir * dt * 0.005; if (snail.u > 1 || snail.u < 0) { snail.dir *= -1; snail.u = clamp(snail.u, 0, 1); }
@@ -298,7 +329,8 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     // vuurvliegjes: lichten af en toe op, stijgen dan even
     for (const fl of flies) { fl.a += (Math.random() - 0.5) * dt * 3; const on = Math.max(0, Math.sin((t + fl.ph) / fl.per * TAU)) ** 3; fl.on = on; fl.x += Math.cos(fl.a) * dt * 6; fl.y += Math.sin(fl.a) * dt * 4 - on * dt * 5; if (fl.x < 20 || fl.x > W - 20 || fl.y < 22 || fl.y > 150) fl.a += Math.PI * dt * 2; fl.y = clamp(fl.y, 14, 154); }
     // snoeien: af en toe wordt een blad aan een rank geel
-    if (t > nextYellow && yellows.length < 3) { const free = vines.map((_, i) => i).filter(i => !yellows.some(y => y.vine === i)); yellows.push({ vine: free[Math.floor(Math.random() * free.length)] }); nextYellow = t + 240 + Math.random() * 360; }
+    if (Date.now() > nextYellowAt && yellows.length < 3) { const free = vines.map((_, i) => i).filter(i => !yellows.some(y => y.vine === i)); yellows.push({ vine: free[Math.floor(Math.random() * free.length)] }); nextYellowAt = Math.max(nextYellowAt, Date.now() - 600e3) + (240 + Math.random() * 360) * 1000; dirty = true; }
+    else if (yellows.length >= 3 && Date.now() > nextYellowAt) nextYellowAt = Date.now() + 300e3;
     for (const f of fallen) {
       if (!f.float) { f.vy = Math.min(f.vy + dt * 30, 20); f.x += Math.sin(t * 3 + f.k) * dt * 14; f.y += f.vy * dt; f.a = Math.sin(t * 3 + f.k) * 0.8; if (f.y >= f.fy) { f.y = f.fy; f.float = true; rings.push({ x: f.x, y: f.fy, at: t, s: 0.6 }); playTerra('plop', { x: f.x / W * 2 - 1 }); } }
       else { f.x += dt * 2.5; f.a += (1.5 - f.a) * dt; f.fade = (f.fade || 0) + dt / 50; if (f.x > W + 12 || f.fade >= 1) f.gone = true; }
@@ -315,7 +347,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
       const key = lerp3([1, 0.72, 0.4], [0.6, 0.54, 0.4], D);
       light.spot(140 - px * 6, lerp(6, -34, D), lerp(290, 330, D), key, L, lerp(250, 300, D));
       light.spot(124, 150, 70, lerp3([0.34, 0.2, 0.08], [0.1, 0.1, 0.08], D), L, 30);        // de val vangt licht
-      if (D > 0.02) light.dapple(0, 0, W, SURF, t * 1.1 + px * 4, Math.sin(t * 0.21) * 5, 0.26 * D * L, 84);
+      if (D > 0.02) light.dapple(0, 0, W, SURF, t * 1.1 + px * 4, Math.sin(t * 0.21) * 5, 0.3 * D * L, 190);
     }
     if (L < 0.99) {
       const N = 1 - L;
@@ -324,7 +356,7 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     }
     const fa = clamp(1.15 - D * 1.6, 0, 1) * (0.45 + 0.55 * (1 - L));
     if (fa > 0.01) for (const fl of flies) if (fl.on > 0.02) light.spot(fl.x, fl.y, 30, [0.86, 0.84, 0.36], fa * fl.on);
-    if (L > 0.01) light.dapple(0, 190, W, H, t * 2.6, Math.sin(t * 0.4) * 3, 0.2 * L * (0.5 + 0.5 * D), 46);                 // lichtspel op de bodem
+    if (L > 0.01) light.dapple(0, 186, W, H, t * 2.2, Math.sin(t * 0.4) * 3, 0.24 * L * (0.5 + 0.5 * D), 150, 52);                 // lichtspel op de bodem
     light.shade(0, WATER, W, H, 'rgba(0,14,18,0)', 'rgba(0,14,18,.3)');
     return fa;
   }
@@ -408,10 +440,11 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
     tools: TERRA_TOOLS,
     get tool() { return tool; },
     get lit() { return lampOn(); },
-    pick(id) { if (id === 'lamp') { userLamp = !lampOn(); playTerra('lamp', { x: 0 }); } else tool = id; onTool(); },
+    pick(id) { if (id === 'lamp') { const want = !lampOn(); userLamp = want === clockLamp() ? null : want; save(true); playTerra('lamp', { x: 0 }); } else tool = id; onTool(); },
     get busy() { return false; },
-    init() { loadMist(); seed(); },
-    reload() { loadMist(); },
+    init() { seed(); mistAt = Date.now(); restore(); },
+    reload() { restore(); onTool(); },
+    rezoom(z) { zoom = z; },
     mount(el) {
       if (cv) return;
       scale = Math.min(2, window.devicePixelRatio || 1) * zoom;
@@ -422,16 +455,20 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
       el.append(cv);
       g = cv.getContext('2d');
       day = daylight(now()); dayAt = t; dayLv = day.light; lampLv = lampOn() ? 1 : 0;
-      build(); dew = createDew(W, H, scale); light = createLight(W, H);
+      build(); light = createLight(W, H);
+      // het glas: zoals het was (andere maat), zoals het bewaard was, of voor het eerst al wat beslagen
+      dew = createDew(W, H, scale, { floor: WATER - 1, prev: dew, onDrip: (x, r) => rings.push({ x, y: WATER - 0.9, at: t, s: 0.12 + r * 0.06 }) });
+      glassFrom();
       lastNow = 0;
-      const pre = reducedMotion.matches ? 300 : 160;     // het glas is al wat beslagen als je kijkt
-      for (let i = 0; i < pre; i++) step(1 / 30);
+      if (!started) { started = true; dew.prime(moist()); const pre = reducedMotion.matches ? 300 : 160; for (let i = 0; i < pre; i++) step(1 / 30); }
+      document.addEventListener('visibilitychange', flush);
       if (reducedMotion.matches) draw();
     },
-    unmount() { cv?.remove(); cv = null; g = null; built = null; dew = null; light = null; ptr = null; },
+    // het glas blijft bestaan (dew), zodat een nieuwe maat of opnieuw openen verdergaat waar het was
+    unmount() { if (cv && dirty) save(true); document.removeEventListener('visibilitychange', flush); cv?.remove(); cv = null; g = null; built = null; light = null; ptr = null; },
     frame(n) {
       if (!cv || reducedMotion.matches) return;
-      const dt = lastNow ? Math.min(0.05, (n - lastNow) / 1000) : 1 / 60;
+      const dt = lastNow ? clamp((n - lastNow) / 1000, 0, 0.05) : 1 / 60;   // nooit negatief: na een nieuwe maat kan een beeld een ouder tijdstip hebben
       lastNow = n;
       step(dt);
       draw();
@@ -443,12 +480,12 @@ export function createTerra({ reducedMotion, store, zoom = 1, now = () => new Da
       if (ptr.tool === 'sponge') { if (ptr.wipe) dew.wipe(ptr.wipe.x, ptr.wipe.y, p.x, p.y); ptr.wipe = { x: p.x, y: p.y }; }
       if (!frog.hop && Math.hypot(p.x - frog.x, p.y - frog.y + 5) < 18) hopFrog(p);
     },
-    up() { ptr = null; dew?.lift(); },
+    up() { if (ptr?.wipe) save(); ptr = null; dew?.lift(); },
     tap(p) {
       if (!frog.hop && Math.hypot(p.x - frog.x, p.y - frog.y + 5) < 15) { hopFrog(p); playTerra('hop', { x: p.x / W * 2 - 1 }); return; }
       if (tool === 'cut') { cut(p); return; }
       if (tool === 'feed') { feed(p.x); return; }
-      if (tool === 'sponge') { dew.wipe(p.x - 3, p.y, p.x + 3, p.y); return; }
+      if (tool === 'sponge') { dew.wipe(p.x - 3, p.y, p.x + 3, p.y); save(); return; }
       if (p.y > WATER + 2) { rings.push({ x: p.x, y: WATER - 1.6, at: t }); fish.forEach(f => { if (Math.hypot(f.x - p.x, f.y - p.y) < 70) { f.flee = 1; f.dir = f.x > p.x ? 1 : -1; } }); playTerra('plop', { x: p.x / W * 2 - 1 }); }
     },
     leave() { ptr = null; hover.at = -99; },
