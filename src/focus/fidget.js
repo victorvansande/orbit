@@ -33,7 +33,7 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'life', 'breakout', 'snake', 'swing', 'terra', 'panel', 'ink'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster', 'life', 'breakout', 'snake', 'swing', 'terra', 'panel', 'ink'];
 const PANELS = ['panel', 'ink'];   // paneel in twee soorten (Victor, 10/11/2026): Fosfor (CRT) en Inkt (vlak, stijl van Orbit)
 
 import { DESKTOP_MQ } from '../core/config.js';
@@ -43,6 +43,7 @@ import { createPlasma } from './plasma.js';
 import { createBreakout } from './breakout.js';
 import { createSnake } from './snake.js';
 import { createSwing } from './swing.js';
+import { createRaster } from './raster.js';
 import { createNature } from './nature.js';
 import { createTools } from './tools.js';
 
@@ -705,6 +706,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'swing') {
         // slinger (Victor, 12/11/2026, F2): harmonograaf, pen in inkt of de kleur uit de kleurkiezer, vormen achter het pijltje
         modes[modeName] = createSwing({ reducedMotion, accent: () => ACCENT, onPreset: showScreen, size: { w: W, h: HH } });
+      } else if (modeName === 'raster') {
+        // raster (Victor, 12/11/2026, R1 Deining): zeshoekige rasterpunten als wateroppervlak, kleur uit de kleurkiezer
+        modes[modeName] = createRaster({ reducedMotion, accent: () => ACCENT, size: { w: W, h: HH } });
       } else if (modeName === 'terra') {
         // natuurvenster (Victor, 12/11/2026): paludarium en Japanse tuin achter het pijltje, geschilderd, vaste compositie
         // die meezoomt; het paludarium bewaart wanneer je nevelde
@@ -742,7 +746,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   const available = () => MODES.filter(m => (!['lava', 'grain', 'plasma'].includes(m) || getGL()) && (!['topo', 'wayglim'].includes(m) || hasGL2()));
 
   const GROUPS = [
-    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma'] },
+    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster'] },
     { key: 'groupPlay', modes: ['life', 'breakout', 'snake', 'swing'] },
     { key: 'groupNature', modes: ['terra'] },
     { key: 'groupPanel', modes: PANELS }
