@@ -1,0 +1,202 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit raster</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Voorstellen fidget Raster (12/11/2026): drie werkende bakjes op ware grootte (326 x 227), zeshoekige rasterpunten, grootte = hoeveelheid. */
+:root { --bg:#EBE8DF; --well:#E0DDD3; --surface:#F8F6F0; --ink:#1B1B22; --ink2:#5E5E68; --ink3:#9A9AA3; --line:rgba(27,27,34,.12); --core:#E70049; --shade:rgba(27,27,34,.12); --dark:0;
+  --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:400 15px/1.5 var(--sans); }
+.wrap { max-width:1060px; margin:0 auto; padding-block:36px 64px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+.k { font:500 11px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink3); }
+h1 { font:500 28px/1.2 var(--sans); margin:10px 0 0; }
+.lede { color:var(--ink2); max-width:64ch; margin:8px 0 0; }
+.top { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; margin-top:20px; }
+.seg { display:inline-flex; border-radius:999px; box-shadow:inset 0 0 0 1px var(--line); padding:2px; }
+.seg button { font:500 10.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); background:none; border:0; border-radius:999px; padding:9px 11px; cursor:pointer; }
+.seg button[aria-pressed="true"] { color:var(--ink); background:var(--surface); box-shadow:0 0 0 1px var(--line); }
+.sw { display:inline-flex; gap:10px; align-items:center; }
+.sw button { width:22px; height:22px; border-radius:50%; border:0; cursor:pointer; box-shadow:inset 0 0 0 1px var(--line); position:relative; }
+.side h2 { font:500 20px/1.2 var(--sans); margin:0; } .side h2 span { font:500 11px var(--mono); color:var(--ink3); margin-right:10px; letter-spacing:.14em; }
+.side p { color:var(--ink2); margin:8px 0 0; max-width:58ch; font-size:14px; }
+.side ul { margin:14px 0 0; padding:0; list-style:none; display:grid; gap:8px; max-width:60ch; }
+.side li { font-size:13.5px; color:var(--ink2); display:grid; grid-template-columns:92px minmax(0,1fr); gap:12px; }
+.side li b { font:500 10.5px/1.9 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); font-weight:500; }
+.stage { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
+.well { width:100%; max-width:326px; aspect-ratio:326/227; border-radius:14px; background:var(--well); position:relative; overflow:hidden; box-shadow:inset 0 1.5px 3px var(--shade); }
+canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:crosshair; }
+.note { margin-top:36px; padding-top:28px; border-top:1px solid var(--line); color:var(--ink2); font-size:14px; max-width:66ch; }
+@media (max-width:760px) { .row { grid-template-columns:minmax(0,1fr); } .side li { grid-template-columns:80px minmax(0,1fr); } }
+</style>
+<div class="wrap">
+  <div class="k">Orbit · fidgets · raster</div>
+  <h1>Raster: drie voorstellen</h1>
+  <p class="lede">Een veld zeshoekige rasterpunten, het motief van Orbit, als speelgoed. In elk voorstel betekent de grootte van een punt iets anders: water, inkt of licht. Alle drie werken: raak ze aan. Kies er een, of zeg welke samen achter het pijltje mogen.</p>
+  <div class="top">
+    <div class="seg" id="theme"><button data-t="auto" aria-pressed="true">Auto</button><button data-t="light" aria-pressed="false">Licht</button><button data-t="dark" aria-pressed="false">Donker</button></div>
+    <div class="sw" id="accent" aria-label="Kleurkiezer"><button class="std" data-c="" aria-pressed="true" aria-label="Inkt" style="background:var(--ink)"></button><button data-c="#E70049" aria-pressed="false" aria-label="Rood" style="background:#E70049"></button><button data-c="#E08600" aria-pressed="false" aria-label="Oranje" style="background:#E08600"></button><button data-c="#0FAE69" aria-pressed="false" aria-label="Groen" style="background:#0FAE69"></button><button data-c="#1F78B4" aria-pressed="false" aria-label="Blauw" style="background:#1F78B4"></button></div>
+  </div>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="r1"></canvas></div></div>
+    <div class="side"><h2><span>R1</span>Deining</h2>
+      <p>Het raster is een wateroppervlak. Elke golf loopt echt door het veld, kaatst tegen de rand en dooft uit. Grootte = hoogte van het water.</p>
+      <ul>
+        <li><b>Aanraken</b>Een tik is een druppel. Slepen (of met de muis erover) trekt een kielzog.</li>
+        <li><b>Vanzelf</b>Om de paar seconden valt er ergens een druppel.</li>
+        <li><b>Karakter</b>Levendig, veert na. Het meest fidget van de drie.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="r2"></canvas></div></div>
+    <div class="side"><h2><span>R2</span>Vloei</h2>
+      <p>Het raster is vloeipapier. Waar je komt, zuigen de punten inkt op; de inkt trekt traag naar de buren en droogt weer op. Grootte = hoeveelheid inkt.</p>
+      <ul>
+        <li><b>Aanraken</b>Slepen tekent een spoor dat uitvloeit. Een tik is een vlek.</li>
+        <li><b>Vanzelf</b>Blijf je weg, dan trekt een onzichtbare pen trage lussen.</li>
+        <li><b>Karakter</b>Traag en stil. Je kan er echt in tekenen, en het wist zichzelf.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="r3"></canvas></div></div>
+    <div class="side"><h2><span>R3</span>Reliëf</h2>
+      <p>Onder het raster ligt een zacht landschap van heuvels dat je enkel ziet door het licht. Grootte = schaduw (in het donker: licht), zoals een foto in een krant.</p>
+      <ul>
+        <li><b>Aanraken</b>Je vinger of muis is de lamp. Een tik boetseert een nieuw landschap.</li>
+        <li><b>Vanzelf</b>De lamp draait een trage baan rond het midden.</li>
+        <li><b>Karakter</b>Het meest een object om naar te kijken, het minst speels.</li>
+      </ul></div>
+  </section>
+
+  <p class="note">In de app volgt de kleur de kleurkiezer, zonder keuze inkt. Een groter bakje (desktop) krijgt meer punten van dezelfde maat. Minder beweging: één stilstaand beeld. Geen opslag, geen geluid.</p>
+</div>
+<script>
+const W = 326, H = 227, root = document.documentElement;
+let T = {}, ACCENT = '';
+const theme = () => { const s = getComputedStyle(root); T = { well: s.getPropertyValue('--well').trim(), ink: s.getPropertyValue('--ink').trim(), dark: s.getPropertyValue('--dark').trim() === '1' }; };
+theme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+new MutationObserver(theme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+const press = (sel, fn) => document.querySelectorAll(sel).forEach(b => b.onclick = () => { document.querySelectorAll(sel).forEach(x => x.setAttribute('aria-pressed', x === b)); fn(b); });
+press('#theme button', b => { if (b.dataset.t === 'auto') delete root.dataset.theme; else root.dataset.theme = b.dataset.t; theme(); });
+press('#accent button', b => { ACCENT = b.dataset.c; });
+const pen = () => ACCENT || T.ink;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// zeshoekig rooster: rijen om en om een halve stap verschoven
+const S = 7, RH = S * Math.sqrt(3) / 2, COLS = Math.floor((W - S / 2) / S) + 1, ROWS = Math.floor(H / RH) + 1, N = COLS * ROWS;
+const OX = (W - ((COLS - 1) * S + S / 2)) / 2, OY = (H - (ROWS - 1) * RH) / 2;
+const PX = new Float32Array(N), PY = new Float32Array(N), NB = new Int32Array(N * 6);
+for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
+  const k = j * COLS + i, o = j & 1;
+  PX[k] = OX + i * S + (o ? S / 2 : 0); PY[k] = OY + j * RH;
+  [[i - 1, j], [i + 1, j], [i - 1 + o, j - 1], [i + o, j - 1], [i - 1 + o, j + 1], [i + o, j + 1]].forEach(([x, y], n) => { NB[k * 6 + n] = x < 0 || y < 0 || x >= COLS || y >= ROWS ? -1 : y * COLS + x; });
+}
+const HEX = Array.from({ length: 6 }, (_, n) => [Math.cos(Math.PI / 6 + n * Math.PI / 3), Math.sin(Math.PI / 6 + n * Math.PI / 3)]);
+function dots(g, radius) {
+  g.fillStyle = T.well; g.fillRect(0, 0, W, H);
+  g.fillStyle = pen(); g.beginPath();
+  for (let k = 0; k < N; k++) {
+    const r = radius(k); if (r < 0.2) continue;
+    const x = PX[k], y = PY[k];
+    g.moveTo(x + HEX[0][0] * r, y + HEX[0][1] * r);
+    for (let n = 1; n < 6; n++) g.lineTo(x + HEX[n][0] * r, y + HEX[n][1] * r);
+    g.closePath();
+  }
+  g.fill();
+}
+const near = (x, y, rad, fn) => { for (let k = 0; k < N; k++) { const d = Math.hypot(PX[k] - x, PY[k] - y); if (d < rad) fn(k, d); } };
+const lap = (a, k) => { let s = 0; for (let n = 0; n < 6; n++) { const q = NB[k * 6 + n]; s += q < 0 ? a[k] : a[q]; } return s - 6 * a[k]; };   // rand: spiegelt
+
+function setup(id) {
+  const c = document.getElementById(id), g = c.getContext('2d'), d = Math.min(2, devicePixelRatio || 1);
+  c.width = W * d; c.height = H * d; g.scale(d, d);
+  const p = { x: W / 2, y: H / 2, px: W / 2, py: H / 2, down: false, moved: false, tap: false, at: -1e9, over: false };
+  const pos = e => { const r = c.getBoundingClientRect(); p.x = (e.clientX - r.left) * W / r.width; p.y = (e.clientY - r.top) * H / r.height; p.at = performance.now(); };
+  c.addEventListener('pointerdown', e => { pos(e); p.px = p.x; p.py = p.y; p.sx = p.x; p.sy = p.y; p.down = true; p.far = false; c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', e => { if (!p.down && e.pointerType !== 'mouse') return; if (!p.over) { pos(e); p.px = p.x; p.py = p.y; p.over = true; } pos(e); p.moved = true; if (p.down && Math.hypot(p.x - p.sx, p.y - p.sy) > 6) p.far = true; });
+  c.addEventListener('pointerup', e => { pos(e); if (p.down && !p.far) p.tap = true; p.down = false; });
+  c.addEventListener('pointerleave', () => { p.over = false; }); c.addEventListener('pointercancel', () => { p.down = false; p.over = false; });
+  return { g, p };
+}
+// vaste stap van 1/60 s: gelijk op 60 en 120 Hz
+function loop(step, draw, still) {
+  if (reduced) { still(); draw(); new MutationObserver(draw).observe(root, { attributes: true }); return; }
+  let last = performance.now(), acc = 0;
+  const f = now => { acc += Math.min(0.05, (now - last) / 1000); last = now; while (acc >= 1 / 60) { acc -= 1 / 60; step(now); } draw(); requestAnimationFrame(f); };
+  requestAnimationFrame(f);
+}
+const along = (p, gap, fn) => { const d = Math.hypot(p.x - p.px, p.y - p.py), n = Math.max(1, Math.ceil(d / gap)); for (let i = 1; i <= n; i++) fn(p.px + (p.x - p.px) * i / n, p.py + (p.y - p.py) * i / n, d / n); p.px = p.x; p.py = p.y; };
+
+/* ---------- R1 Deining ---------- */
+(() => {
+  const { g, p } = setup('r1'), h = new Float32Array(N), v = new Float32Array(N);
+  let wait = 1;
+  const drop = (x, y, amp, rad = 26) => near(x, y, rad, (k, d) => { h[k] += amp * Math.exp(-d * d / (rad * rad * 0.13)); });
+  loop(() => {
+    if (p.tap) { p.tap = false; drop(p.x, p.y, 1.7); }
+    if (p.moved) { p.moved = false; along(p, 5, (x, y, d) => drop(x, y, -0.05 * Math.min(6, d), 20)); }
+    wait -= 1 / 60;
+    if (wait < 0 && performance.now() - p.at > 2500) { wait = 2.5 + Math.random() * 3; drop(20 + Math.random() * (W - 40), 20 + Math.random() * (H - 40), 1.3); }
+    for (let k = 0; k < N; k++) v[k] = (v[k] + 0.035 * lap(h, k)) * 0.995;
+    for (let k = 0; k < N; k++) h[k] += v[k];
+  }, () => dots(g, k => { const e = 1 - Math.exp(-Math.abs(h[k]) * 3.2); return 1.2 + (h[k] > 0 ? 2.15 : -0.95) * e; }),   // kleine golven blijven leesbaar
+  () => { drop(W * 0.38, H * 0.52, 1.6); for (let s = 0; s < 70; s++) { for (let k = 0; k < N; k++) v[k] = (v[k] + 0.035 * lap(h, k)) * 0.995; for (let k = 0; k < N; k++) h[k] += v[k]; } });
+})();
+
+/* ---------- R2 Vloei ---------- */
+(() => {
+  const { g, p } = setup('r2'), a = new Float32Array(N), b = new Float32Array(N);
+  let t = Math.random() * 100, ghost = null;
+  const blot = (x, y, amp, rad) => near(x, y, rad, (k, d) => { a[k] = Math.min(1.8, a[k] + amp * Math.exp(-d * d / (rad * rad * 0.2))); });
+  const spread = () => { for (let k = 0; k < N; k++) b[k] = (a[k] + 0.02 * lap(a, k)) * 0.9975; a.set(b); };   // trekt naar de buren, droogt in ruim 7 s
+  loop(now => {
+    if (p.tap) { p.tap = false; blot(p.x, p.y, 1.6, 26); }
+    if (p.moved) { p.moved = false; along(p, 3, (x, y) => blot(x, y, 0.3, 13)); ghost = null; }
+    if (now - p.at > 4000) {   // niemand thuis: een trage lus
+      t += 1 / 60;
+      const q = { x: W / 2 + Math.sin(t * 0.43) * W * 0.36 + Math.sin(t * 1.3) * 14, y: H / 2 + Math.sin(t * 0.61 + 1) * H * 0.3 + Math.cos(t * 1.1) * 10 };
+      if (ghost) blot(q.x, q.y, 0.06, 13);
+      ghost = q;
+    }
+    spread();
+  }, () => dots(g, k => 0.55 + 2.8 * Math.sqrt(Math.min(1, a[k]))),
+  () => { for (let i = 0; i < 260; i++) { const u = i / 40; blot(W / 2 + Math.sin(u * 0.9) * W * 0.34, H / 2 + Math.sin(u * 1.35 + 1) * H * 0.28, 0.09, 13); spread(); } });
+})();
+
+/* ---------- R3 Reliëf ---------- */
+(() => {
+  const { g, p } = setup('r3'), zx = new Float32Array(N), zy = new Float32Array(N), zz = new Float32Array(N), fx = new Float32Array(N), fy = new Float32Array(N), fz = new Float32Array(N);
+  const lamp = { x: W * 0.3, y: H * 0.3 }; let t = 0, morph = 1;
+  function land() {   // een paar zachte heuvels en een kuil; de helling is exact, geen verschillen
+    fx.set(zx); fy.set(zy); fz.set(zz); zx.fill(0); zy.fill(0); zz.fill(0); morph = 0;
+    const n = 4 + (Math.random() * 3 | 0);
+    for (let i = 0; i < n; i++) {
+      const bx = 30 + Math.random() * (W - 60), by = 30 + Math.random() * (H - 60), s = 22 + Math.random() * 30, amp = (i === 0 ? -1 : 1) * (16 + Math.random() * 22);
+      for (let k = 0; k < N; k++) { const dx = PX[k] - bx, dy = PY[k] - by, e = amp * Math.exp(-(dx * dx + dy * dy) / (2 * s * s)); zz[k] += e; zx[k] -= e * dx / (s * s); zy[k] -= e * dy / (s * s); }
+    }
+  }
+  land(); morph = 1;
+  const shade = k => {
+    const m = morph * morph * (3 - 2 * morph), gx = fx[k] + (zx[k] - fx[k]) * m, gy = fy[k] + (zy[k] - fy[k]) * m, z = fz[k] + (zz[k] - fz[k]) * m;
+    const lx = lamp.x - PX[k], ly = lamp.y - PY[k], lz = 95 - z, ll = Math.hypot(lx, ly, lz), nl = Math.hypot(gx, gy, 1);
+    const lit = Math.max(0, (-gx * lx - gy * ly + lz) / (ll * nl)) * Math.min(1, 150 / ll);   // lambert, zwakker met de afstand
+    return T.dark ? 0.35 + 2.9 * Math.pow(lit, 1.5) : 0.35 + 2.9 * Math.pow(1 - lit, 1.25);
+  };
+  loop(now => {
+    if (p.tap) { p.tap = false; land(); }
+    if (morph < 1) morph = Math.min(1, morph + 1 / 60 / 1.2);
+    t += 1 / 60;
+    const idle = now - p.at > 3000, tx = idle ? W / 2 + Math.cos(t * 0.45) * W * 0.34 : p.x, ty = idle ? H / 2 + Math.sin(t * 0.45) * H * 0.32 : p.y, e = idle ? 0.03 : 0.2;
+    lamp.x += (tx - lamp.x) * e; lamp.y += (ty - lamp.y) * e;
+  }, () => dots(g, shade), () => {});
+})();
+</script>
