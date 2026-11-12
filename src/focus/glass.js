@@ -8,10 +8,7 @@
 // Op gsm blijft het glaasje met de tijd in Geist Mono. De maat van het glas komt uit de CSS (canvasmaat).
 // Leest de toestand van de zandloper uit de opslag (timerState in timer.js), dus loopt mee met herladen en tabbladen.
 import { timerState } from './timer.js';
-
-const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-// halve breedte van een bol (0..1) op hoogte u van de hals (0) naar de rand (1): ronde schouders
-const shape = u => u < 0.62 ? Math.sin(u / 0.62 * Math.PI / 2) : Math.sqrt(Math.max(0, 1 - ((u - 0.62) / 0.4) ** 2));
+import { createSand } from './sand.js';
 
 export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => {}, onReset = () => {} }) {
   const open = Object.assign(document.createElement('button'), { type: 'button', className: 'glass-open' });
@@ -30,7 +27,7 @@ export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => 
   reset.setAttribute('aria-label', tx('timer.reset')); reset.title = tx('timer.reset');
   tools.append(pause, reset);
   root.append(tools, open);
-  const g = cv.getContext('2d');
+  const g = cv.getContext('2d'), sand = createSand();
   let raf = 0, idle = 0, running = false, shown = null, endAt = 0, ink = '27,27,34', colAt = 0, lastRead = 0, st = null, W = 28, H = 46;
 
   function colors(now) {
@@ -45,28 +42,6 @@ export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => 
     W = cv.clientWidth || 28; H = cv.clientHeight || 46;
     if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  // rasterpunten: zand boven (q, van de hals omhoog gevuld) en onder (1 - q, van de bodem op), zachte rand naar de wand
-  function drawGlass(q, live, now) {
-    const sp = W > 30 ? 3.7 : 3.3, bulb = (H - 2) / 2, R = W / 2 - 1.5, cx = W / 2, cy = H / 2;
-    for (let row = 0, y = 1 + sp / 2; y < H - 1; row++, y += sp * 0.866) {
-      const up = y < cy, u = Math.abs(y - cy) / bulb, hw = 0.8 + (R - 0.8) * shape(u);
-      for (let x = cx - Math.ceil(hw / sp) * sp + (row % 2) * sp / 2; x <= cx + hw; x += sp) {
-        const dx = Math.abs(x - cx);
-        if (dx > hw - 0.4) continue;
-        const f = up ? smooth(-0.07, 0.07, q * 0.92 - u + 0.04) : smooth(-0.07, 0.07, (1 - q) * 0.92 - (1 - u) + 0.04);
-        const edge = smooth(0, sp * 1.6, Math.min(hw - dx, up ? y - 1 : H - 1 - y));
-        g.globalAlpha = (0.2 + 0.8 * f) * (0.35 + 0.65 * edge);
-        g.beginPath(); g.arc(x, y, sp * (0.12 + 0.33 * f) * (0.6 + 0.4 * edge), 0, Math.PI * 2); g.fill();
-      }
-    }
-    // een korreltje door de hals zolang het loopt
-    if (live && q > 0.002 && !reducedMotion.matches) {
-      const ph = (now / 420) % 1;
-      g.globalAlpha = 0.85 * (1 - ph);
-      g.beginPath(); g.arc(cx, cy + ph * bulb * 0.75, W > 30 ? 0.95 : 0.75, 0, Math.PI * 2); g.fill();
-    }
-    g.globalAlpha = 1;
   }
   // klaar: de vierpuntige ster zwelt op, draait een kwartslag en krimpt tot niets
   function star(p) {
@@ -100,7 +75,7 @@ export function createGlass(root, { reducedMotion, tx, onOpen, onToggle = () => 
       setShown(true);
       colors(now); fit();
       g.clearRect(0, 0, W, H); g.fillStyle = `rgb(${ink})`;
-      drawGlass(left / total, st.endAt > 0, now);
+      sand.fit(W, H); sand.draw(g, left / total, { live: st.endAt > 0, now, still: reducedMotion.matches });   // dezelfde tekening als in de focus
       const txt = fmt(left);
       if (time.textContent !== txt) {
         time.textContent = txt;
