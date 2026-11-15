@@ -47,7 +47,6 @@ import { createRaster } from './raster.js';
 import { createTree } from './tree.js';
 import { createDotFidget } from './dots.js';
 import { createAsciiFidget } from './ascii.js';
-import { createReef } from './reef.js';
 import { createForest } from './forest.js';
 import { createYear } from './year.js';
 import { createNature } from './nature.js';
@@ -648,7 +647,7 @@ const hasGL2 = () => {
 };
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
-const DOTS = { reef: createReef, forest: createForest, year: createYear };
+const DOTS = { forest: createForest, year: createYear };
 const ZOOMED = ['breakout', 'terra', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
 const NO_COLOR = ['terra', 'tree', 'picker', 'spin', 'reef', 'forest'];   // eigen kleuren, geen kleurkiezer
 
@@ -722,6 +721,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'picker') {
         // kleurkiezer van ASCII Magic, letterlijk (Victor, 15/11/2026), pas geladen als je hem kiest
         modes[modeName] = createAsciiFidget(() => import('../vendor/colorpicker.js'), { reducedMotion, size: { w: W, h: HH } });
+      } else if (modeName === 'reef') {
+        // rif van ASCII Magic, letterlijk (Victor, 15/11/2026), in de look "dots"
+        modes[modeName] = createAsciiFidget(() => import('../vendor/reef.js'), { reducedMotion, size: { w: W, h: HH } });
       } else if (modeName === 'spin') {
         // spinnerset van ASCII Magic, letterlijk (Victor, 15/11/2026), in de look "dense"
         modes[modeName] = createAsciiFidget(() => import('../vendor/spinners.js'), { reducedMotion, size: { w: W, h: HH }, look: 'dense' });

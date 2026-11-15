@@ -1,5 +1,5 @@
 /* ---- Stukken van ASCII Magic in de looks "dots" en "dense" ---- */
-// Victor (15/11/2026) wou color-picker-sliders en spinner-set letterlijk ("maar aanpassen aan formaat van de fidget
+// Victor (15/11/2026) wou color-picker-sliders, spinner-set en underwater-reef letterlijk ("maar aanpassen aan formaat van de fidget
 // wanneer nodig"). De stukken staan ongewijzigd in src/vendor/ en worden pas geladen als je de soort kiest. Dit
 // bestand tekent hun beelden (tekst plus kleursleutels per vakje) zoals hun looks: enkel de blokjes (U+2580 tot
 // U+259F) worden herschreven, met als dichtheid hun inkt maal de helderheid van hun kleur, genormaliseerd tussen de
