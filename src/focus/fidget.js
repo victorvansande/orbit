@@ -33,7 +33,7 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster', 'life', 'breakout', 'snake', 'swing', 'tree', 'terra', 'panel', 'ink'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster', 'life', 'breakout', 'snake', 'swing', 'tree', 'picker', 'spin', 'year', 'terra', 'reef', 'forest', 'panel', 'ink'];
 const PANELS = ['panel', 'ink'];   // paneel in twee soorten (Victor, 10/11/2026): Fosfor (CRT) en Inkt (vlak, stijl van Orbit)
 
 import { DESKTOP_MQ } from '../core/config.js';
@@ -45,6 +45,12 @@ import { createSnake } from './snake.js';
 import { createSwing } from './swing.js';
 import { createRaster } from './raster.js';
 import { createTree } from './tree.js';
+import { createDotFidget } from './dots.js';
+import { createPicker } from './picker.js';
+import { createReef } from './reef.js';
+import { createForest } from './forest.js';
+import { createYear } from './year.js';
+import { createSpin } from './spin.js';
 import { createNature } from './nature.js';
 import { createTools } from './tools.js';
 
@@ -643,8 +649,9 @@ const hasGL2 = () => {
 };
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
+const DOTS = { picker: createPicker, reef: createReef, forest: createForest, year: createYear, spin: createSpin };
 const ZOOMED = ['breakout', 'terra', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
-const NO_COLOR = ['terra', 'tree'];   // eigen kleuren, geen kleurkiezer
+const NO_COLOR = ['terra', 'tree', 'picker', 'reef', 'forest'];   // eigen kleuren, geen kleurkiezer
 
 // scores: opslag per spel (src/data/scores.js, createScoreStore), zodat highscores mee synchroniseren
 // fits(w, h): past een bakje van die maat op het scherm (niet over de scène, ruimte voor de zandloper erboven); van app.js
@@ -713,6 +720,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'tree') {
         // kerstboom in tekens (Victor, 15/11/2026, A1 Kleur): draaiende puntenwolk, eigen kleuren op een donker venster
         modes[modeName] = createTree({ reducedMotion, size: { w: W, h: HH } });
+      } else if (DOTS[modeName]) {
+        // stippenscènes en tekstschermen naar stukken van ascii-magic.com (Victor, 15/11/2026), eigen code (src/focus/dots.js)
+        modes[modeName] = createDotFidget(o => DOTS[modeName]({ ...o, getData, accent: () => ACCENT }), { reducedMotion, size: { w: W, h: HH } });
       } else if (modeName === 'terra') {
         // natuurvenster (Victor, 12/11/2026): paludarium en Japanse tuin achter het pijltje, geschilderd, vaste compositie
         // die meezoomt; het paludarium bewaart wanneer je nevelde
@@ -751,8 +761,8 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
 
   const GROUPS = [
     { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster'] },
-    { key: 'groupPlay', modes: ['life', 'breakout', 'snake', 'swing', 'tree'] },
-    { key: 'groupNature', modes: ['terra'] },
+    { key: 'groupPlay', modes: ['life', 'breakout', 'snake', 'swing', 'tree', 'picker', 'spin', 'year'] },
+    { key: 'groupNature', modes: ['terra', 'reef', 'forest'] },
     { key: 'groupPanel', modes: PANELS }
   ];
 

@@ -2101,7 +2101,7 @@ const fidget = createFidget($('fidget'), {
     const from = new Date(); from.setHours(0, 0, 0, 0);
     const doneToday = Object.values(done).filter(t => t >= from.getTime()).length, open = tasks.filter(t => t.level <= 2).length;
     return {
-      tasks: tasks.map(t => ({ title: t.title, level: t.level })), total: totalDone(done), archive: archive.length,
+      tasks: tasks.map(t => ({ title: t.title, level: t.level })), total: totalDone(done), archive: archive.length, days: Object.values(done),
       today: doneToday / Math.max(1, doneToday + open), sync: syncStatus(),
       stars: sky.stars.filter(st => starVisible(st.id)).map(st => ({ x: st.x, y: st.y, t: done[st.id] })),
     };
