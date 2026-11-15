@@ -33,7 +33,7 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster', 'life', 'breakout', 'snake', 'swing', 'terra', 'panel', 'ink'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster', 'life', 'breakout', 'snake', 'swing', 'tree', 'terra', 'panel', 'ink'];
 const PANELS = ['panel', 'ink'];   // paneel in twee soorten (Victor, 10/11/2026): Fosfor (CRT) en Inkt (vlak, stijl van Orbit)
 
 import { DESKTOP_MQ } from '../core/config.js';
@@ -44,6 +44,7 @@ import { createBreakout } from './breakout.js';
 import { createSnake } from './snake.js';
 import { createSwing } from './swing.js';
 import { createRaster } from './raster.js';
+import { createTree } from './tree.js';
 import { createNature } from './nature.js';
 import { createTools } from './tools.js';
 
@@ -643,7 +644,7 @@ const hasGL2 = () => {
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
 const ZOOMED = ['breakout', 'terra', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
-const NO_COLOR = ['terra'];   // eigen kleuren, geen kleurkiezer
+const NO_COLOR = ['terra', 'tree'];   // eigen kleuren, geen kleurkiezer
 
 // scores: opslag per spel (src/data/scores.js, createScoreStore), zodat highscores mee synchroniseren
 // fits(w, h): past een bakje van die maat op het scherm (niet over de scène, ruimte voor de zandloper erboven); van app.js
@@ -709,6 +710,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'raster') {
         // raster (Victor, 12/11/2026, R1 Deining): zeshoekige rasterpunten als wateroppervlak, kleur uit de kleurkiezer
         modes[modeName] = createRaster({ reducedMotion, accent: () => ACCENT, size: { w: W, h: HH } });
+      } else if (modeName === 'tree') {
+        // kerstboom in tekens (Victor, 15/11/2026, A1 Kleur): draaiende puntenwolk, eigen kleuren op een donker venster
+        modes[modeName] = createTree({ reducedMotion, size: { w: W, h: HH } });
       } else if (modeName === 'terra') {
         // natuurvenster (Victor, 12/11/2026): paludarium en Japanse tuin achter het pijltje, geschilderd, vaste compositie
         // die meezoomt; het paludarium bewaart wanneer je nevelde
@@ -747,7 +751,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
 
   const GROUPS = [
     { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster'] },
-    { key: 'groupPlay', modes: ['life', 'breakout', 'snake', 'swing'] },
+    { key: 'groupPlay', modes: ['life', 'breakout', 'snake', 'swing', 'tree'] },
     { key: 'groupNature', modes: ['terra'] },
     { key: 'groupPanel', modes: PANELS }
   ];
