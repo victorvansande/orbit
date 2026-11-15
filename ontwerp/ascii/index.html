@@ -1,0 +1,260 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit ASCII-boom</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@500&display=swap">
+<style>
+/* Voorstellen fidget ASCII-boom (15/11/2026): draaiende puntenwolk in tekens, naar een schermopname van Victor. Ware grootte (326 x 227). */
+:root { --bg:#EBE8DF; --well:#E0DDD3; --surface:#F8F6F0; --ink:#1B1B22; --ink2:#5E5E68; --ink3:#9A9AA3; --line:rgba(27,27,34,.12); --core:#E70049; --shade:rgba(27,27,34,.12); --dark:0;
+  --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0F0F12; --well:#0A0A0D; --surface:#19191D; --ink:#ECECF1; --ink2:#A9A9B3; --ink3:#6E6E78; --line:rgba(236,236,241,.12); --core:#F0306A; --shade:rgba(0,0,0,.5); --dark:1; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:400 15px/1.5 var(--sans); }
+.wrap { max-width:1060px; margin:0 auto; padding-block:36px 64px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+.k { font:500 11px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink3); }
+h1 { font:500 28px/1.2 var(--sans); margin:10px 0 0; }
+.lede { color:var(--ink2); max-width:64ch; margin:8px 0 0; }
+.top { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; margin-top:20px; }
+.seg { display:inline-flex; border-radius:999px; box-shadow:inset 0 0 0 1px var(--line); padding:2px; }
+.seg button { font:500 10.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); background:none; border:0; border-radius:999px; padding:9px 11px; cursor:pointer; }
+.seg button[aria-pressed="true"] { color:var(--ink); background:var(--surface); box-shadow:0 0 0 1px var(--line); }
+.sw { display:inline-flex; gap:10px; align-items:center; }
+.sw button { width:22px; height:22px; border-radius:50%; border:0; cursor:pointer; box-shadow:inset 0 0 0 1px var(--line); position:relative; }
+.side h2 { font:500 20px/1.2 var(--sans); margin:0; } .side h2 span { font:500 11px var(--mono); color:var(--ink3); margin-right:10px; letter-spacing:.14em; }
+.side p { color:var(--ink2); margin:8px 0 0; max-width:58ch; font-size:14px; }
+.side ul { margin:14px 0 0; padding:0; list-style:none; display:grid; gap:8px; max-width:60ch; }
+.side li { font-size:13.5px; color:var(--ink2); display:grid; grid-template-columns:92px minmax(0,1fr); gap:12px; }
+.side li b { font:500 10.5px/1.9 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); font-weight:500; }
+.stage { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
+.well { width:100%; max-width:326px; aspect-ratio:326/227; border-radius:14px; background:var(--well); position:relative; overflow:hidden; box-shadow:inset 0 1.5px 3px var(--shade); }
+canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:crosshair; }
+.note { margin-top:36px; padding-top:28px; border-top:1px solid var(--line); color:var(--ink2); font-size:14px; max-width:66ch; }
+@media (max-width:760px) { .row { grid-template-columns:minmax(0,1fr); } .side li { grid-template-columns:80px minmax(0,1fr); } }
+</style>
+<div class="wrap">
+  <div class="k">Orbit · fidgets · ascii</div>
+  <h1>Boom in tekens: twee stijlen</h1>
+  <p class="lede">Zoals in je opname: een kerstboom als draaiende wolk van een paar duizend punten, elk beeld opnieuw omgezet naar tekens. Hij bouwt zich op in lagen (grond, naalden, sneeuw, slinger, ballen, lichtjes, piek, pakjes). Beide werken: raak ze aan.</p>
+  <div class="top">
+    <div class="seg" id="theme"><button data-t="auto" aria-pressed="true">Auto</button><button data-t="light" aria-pressed="false">Licht</button><button data-t="dark" aria-pressed="false">Donker</button></div>
+  </div>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="a1"></canvas></div></div>
+    <div class="side"><h2><span>A1</span>Kleur</h2>
+      <p>Dicht bij de opname: altijd een donker venster, groene naalden, witte sneeuw, rode, gouden en blauwe ballen, warme lichtjes. Tekens <span style="font-family:var(--mono)">.:-=+*#%@</span>.</p>
+      <ul>
+        <li><b>Aanraken</b>Slepen draait de boom, met uitloop. Een tik schudt de sneeuw van de takken; ze sneeuwt traag weer aan. Dubbeltik bouwt hem opnieuw op.</li>
+        <li><b>Vanzelf</b>Draait traag rond, lichtjes twinkelen, het sneeuwt.</li>
+        <li><b>Karakter</b>Feestelijk en herkenbaar, maar het wijkt af van Orbit: volle kleur buiten de bollen, zoals het Natuurvenster.</li>
+      </ul></div>
+  </section>
+
+  <section class="row">
+    <div class="stage"><div class="well"><canvas id="a2"></canvas></div></div>
+    <div class="side"><h2><span>A2</span>Inkt</h2>
+      <p>Dezelfde boom in de beeldtaal van Orbit: inkt op papier, de tekenset <span style="font-family:var(--mono)">·:+×#</span>, en kleur enkel in de ballen. Dat zijn de vijf bollen: Nu, Vandaag, Week, Maand, Ooit. De piek is rood.</p>
+      <ul>
+        <li><b>Aanraken</b>Zelfde gebaren als A1.</li>
+        <li><b>Thema</b>Licht: meer inkt waar het donker is, sneeuw is open papier. Donker: omgekeerd, sneeuw en lichtjes zijn de dichtste tekens.</li>
+        <li><b>Karakter</b>Rustiger, past naast Raster en Slinger. Minder kerstkaart.</li>
+      </ul></div>
+  </section>
+
+  <p class="note">In de app: een groter bakje krijgt een grotere boom met meer tekens van dezelfde maat. Minder beweging: één stilstaand beeld van de afgewerkte boom. Onderaan klein de draaihoek, het aantal lichtjes en het aantal tekens, zoals in de opname. De meelopende code uit de opname laat ik weg.</p>
+</div>
+<script>
+const W = 326, H = 227, root = document.documentElement, TAU = Math.PI * 2;
+let T = {};
+const theme = () => { const s = getComputedStyle(root); T = { well: s.getPropertyValue('--well').trim(), ink: s.getPropertyValue('--ink').trim(), core: s.getPropertyValue('--core').trim(), dark: s.getPropertyValue('--dark').trim() === '1' }; };
+theme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+document.querySelectorAll('#theme button').forEach(b => b.onclick = () => { document.querySelectorAll('#theme button').forEach(x => x.setAttribute('aria-pressed', x === b)); if (b.dataset.t === 'auto') delete root.dataset.theme; else root.dataset.theme = b.dataset.t; theme(); });
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+
+/* ---------- model: één boom, één keer gebouwd ---------- */
+const NEEDLE = 0, SNOW = 1, TRUNK = 2, GARLAND = 3, BALL = 4, LIGHT = 5, STAR = 6, GIFT = 7, RIBBON = 8;
+const M = (() => {
+  let a = 7; const r = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const gs = () => (r() + r() + r() - 1.5) * 1.15;
+  const P = [];   // x y z nx ny nz kind variant birth phase
+  const add = (x, y, z, nx, ny, nz, kind, variant, birth) => { const l = Math.hypot(nx, ny, nz) || 1; P.push(x, y, z, nx / l, ny / l, nz / l, kind, variant, birth, r()); };
+  const Y0 = 0.22, Y1 = 2.0, env = y => 0.03 + 0.8 * Math.pow(1 - Math.min(1, Math.max(0, (y - Y0) / (Y1 - Y0))), 1.08);
+  // stam
+  for (let i = 0; i < 140; i++) { const an = r() * TAU, y = r() * 0.34; add(Math.cos(an) * 0.05, y, Math.sin(an) * 0.05, Math.cos(an), 0.1, Math.sin(an), TRUNK, 0, 0.3 + y); }
+  // naalden: kransen van afhangende takken, dichter aan de top van elke tak; sneeuw op de buitenste helft
+  for (let i = 0; i < 26; i++) {
+    const y = Y0 + 0.02 + (Y1 - Y0 - 0.06) * i / 25, R = env(y), f = (y - Y0) / (Y1 - Y0), nb = Math.floor(7 + 11 * (1 - f));
+    for (let b = 0; b < nb; b++) {
+      const an = TAU * b / nb + i * 0.618 * TAU + gs() * 0.12, L = R * (i % 2 ? 0.72 : 0.9) * (0.86 + 0.3 * r()), n = Math.floor(10 + 64 * L);
+      for (let k = 0; k < n; k++) {
+        const s = Math.pow(r(), 0.65), sp = 0.03 + 0.1 * s, rad = Math.max(0.01, s * L + gs() * sp * 0.4), aa = an + gs() * sp / Math.max(0.1, s * L) * 0.55;
+        const yy = y + 0.07 * s * L - 0.22 * (s * L) ** 2 + gs() * sp * 0.45, snow = s > 0.42 && r() < 0.17;
+        add(Math.cos(aa) * rad, yy + (snow ? 0.014 : 0), Math.sin(aa) * rad, Math.cos(aa) * 0.75, snow ? 1.4 : 0.55, Math.sin(aa) * 0.75, snow ? SNOW : NEEDLE, 0, snow ? 4.2 + r() * 1.3 : 0.5 + 3.2 * f + r() * 0.5);
+      }
+    }
+  }
+  // slinger: spiraal met doorhangende bogen
+  for (let i = 0; i < 760; i++) { const t = i / 760, an = 6.5 * TAU * t, y = 0.36 + 1.46 * t - 0.03 * Math.abs(Math.sin(an * 3)), R = env(y) * 0.97; add(Math.cos(an) * R, y, Math.sin(an) * R, Math.cos(an), 0.3, Math.sin(an), GARLAND, 0, 5.2 + 1.5 * (1 - t)); }
+  // ballen: kleine bollen aan de rand van de boom
+  for (let i = 0; i < 26; i++) {
+    const y = 0.3 + 1.4 * r(), an = r() * TAU, R = env(y) * 0.96, cx = Math.cos(an) * R, cz = Math.sin(an) * R, rad = 0.042 + 0.014 * r();
+    for (let k = 0; k < 46; k++) { const u = r() * 2 - 1, v = r() * TAU, q = Math.sqrt(1 - u * u); add(cx + q * Math.cos(v) * rad, y - 0.05 + u * rad, cz + q * Math.sin(v) * rad, q * Math.cos(v), u, q * Math.sin(v), BALL, i % 5, 6.8 + i * 0.07); }
+  }
+  // lichtjes
+  for (let i = 0; i < 170; i++) { const y = 0.26 + 1.66 * r(), an = r() * TAU, R = env(y) * (0.86 + 0.14 * r()); add(Math.cos(an) * R, y, Math.sin(an) * R, 0, 1, 0, LIGHT, 0, 8.8 + i / 170 * 1.6); }
+  // piek: stralen langs de drie assen
+  for (let i = 0; i < 90; i++) { const ax = i % 3, d = (r() * 2 - 1) * (ax === 1 ? 0.13 : 0.1), v = [0, 0, 0]; v[ax] = d; add(v[0], 2.07 + v[1], v[2], 0, 1, 0, STAR, 0, 10.6); }
+  // pakjes: dozen met een lint
+  [[0.5, 0.2, 0.15, 0], [2.3, 0.15, 0.2, 1], [4.1, 0.24, 0.13, 2], [5.4, 0.13, 0.11, 3]].forEach(([an, w, hh, vr], gi) => {
+    const R = 0.9 + 0.04 * gi, cx = Math.cos(an) * R, cz = Math.sin(an) * R, c = Math.cos(an * 2.3), s = Math.sin(an * 2.3);
+    for (let k = 0; k < 420; k++) {
+      const face = k % 5, u = r() * 2 - 1, v = r() * 2 - 1;
+      let p, nn;
+      if (face === 0) { p = [u * w, hh * 2, v * w]; nn = [0, 1, 0]; }
+      else { const sg = face < 3 ? 1 : -1; p = face % 2 ? [sg * w, (v + 1) * hh, u * w] : [u * w, (v + 1) * hh, sg * w]; nn = face % 2 ? [sg, 0, 0] : [0, 0, sg]; }
+      const rib = Math.abs(u) < 0.17 || (face === 0 && Math.abs(v) < 0.17);
+      add(cx + p[0] * c - p[2] * s, p[1], cz + p[0] * s + p[2] * c, nn[0] * c - nn[2] * s, nn[1], nn[0] * s + nn[2] * c, rib ? RIBBON : GIFT, vr, 11.2 + gi * 0.3);
+    }
+  });
+  return { P: new Float32Array(P), N: P.length / 10, DONE: 12.6 };
+})();
+
+/* ---------- tekenen in tekens ---------- */
+const CW = 3.3, CH = 5.5, COLS = Math.ceil(W / CW), ROWS = Math.ceil(H / CH), CELLS = COLS * ROWS;
+const SC = 74, TILT = 0.22, ST = Math.sin(TILT), CT = Math.cos(TILT), CX = W / 2, GY = H - 36, RG = 1.75;
+const LX = -0.48, LY = 0.66, LZ = 0.58;   // licht van linksboven vooraan
+const hash = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n); };
+
+function tree(id, ink) {
+  const c = document.getElementById(id), g = c.getContext('2d'), d = Math.min(3, devicePixelRatio || 1);
+  c.width = Math.round(W * d); c.height = Math.round(H * d); g.scale(d, d);
+  const RAMP = ink ? ' ·:+×#' : ' .:-=+*#%@', TOP = RAMP.length - 1;
+  const birth = new Float32Array(M.N); const rebirth = () => { for (let i = 0; i < M.N; i++) birth[i] = M.P[i * 10 + 8]; }; rebirth();
+  const own = new Int32Array(CELLS), zb = new Float32Array(CELLS), chr = new Uint8Array(CELLS), sty = new Uint16Array(CELLS);
+  const flakes = Array.from({ length: 44 }, () => ({ x: Math.random() * W, y: Math.random() * H, v: 7 + Math.random() * 12, p: Math.random() * TAU }));
+  let fall = [], clock = reduced ? 99 : 0, t = 0, ang = 0.6, om = 0.33, lights = 0, count = 0;
+  const p = { down: false, x: 0, far: false, tapAt: -1e9, pend: false };
+  const px = e => (e.clientX - c.getBoundingClientRect().left) * W / c.getBoundingClientRect().width;
+  c.addEventListener('pointerdown', e => { p.down = true; p.far = false; p.x = p.sx = px(e); c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', e => { if (!p.down) return; const x = px(e); if (Math.abs(x - p.sx) > 6) p.far = true; if (p.far) { ang += (x - p.x) * 0.011; om = (x - p.x) * 0.011 * 60; } p.x = x; });
+  c.addEventListener('pointerup', () => { if (!p.down) return; p.down = false; if (p.far) return; const n = performance.now(); if (n - p.tapAt < 320) { p.pend = false; clock = 0; fall = []; rebirth(); } else p.pend = true; p.tapAt = n; });
+  c.addEventListener('pointercancel', () => { p.down = false; });
+
+  // kleur per soort en helderheid (vier trappen), in een opzoektabel van stijlen
+  const styles = []; let stamp = '';
+  const BOL = [['#E70049', '#F0306A'], ['#E08600', '#F5A623'], ['#0FAE69', '#20E08A'], ['#1F78B4', '#38A0F0'], ['#08415C', '#B3B9D6']];
+  const A1 = { [NEEDLE]: [78, 150, 92], [SNOW]: [236, 240, 244], [TRUNK]: [128, 92, 66], [GARLAND]: [232, 194, 96], [LIGHT]: [255, 220, 150], [STAR]: [255, 232, 160], 20: [112, 122, 156], 21: [206, 211, 222], 22: [196, 203, 222] };
+  const A1B = [[226, 62, 62], [236, 190, 84], [92, 124, 232], [226, 62, 62], [236, 190, 84]], A1G = [[96, 116, 226], [214, 70, 70], [84, 160, 110], [226, 180, 90]];
+  function style(kind, variant, lvl) {   // lvl 0..3
+    const key = kind * 40 + variant * 4 + lvl;
+    if (styles[key]) return key;
+    let col, al = 0.5 + 0.17 * lvl;
+    if (ink) {
+      col = rgb(T.ink); al = 0.58 + 0.14 * lvl;
+      if (kind === BALL) { col = rgb(BOL[variant][T.dark ? 1 : 0]); al = 0.75 + 0.08 * lvl; }
+      if (kind === STAR) { col = rgb(T.core); al = 1; }
+      if (kind === 20) al = 0.2 + 0.05 * lvl;
+      if (kind === 22) al = 0.45;
+    } else {
+      col = kind === BALL ? A1B[variant] : kind === GIFT ? A1G[variant] : kind === RIBBON ? [238, 232, 214] : A1[kind];
+      if (kind === 20) al = 0.3 + 0.12 * lvl;
+      if (kind === LIGHT || kind === STAR) al = 0.55 + 0.15 * lvl;
+    }
+    styles[key] = `rgba(${col.join(',')},${al.toFixed(2)})`;
+    return key;
+  }
+  // hoeveel inkt (stijl Inkt) of licht (stijl Kleur) een punt krijgt: 0..1
+  // per soort: inkt in de schaduw en in het licht (licht thema), en omgekeerd (donker thema)
+  const INK = { [NEEDLE]: [1, 0.45, 0.3, 0.75], [SNOW]: [0.25, 0, 0.75, 1], [TRUNK]: [1, 0.7, 0.15, 0.35], [GARLAND]: [0.6, 0.2, 0.55, 0.9], [BALL]: [1, 0.5, 0.5, 1], [GIFT]: [0.95, 0.35, 0.3, 0.8], [RIBBON]: [0.45, 0.1, 0.7, 1] };
+  const amount = (kind, b) => { if (!ink) return b; const q = INK[kind], u = Math.min(1, Math.max(0, (b - 0.25) / 0.7)); return T.dark ? q[2] + (q[3] - q[2]) * u : q[0] + (q[1] - q[0]) * u; };
+
+  function put(i, kind, variant, a) {
+    const ch = Math.max(ink && !T.dark && kind === SNOW ? 0 : 1, Math.min(TOP, Math.round(a * TOP)));
+    chr[i] = ch; sty[i] = style(kind, variant, Math.min(3, Math.floor(a * 4)));
+  }
+  function render() {
+    const st = T.ink + T.dark; if (st !== stamp) { stamp = st; styles.length = 0; }
+    const cs = Math.cos(ang), sn = Math.sin(ang), P = M.P;
+    own.fill(-1); zb.fill(-1e9); chr.fill(0);
+    // grond: schijf in strepen, met een sneeuwplek onder de boom; het patroon draait mee
+    const grow = Math.min(1, clock / 0.9) * RG;
+    for (let row = 0; row < ROWS; row++) {
+      const zr = ((row + 0.5) * CH - GY) / (SC * ST); if (Math.abs(zr) > grow) continue;
+      for (let col = 0; col < COLS; col++) {
+        const xr = ((col + 0.5) * CW - CX) / SC, rr = Math.hypot(xr, zr); if (rr > grow) continue;
+        const mx = xr * cs + zr * sn, mz = -xr * sn + zr * cs, n = hash(Math.floor(mx * 16), Math.floor(mz * 16)), i = row * COLS + col;
+        if (rr < 0.92 + n * 0.22 && clock > 0.9) put(i, ink ? SNOW : 21, 0, ink ? 0.55 + 0.4 * n : 0.5 + 0.5 * n);
+        else { const fade = 1 - rr / RG; put(i, 20, 0, ink ? (T.dark ? 0.2 + 0.3 * fade : 0.75 - 0.3 * fade) * (row % 2 ? 1 : 0.8) : (0.25 + 0.5 * fade) * (row % 2 ? 1 : 0.75)); }
+      }
+    }
+    // vallende sneeuw, achter de boom
+    for (const f of flakes.concat(fall)) { const col = Math.floor(f.x / CW), row = Math.floor(f.y / CH); if (col < 0 || row < 0 || col >= COLS || row >= ROWS) continue; const i = row * COLS + col; if (!chr[i]) { chr[i] = f.v > 30 ? 2 : 1; sty[i] = style(22, 0, 2); } }
+    // punten: het dichtste punt per vakje wint
+    lights = 0;
+    for (let k = 0; k < M.N; k++) {
+      if (clock < birth[k]) continue;
+      const o = k * 10, x = P[o], y = P[o + 1], z = P[o + 2], xr = x * cs - z * sn, zr = x * sn + z * cs;
+      if (P[o + 6] === LIGHT) lights++;
+      const col = Math.floor((CX + xr * SC) / CW), row = Math.floor((GY - (y * CT - zr * ST) * SC) / CH);
+      if (col < 0 || row < 0 || col >= COLS || row >= ROWS) continue;
+      const i = row * COLS + col, dp = zr * CT + y * ST + (P[o + 6] === LIGHT || P[o + 6] === STAR ? 0.22 : 0);
+      if (dp > zb[i]) { zb[i] = dp; own[i] = k; }
+    }
+    count = 0;
+    for (let i = 0; i < CELLS; i++) {
+      const k = own[i];
+      if (k >= 0) {
+        const o = k * 10, kind = P[o + 6], nx = P[o + 3] * cs - P[o + 5] * sn, nz = P[o + 3] * sn + P[o + 5] * cs, zr = P[o] * sn + P[o + 2] * cs;
+        let b = (0.3 + 0.7 * Math.max(0, nx * LX + P[o + 4] * LY + nz * LZ)) * (0.78 + 0.22 * Math.min(1, Math.max(0, (zr + 0.9) / 1.8)));
+        if (kind === LIGHT) b = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(P[o + 9] * TAU + t * (1.5 + P[o + 9] * 3)));
+        if (kind === STAR) b = 0.85 + 0.15 * Math.sin(t * 3 + P[o + 9] * TAU);
+        put(i, kind, P[o + 7], kind === LIGHT || kind === STAR ? (ink && !T.dark ? 0.55 + 0.45 * b : b) : amount(kind, b));
+      }
+      if (chr[i]) count++;
+    }
+    // tekenen, per stijl gebundeld
+    g.fillStyle = ink ? T.well : '#0A0C13'; g.fillRect(0, 0, W, H);
+    g.font = `500 ${CH}px "Geist Mono", ui-monospace, monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const groups = new Map();
+    for (let i = 0; i < CELLS; i++) if (chr[i]) { let a = groups.get(sty[i]); if (!a) groups.set(sty[i], a = []); a.push(i); }
+    for (const [key, list] of groups) { g.fillStyle = styles[key]; for (const i of list) g.fillText(RAMP[chr[i]], (i % COLS + 0.5) * CW, (Math.floor(i / COLS) + 0.5) * CH); }
+    g.font = '500 9px "Geist Mono", ui-monospace, monospace'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    try { g.letterSpacing = '1.3px'; } catch { /* oudere browser */ }
+    g.fillStyle = ink ? `rgba(${rgb(T.ink).join(',')},.5)` : 'rgba(214,220,236,.5)';
+    const deg = ((ang * 180 / Math.PI) % 360 + 360) % 360;
+    const line = `${String(Math.round(deg)).padStart(3, '0')}° · ${lights} LICHTJES · ${count.toLocaleString('nl-BE').replace('.', ' ')} TEKENS`;
+    g.strokeStyle = ink ? T.well : '#0A0C13'; g.lineWidth = 7; g.lineJoin = 'round'; g.strokeText(line, 12, H - 11);   // rand in de achtergrondkleur: leesbaar over de grond
+    g.fillText(line, 12, H - 11);
+    try { g.letterSpacing = '0px'; } catch { /* oudere browser */ }
+  }
+  // tik: de sneeuw valt van de takken en sneeuwt traag weer aan
+  function shake() {
+    const cs = Math.cos(ang), sn = Math.sin(ang), P = M.P;
+    for (let k = 0; k < M.N; k++) {
+      const o = k * 10; if (P[o + 6] !== SNOW || clock < birth[k]) continue;
+      const xr = P[o] * cs - P[o + 2] * sn, zr = P[o] * sn + P[o + 2] * cs;
+      if (fall.length < 420 && Math.random() < 0.4) fall.push({ x: CX + xr * SC, y: GY - (P[o + 1] * CT - zr * ST) * SC, v: 34 + Math.random() * 50, p: Math.random() * TAU, end: GY + zr * ST * SC });
+      birth[k] = clock + 3 + Math.random() * 16;
+    }
+    om += (Math.random() < 0.5 ? -1 : 1) * 0.5;
+  }
+  if (reduced) { new MutationObserver(() => { theme(); render(); }).observe(root, { attributes: true }); document.fonts.ready.then(render); render(); return; }
+  let last = performance.now();
+  const frame = now => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; clock += dt;
+    if (p.pend && now - p.tapAt > 320) { p.pend = false; shake(); }
+    if (!p.down) { ang += om * dt; om += (0.33 - om) * Math.min(1, dt * 1.2); }
+    for (const f of flakes) { f.y += f.v * dt; f.x += Math.sin(t * 0.8 + f.p) * 6 * dt; if (f.y > H) { f.y = -3; f.x = Math.random() * W; } }
+    for (const f of fall) { f.y += f.v * dt; f.v += 60 * dt; }
+    fall = fall.filter(f => f.y < f.end);
+    render(); requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+tree('a1', false); tree('a2', true);
+</script>
