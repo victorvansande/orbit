@@ -14,7 +14,7 @@ const T = en
 const HEX = Array.from({ length: 6 }, (_, n) => [Math.cos(Math.PI / 6 + n * Math.PI / 3), Math.sin(Math.PI / 6 + n * Math.PI / 3)]);
 const FILL = 2.4;
 
-export function createYear({ W, H, getData, accent }) {
+function createScene({ W, H, getData, accent }) {
   const now = new Date(), Y = now.getFullYear();
   const start = new Date(Y, 0, 1), lead = (start.getDay() + 6) % 7;   // maandag eerst
   const dayOf = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - start) / 864e5);
@@ -46,7 +46,6 @@ export function createYear({ W, H, getData, accent }) {
   return {
     still: 99,
     step(dt) { clock += dt; },
-    frame() {},
     overlay(g) {
       const upto = Math.min(todayIdx, Math.floor(clock / FILL * todayIdx)), c = ink();
       for (let m = 0; m < 12; m++) text(g, monthName(m), ox + (m % 6) * (bw + gap * cell), top + Math.floor(m / 6) * (7.5 * cell + 6) + 4, 0.5);
@@ -78,5 +77,44 @@ export function createYear({ W, H, getData, accent }) {
     },
     move(p) { if (clock >= FILL) { const i = which(p); if (i >= 0 && i <= todayIdx) pick = i; } },
     leave() { pick = -1; },
+  };
+}
+
+// fidget rond de scène: eigen canvas, 30 beelden per seconde, minder beweging = één beeld
+export function createYear({ reducedMotion, size, getData, accent }) {
+  const W = size?.w || 325.6, H = size?.h || 226.8;
+  let cv = null, g = null, scene = null, last = 0, acc = 0;
+  function render() {
+    if (!g) return;
+    g.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+    g.fillStyle = '#0A0C13'; g.fillRect(0, 0, W, H);
+    g.save(); scene.overlay(g); g.restore();
+  }
+  return {
+    own: true,
+    onDark: true,
+    init() {},
+    mount(el) {
+      if (cv) return;
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      cv = document.createElement('canvas');
+      cv.className = 'panel-canvas'; cv.setAttribute('aria-hidden', 'true');
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      cv.style.width = `${W}px`; cv.style.height = `${H}px`;
+      el.append(cv);
+      g = cv.getContext('2d');
+      scene = createScene({ W, H, getData, accent });
+      last = 0; acc = 1;
+      if (reducedMotion.matches) { scene.step(scene.still); render(); document.fonts?.ready.then(render); }
+    },
+    unmount() { cv?.remove(); cv = null; g = null; },
+    frame(now) {
+      if (!g || reducedMotion.matches) return;
+      const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+      last = now; acc += dt; scene.step(dt);
+      if (acc < 1 / 30) return;
+      acc = 0; render();
+    },
+    tap(p) { scene.tap(p); }, move(p) { scene.move(p); }, leave() { scene?.leave(); },
   };
 }

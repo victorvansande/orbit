@@ -45,9 +45,7 @@ import { createSnake } from './snake.js';
 import { createSwing } from './swing.js';
 import { createRaster } from './raster.js';
 import { createTree } from './tree.js';
-import { createDotFidget } from './dots.js';
 import { createAsciiFidget } from './ascii.js';
-import { createForest } from './forest.js';
 import { createYear } from './year.js';
 import { createNature } from './nature.js';
 import { createTools } from './tools.js';
@@ -647,7 +645,6 @@ const hasGL2 = () => {
 };
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
-const DOTS = { forest: createForest, year: createYear };
 const ZOOMED = ['breakout', 'terra', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
 const NO_COLOR = ['terra', 'tree', 'picker', 'spin', 'reef', 'forest'];   // eigen kleuren, geen kleurkiezer
 
@@ -727,9 +724,12 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'spin') {
         // spinnerset van ASCII Magic, letterlijk (Victor, 15/11/2026), in de look "dense"
         modes[modeName] = createAsciiFidget(() => import('../vendor/spinners.js'), { reducedMotion, size: { w: W, h: HH }, look: 'dense' });
-      } else if (DOTS[modeName]) {
-        // stippenscènes en tekstschermen naar stukken van ascii-magic.com (Victor, 15/11/2026), eigen code (src/focus/dots.js)
-        modes[modeName] = createDotFidget(o => DOTS[modeName]({ ...o, getData, accent: () => ACCENT }), { reducedMotion, size: { w: W, h: HH } });
+      } else if (modeName === 'forest') {
+        // woud van ASCII Magic, letterlijk (Victor, 15/11/2026), schilderij in de look "dots"
+        modes[modeName] = createAsciiFidget(() => import('../vendor/forest.js'), { reducedMotion, size: { w: W, h: HH } });
+      } else if (modeName === 'year') {
+        // jaar naar calendar-year-heatmap van ASCII Magic (Victor, 15/11/2026), eigen code met de echte afgevinkte taken
+        modes[modeName] = createYear({ reducedMotion, size: { w: W, h: HH }, getData, accent: () => ACCENT });
       } else if (modeName === 'terra') {
         // natuurvenster (Victor, 12/11/2026): paludarium en Japanse tuin achter het pijltje, geschilderd, vaste compositie
         // die meezoomt; het paludarium bewaart wanneer je nevelde
