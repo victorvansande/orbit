@@ -46,7 +46,7 @@ import { createSwing } from './swing.js';
 import { createRaster } from './raster.js';
 import { createTree } from './tree.js';
 import { createDotFidget } from './dots.js';
-import { createPicker } from './picker.js';
+import { createAsciiFidget } from './ascii.js';
 import { createReef } from './reef.js';
 import { createForest } from './forest.js';
 import { createYear } from './year.js';
@@ -649,7 +649,7 @@ const hasGL2 = () => {
 };
 
 const FACTORIES = { water, jelly, lava, grain, topo, wayglim };
-const DOTS = { picker: createPicker, reef: createReef, forest: createForest, year: createYear, spin: createSpin };
+const DOTS = { reef: createReef, forest: createForest, year: createYear, spin: createSpin };
 const ZOOMED = ['breakout', 'terra', ...PANELS];   // vaste opbouw: zoomen mee in plaats van meer inhoud
 const NO_COLOR = ['terra', 'tree', 'picker', 'reef', 'forest'];   // eigen kleuren, geen kleurkiezer
 
@@ -720,6 +720,9 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'tree') {
         // kerstboom in tekens (Victor, 15/11/2026, A1 Kleur): draaiende puntenwolk, eigen kleuren op een donker venster
         modes[modeName] = createTree({ reducedMotion, size: { w: W, h: HH } });
+      } else if (modeName === 'picker') {
+        // kleurkiezer van ASCII Magic, letterlijk (Victor, 15/11/2026), pas geladen als je hem kiest
+        modes[modeName] = createAsciiFidget(() => import('../vendor/colorpicker.js'), { reducedMotion, size: { w: W, h: HH } });
       } else if (DOTS[modeName]) {
         // stippenscènes en tekstschermen naar stukken van ascii-magic.com (Victor, 15/11/2026), eigen code (src/focus/dots.js)
         modes[modeName] = createDotFidget(o => DOTS[modeName]({ ...o, getData, accent: () => ACCENT }), { reducedMotion, size: { w: W, h: HH } });
