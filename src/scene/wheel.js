@@ -13,8 +13,7 @@ const PILLS = {
 };
 
 const N = LEVELS.length;
-const mod = (n, m = N) => ((n % m) + m) % m;
-const wrap = r => r - N * Math.round(r / N);   // naar [-N/2, N/2]: het wiel is een cirkel zonder uiteinden
+const clamp = i => Math.max(0, Math.min(N - 1, i));   // het wiel stopt bij Nu en Ooit (Victor, 17/11/2026: geen eindeloze cirkel)
 
 export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHover = () => {}, onTick = () => {}, reducedMotion }) {
   const narrow = matchMedia(MOBILE_MQ);
@@ -24,7 +23,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
   const arcFade = root.querySelector('#wheel-arc-fade');   // desktop: boog dooft uit naar boven en onder (W1)
   const handle = root.querySelector('.wheel-handle');
 
-  // target en pos lopen door (geen grenzen); index = target modulo 5. pos volgt target met een veer.
+  // target = het gekozen moment (0..4), pos volgt met een veer; detent = laatste moment dat het midden passeerde (tikje).
   let index = 2, target = 2, pos = 2, detent = 2, quiet = false, raf = 0, drag = null;
   let wheelAcc = 0, wheelDir = 0, wheelAt = 0, wheelBack = 0, wheelBackN = 0;
 
@@ -66,7 +65,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
     else { cx = box.width / 2; cy = box.height - g.arc + g.R; }
 
     items.forEach((li, i) => {
-      const rel = wrap(i - pos);
+      const rel = i - pos;
       const th = rel * step;
       const x = o === 'vertical' ? cx - Ri * Math.cos(th) : cx + Ri * Math.sin(th);
       const y = o === 'vertical' ? cy + Ri * Math.sin(th) : cy - Ri * Math.cos(th);
@@ -74,9 +73,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       const d = Math.abs(rel);
       const sel = Math.max(0, 1 - d * 1.6);           // 1 in het midden, 0 vanaf ~0,6 stap
       li.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`;
-      // het moment dat achteraan omloopt naar de andere kant, dooft uit voorbij twee stappen en komt zo weer op
-      const edge = Math.max(0, Math.min(1, (2.5 - d) / 0.5)) ** 2;
-      li.style.opacity = (Math.max(0.1, 1 - d * 0.3) * edge).toFixed(3);
+      li.style.opacity = Math.max(0.1, 1 - d * 0.3).toFixed(3);
       li.style.setProperty('--sel', sel.toFixed(3));
       li.style.setProperty('--pw', (PILL.w + (PILL.selW - PILL.w) * sel).toFixed(1) + 'px');
       li.style.setProperty('--ph', (PILL.h + (PILL.selH - PILL.h) * sel).toFixed(1) + 'px');
@@ -132,11 +129,8 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       if (!drag?.active) {
         if (reducedMotion.matches) pos = target;
         else {
-          // Loopt het doel meer dan een hele toer voor (heel snel scrollen), dan vallen hele toeren weg: onzichtbaar,
-          // het wiel ziet er na vijf stappen hetzelfde uit. Daarna hooguit 0,4 stap per beeld en 26 per seconde: sneller
-          // lijkt het wiel achteruit te draaien (wagenwieleffect), wat eerder op trage beelden gebeurde.
-          const turns = Math.trunc((target - pos) / N) * N;
-          if (turns) { pos += turns; detent += turns; }
+          // hooguit 0,4 stap per beeld en 26 per seconde: sneller lijkt het wiel achteruit te draaien (wagenwieleffect),
+          // wat eerder op trage beelden gebeurde
           const cap = Math.min(0.4, 26 * dt);
           pos += Math.max(-cap, Math.min(cap, (target - pos) * (1 - Math.exp(-14 * dt))));
           if (Math.abs(target - pos) < 0.001) pos = target;
@@ -145,7 +139,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       notch();
       layout();
       if (pos !== target || drag?.active) raf = requestAnimationFrame(tick);
-      else { pos = target = index; detent = index; quiet = false; }   // terug naar 0..4, zonder zichtbaar verschil
+      else quiet = false;
     };
     raf = requestAnimationFrame(tick);
   }
@@ -163,27 +157,27 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
     if (!silent) onChange(LEVELS[index].id);
   }
 
-  // stappen ten opzichte van het huidige doel (scrollen, pijltjes): loopt rond
+  // stappen ten opzichte van het huidige doel (scrollen, pijltjes); voorbij Nu of Ooit gebeurt niets
   function nudge(n) {
-    if (!n) return;
+    const next = clamp(target + n);
+    if (next === target) return;
     quiet = false;
-    target += n;
-    setIndex(mod(target), false);
+    target = next;
+    setIndex(target, false);
     animate();
   }
 
-  // naar een bepaald moment, langs de kortste weg rond de cirkel
   function select(i, { silent = false } = {}) {
     if (i < 0) return;
     if (!silent) quiet = false;
     else if (pos === target) quiet = true;
-    target += wrap(i - mod(target));
-    setIndex(i, silent);
+    target = clamp(i);
+    setIndex(target, silent);
     animate();
   }
 
   /* ---- Invoer ---- */
-  // Geen vergrendeling meer: elk nokje van een muiswiel is één stap, een trackpad telt per 40 px (ook de uitloop),
+  // Geen vergrendeling: elk nokje van een muiswiel is één stap, een trackpad telt per 40 px (ook de uitloop),
   // dus snel draaien gaat even snel. Een losse tegengestelde uitschieter midden in snel scrollen (muiswielen en
   // trackpads geven die soms) wordt genegeerd: omkeren telt pas na een pauze of na duidelijk volgehouden tegenbeweging.
   const TRACK_STEP = 40, NOTCH = 50, BACK = 150, GAP = 160;
@@ -226,9 +220,9 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       animate();
     }
     if (!drag.active) return;
-    pos = drag.pos0 - delta / g.spacing;   // loopt rond, geen uiteinden
-    target = Math.round(pos);
-    setIndex(mod(target), false);
+    pos = Math.max(-0.45, Math.min(N - 0.55, drag.pos0 - delta / g.spacing));
+    target = clamp(Math.round(pos));
+    setIndex(target, false);
   });
   const endDrag = () => {
     if (!drag) return;
