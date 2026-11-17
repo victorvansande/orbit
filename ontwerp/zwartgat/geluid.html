@@ -1,0 +1,188 @@
+<meta charset="utf-8">
+<title>Orbit zwart gat geluid</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Drie geluiden voor de klik op het zwarte gat (K2 Lens: massa x10 in 1,3 s, blijft tot 2,9 s, terug in 1,4 s).
+   Opbouw: kop, drie vellen naast elkaar met afspeelknop en het gat dat in dezelfde maat opzwelt. */
+:root {
+  --bg: #EBE8DF; --sheet: #E2DFD6; --ink: #1B1B22; --ink-2: #55555E; --ink-3: #85858C; --line: rgba(27,27,34,.14); --core: #E70049;
+  --hole: #0B0B0E; --ring: rgba(27,27,34,.5);
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --sheet: #1D1D20; --ink: #ECECF1; --ink-2: #A9A9B2; --ink-3: #75757E; --line: rgba(236,236,241,.14); --core: #F0306A; --hole: #000; --ring: rgba(236,236,241,.55); color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0F0F12; --sheet: #1D1D20; --ink: #ECECF1; --ink-2: #A9A9B2; --ink-3: #75757E; --line: rgba(236,236,241,.14); --core: #F0306A; --hole: #000; --ring: rgba(236,236,241,.55); color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+.label { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font-weight: 500; font-size: 30px; line-height: 1.15; margin: 10px 0 0; text-wrap: balance; }
+h2 { font-weight: 500; font-size: 20px; margin: 0; }
+p { margin: 0; max-width: 68ch; color: var(--ink-2); }
+.lead { display: grid; gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.sheet { background: var(--sheet); border-radius: 14px; padding: 20px; display: grid; gap: 16px; align-content: start; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.tag { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--core); }
+canvas { width: 100%; aspect-ratio: 1; border-radius: 10px; display: block; max-width: 100%; }
+button { font: 500 13px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bg); background: var(--ink); border: 0; border-radius: 999px; height: 40px; padding: 0 20px; cursor: pointer; justify-self: start; }
+button:focus-visible { outline: 2px solid var(--core); outline-offset: 3px; }
+.spec { font: 400 12px/1.5 var(--mono); color: var(--ink-3); }
+.note { border-top: 1px solid var(--line); padding-top: 20px; display: grid; gap: 10px; }
+.note strong { color: var(--ink); font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <header class="lead">
+    <div><span class="label">Orbit · zwart gat · klikgeluid · 17/11/2026</span><h1>Een diep geluid als het gat opengaat</h1></div>
+    <p>Drie voorstellen, elk in de maat van de animatie: de massa zwelt in 1,3 s op tot tien keer, blijft even en krimpt in 1,4 s terug. Het gat hieronder volgt dezelfde klok. Met een koptelefoon of goede luidsprekers hoor je het diepste deel; elk geluid heeft ook boventonen, zodat het op een laptop of gsm niet wegvalt.</p>
+  </header>
+
+  <div class="grid">
+    <article class="sheet" data-v="sigh">
+      <div class="head"><h2>G1 Roodverschuiving</h2><span class="tag">Mijn advies</span></div>
+      <canvas width="360" height="360" aria-hidden="true"></canvas>
+      <button type="button" id="play-sigh">Speel</button>
+      <p>Een lage, ronde toon die met het gat aanzwelt en een kwart zakt terwijl de massa groeit, zoals licht dat roodverschuift dicht bij een zwart gat. Bij het krimpen klimt hij terug en dooft uit. Geen aanslag, enkel adem.</p>
+      <span class="spec">A2 naar E2 · laagdoorlaat 180 tot 700 Hz · kleine kamer · 4,3 s</span>
+    </article>
+    <article class="sheet" data-v="thud">
+      <div class="head"><h2>G2 Slag</h2><span class="tag">G2</span></div>
+      <canvas width="360" height="360" aria-hidden="true"></canvas>
+      <button type="button" id="play-thud">Speel</button>
+      <p>Eén doffe, diepe slag bij de klik, als een verre pauk, en daarna een donker gerommel dat wegtrekt terwijl het gat groeit. Het meest direct; het geluid zit in het begin, de animatie loopt alleen verder.</p>
+      <span class="spec">62 naar 38 Hz in 0,4 s · gerommel onder 220 Hz · 2,2 s</span>
+    </article>
+    <article class="sheet" data-v="whirl">
+      <div class="head"><h2>G3 Kolk</h2><span class="tag">G3</span></div>
+      <canvas width="360" height="360" aria-hidden="true"></canvas>
+      <button type="button" id="play-whirl">Speel</button>
+      <p>Een zachte ruis die naar binnen wordt gezogen: de klank zakt van helder naar diep en draait langzaam van links naar rechts om je heen, met een lage grondtoon eronder. Het meest beeldend, ook het drukst.</p>
+      <span class="spec">ruisband 1200 naar 140 Hz · rondgaande stereo · 55 Hz · 4,3 s</span>
+    </article>
+  </div>
+
+  <section class="note">
+    <span class="label">Plaats in Orbit</span>
+    <p><strong>Zacht.</strong> Ongeveer even luid als de tik op de kern (rond -24 dBFS op zijn hoogst), dus duidelijk zachter dan afvinken. Volgt de schakelaar Geluid in Instellingen.</p>
+    <p><strong>Een keer per opening.</strong> Klik je terwijl het gat nog open is, dan gebeurt er niets, dus ook geen tweede geluid. Bij minder beweging of Minimaal zwelt het gat niet en speelt er ook niets.</p>
+  </section>
+</div>
+
+<script>
+let ctx = null, master = null;
+function audio() {
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createDynamicsCompressor();
+    master.threshold.value = -3; master.knee.value = 8; master.ratio.value = 20; master.attack.value = 0.002; master.release.value = 0.12;
+    master.connect(ctx.destination);
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+let roomIr = null;
+function room(a, secs = 1.6) {
+  if (roomIr) return roomIr;
+  const sr = a.sampleRate, len = Math.ceil(sr * secs), ir = a.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch); let x = 1234 + ch * 777, lp = 0;
+    for (let i = 0; i < len; i++) { x = (x * 16807) % 2147483647; const u = i / len; lp += (x / 2147483647 * 2 - 1 - lp) * (0.4 - 0.35 * u); d[i] = (i < sr * 0.02 ? 0 : lp) * Math.pow(1 - u, 2.6); }
+  }
+  return (roomIr = ir);
+}
+function noise(a, secs) {
+  const b = a.createBuffer(1, Math.ceil(a.sampleRate * secs), a.sampleRate), d = b.getChannelData(0); let x = 4242;
+  for (let i = 0; i < d.length; i++) { x = (x * 16807) % 2147483647; d[i] = x / 2147483647 * 2 - 1; }
+  return b;
+}
+// klok van de animatie in hole.js: massa 1 + 9 * min(ease(t / 1,3), 1 - ease((t - 2,9) / 1,4)), klaar na 4,3 s
+const ease = x => { x = Math.min(1, Math.max(0, x)); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const swellK = t => Math.max(0, Math.min(ease(t / 1.3), 1 - ease((t - 2.9) / 1.4)));   // 0..1
+const curve = (f, secs = 4.3, n = 128) => Float32Array.from({ length: n }, (_, i) => f(swellK((i / (n - 1)) * secs)));
+function bus(a, wetK, gain = 0.5) {
+  const out = a.createGain(); out.gain.value = gain; out.connect(master);
+  const dry = a.createGain(), conv = a.createConvolver(), wet = a.createGain();
+  conv.buffer = room(a); wet.gain.value = wetK;
+  dry.connect(out); dry.connect(conv).connect(wet).connect(out);
+  return dry;
+}
+
+const VOICES = {
+  // G1: toon zwelt mee met de massa en zakt een kwart (A2 -> E2), filter opent mee, dan terug en uit
+  sigh(a, t) {
+    const inp = bus(a, 0.28), lp = a.createBiquadFilter(), g = a.createGain();
+    lp.type = 'lowpass'; lp.Q.value = 0.5;
+    lp.frequency.setValueCurveAtTime(curve(k => 180 + 520 * k), t, 4.3);
+    g.gain.setValueCurveAtTime(curve(k => Math.pow(k, 1.3)), t, 4.3);
+    lp.connect(g).connect(inp);
+    const fc = curve(k => 110 * Math.pow(82.41 / 110, k));
+    [[1, 'sine', 0.09, -4], [1, 'sine', 0.09, 4], [2, 'triangle', 0.028, 0], [3, 'sine', 0.008, 2]].forEach(([mul, type, amp, det]) => {
+      const o = a.createOscillator(), k = a.createGain();
+      o.type = type; o.detune.value = det; k.gain.value = amp / (mul === 1 ? 2 : 1);
+      o.frequency.setValueCurveAtTime(fc.map(f => f * mul), t, 4.3);
+      o.connect(k).connect(lp); o.start(t); o.stop(t + 4.6);
+    });
+  },
+  // G2: een doffe slag (sinus met dalende toon) en een donker gerommel dat wegtrekt
+  thud(a, t) {
+    const inp = bus(a, 0.35);
+    [[1, 0.13], [2, 0.035]].forEach(([mul, amp]) => {
+      const o = a.createOscillator(), g = a.createGain();
+      o.frequency.setValueAtTime(62 * mul, t); o.frequency.exponentialRampToValueAtTime(38 * mul, t + 0.4);
+      g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(amp, t + 0.008); g.gain.setTargetAtTime(0.00001, t + 0.008, mul === 1 ? 0.45 : 0.18);
+      o.connect(g).connect(inp); o.start(t); o.stop(t + 3);
+    });
+    const n = a.createBufferSource(), lp = a.createBiquadFilter(), g = a.createGain();
+    n.buffer = noise(a, 3.2); lp.type = 'lowpass'; lp.frequency.setValueAtTime(220, t); lp.frequency.exponentialRampToValueAtTime(70, t + 3); lp.Q.value = 0.7;
+    g.gain.setValueAtTime(0.00001, t); g.gain.linearRampToValueAtTime(0.09, t + 0.25); g.gain.setTargetAtTime(0.00001, t + 0.3, 0.7);
+    n.connect(lp).connect(g).connect(inp); n.start(t); n.stop(t + 3.2);
+  },
+  // G3: ruisband die naar binnen zakt en rondgaat, met een lage grondtoon
+  whirl(a, t) {
+    const inp = bus(a, 0.3);
+    const n = a.createBufferSource(), bp = a.createBiquadFilter(), g = a.createGain();
+    n.buffer = noise(a, 4.6); bp.type = 'bandpass'; bp.Q.value = 2.2;
+    bp.frequency.setValueCurveAtTime(curve(k => 1200 * Math.pow(140 / 1200, k)), t, 4.3);
+    g.gain.setValueCurveAtTime(curve(k => 0.22 * Math.pow(k, 0.8)), t, 4.3);
+    let dest = inp;
+    if (a.createStereoPanner) {
+      const pan = a.createStereoPanner(), lfo = a.createOscillator(), depth = a.createGain();
+      lfo.frequency.value = 0.55; depth.gain.value = 0.55; lfo.connect(depth).connect(pan.pan); lfo.start(t); lfo.stop(t + 4.6);
+      pan.connect(inp); dest = pan;
+    }
+    n.connect(bp).connect(g).connect(dest); n.start(t); n.stop(t + 4.6);
+    const o = a.createOscillator(), og = a.createGain();
+    o.frequency.value = 55; og.gain.setValueCurveAtTime(curve(k => 0.06 * k), t, 4.3);
+    o.connect(og).connect(inp); o.start(t); o.stop(t + 4.6);
+  },
+};
+
+// het gat: schaduw met fotonring, straal mee met de massa (zoals in de app: straal 3√3 M)
+const still = matchMedia('(prefers-reduced-motion: reduce)');
+const sheets = [...document.querySelectorAll('.sheet')];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function draw(cv, k) {
+  const c = cv.getContext('2d'), w = cv.width, r = 16 + 120 * k;
+  c.clearRect(0, 0, w, w);
+  c.strokeStyle = css('--ring'); c.lineWidth = 1.5; c.setLineDash([1.5, 6]); c.lineCap = 'round';
+  [60, 100, 140, 175].forEach(R => { c.beginPath(); c.arc(w / 2, w / 2, R, 0, Math.PI * 2); c.stroke(); });
+  c.setLineDash([]);
+  c.fillStyle = css('--hole'); c.beginPath(); c.arc(w / 2, w / 2, r, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = css('--core'); c.globalAlpha = 0.85; c.lineWidth = 1.5; c.beginPath(); c.arc(w / 2, w / 2, r + 2.5, 0, Math.PI * 2); c.stroke(); c.globalAlpha = 1;
+}
+sheets.forEach(s => draw(s.querySelector('canvas'), 0));
+let busy = 0;
+sheets.forEach(s => s.querySelector('button').addEventListener('click', () => {
+  const a = audio(); if (!a) return;
+  if (performance.now() < busy) return;   // zoals in de app: niet opnieuw zolang het gat open is
+  busy = performance.now() + 4300;
+  VOICES[s.dataset.v](a, a.currentTime + 0.02);
+  const cv = s.querySelector('canvas'), t0 = performance.now();
+  if (still.matches) return;
+  const tick = now => { const t = (now - t0) / 1000; draw(cv, swellK(t)); if (t < 4.3) requestAnimationFrame(tick); else draw(cv, 0); };
+  requestAnimationFrame(tick);
+}));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => sheets.forEach(s => draw(s.querySelector('canvas'), 0)));
+</script>
