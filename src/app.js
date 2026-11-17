@@ -331,8 +331,8 @@ document.addEventListener('pointerdown', e => {
 let flashTimer = 0;
 const wheel = createWheel($('wheel'), {
   reducedMotion,
+  onTick: playTick,   // heel zacht, droog klikje telkens een moment het midden passeert (Victor, 04/11/2026; 17/11/2026: snel = snel)
   onChange(level) {
-    playTick();   // heel zacht, droog klikje per moment (Victor, 04/11/2026)
     if (desktop.matches) {
       scene.highlight({ level });
       clearTimeout(flashTimer);

@@ -12,7 +12,11 @@ const PILLS = {
   horizontal: { w: 52, h: 40, selW: 64, selH: 46 },   // gsm: compacter, de scène is de hoofdzaak
 };
 
-export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHover = () => {}, reducedMotion }) {
+const N = LEVELS.length;
+const mod = (n, m = N) => ((n % m) + m) % m;
+const wrap = r => r - N * Math.round(r / N);   // naar [-N/2, N/2]: het wiel is een cirkel zonder uiteinden
+
+export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHover = () => {}, onTick = () => {}, reducedMotion }) {
   const narrow = matchMedia(MOBILE_MQ);
   const list = root.querySelector('.wheel-list');
   const arcPath = root.querySelector('.wheel-arc path');
@@ -20,7 +24,9 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
   const arcFade = root.querySelector('#wheel-arc-fade');   // desktop: boog dooft uit naar boven en onder (W1)
   const handle = root.querySelector('.wheel-handle');
 
-  let index = 2, pos = 2, raf = 0, drag = null, wheelAcc = 0, wheelLock = 0;
+  // target en pos lopen door (geen grenzen); index = target modulo 5. pos volgt target met een veer.
+  let index = 2, target = 2, pos = 2, detent = 2, quiet = false, raf = 0, drag = null;
+  let wheelAcc = 0, wheelDir = 0, wheelAt = 0, wheelBack = 0, wheelBackN = 0;
 
   const items = LEVELS.map((lv, i) => {
     const li = document.createElement('li');
@@ -60,7 +66,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
     else { cx = box.width / 2; cy = box.height - g.arc + g.R; }
 
     items.forEach((li, i) => {
-      const rel = i - pos;
+      const rel = wrap(i - pos);
       const th = rel * step;
       const x = o === 'vertical' ? cx - Ri * Math.cos(th) : cx + Ri * Math.sin(th);
       const y = o === 'vertical' ? cy + Ri * Math.sin(th) : cy - Ri * Math.cos(th);
@@ -68,7 +74,9 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       const d = Math.abs(rel);
       const sel = Math.max(0, 1 - d * 1.6);           // 1 in het midden, 0 vanaf ~0,6 stap
       li.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`;
-      li.style.opacity = Math.max(0.1, 1 - d * 0.3).toFixed(3);
+      // het moment dat achteraan omloopt naar de andere kant, dooft uit voorbij twee stappen en komt zo weer op
+      const edge = Math.max(0, Math.min(1, (2.5 - d) / 0.5)) ** 2;
+      li.style.opacity = (Math.max(0.1, 1 - d * 0.3) * edge).toFixed(3);
       li.style.setProperty('--sel', sel.toFixed(3));
       li.style.setProperty('--pw', (PILL.w + (PILL.selW - PILL.w) * sel).toFixed(1) + 'px');
       li.style.setProperty('--ph', (PILL.h + (PILL.selH - PILL.h) * sel).toFixed(1) + 'px');
@@ -122,40 +130,91 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       if (!drag?.active) {
-        pos += (index - pos) * (reducedMotion.matches ? 1 : 1 - Math.exp(-12 * dt));
-        if (Math.abs(index - pos) < 0.001) pos = index;
+        if (reducedMotion.matches) pos = target;
+        else {
+          // Loopt het doel meer dan een hele toer voor (heel snel scrollen), dan vallen hele toeren weg: onzichtbaar,
+          // het wiel ziet er na vijf stappen hetzelfde uit. Daarna hooguit 0,4 stap per beeld en 26 per seconde: sneller
+          // lijkt het wiel achteruit te draaien (wagenwieleffect), wat eerder op trage beelden gebeurde.
+          const turns = Math.trunc((target - pos) / N) * N;
+          if (turns) { pos += turns; detent += turns; }
+          const cap = Math.min(0.4, 26 * dt);
+          pos += Math.max(-cap, Math.min(cap, (target - pos) * (1 - Math.exp(-14 * dt))));
+          if (Math.abs(target - pos) < 0.001) pos = target;
+        }
       }
+      notch();
       layout();
-      if (pos !== index || drag?.active) raf = requestAnimationFrame(tick);
+      if (pos !== target || drag?.active) raf = requestAnimationFrame(tick);
+      else { pos = target = index; detent = index; quiet = false; }   // terug naar 0..4, zonder zichtbaar verschil
     };
     raf = requestAnimationFrame(tick);
   }
 
+  // een tikje telkens een moment het midden echt passeert: snel draaien geeft snel opeenvolgende tikjes, in de maat van wat je ziet
+  function notch() {
+    const d = Math.round(pos);
+    if (d !== detent) { detent = d; if (!quiet) onTick(); }
+  }
+
+  function setIndex(next, silent) {
+    if (next === index) return;
+    index = next;
+    list.setAttribute('aria-activedescendant', items[index].id);
+    if (!silent) onChange(LEVELS[index].id);
+  }
+
+  // stappen ten opzichte van het huidige doel (scrollen, pijltjes): loopt rond
+  function nudge(n) {
+    if (!n) return;
+    quiet = false;
+    target += n;
+    setIndex(mod(target), false);
+    animate();
+  }
+
+  // naar een bepaald moment, langs de kortste weg rond de cirkel
   function select(i, { silent = false } = {}) {
-    const next = Math.max(0, Math.min(LEVELS.length - 1, i));
-    if (next !== index) {
-      index = next;
-      list.setAttribute('aria-activedescendant', items[index].id);
-      if (!silent) onChange(LEVELS[index].id);
-    }
+    if (i < 0) return;
+    if (!silent) quiet = false;
+    else if (pos === target) quiet = true;
+    target += wrap(i - mod(target));
+    setIndex(i, silent);
     animate();
   }
 
   /* ---- Invoer ---- */
+  // Geen vergrendeling meer: elk nokje van een muiswiel is één stap, een trackpad telt per 40 px (ook de uitloop),
+  // dus snel draaien gaat even snel. Een losse tegengestelde uitschieter midden in snel scrollen (muiswielen en
+  // trackpads geven die soms) wordt genegeerd: omkeren telt pas na een pauze of na duidelijk volgehouden tegenbeweging.
+  const TRACK_STEP = 40, NOTCH = 50, BACK = 150, GAP = 160;
   root.addEventListener('wheel', e => {
     e.preventDefault();
     const now = performance.now();
-    wheelAcc += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-    if (Math.abs(wheelAcc) > 40 && now > wheelLock) {
-      select(index + Math.sign(wheelAcc));
-      wheelAcc = 0;
-      wheelLock = now + 140;
+    const unit = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 300 : 1;
+    const dx = e.deltaX * unit, dy = e.deltaY * unit;
+    const v = Math.abs(dy) >= Math.abs(dx) ? dy : dx;
+    if (!v) return;
+    const dir = Math.sign(v);
+    if (now - wheelAt > GAP) { wheelAcc = 0; wheelBack = 0; wheelBackN = 0; wheelDir = dir; }
+    wheelAt = now;
+    if (dir !== wheelDir) {
+      wheelBack += Math.abs(v); wheelBackN++;
+      // losse uitschieter negeren; omkeren pas na 150 px tegenbeweging of een tweede nokje terug
+      if (wheelBack < BACK && !(wheelBackN >= 2 && Math.abs(v) >= NOTCH)) return;
+      wheelDir = dir; wheelAcc = 0;
     }
+    wheelBack = 0; wheelBackN = 0;
+    // muiswiel: grote sprongen (of regels/pagina's) = één stap per nokje; trackpad: optellen
+    if (e.deltaMode !== 0 || Math.abs(v) >= NOTCH) { wheelAcc = 0; nudge(dir); return; }
+    wheelAcc += v;
+    const n = Math.trunc(wheelAcc / TRACK_STEP);
+    if (n) { wheelAcc -= n * TRACK_STEP; nudge(n); }
   }, { passive: false });
 
   root.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
     drag = { x: e.clientX, y: e.clientY, pos0: pos, moved: false, active: false, id: e.pointerId };
+    quiet = false;
   });
   window.addEventListener('pointermove', e => {
     if (!drag || e.pointerId !== drag.id) return;
@@ -167,9 +226,9 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
       animate();
     }
     if (!drag.active) return;
-    pos = Math.max(-0.45, Math.min(LEVELS.length - 0.55, drag.pos0 - delta / g.spacing));
-    const near = Math.round(Math.max(0, Math.min(LEVELS.length - 1, pos)));
-    if (near !== index) { index = near; list.setAttribute('aria-activedescendant', items[index].id); onChange(LEVELS[index].id); }
+    pos = drag.pos0 - delta / g.spacing;   // loopt rond, geen uiteinden
+    target = Math.round(pos);
+    setIndex(mod(target), false);
   });
   const endDrag = () => {
     if (!drag) return;
@@ -184,7 +243,7 @@ export function createWheel(root, { onChange = () => {}, onOpen = () => {}, onHo
 
   list.addEventListener('keydown', e => {
     const keys = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 };
-    if (e.key in keys) { e.preventDefault(); select(index + keys[e.key]); }
+    if (e.key in keys) { e.preventDefault(); nudge(keys[e.key]); }
     else if (e.key === 'Home') { e.preventDefault(); select(0); }
     else if (e.key === 'End') { e.preventDefault(); select(LEVELS.length - 1); }
     else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(LEVELS[index].id); }

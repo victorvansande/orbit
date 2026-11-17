@@ -243,11 +243,12 @@ export function playRank(land = 2.2) {
 // wiel van de momenten: een heel zacht, droog klikje per moment dat je voorbijdraait, zoals de nok van een draaiknop
 // (Victor, 04/11/2026; eerst een toontje in de toon van het moment met echo, "in de goede richting, maar nog iets te
 // speels"). Voor elk moment hetzelfde, geen echo: een kort tikje ruis met een klein, laag lijfje eronder. Ongeveer 18 dB
-// zachter dan afvinken, en nooit sneller dan om de 45 ms, zodat snel draaien geen ratel wordt.
+// zachter dan afvinken. Snel draaien geeft snel opeenvolgende tikjes (Victor, 17/11/2026), met hooguit één per 25 ms
+// zodat ze niet in elkaar overlopen (een tikje duurt zelf ongeveer 25 ms).
 let lastTick = 0, tickNoise = null;
 export function playTick() {
   const now = performance.now();
-  if (now - lastTick < 45) return;
+  if (now - lastTick < 25) return;
   lastTick = now;
   cue((a, out, t) => {
     if (!tickNoise || tickNoise.sampleRate !== a.sampleRate) {
