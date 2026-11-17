@@ -710,6 +710,21 @@ function showStatsDetail(open) {
 }
 $('stats-toggle').addEventListener('click', () => showStatsDetail($('stats-detail').hidden));
 $('stats-close').addEventListener('click', () => { showStatsDetail(false); $('stats-toggle').focus({ preventScroll: true }); });
+// ernaast tikken of Esc sluit de details, zoals de andere vensters (Victor, 17/11/2026). Op `click` in de capture-fase:
+// een veeg om te scrollen (gsm) sluit niet, en het doel is nog in de DOM (de lijst van hemels wordt opnieuw opgebouwd).
+// Niet sluiten bij een tik in het blok zelf (teller, muur, rang), op het tellertje bovenaan, in een venster of melding.
+const statsOpen = () => !$('stats-detail').hidden;
+document.addEventListener('click', e => {
+  if (!statsOpen() || document.querySelector('dialog[open]')) return;
+  if (e.target.closest?.('#stats, #stat-mini, .toast, .feat-pop')) return;
+  showStatsDetail(false);
+}, true);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !statsOpen() || e.defaultPrevented || document.querySelector('dialog[open]') || hudMenu.classList.contains('is-open') || document.body.classList.contains('is-focus')) return;
+  const inside = $('stats-detail').contains(document.activeElement);
+  showStatsDetail(false);
+  if (inside) $('stats-toggle').focus({ preventScroll: true });
+});
 // gsm: het tellertje bovenaan brengt je naar de details onderaan
 $('stat-mini').addEventListener('click', () => {
   showStatsDetail(true);
