@@ -650,7 +650,7 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
 }
 .t-act-btn:hover { color: var(--ink); background: var(--fill); }
 .t-act-btn:active { transform: scale(.92); }
-.t-act-btn.t-act-del:hover { color: var(--late); background: var(--fill); }
+.t-act-btn.t-act-del:hover, .track.is-asking .t-act-del { color: var(--late); background: var(--fill); }
 .t-act-btn.has-note { color: var(--ink); }
 .t-act-btn.has-note::after {
   content: ""; position: absolute; top: 5px; right: 4px;
@@ -711,6 +711,15 @@ html.gift-stamp .track.is-done .ck-star, html.gift-stamp .focus-now li.is-done .
 }
 .due-clear { min-height: 34px; padding: 0 12px; border-radius: var(--r-pill); color: var(--ink-2); font-size: var(--fs-text); }
 .due-clear:hover { background: var(--fill); color: var(--ink); }
+
+/* ---- Herhalende taak verwijderen ---- */
+/* vraag met Annuleer op de rechterrand, daaronder de twee keuzes; zo blijven het twee regels, ook op 320 px */
+.t-del-ask { grid-column: 1 / -1; display: grid; gap: 4px; padding: 0 0 10px 30px; }
+.t-del-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.t-del-q { font-size: var(--fs-text); color: var(--ink-2); }
+.t-del-no { margin-right: -12px; }
+.t-del-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.t-del-ask .is-main { color: var(--ink); background: var(--fill); }
 
 /* ---- Wiel ---- */
 .wheel {
@@ -1861,6 +1870,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   .t-swipe-del-btn, .t-swipe-note-btn { display: none !important; }
   .track:hover .t-meta-labels,
   .track.is-picking .t-meta-labels,
+  .track.is-asking .t-meta-labels,
   .track.is-noting .t-meta-labels,
   .track:focus-within .t-meta-labels {
     opacity: 0;
@@ -1868,6 +1878,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
   }
   .track:hover .t-meta-actions,
   .track.is-picking .t-meta-actions,
+  .track.is-asking .t-meta-actions,
   .track.is-noting .t-meta-actions,
   .track:focus-within .t-meta-actions {
     opacity: 1;
@@ -1877,6 +1888,7 @@ body.is-idle .controls > :not(.timer) { opacity: 0; }   /* de zandloper op gsm b
      (Victor, 08/11/2026: de titel vervaagde al ver voor het icoontje). De tekst zelf verschuift niet, enkel waar hij vervaagt. */
   .track:hover .t-meta,
   .track.is-picking .t-meta,
+  .track.is-asking .t-meta,
   .track.is-noting .t-meta,
   .track:focus-within .t-meta { min-width: 88px; }
 }

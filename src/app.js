@@ -263,7 +263,8 @@ let hotTask = null, hotLevel = null;
 // maken. Desktop: altijd rechts onder de boog van het wiel; gsm en liggend: pas zichtbaar als je een bol vastneemt.
 const hole = createHole({ reducedMotion, permanent: matchMedia('(min-width: 1000px) and (min-height: 501px)'), minimal: () => minimalFx });
 document.body.append(hole.fx);   // het gat zelf hangt in de scène (hole.js, place)
-function dropInHole(id) { deleteTask(id, groupsEl.querySelector(`.track[data-id="${CSS.escape(id)}"]`)); }
+// in het gat gooien: bij een herhalende taak verdwijnt enkel deze keer, de reeks loopt door (de hele reeks gaat via het prullenbakje)
+function dropInHole(id) { const t = tasks.find(x => x.id === id); deleteTask(id, groupsEl.querySelector(`.track[data-id="${CSS.escape(id)}"]`), { skip: isRepeating(t) }); }
 
 const scene = createScene($('scene'), {
   reducedMotion,
@@ -784,7 +785,7 @@ function trackRow(t) {
   swipeDel.title = tx('task.delete', { title: t.title });
   swipeDel.addEventListener('click', e => {
     e.stopPropagation();
-    deleteTask(t.id, li);
+    askDelete(t, li);
   });
 
   const swipeNote = el('button', 't-swipe-note-btn');
@@ -825,7 +826,7 @@ function trackRow(t) {
   actDel.title = tx('task.delete', { title: t.title });
   actDel.addEventListener('click', e => {
     e.stopPropagation();
-    deleteTask(t.id, li);
+    askDelete(t, li);
   });
 
   let extraDrawer = null;
@@ -846,6 +847,7 @@ function trackRow(t) {
 
   li.append(check, swipeDel, swipeNote, row);
   if (extraDrawer) li.append(extraDrawer);
+  if (isRepeating(t)) li.append(deleteAsk(t, li));
   li.append(notePanel(t, li));
 
   attachSwipe(li, row, t, swipeDel, swipeNote);
@@ -1317,13 +1319,51 @@ function whenCalm(fn, prio = 2) {
 function flushStage() { while (stageFree() && stageWaiting.length) stageWaiting.shift().fn(); }
 
 let toastAction = null, toastTimer = 0, lastTick = -1e9, resetToastDrag = () => {};
-function deleteTask(id, li) {
+
+// Herhalende taak verwijderen (Victor, 17/11/2026: "kiezen om de hele reeks voor altijd te verwijderen, of enkel de huidige
+// taak"): het prullenbakje opent eerst een regel onder de taak met Enkel deze, Hele reeks en Annuleer. Enkel deze = overslaan:
+// deze keer verdwijnt zonder ster (niet afgevinkt) en de volgende staat meteen klaar, zoals na het afvinken.
+const isRepeating = t => !!(t && t.repeat && t.due && !t.demo);
+function askDelete(t, li) {
+  const ask = li.querySelector('.t-del-ask');
+  if (!ask || !isRepeating(t)) { deleteTask(t.id, li); return; }
+  closeAllSwiped();
+  showDeleteAsk(li, ask.hidden);
+}
+function showDeleteAsk(li, open) {
+  const ask = li.querySelector('.t-del-ask');
+  if (!ask) return;
+  ask.hidden = !open;
+  li.classList.toggle('is-asking', open);
+  if (open) ask.querySelector('.is-main')?.focus();
+}
+function deleteAsk(t, li) {
+  const ask = el('div', 't-del-ask');
+  ask.hidden = true;
+  ask.setAttribute('role', 'group');
+  ask.setAttribute('aria-label', tx('del.ask'));
+  const btn = (cls, label, fn) => { const b = el('button', cls, label); b.type = 'button'; b.addEventListener('click', e => { e.stopPropagation(); fn(); }); return b; };
+  const head = el('div', 't-del-head'), pick = el('div', 't-del-pick');
+  head.append(el('span', 't-del-q', tx('del.ask')), btn('due-clear t-del-no', tx('cancel'), () => { showDeleteAsk(li, false); li.querySelector('.t-act-del')?.focus(); }));
+  pick.append(btn('due-clear is-main', tx('del.one'), () => deleteTask(t.id, li, { skip: true })), btn('due-clear', tx('del.all'), () => deleteTask(t.id, li)));
+  ask.append(head, pick);
+  ask.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); showDeleteAsk(li, false); li.querySelector('.t-act-del')?.focus(); } });
+  return ask;
+}
+
+function deleteTask(id, li, { skip = false } = {}) {
   const task = tasks.find(t => t.id === id);
   if (!task || leaving.has(id)) return;
   leaving.add(id);
 
-  for (const d of li?.querySelectorAll('.t-swipe-del-btn, .t-act-del') ?? []) d.remove();
+  for (const d of li?.querySelectorAll('.t-swipe-del-btn, .t-act-del, .t-del-ask') ?? []) d.remove();
   if (li) groupsEl.style.pointerEvents = 'none';
+  // overslaan: de volgende uit de reeks, met de eerstvolgende datum na vandaag; een notitie gaat mee (de taak komt niet in het archief)
+  let next = null;
+  if (skip && isRepeating(task)) {
+    const now = Date.now(), due = nextDue(task.due, task.repeat);
+    next = { id: uid(), title: task.title, level: levelForDue(due), due, repeat: task.repeat, createdAt: now, updatedAt: now, levelAt: now, ...(task.note ? { note: task.note } : {}) };
+  }
 
   const trackRow = li?.querySelector('.track-row');
   const check = li?.querySelector('.t-check');
@@ -1347,6 +1387,7 @@ function deleteTask(id, li) {
     // vangnet: een verwijderde taak komt niet in het archief, dus eerst een momentopname (anders na 5 s onherstelbaar weg)
     if (!task.demo) snapshot(tasks, 'delete');
     tasks = tasks.filter(t => t.id !== id);
+    if (next) tasks.push(next);
     const now = Date.now();
     if (!task.demo) {
       gone[id] = now;
@@ -1364,6 +1405,7 @@ function deleteTask(id, li) {
     li?.remove();
     if (group && !group.querySelector('.track')) group.remove();
     leaving.delete(id);
+    if (next) { renderTracks(); groupsEl.style.pointerEvents = ''; return; }   // de volgende krijgt een eigen rij, mogelijk in een andere groep
 
     // 3. FLIP-animatie: onderliggende rijen glijden in een enkele vloeiende beweging op hun plek
     if (!reducedMotion.matches) {
@@ -1393,6 +1435,8 @@ function deleteTask(id, li) {
   setTimeout(performDelete, delay);
 
   const undoDelete = () => {
+    // de volgende weer weg, met afvink- en verwijdermarkering zodat ze ook op gekoppelde toestellen verdwijnt zonder ster
+    if (next) { tasks = tasks.filter(t => t.id !== next.id); gone[next.id] = archDel[next.id] = Date.now(); saveArchDel(archDel); }
     if (!task.demo) {
       delete gone[id];
       delete archDel[id];
@@ -1403,7 +1447,7 @@ function deleteTask(id, li) {
     saveTasks();
     render();
   };
-  showToast(tx('toast.deleted', { title: task.title }), undoDelete, tx('undo'), 'del');
+  showToast(next ? tx('toast.skipped', { title: task.title, label: dueLabel(next.due) }) : tx(isRepeating(task) ? 'toast.deletedAll' : 'toast.deleted', { title: task.title }), undoDelete, tx('undo'), 'del');
 }
 
 function complete(id, row) {
