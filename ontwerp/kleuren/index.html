@@ -1,0 +1,147 @@
+<meta charset="utf-8">
+<title>Orbit momentkleuren</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Opbouw: één kolom zoals een drukproef; per voorstel een vel met scène, stalen en meetwaarden. */
+:root {
+  --bg: #EBE8DF; --sheet: #E2DFD6; --ink: #1B1B22; --ink-2: #55555E; --ink-3: #85858C; --line: rgba(27,27,34,.14);
+  --paper: #EBE8DF; --night: #0F0F12; --nu: #E70049;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F0F12; --sheet: #1D1D20; --ink: #ECECF1; --ink-2: #A9A9B2; --ink-3: #75757E; --line: rgba(236,236,241,.14); color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0F0F12; --sheet: #1D1D20; --ink: #ECECF1; --ink-2: #A9A9B2; --ink-3: #75757E; --line: rgba(236,236,241,.14); color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+.label { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font-weight: 500; font-size: 30px; line-height: 1.15; margin: 10px 0 0; text-wrap: balance; }
+h2 { font-weight: 500; font-size: 22px; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lead { display: grid; gap: 14px; }
+.lead p { color: var(--ink-2); }
+.why { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.why div { display: grid; gap: 6px; align-content: start; }
+.why b { font-weight: 500; }
+.why span { color: var(--ink-2); font-size: 14px; }
+.sheet { background: var(--sheet); border-radius: 14px; padding: 24px; display: grid; gap: 20px; }
+.sheet-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+.sheet-head p { color: var(--ink-2); flex-basis: 100%; }
+.tag { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--nu); }
+.scenes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+figure { margin: 0; display: grid; gap: 8px; }
+figure img, figure svg { width: 100%; aspect-ratio: 1; display: block; border-radius: 10px; max-width: 100%; }
+figcaption { font: 400 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.sw { display: grid; gap: 6px; min-width: 0; }
+.chip { height: 44px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
+.chip i { display: block; }
+.sw b { font-weight: 500; font-size: 13px; }
+.sw code { font: 400 11px/1.3 var(--mono); color: var(--ink-2); overflow-wrap: anywhere; }
+.cvd { display: grid; grid-template-columns: auto repeat(5, minmax(0, 1fr)); gap: 6px 8px; align-items: center; }
+.cvd span { font: 400 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.cvd i { height: 16px; border-radius: 4px; display: block; }
+.metrics { display: flex; flex-wrap: wrap; gap: 8px 24px; font: 400 12px/1.4 var(--mono); color: var(--ink-2); }
+.metrics em { font-style: normal; color: var(--ink); }
+.metrics .weak { color: var(--nu); }
+.table-box { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-variant-numeric: tabular-nums; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+td.num { font-family: var(--mono); font-size: 13px; }
+.advice { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 24px; }
+.advice p { color: var(--ink-2); }
+.advice strong { color: var(--ink); font-weight: 500; }
+@media (max-width: 560px) { .sheet { padding: 16px; } h1 { font-size: 25px; } .swatches { gap: 6px; } .sw code { font-size: 10px; } }
+</style>
+
+<div class="wrap">
+  <header class="lead">
+    <div>
+      <span class="label">Orbit · kleuren van de momenten · 17/11/2026</span>
+      <h1>Nieuwe kleuren rond het rood van Nu</h1>
+    </div>
+    <p>Nu blijft #E70049. Hieronder drie paletten voor Vandaag, Week, Maand en Ooit, telkens in de echte scène (licht en donker), als stalen en gemeten op contrast, onderscheid en kleurenblindheid. Bovenaan ter vergelijking het huidige palet.</p>
+  </header>
+
+  <section class="why" aria-label="Waarom het huidige palet wringt">
+    <div><b>Standaard grafiekkleuren</b><span>Oranje, groen en blauw liggen ongeveer 90° uit elkaar op de kleurcirkel, het patroon van een standaardpalet uit een grafiekpakket. Het blauw #1F78B4 komt letterlijk uit ColorBrewer (Paired).</span></div>
+    <div><b>Rood is geen accent meer</b><span>Groen en oranje zijn bijna even verzadigd als het rood (chroma 0,16 tegen 0,24). Zo concurreren ze met de kern in plaats van erom te draaien.</span></div>
+    <div><b>Helderheid zonder logica</b><span>De lichtheid springt heen en weer (0,59 · 0,70 · 0,66 · 0,55 · 0,36). Een palet oogt rustiger als de helderheid een trap volgt.</span></div>
+    <div><b>Kleurenblind: Nu ≈ Week</b><span>Met deuteranopie liggen rood en groen 0,064 uit elkaar in OKLab, bijna dezelfde bruine tint. Hieronder telkens gesimuleerd.</span></div>
+  </section>
+
+  <div id="sheets" style="display:grid;gap:24px"></div>
+
+  <section class="sheet" aria-label="Vergelijking">
+    <h2>Naast elkaar</h2>
+    <div class="table-box"><table id="cmp"></table></div>
+    <p style="color:var(--ink-2);font-size:14px">Afstand = kleinste verschil tussen twee momenten in OKLab (0,02 is net zichtbaar). Deuteranopie en protanopie volgens Machado e.a. (2009), volle ernst. Contrast = WCAG-verhouding tegen het papier (#EBE8DF) of de nacht (#0F0F12).</p>
+  </section>
+
+  <section class="advice">
+    <span class="label">Advies</span>
+    <p><strong>V1 Risodruk.</strong> Het past het best bij de beeldtaal (de tinten liggen dicht bij echte Riso-inkten: oranje, teal, federal blue, indigo), het rood wordt weer het enige felle accent, en het scoort op elke meting beter dan of bijna gelijk aan het huidige palet: kleurenblind bijna dubbel zo goed (0,120 tegen 0,064), gewoon zicht iets minder uitgesproken (0,172 tegen 0,203) omdat alles minder schreeuwt.</p>
+    <p><strong>V2 Schemer</strong> is het sterkste idee (van zonsondergang bij de kern naar nacht aan de rand, geen groen) maar minder onderscheidbaar in het donker. <strong>V3 Affiche</strong> is het rustigst, maar de momenten liggen daar het dichtst bij elkaar (0,104); de positie op de ring draagt dan meer van de betekenis.</p>
+    <p>Voor elk palet geldt: Vandaag haalt op het lichte papier maar 2,2 tot 2,4 : 1 (nu 2,3). Warme lichte tinten zijn op licht papier altijd zwak; donkerder maken maakt ze bruin. De ring zelf zegt ook welk moment het is, dus dit is aanvaardbaar.</p>
+  </section>
+</div>
+
+<script>
+const NAMES = ['Nu', 'Vandaag', 'Week', 'Maand', 'Ooit'];
+const D = {"huidig":{"l":{"hex":["#E70049","#E08600","#0FAE69","#1F78B4","#08415C"],"con":[3.8,2.3,2.4,3.9,8.9],"deut":["#908342","#B8A405","#9C936E","#476DB3","#29395C"],"prot":["#5C5849","#A38F00","#AD9F64","#5C7AB7","#34415D"],"pair":0.203,"dmin":0.064,"pmin":0.076},"d":{"hex":["#F0306A","#F5A623","#20E08A","#38A0F0","#B3B9D6"],"con":[4.9,9.4,11.0,6.8,9.9],"deut":["#988E65","#D4BE29","#CABE90","#6192EE","#AFB9D5"],"prot":["#67686B","#C2AB00","#DFCD84","#7BA3F3","#B1BBD7"],"pair":0.158,"dmin":0.093,"pmin":0.112}},"v1":{"l":{"hex":["#E70049","#E3852E","#1E9397","#365694","#2F2B43"],"con":[3.8,2.2,3.0,5.9,11.1],"deut":["#908342","#B8A52E","#778098","#2D5393","#252E42"],"prot":["#5C5849","#A18F20","#888C97","#3A5C96","#252E44"],"pair":0.172,"dmin":0.12,"pmin":0.127},"d":{"hex":["#F0306A","#FFB25A","#129295","#7A9DE6","#C4C5E3"],"con":[4.9,10.7,5.1,7.1,11.3],"deut":["#988E65","#DEC95C","#767E96","#7699E4","#BDC6E2"],"prot":["#67686B","#CBB751","#878B95","#82A3E9","#BEC8E4"],"pair":0.153,"dmin":0.108,"pmin":0.12}},"v2":{"l":{"hex":["#E70049","#DA8B47","#A35A96","#484396","#293544"],"con":[3.8,2.2,3.8,6.8,10.2],"deut":["#908342","#B6A447","#6D7794","#094B94","#2C3344"],"prot":["#5C5849","#A39240","#596D98","#135199","#303645"],"pair":0.152,"dmin":0.112,"pmin":0.116},"d":{"hex":["#F0306A","#F7AE7B","#B668AB","#979AF1","#BBCBDE"],"con":[4.9,10.3,5.1,7.5,11.6],"deut":["#988E65","#D4C47B","#7B87A9","#799FEF","#C0C8DE"],"prot":["#67686B","#C3B477","#667CAD","#7EA5F4","#C4CBDF"],"pair":0.142,"dmin":0.109,"pmin":0.104}},"v3":{"l":{"hex":["#E70049","#C18F44","#577555","#094D5E","#2B2E39"],"con":[3.8,2.4,4.2,7.7,11.0],"deut":["#908342","#AD9D46","#726C57","#38435E","#2A2E39"],"prot":["#5C5849","#A1913C","#776F53","#434B5F","#2B2F3A"],"pair":0.104,"dmin":0.088,"pmin":0.075},"d":{"hex":["#F0306A","#E7B352","#92AE83","#80B7CD","#C1CAD8"],"con":[4.9,10.0,7.8,8.7,11.6],"deut":["#988E65","#D5C155","#ADA585","#9FABCD","#C3C8D8"],"prot":["#67686B","#C8B448","#B2A780","#ABB4CE","#C6CAD9"],"pair":0.099,"dmin":0.076,"pmin":0.071}}};
+const META = {
+  huidig: { tag: 'Nu in gebruik', name: 'Huidig palet', text: 'Foto, warm naar koel (09/11/2026): amaranth, oranje, lentegroen, twee tinten Yale-blauw.' },
+  v1: { tag: 'V1 · mijn advies', name: 'Risodruk', text: 'Tinten zoals echte Riso-inkten: gebrand oranje, teal, federal blue en een indigo die bijna inkt is. Hoe verder van de kern, hoe minder verzadigd en hoe donkerder; in het donker vervaagt Ooit tot lavendelgrijs.' },
+  v2: { tag: 'V2', name: 'Schemer', text: 'De hemel bij zonsondergang, van de kern naar buiten: abrikoos aan de horizon, mauve, indigo, en nacht aan de rand. Geen groen; de reeks loopt langs paars terug naar het rood.' },
+  v3: { tag: 'V3', name: 'Affiche', text: 'Aardetinten van een oude affiche: oker, salie, petrol en grafiet. Het rood is het enige echte kleuraccent, de rest is bijna inkt.' },
+};
+// mini-orbit: ringen in grafiet, per ring twee bollen met staart (zoals de scène), los van de screenshot groot genoeg om kleur te lezen
+const RINGS = [38, 66, 98, 134, 174];
+function orbit(pal, dark) {
+  const bg = dark ? '#0F0F12' : '#EBE8DF', ring = dark ? 'rgba(236,236,241,.22)' : 'rgba(27,27,34,.22)';
+  let s = `<svg viewBox="-200 -200 400 400" role="img" aria-label="Momentkleuren ${dark ? 'donker' : 'licht'}"><rect x="-200" y="-200" width="400" height="400" fill="${bg}"/>`;
+  RINGS.forEach((r, i) => {
+    s += `<circle r="${r}" fill="none" stroke="${ring}" stroke-width="1.2" stroke-dasharray="1.2 5" stroke-linecap="round"/>`;
+    [0.3 + i * 0.9, 2.6 + i * 1.3, 4.4 + i * 0.7].slice(0, i ? 3 : 2).forEach(a => {
+      const sz = [9, 8, 7.5, 7, 7][i];
+      for (let k = 6; k >= 1; k--) { const b = a - k * 0.035 * (174 / r) ** 0.5; s += `<circle cx="${(r * Math.cos(b)).toFixed(1)}" cy="${(r * Math.sin(b)).toFixed(1)}" r="${(sz * (1 - k / 7)).toFixed(1)}" fill="${pal[i]}" opacity="${(0.5 - k * 0.06).toFixed(2)}"/>`; }
+      s += `<circle cx="${(r * Math.cos(a)).toFixed(1)}" cy="${(r * Math.sin(a)).toFixed(1)}" r="${sz}" fill="${pal[i]}"/>`;
+    });
+  });
+  s += `<circle r="14" fill="${pal[0]}"/></svg>`;
+  return s;
+}
+const fmt = n => n.toFixed(3).replace('.', ',');
+const sheets = document.getElementById('sheets');
+for (const [key, m] of Object.entries(META)) {
+  const d = D[key];
+  const weak = (v, lim) => v < lim ? ' class="weak"' : '';
+  sheets.insertAdjacentHTML('beforeend', `
+  <article class="sheet">
+    <div class="sheet-head"><h2>${m.name}</h2><span class="tag">${m.tag}</span><p>${m.text}</p></div>
+    <div class="scenes">
+      <figure>${orbit(d.l.hex, false)}<figcaption>Licht</figcaption></figure>
+      <figure>${orbit(d.d.hex, true)}<figcaption>Donker</figcaption></figure>
+      <figure><img src="${key}-light.jpg" alt="Orbit met palet ${m.name}, licht" loading="lazy"><figcaption>In de app · licht</figcaption></figure>
+      <figure><img src="${key}-dark.jpg" alt="Orbit met palet ${m.name}, donker" loading="lazy"><figcaption>In de app · donker</figcaption></figure>
+    </div>
+    <div class="swatches">${NAMES.map((n, i) => `<div class="sw"><div class="chip"><i style="background:${d.l.hex[i]}"></i><i style="background:${d.d.hex[i]}"></i></div><b>${n}</b><code>${d.l.hex[i]}<br>${d.d.hex[i]}</code></div>`).join('')}</div>
+    <div class="cvd">
+      <span>Normaal</span>${d.l.hex.map(c => `<i style="background:${c}"></i>`).join('')}
+      <span>Deuteranopie</span>${d.l.deut.map(c => `<i style="background:${c}"></i>`).join('')}
+      <span>Protanopie</span>${d.l.prot.map(c => `<i style="background:${c}"></i>`).join('')}
+    </div>
+    <div class="metrics">
+      <span>afstand licht <em${weak(d.l.pair, .12)}>${fmt(d.l.pair)}</em> · donker <em${weak(d.d.pair, .12)}>${fmt(d.d.pair)}</em></span>
+      <span>deuteranopie <em${weak(d.l.dmin, .08)}>${fmt(d.l.dmin)}</em> · <em${weak(d.d.dmin, .08)}>${fmt(d.d.dmin)}</em></span>
+      <span>protanopie <em${weak(d.l.pmin, .08)}>${fmt(d.l.pmin)}</em> · <em${weak(d.d.pmin, .08)}>${fmt(d.d.pmin)}</em></span>
+      <span>contrast op papier <em>${d.l.con.map(c => String(c).replace('.', ',')).join(' · ')}</em></span>
+    </div>
+  </article>`);
+}
+const cmp = document.getElementById('cmp');
+cmp.innerHTML = `<thead><tr><th>Palet</th><th>Afstand licht</th><th>Afstand donker</th><th>Deuteranopie</th><th>Protanopie</th><th>Laagste contrast op papier</th></tr></thead><tbody>${Object.entries(META).map(([k, m]) => {
+  const d = D[k];
+  return `<tr><td>${m.name}</td><td class="num">${fmt(d.l.pair)}</td><td class="num">${fmt(d.d.pair)}</td><td class="num">${fmt(Math.min(d.l.dmin, d.d.dmin))}</td><td class="num">${fmt(Math.min(d.l.pmin, d.d.pmin))}</td><td class="num">${String(Math.min(...d.l.con)).replace('.', ',')} : 1 (Vandaag)</td></tr>`;
+}).join('')}</tbody>`;
+</script>
