@@ -3,10 +3,10 @@
 // color: tint op licht papier, dark: gedempte tint voor de donkere modus (minder verzadigd, geen kleurboek-effect)
 export const LEVELS = [
   { id: 1, name: 'Nu',      ring: 38,  orbit: 38,  period: 1.1, color: '#E70049', dark: '#F0306A', size: 7,   tail: 3 },
-  { id: 2, name: 'Vandaag', ring: 66,  orbit: 66,  period: 2.8, color: '#E08600', dark: '#F5A623', size: 6,   tail: 2 },
-  { id: 3, name: 'Week',    ring: 98,  orbit: 98,  period: 7,   color: '#0FAE69', dark: '#20E08A', size: 5.5, tail: 2 },
-  { id: 4, name: 'Maand',   ring: 134, orbit: 134, period: 16,  color: '#1F78B4', dark: '#38A0F0', size: 5,   tail: 1 },
-  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#08415C', dark: '#B3B9D6', size: 5,   tail: 1 },
+  { id: 2, name: 'Vandaag', ring: 66,  orbit: 66,  period: 2.8, color: '#E3852E', dark: '#FFB25A', size: 6,   tail: 2 },
+  { id: 3, name: 'Week',    ring: 98,  orbit: 98,  period: 7,   color: '#1E9397', dark: '#129295', size: 5.5, tail: 2 },
+  { id: 4, name: 'Maand',   ring: 134, orbit: 134, period: 16,  color: '#365694', dark: '#7A9DE6', size: 5,   tail: 1 },
+  { id: 5, name: 'Ooit',    ring: 174, orbit: 174, period: 38,  color: '#2F2B43', dark: '#C4C5E3', size: 5,   tail: 1 },
 ];
 // Kleuren van de momenten (Instellingen → Kleuren, per toestel; Victor, 09/11/2026: "bolletjes geen verschillende kleuren,
 // maar gewoon verschillende tinten van het rood, NU = volledig gesatureerd rood, OOIT = minst gesatureerd"). Rood: de tint

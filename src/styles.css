@@ -34,9 +34,9 @@
   --late: #D7261C;
   --core: #E70049;           /* kleur van de kern (Nu), accent in de effecten */
   --orbit-red: var(--core);
-  --orbit-orange: #E08600;
-  --orbit-green: #0FAE69;
-  --orbit-blue: #1F78B4;
+  --orbit-orange: #E3852E;
+  --orbit-green: #1E9397;
+  --orbit-blue: #365694;
   --orbit-gray: var(--ink-3);
   --toast-bg: #FFFFFF; --toast-ink: #1B1B22; --toast-line: rgba(27, 27, 34, .1); --toast-btn: #000000; --toast-btn-ink: #FFFFFF;   /* melding onderaan: wit met zwarte knop, in het donker gespiegeld */
   --pop-shadow: rgba(0, 0, 0, .18); --veil: rgba(0, 0, 0, .48); --pop-glass: rgba(248, 246, 240, .74);   /* schaduw van zwevende vensters, sluier achter het bakje op gsm */
@@ -70,9 +70,9 @@
   --dm-ghost: .1;
   --core: #F0306A;
   --orbit-red: var(--core);
-  --orbit-orange: #F5A623;
-  --orbit-green: #20E08A;
-  --orbit-blue: #38A0F0;
+  --orbit-orange: #FFB25A;
+  --orbit-green: #129295;
+  --orbit-blue: #7A9DE6;
   --orbit-gray: var(--ink-3);
   --toast-bg: #000000; --toast-ink: #FFFFFF; --toast-line: rgba(255, 255, 255, .14); --toast-btn: #FFFFFF; --toast-btn-ink: #000000;
   --pop-shadow: rgba(0, 0, 0, .5); --veil: rgba(0, 0, 0, .6); --pop-glass: rgba(25, 25, 29, .7);

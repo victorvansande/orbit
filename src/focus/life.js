@@ -194,9 +194,9 @@ export function createLife({ accent, onPreset, size }) {
     if (dark) {
       return {
         birth: '#FFFFFF',
-        live: '#E08600',       // Vandaag oranje
-        mature: '#0FAE69',     // Week groen
-        fade: '#38A0F0'        // Maand blauw
+        live: '#E3852E',       // Vandaag oranje
+        mature: '#1E9397',     // Week teal
+        fade: '#7A9DE6'        // Maand blauw
       };
     }
     return {
