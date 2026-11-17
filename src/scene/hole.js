@@ -11,6 +11,7 @@
 // Voorstellen: ontwerp/zwartgat/index.html.
 import { tx } from '../core/i18n.js';
 import { trace, emit, lensSteps, backdropSteps, stepFree, shift, weight, FOV, D } from './gravity.js';
+import { playHole } from './sound.js';
 
 const TIME = 25;          // M per seconde: één klok voor de schijf en voor wat erin valt
 const N = 120;            // deeltjes per bol
@@ -339,6 +340,7 @@ export function createHole({ reducedMotion, permanent, minimal = () => false }) 
   function swell() {
     if (still() || !sky || bloat) return;
     bloat = performance.now();
+    playHole();   // G3 Kolk, op dezelfde klok (Victor, 17/11/2026)
     wake();
   }
   el.addEventListener('click', swell);

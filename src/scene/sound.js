@@ -286,6 +286,45 @@ export function playCore() {
     }));
   });
 }
+// klik op het zwarte gat: G3 Kolk (Victor, 17/11/2026, uit ontwerp/zwartgat/geluid.html; G1 Roodverschuiving en G2 Slag
+// afgewezen). Een ruisband die naar binnen wordt gezogen (1200 naar 140 Hz) en langzaam van links naar rechts rondgaat, met
+// een grondtoon van 55 Hz eronder; alles op de klok van swell() in hole.js (massa x10 in 1,3 s, blijft tot 2,9 s, terug in
+// 1,4 s). Piek ongeveer -26 dBFS, zoals de tik op de kern.
+const holeEase = x => { x = Math.min(1, Math.max(0, x)); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const holeK = t => Math.max(0, Math.min(holeEase(t / 1.3), 1 - holeEase((t - 2.9) / 1.4)));   // 0..1, zoals MASS in hole.js
+const holeCurve = f => Float32Array.from({ length: 128 }, (_, i) => f(holeK((i / 127) * 4.3)));
+const holeRooms = new WeakMap();
+function holeRoom(a) {   // iets grotere, donkere ruimte dan room(): 1,6 s
+  if (holeRooms.has(a)) return holeRooms.get(a);
+  const sr = a.sampleRate, len = Math.ceil(sr * 1.6), ir = a.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch); let x = 1234 + ch * 777, lp = 0;
+    for (let i = 0; i < len; i++) { x = (x * 16807) % 2147483647; const u = i / len; lp += (x / 2147483647 * 2 - 1 - lp) * (0.4 - 0.35 * u); d[i] = (i < sr * 0.02 ? 0 : lp) * Math.pow(1 - u, 2.6); }
+  }
+  holeRooms.set(a, ir);
+  return ir;
+}
+export function playHole() {
+  cue((a, out, t) => {
+    const inp = a.createGain(), conv = a.createConvolver(), wet = a.createGain();
+    conv.buffer = holeRoom(a); wet.gain.value = 0.3;
+    inp.connect(out); inp.connect(conv).connect(wet).connect(out);
+    const n = noise(a, 4.6), bp = a.createBiquadFilter(), g = a.createGain();
+    bp.type = 'bandpass'; bp.Q.value = 2.2;
+    bp.frequency.setValueCurveAtTime(holeCurve(k => 1200 * Math.pow(140 / 1200, k)), t, 4.3);
+    g.gain.setValueCurveAtTime(holeCurve(k => 0.22 * Math.pow(k, 0.8)), t, 4.3);
+    let dest = inp;
+    if (a.createStereoPanner) {   // rondgaan: links, rechts, links
+      const pan = a.createStereoPanner(), lfo = a.createOscillator(), depth = a.createGain();
+      lfo.frequency.value = 0.55; depth.gain.value = 0.55; lfo.connect(depth).connect(pan.pan); lfo.start(t); lfo.stop(t + 4.6);
+      pan.connect(inp); dest = pan;
+    }
+    n.connect(bp).connect(g).connect(dest); n.start(t); n.stop(t + 4.6);
+    const o = a.createOscillator(), og = a.createGain();
+    o.frequency.value = 55; og.gain.setValueCurveAtTime(holeCurve(k => 0.06 * k), t, 4.3);
+    o.connect(og).connect(inp); o.start(t); o.stop(t + 4.6);
+  }, false, 0.5);
+}
 // zandloper klaar: drie keer dezelfde toon, telkens zachter, zoals een rustige keukenwekker
 export function playTimer() {
   cue((a, o, t) => [0, 0.62, 1.24].forEach((dt, i) => ping(a, o, t + dt, P.A4, { g: 1.12 - 0.22 * i })));
