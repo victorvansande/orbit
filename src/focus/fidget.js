@@ -33,7 +33,7 @@ function accentRamp(hex) {
   const c = hexRgb(hex), dark = hexRgb('#120f17');
   return [dark, mixRgb(dark, c, 0.3), c, mixRgb(c, [1, 0.93, 0.8], 0.45), mixRgb(c, [1, 0.97, 0.88], 0.78)];
 }
-export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster', 'life', 'breakout', 'snake', 'swing', 'tree', 'picker', 'spin', 'year', 'terra', 'reef', 'forest', 'panel', 'ink'];
+export const MODES = ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'life', 'breakout', 'snake', 'swing', 'tree', 'picker', 'spin', 'year', 'terra', 'reef', 'forest', 'panel', 'ink'];
 const PANELS = ['panel', 'ink'];   // paneel in twee soorten (Victor, 10/11/2026): Fosfor (CRT) en Inkt (vlak, stijl van Orbit)
 
 import { DESKTOP_MQ } from '../core/config.js';
@@ -43,7 +43,6 @@ import { createPlasma } from './plasma.js';
 import { createBreakout } from './breakout.js';
 import { createSnake } from './snake.js';
 import { createSwing } from './swing.js';
-import { createRaster } from './raster.js';
 import { createTree } from './tree.js';
 import { createAsciiFidget } from './ascii.js';
 import { createYear } from './year.js';
@@ -709,9 +708,6 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
       } else if (modeName === 'swing') {
         // slinger (Victor, 12/11/2026, F2): harmonograaf, pen in inkt of de kleur uit de kleurkiezer, vormen achter het pijltje
         modes[modeName] = createSwing({ reducedMotion, accent: () => ACCENT, onPreset: showScreen, size: { w: W, h: HH } });
-      } else if (modeName === 'raster') {
-        // raster (Victor, 12/11/2026, R1 Deining): zeshoekige rasterpunten als wateroppervlak, kleur uit de kleurkiezer
-        modes[modeName] = createRaster({ reducedMotion, accent: () => ACCENT, size: { w: W, h: HH } });
       } else if (modeName === 'tree') {
         // kerstboom in tekens (Victor, 15/11/2026, A1 Kleur): draaiende puntenwolk, eigen kleuren op een donker venster
         modes[modeName] = createTree({ reducedMotion, size: { w: W, h: HH } });
@@ -767,7 +763,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
   const available = () => MODES.filter(m => (!['lava', 'grain', 'plasma'].includes(m) || getGL()) && (!['topo', 'wayglim'].includes(m) || hasGL2()));
 
   const GROUPS = [
-    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma', 'raster'] },
+    { key: 'groupFluid', modes: ['water', 'jelly', 'lava', 'grain', 'topo', 'wayglim', 'plasma'] },
     { key: 'groupPlay', modes: ['life', 'breakout', 'snake', 'swing', 'tree', 'picker', 'spin', 'year'] },
     { key: 'groupNature', modes: ['terra', 'reef', 'forest'] },
     { key: 'groupPanel', modes: PANELS }
@@ -917,7 +913,7 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
     // de twee panelen heten in het menu Fosfor en Inkt, op de knop staat erbij dat het een paneel is
     menuName.textContent = PANELS.includes(modeName) ? `${label('groupPanel')} · ${label(modeName)}` : label(modeName);
 
-    popScroll.replaceChildren(...GROUPS.map(grp => {
+    const groups = GROUPS.map(grp => {
       const col = document.createElement('div');
       col.className = 'fidget-pop-col';
       const title = document.createElement('div');
@@ -938,6 +934,14 @@ export function createFidget(box, { reducedMotion, label = m => m, getData, scor
         col.append(opt);
       });
       return col;
+    });
+    // twee kolommen die hun groepen strak stapelen (Victor, 18/11/2026: er stond veel plaats tussen), even lang:
+    // Vloeistof met Natuur links, Interactief met Paneel rechts
+    popScroll.replaceChildren(...[[0, 2], [1, 3]].map(ids => {
+      const stack = document.createElement('div');
+      stack.className = 'fidget-pop-stack';
+      stack.append(...ids.map(i => groups[i]));
+      return stack;
     }));
 
     bar.replaceChildren(menuWrap, rightBar);

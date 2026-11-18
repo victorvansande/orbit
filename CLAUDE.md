@@ -78,7 +78,6 @@ src/vendor/ code van derden met bron en licentie, pas geladen als nodig
 
 Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.md`).
 
-- 15/11/2026, Claude Code: vijf fidgets naar stukken van ascii-magic.com, eigen code (hun bron is niet vrij): Kleurkiezer, Spinners en Jaar (groep Interactief & Spel), Rif en Woud (groep Natuur); stippenrenderer `src/focus/dots.js`; Jaar toont je echte afgevinkte taken per dag. Open: Victor speelt op pc en gsm.
 - 15/11/2026, Claude Code: Kleurkiezer vervangen door het origineel van ASCII Magic, letterlijk op vraag van Victor (`src/vendor/colorpicker.js`, getekend in de look "dots" door `src/focus/ascii.js`, eigen versie weg). Open: Victor kijkt; geen aanraking in het origineel.
 - 15/11/2026, Claude Code: Spinners vervangen door het origineel van ASCII Magic, letterlijk op vraag van Victor (`src/vendor/spinners.js`, look "dense" in `src/focus/ascii.js`, kit gedeeld in `src/vendor/asciikit.js`). Open: Victor kijkt.
 - 15/11/2026, Claude Code: Rif vervangen door het origineel van ASCII Magic, letterlijk op vraag van Victor (`src/vendor/reef.js`, look "dots"). Woud en Jaar zijn nog eigen code. Open: Victor kijkt.
@@ -88,3 +87,4 @@ Hooguit de laatste 10 regels, nieuwste onderaan (oudere: einde van `docs/kennis.
 - 17/11/2026, Claude Code: wiel van de momenten stopt bij Nu en Ooit (eerst rond gemaakt, op vraag van Victor teruggedraaid), snel scrollen is snel (geen vergrendeling meer), geen terugslag meer (wagenwieleffect en uitschieters), tikje telkens een moment het midden passeert. Open: Victor probeert met muis, trackpad en gsm.
 - 17/11/2026, Claude Code: kleurenonderzoek voor de momenten, drie voorstellen rond het rood van Nu (artifact "Orbit momentkleuren", `ontwerp/kleuren/`): V1 Risodruk gekozen en gebouwd (Vandaag `#E3852E`, Week `#1E9397`, Maand `#365694`, Ooit `#2F2B43`; donker in `config.js`); details in `docs/kennis.md`, sectie Niveaus. Open: Victor kijkt op pc en gsm.
 - 17/11/2026, Claude Code: drie voorstellen voor een diep geluid bij de klik op het zwarte gat (artifact "Orbit zwart gat geluid", `ontwerp/zwartgat/geluid.html`): G3 Kolk gekozen en gebouwd (`playHole()` in `sound.js`, opgeroepen in `swell()` van `hole.js`). Open: Victor luistert op pc.
+- 18/11/2026, Claude Code: fidget Halftone (`raster`) verwijderd; keuzemenu van het bakje in twee strak gestapelde kolommen (Vloeistof + Natuur, Interactief + Paneel), geen leegte meer. Open: Victor kijkt op pc en gsm.
